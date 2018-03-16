@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Alpertron_Calculator", "Alperton Calculator\Alperton Calculator.vcxproj", "{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SIMPQS", "SIMPQS\SIMPQS.vcxproj", "{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BigIntCalculator", "BigIntCalculator\BigIntCalculator.vcxproj", "{221FFA2E-52EA-4C92-9FF3-43C571902168}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Debug|x64.ActiveCfg = Debug|x64
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Debug|x64.Build.0 = Debug|x64
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Debug|x86.ActiveCfg = Debug|Win32
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Debug|x86.Build.0 = Debug|Win32
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Release|x64.ActiveCfg = Release|x64
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Release|x64.Build.0 = Release|x64
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Release|x86.ActiveCfg = Release|Win32
+		{41A2CDA5-CDF8-4E0F-A29C-EBC4FD8A0FCD}.Release|x86.Build.0 = Release|Win32
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Debug|x64.ActiveCfg = Debug|x64
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Debug|x64.Build.0 = Debug|x64
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Debug|x86.ActiveCfg = Debug|Win32
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Debug|x86.Build.0 = Debug|Win32
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Release|x64.ActiveCfg = Release|x64
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Release|x64.Build.0 = Release|x64
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Release|x86.ActiveCfg = Release|Win32
+		{B5921EF5-2AE1-4FB6-8426-9957B4F47C15}.Release|x86.Build.0 = Release|Win32
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Debug|x64.ActiveCfg = Debug|x64
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Debug|x64.Build.0 = Debug|x64
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Debug|x86.ActiveCfg = Debug|Win32
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Debug|x86.Build.0 = Debug|Win32
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x64.ActiveCfg = Release|x64
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x64.Build.0 = Release|x64
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x86.ActiveCfg = Release|Win32
+		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

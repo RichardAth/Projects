@@ -240,3 +240,8 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/Win32Project1
+/donut/
+/DiphantineSolverMk3/
+/DiophantineSolverMk2/
+/diamond/
