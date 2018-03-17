@@ -90,7 +90,7 @@ void generatePrimes(unsigned long long int max_val);
 char *hexbuffer = NULL;
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
-the leftmost bit of the most significant digit is set not set. This is done by 
+the leftmost bit of the most significant digit is not set. This is done by 
 prefixing the output with '0' or 'f' when necessary. */
 char* getHex(Znum Bi_Nbr) {
 	std::string obuff;
@@ -407,30 +407,102 @@ static long long primePi(const Znum &n) {
 	return rv;
 }
 
+/* ConcatFact(m,n): Concatenates the prime factors (base 10) of num according to the mode
+mode	Order of factors	Repeated factors
+0		Ascending			No
+1		Descending			No
+2		Ascending			Yes
+3		Descending			Yes
+*/
+static Znum  concatFact(Znum mode, Znum num) {
+	std::vector <Znum> factorlist;
+	std::vector <int> exponentlist;
+	std::string result;
+	Znum rvalue;
+	Znum quads[4];  // needed, but not used
+	bool descending = ((mode & 1) == 1);
+	bool repeat = ((mode & 2) == 2);
+	char *buffer = NULL;
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, exponentlist, quads);
+	if (rv && !factorlist.empty()) {
+		if (descending)   /* start with largest factor */
+			for (ptrdiff_t i = factorlist.size()-1; i >=0; i--) {
+				buffer = mpz_get_str(NULL, 10, ZT(factorlist[i]));
+				if (!repeat)
+					result += buffer; // concatenate factor
+				else
+					for (int j =1; j<= exponentlist[i]; j++)
+						result += buffer; // concatenate factor
+				free(buffer);
+				buffer = NULL;
+			}
+		else  /* start with smallest factor */
+			for (size_t i = 0; i < factorlist.size(); i++) {
+				buffer = mpz_get_str(NULL, 10, ZT(factorlist[i]));
+				if (!repeat)
+					result += buffer;  // concatenate factor
+				else
+					for (int j = 1; j <= exponentlist[i]; j++)
+						result += buffer;  // concatenate factor
+				free(buffer);
+				buffer = NULL;
+			}
+		mpz_set_str(ZT(rvalue), result.data(), 10); /* convert back from a string to a number */
+		return rvalue;
+	}
+	return 0;
+}
+
+typedef enum{
+fn_gcd,
+fn_modpow,
+fn_modinv,
+fn_totient,
+fn_numdivs,
+fn_sumdivs,
+fn_sumdigits,
+fn_numdigits,
+fn_revdigits,
+fn_isprime,
+fn_concatfact,
+fn_fib,
+fn_luc,
+fn_primePi,
+fn_part,
+fn_np,
+fn_pp,
+fn_invalid = -1,
+} fn_Code;
+
 struct  functions {
 	char fname[11];    // maximum name length 10 chars (allow for null terminator)
 	int  NoOfParams;   // number of parameters 
-	int  fCode;        // integer code for function
+	fn_Code  fCode;        // integer code for function
 };
 
-/* list of function names */
-const static std::array <struct functions, 16> functionList{
-	{"GCD",       2,  1,    // name, number of parameters, code
-	 "MODPOW",    3,  2,
-	 "MODINV",    2,  3,
-	 "TOTIENT",   1,  4,
-	 "NUMDIVS",   1,  5,
-	 "SUMDIVS",   1,  6,
-	 "SUMDIGITS", 2,  7,
-	 "NUMDIGITS", 2,  8,
-	 "REVDIGITS", 2,  9,
-	 "ISPRIME",   1, 10,
-	 "F",         1, 11,       // fibonacci
-	 "L",         1, 12,		// Lucas Number
-	 "PI",		  1, 16,		// prime-counting function
-	 "P",         1, 13,       // number of partitions
-	 "N",         1, 14,		// next prime
-	 "B",         1, 15 }		// previous prime
+/* list of function names. No function name can begin with C because this would 
+ conflict with the C operator. Longer names should come before short ones 
+ to avoid mismatches */
+const static std::array <struct functions, 17> functionList{
+	"GCD",       2,  fn_gcd,    // name, number of parameters, code
+	"MODPOW",    3,  fn_modpow,
+	"MODINV",    2,  fn_modinv,
+	"TOTIENT",   1,  fn_totient,
+	"NUMDIVS",   1,  fn_numdivs,
+	"SUMDIVS",   1,  fn_sumdivs,
+	"SUMDIGITS", 2,  fn_sumdigits,
+	"NUMDIGITS", 2,  fn_numdigits,
+	"REVDIGITS", 2,  fn_revdigits,
+	"ISPRIME",   1,	 fn_isprime,
+	"FactConcat",2,  fn_concatfact,     // FactConcat must come before F
+	"F",         1,  fn_fib,			// fibonacci
+	"L",         1,  fn_luc,			// Lucas Number
+	"PI",		 1,  fn_primePi,		// prime-counting function. PI must come before P
+	"P",         1,  fn_part,			// number of partitions
+	"N",         1,  fn_np,				// next prime
+	"B",         1,  fn_pp,				// previous prime
+
 };
 
 /* Check whether expr matches any function name. If so ,compute value(s) of 
@@ -438,13 +510,14 @@ const static std::array <struct functions, 16> functionList{
  If not, return value 1 (EXPR_FAIL).
 Updates global var exprIndex. */
 static eExprErr func(const std::string &expr, const bool leftNumberFlag,
- 	 int exprIndexLocal, int &Gfcode) {
+ 	 int exprIndexLocal, fn_Code &Gfcode) {
 
-	int fnCode = -1, ix;
+	fn_Code fnCode = fn_invalid;
+	long long ix;
 	int NoOfArgs = 0;
 	const char *ptrExpr = expr.data() + exprIndexLocal;
 	/* try to match function name */
-	for (ix = 0; ix < functionList.size(); ix++) {
+	for (ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
 		if (_strnicmp(ptrExpr, functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
 			fnCode = functionList[ix].fCode;
 			NoOfArgs = functionList[ix].NoOfParams;
@@ -452,7 +525,7 @@ static eExprErr func(const std::string &expr, const bool leftNumberFlag,
 		}
 	}
 
-	if (fnCode == -1)
+	if (fnCode == fn_invalid)
 		return EXPR_FAIL;  // no function name found
 		
 	exprIndexLocal += (int)strlen(functionList[ix].fname); // move exprIndex past function name
@@ -466,14 +539,14 @@ static eExprErr func(const std::string &expr, const bool leftNumberFlag,
 		return EXPR_SYNTAX_ERROR;  // no opening bracket after function name
 	}
 	int Bracketdepth = 0;
-	for (ix = exprIndexLocal-1; ix < expr.length(); ix++) {
+	for (ix = exprIndexLocal-1; ix < (long long)expr.length(); ix++) {
 		if (expr[ix] == '(') Bracketdepth++;
 		if (expr[ix] == ')') Bracketdepth--;
 		if (Bracketdepth == 0) break;  // found matching closing bracket
 	}
 	if (Bracketdepth != 0)
 		return EXPR_PAREN_MISMATCH;
-	int exprLength = ix - exprIndexLocal + 1;
+	long long exprLength = ix - exprIndexLocal + 1;  // length of text up to closing bracket.
 
 	for (int index = 0; index < NoOfArgs; index++)
 	{
@@ -485,7 +558,7 @@ static eExprErr func(const std::string &expr, const bool leftNumberFlag,
 		{
 			return EXPR_TOO_MANY_PAREN;
 		}
-		/* substring in function call below includes all characters from the parameter now
+		/* substring in function call below includes all characters from the parameters now
 		being processed up to and including the closing bracket. */
 		retcode = ComputeExpr(expr.substr(exprIndexLocal, exprLength), ExpressionResult);
 		if (retcode !=  EXPR_OK) { 
@@ -514,7 +587,7 @@ static eExprErr func(const std::string &expr, const bool leftNumberFlag,
 number of bits to shift is negative, this is actually a right shift */
 static enum eExprErr ShiftLeft(const Znum first, const Znum bits, Znum &result) {
 	if (bits > LLONG_MAX || bits < LLONG_MIN)
-		return EXPR_INTERM_TOO_HIGH;
+		return EXPR_INVALID_PARAM;
 
 	long long shift = MulPrToLong(bits);
 
@@ -681,7 +754,7 @@ static enum eExprErr ComputeSubExpr(void)
 	}
 	case oper_multiply: {
 		auto resultsize = NoOfBits(firstArg) + NoOfBits(secondArg);
-		if (resultsize > 66439)
+		if (resultsize > 66439)  // more than 66439 bits -> more than 20,000 decimal digits
 			return EXPR_INTERM_TOO_HIGH;
 		result = firstArg * secondArg;
 		return EXPR_OK;
@@ -699,7 +772,7 @@ static enum eExprErr ComputeSubExpr(void)
 			return EXPR_EXPONENT_NEGATIVE;
 		long long exp = MulPrToLong(secondArg);
 		auto resultsize = (NoOfBits(firstArg)-1)* exp;  // estimate number of bits for result
-		if (resultsize > 66439)
+		if (resultsize > 66439)  // more than 66439 bits -> more than 20,000 decimal digits
 			return EXPR_INTERM_TOO_HIGH;
 		mpz_pow_ui(ZT(result), ZT(firstArg), exp);
 		return EXPR_OK;
@@ -875,8 +948,7 @@ B(n):		Previous probable prime before n
 Totient(n): finds the number of positive integers less than n which are relatively prime to n.
 NumDivs(n): Number of positive divisors of n either prime or composite.
 SumDivs(n): Sum of positive divisors of n either prime or composite.
---------TODO: -----------------------------------------------------
-ConcatFact(m,n): Concatenates the prime factors of n according to the mode expressed in m
+FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
 
 Hexadecimal numbers are preceded by 0X or 0X
 */
@@ -887,7 +959,7 @@ computeExpr again for each parameter to the function.
 The numerical value of the expression is returned in ExpressionResult and on the stack */
 static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 {
-	static int depth=0;
+	static int depth=0;  // measures depth of recursion, increment on entry, decrement on return 
 
 	bool leftNumberFlag = false;
 	enum eExprErr SubExprResult;
@@ -904,7 +976,7 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 	while (exprIndex < expr.length())
 	{
 		int charValue;
-		int fcode;
+		fn_Code fcode;
 		oper_code opCode;
 		long long opIndex;
 		int exprLength;
@@ -1041,21 +1113,22 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 			leave them on the stack. If no name found return a +ve code */
 			if ((retcode = func(expr, leftNumberFlag, exprIndex, fcode)) <= 0) {
 				if (retcode != EXPR_OK) {
+					depth--;				// adjust call depth
 					return retcode;  // error processing function parameters
 				}
 				/* do any further checks needed on the parameter values, then
 				evaluate the function. The result is left on the stack. 
 				case numbers below must match the code numbers in functionList*/
 				switch (fcode) {
-				case 1: {			// GCD	
+				case fn_gcd: {			// GCD	
 					mpz_gcd(ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex + 1]), ZT(stackValues[stackIndex]));
 					break;
 				}
-				case 2: {						// MODPOW
+				case fn_modpow: {						// MODPOW
 					mpz_powm(ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex + 1]), ZT(stackValues[stackIndex + 2]));
 					break;
 				}
-				case 3: {						// MODINV
+				case fn_modinv: {						// MODINV
 					/* if an inverse doesn’t exist the return value is zero and rop is undefined*/
 					rv = mpz_invert(ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex + 1]));
 					if (rv == 0) {
@@ -1064,41 +1137,47 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					}
 					break;
 				}
-				case 4: {			// totient
+
+				case fn_totient: {			// totient
 					if (stackValues[stackIndex] < 1) return EXPR_INVALID_PARAM;
 					stackValues[stackIndex] = ComputeTotient(stackValues[stackIndex]);
 					break;
 				}
-				case 5: {		// NUMDIVS
-					if (stackValues[stackIndex] < 1) return EXPR_INVALID_PARAM;
+				case fn_numdivs: {		// NUMDIVS
+					if (stackValues[stackIndex] < 1) {
+						depth--;				// adjust call depth
+						return EXPR_INVALID_PARAM;
+					}
 					stackValues[stackIndex] = ComputeNumDivs(stackValues[stackIndex]);
 					break;
 				}
-				case 6: {		// SUMDIVS
+				case fn_sumdivs: {		// SUMDIVS
 					stackValues[stackIndex] = ComputeSumDivs(stackValues[stackIndex]);
 					break;
 				}
-				case 7: {		// SumDigits(n, r) : Sum of digits of n in base r.
+
+				case fn_sumdigits: {		// SumDigits(n, r) : Sum of digits of n in base r.
 					stackValues[stackIndex] = ComputeSumDigits(stackValues[stackIndex],
 						stackValues[stackIndex + 1]);
 					break;
 				}
-				case 8: {		// numdigits
+				case fn_numdigits: {		// numdigits
 					stackValues[stackIndex] = ComputeNumDigits(stackValues[stackIndex],
 						stackValues[stackIndex + 1]);
 					break;
 				}
-				case 9: {	// revdigits
+				case fn_revdigits: {	// revdigits
 					stackValues[stackIndex] = ComputeRevDigits(stackValues[stackIndex],
 						stackValues[stackIndex + 1]);
 					break;
 				}
-				case 10: {  // isprime
+
+				case fn_isprime: {  // isprime
 							/* -1 indicates probably prime, 0 = composite */
 					stackValues[stackIndex] = PrimalityTest(abs(stackValues[stackIndex]));
 					break;
 				}
-				case 11: {		// fibonacci
+				case fn_fib: {		// fibonacci
 					if (stackValues[stackIndex] < 0) {
 						depth--;				// adjust call depth
 						return EXPR_INVALID_PARAM;
@@ -1112,7 +1191,7 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					mpz_fib_ui(ZT(stackValues[stackIndex]), temp);  // calculate fibonacci number
 					break;
 				}
-				case 12: {		// lucas number
+				case fn_luc: {		// lucas number
 					if (stackValues[stackIndex] < 0) {
 						depth--;				// adjust call depth
 						return EXPR_INVALID_PARAM;
@@ -1126,7 +1205,8 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					mpz_lucnum_ui(ZT(stackValues[stackIndex]), temp);  // calculate lucas number
 					break;
 				}
-				case 13: {              // number of partitions
+
+				case fn_part: {              // number of partitions
 					if (stackValues[stackIndex] < 0 || stackValues[stackIndex] >= 60000) {
 						depth--;				// adjust call depth
 						return EXPR_INVALID_PARAM;  // note: biperm is limited to values <= 60,000
@@ -1135,11 +1215,11 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					biperm(temp, ZT(stackValues[stackIndex]));   // calculate number of partitions
 					break;
 				}
-				case 14: {  // next prime;
+				case fn_np: {  // next prime;
 					mpz_nextprime(ZT(stackValues[stackIndex]), ZT(stackValues[stackIndex]));  // get next prime
 					break;
 				}
-				case 15: {			// previous prime
+				case fn_pp: {			// previous prime
 					retcode = ComputeBack(stackValues[stackIndex], stackValues[stackIndex]);  // get previous prime
 					if (retcode != EXPR_OK) {
 						depth--;				// adjust call depth
@@ -1147,7 +1227,8 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					}
 					break;
 				}
-				case 16: {
+
+				case fn_primePi: {  // count primes <= n
 					if (stackValues[stackIndex] > max_prime) {
 						depth--;				// adjust call depth
 						return EXPR_INVALID_PARAM;
@@ -1155,21 +1236,32 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 					stackValues[stackIndex] = primePi(stackValues[stackIndex]);
 					break;
 				}
+				case fn_concatfact: { /*Concatenates the prime factors of n according to 
+						   the mode in m */
+					if (stackValues[stackIndex] < 0 || stackValues[stackIndex] > 3) {
+						depth--;				// adjust call depth
+						return EXPR_INVALID_PARAM;  // mode value invalid
+					}
+					stackValues[stackIndex] = concatFact(stackValues[stackIndex], 
+						stackValues[stackIndex + 1]);
+					break;
+				}
+
 				default:
 					abort();		// if we ever get here we have a problem
 				}
+
 				leftNumberFlag = true;
 				continue; // contine procesing rest of expr
 			}
 
 		else if (charValue == '(')
 		{
-			if (leftNumberFlag == true)
-			{
+			if (leftNumberFlag == true)	{
+				depth--;				// adjust call depth
 				return EXPR_SYNTAX_ERROR;
 			}
-			if (stackIndex >= PAREN_STACK_SIZE)
-			{
+			if (stackIndex >= PAREN_STACK_SIZE)	{
 				depth--;				// adjust call depth
 				return EXPR_TOO_MANY_PAREN;
 			}
@@ -1279,8 +1371,8 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 			return SubExprResult;   // return error code
 		}
 	}
-	if (stackIndex != startStackIndex)
-	{
+	if (stackIndex != startStackIndex) 	{
+		depth--;				// adjust call depth
 		return EXPR_PAREN_MISMATCH;
 	}
 	ExpressionResult = stackValues[stackIndex];
@@ -1288,7 +1380,7 @@ static eExprErr ComputeExpr(const std::string &expr, Znum &ExpressionResult)
 	if (depth > 0 || exprIndex >= expr.size())
 		return EXPR_OK;
 	else
-		return EXPR_SYNTAX_ERROR;
+		return EXPR_SYNTAX_ERROR;  // on final exit but, still have unprocessed text.
 }
 
 /* translate error code to text and output it*/
@@ -1525,8 +1617,10 @@ int main(int argc, char *argv[]) {
 		"NumDigits(n, r) : Number of digits of n in base r.\n"
 		"SumDigits(n, r) : Sum of digits of n in base r.\n"
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
+		"ConcatFact(m,n) : Concatenates the prime factors of n according to the mode m\n"
 		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
-		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n";
+		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
+		"HELP (this message) and EXIT\n";
 
 	char ayuda[] =
 		"Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:\n"
