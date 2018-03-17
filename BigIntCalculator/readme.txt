@@ -92,18 +92,18 @@ took 291 seconds
 
  Use DA's web page.
  Advantage:		ready to use, no installation, possibility to split calculation over
-				several processors, possible to use any previously known factors.
+                several processors, possible to use any previously known factors.
  Disadvantage:	some bugs in calculator. No way to interface to other programs
 
  Use Python interpreter
  Advantages:	very easy to install. 
-				more user-friendly,
-				line-by line interpreter available, so can be used as a (programmable)
-				calculator 
-				very easy to write small programs
-				supports big integers as standard.
+                more user-friendly,
+                line-by line interpreter available, so can be used as a (programmable)
+                calculator 
+                very easy to write small programs
+                supports big integers as standard.
 disadvantages:	no functions such as gcd, fibonacci, factorial, primorial etc
-				no factorisation
+                no factorisation
 
 Operators and Functions
 calculator		C/C++	Python		notes
@@ -111,13 +111,13 @@ calculator		C/C++	Python		notes
 -				-		-		
 *				*		*
 /				/		//			calculator and C/C++ uses truncation division
-									python uses floor division (/ operator in python generates
-									a floating point number)
+                                    python uses floor division (/ operator in python generates
+                                    a floating point number)
 %				%		%			python uses floor division
 ^ or **			N/A		**			has right-to-left associativity. This is mathematically
-									correct but seems strange to programmers. e.g.
-									2**3**4 = 2**(3**4) = 2417851639229258349412352 = 2^81
-									(2**3)**4 = 2**(3*4) = 4096 = 2^12
+                                    correct but seems strange to programmers. e.g.
+                                    2**3**4 = 2**(3**4) = 2417851639229258349412352 = 2^81
+                                    (2**3)**4 = 2**(3*4) = 4096 = 2^12
 AND				&		&			bitwise and
 OR				|		|			bitwise or
 XOR				^		^			bitwise exclusive or. Do not confuse XOR with exponentiation.
@@ -146,27 +146,27 @@ L(n)								Lucas number Ln = Fn-1 + Fn+1
 N(n)								Next probable prime after n
 PI(n)								the number of prime numbers less than or equal to n
 P(n)								Unrestricted Partition Number (number of 
-									decompositions of n into sums of integers without 
-									regard to order).
+                                    decompositions of n into sums of integers without 
+                                    regard to order).
 Gcd(m,n)							Greatest common divisor of m and n.
 Modinv(m,n)							inverse of m modulo n, only valid when gcd(m,n)=1.
 Modpow(m,n,r)						finds m^n modulo r. more efficient than (m^n)%r
 Totient(n)							finds the number of positive integers less than n 
-									which are relatively prime to n.
+                                    which are relatively prime to n.
 IsPrime(n)							returns zero if n is not probable prime, -1 if it is.
 NumDivs(n)							Number of positive divisors of n either prime or composite.
 SumDivs(n)							Sum of all positive divisors of n both prime and composite.
 NumDigits(n,r)						Number of digits of n in base r.
 SumDigits(n,r)						Sum of digits of n in base r.
 RevDigits(n,r)						finds the value obtained by writing backwards 
-									the digits of n in base r. 
-									
+                                    the digits of n in base r. 
+                                    
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)					0 <= exponent <= 2^31-1, also result is estimated 
-									before calculation and if it appears to be > 20,000
-									digits an error will be reported.
+                                    before calculation and if it appears to be > 20,000
+                                    digits an error will be reported.
 *									result is estimated before calculation and if it 
-									appears to be > 20,000 digits an error will be reported.
+                                    appears to be > 20,000 digits an error will be reported.
 / (division)						divisor must not be zero
 % (modulus)							modulus must not be zero
 ! (factorial)						0 < number <= 5984 (limits result to 20,000 digits)	
@@ -177,7 +177,7 @@ nCk (binomial coefficient)			(-2^31 <= k <= 2^31-1)
 
 totient(n)							n >= 1
 PI(n)								n <= 10^9 (this is because this calculation can be 
-									very slow)
+                                    very slow)
 F(n)								n <= 95700 (limits result to 20,000 digits)
 L(n)								n <= 95700 (limits result to 20,000 digits)
 P(n)								n < 60000
