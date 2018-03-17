@@ -598,7 +598,9 @@ static enum eExprErr ShiftLeft(const Znum first, const Znum bits, Znum &result) 
 
 	// there is no built-in shift operator for Znums, so it is simulated
 	// using multiplication or division
-	if (shift > 0) {  
+	if (shift > 0) {
+		if (NoOfBits(first) + shift > 66439) // more than 66439 bits -> more than 20,000 decimal digits
+			return EXPR_INTERM_TOO_HIGH;
 		mpz_mul_2exp(ZT(result), ZT(first), shift);
 		return EXPR_OK;
 	}
@@ -820,13 +822,11 @@ static enum eExprErr ComputeSubExpr(void)
 		return EXPR_OK;
 	}
 	case oper_shl: {
-		ShiftLeft(firstArg, secondArg, result);
-		return EXPR_OK;
+		return ShiftLeft(firstArg, secondArg, result);
 	}
 	case oper_shr: {
 		secondArg = -secondArg;   // invert sign of shift
-		ShiftLeft(firstArg, secondArg, result);
-		return EXPR_OK;
+		return ShiftLeft(firstArg, secondArg, result);
 	}
 	case oper_not: {   // Perform binary NOT as result <- -1 - argument.
 		result = -1 - secondArg;  // assumes 2s complement binary numbers
