@@ -34,22 +34,22 @@ displayed as 0xf7f. If the number is positive the 1st digit will be in the range
 0x080
 
 GMP functions used include:
-mpz_probable_prime_p		test if prime
-mpz_fac_ui					factorial
-mpz_2fac_ui					double factorial
-mpz_fib_ui					fibonacci
-mpz_gcd						Greatest Common Denominator
-mpz_invert					modular inversion
-mpz_lucnum_ui				Lucas number
-mpz_nextprime				get next prime
-mpz_powm					modular exponent
-mpz_primorial_ui			primorial
-mpz_pow_ui					exponent
-mpz_mul_2exp				left shift
-mpz_fdiv_q_2exp				right shift
-mpz_xor						bitwise exclusive or
-mpz_ior						bitwise inclusive or
-mpz_and						bitwise and
+mpz_probable_prime_p	 test if prime
+mpz_fac_ui					       factorial
+mpz_2fac_ui					      double factorial
+mpz_fib_ui					       fibonacci
+mpz_gcd						         Greatest Common Denominator
+mpz_invert					       modular inversion
+mpz_lucnum_ui				     Lucas number
+mpz_nextprime				     get next prime
+mpz_powm					         modular exponent
+mpz_primorial_ui			   primorial
+mpz_pow_ui					       exponent
+mpz_mul_2exp				      left shift
+mpz_fdiv_q_2exp			   	right shift
+mpz_xor					         	bitwise exclusive or
+mpz_ior		         				bitwise inclusive or
+mpz_and					         	bitwise and
 
 Standard arithmetic operators for extended precision values use the Boost library,  
 which implements them using GMP/MPIR functions.
@@ -96,35 +96,35 @@ took 291 seconds
  Disadvantage:	some bugs in calculator. No way to interface to other programs
 
  Use Python interpreter
- Advantages:	very easy to install. 
+ Advantages:	   very easy to install. 
                 more user-friendly,
                 line-by line interpreter available, so can be used as a (programmable)
                 calculator 
                 very easy to write small programs
                 supports big integers as standard.
-disadvantages:	no functions such as gcd, fibonacci, factorial, primorial etc
+disadvantages:	 no functions such as gcd, fibonacci, factorial, primorial etc
                 no factorisation
 
 Operators and Functions
 calculator		C/C++	Python		notes
-+				+		+
--				-		-		
-*				*		*
-/				/		//			calculator and C/C++ uses truncation division
-                                    python uses floor division (/ operator in python generates
-                                    a floating point number)
-%				%		%			python uses floor division
-^ or **			N/A		**			has right-to-left associativity. This is mathematically
-                                    correct but seems strange to programmers. e.g.
-                                    2**3**4 = 2**(3**4) = 2417851639229258349412352 = 2^81
-                                    (2**3)**4 = 2**(3*4) = 4096 = 2^12
-AND				&		&			bitwise and
-OR				|		|			bitwise or
-XOR				^		^			bitwise exclusive or. Do not confuse XOR with exponentiation.
-NOT				~		~			bitwise not
-SHL or <<		<<		<<			bitwise left shift
-SHR or >>		>>		>>			bitwise arithmetic right shift
-C				N/A		N/A			binomial coeffiecient. nCk = n!/(k!*(n-k)!) but is more efficient
+ +				        +		   +
+ -				        -		   -		
+ *			         *		   *
+ /				        /		   //			calculator and C/C++ uses truncation division
+                         python uses floor division (/ operator in python generates
+                         a floating point number)
+ %				        %		   %			 python uses floor division
+^ or **			    N/A		 **			has right-to-left associativity. This is mathematically
+                         correct but seems strange to programmers. e.g.
+                         2**3**4 = 2**(3**4) = 2417851639229258349412352 = 2^81
+                         (2**3)**4 = 2**(3*4) = 4096 = 2^12
+AND				       &		   &		 	bitwise and
+OR				        |		   |			 bitwise or
+XOR				       ^		   ^			 bitwise exclusive or. Do not confuse XOR with exponentiation.
+NOT				       ~		   ~			 bitwise not
+SHL or <<		   <<		  <<			bitwise left shift
+SHR or >>		   >>		  >>			bitwise arithmetic right shift
+C				         N/A		 N/A		binomial coeffiecient. nCk = n!/(k!*(n-k)!) but is more efficient
 
 comparision operators <, <=, ==, !=, >, and >= are the same in all three. The calculator
 returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT to operate
@@ -136,48 +136,48 @@ The normal rules for operator precedence and use of brackets to over-ride the de
 of evaluation apply.
 
 the following functions and operators are only in the calculator
-n!									factorial
-n!!									double factorial, not to be confused with (n!)!
-n#									primorial. (DA's calculator requires n to be prime)
+n!									  factorial
+n!!									 double factorial, not to be confused with (n!)!
+n#									  primorial. (DA's calculator requires n to be prime)
 
-B(n)								Previous probable prime before n
-F(n)								Fibonacci number Fn
-L(n)								Lucas number Ln = Fn-1 + Fn+1
-N(n)								Next probable prime after n
-PI(n)								the number of prime numbers less than or equal to n
-P(n)								Unrestricted Partition Number (number of 
-                                    decompositions of n into sums of integers without 
-                                    regard to order).
-Gcd(m,n)							Greatest common divisor of m and n.
-Modinv(m,n)							inverse of m modulo n, only valid when gcd(m,n)=1.
-Modpow(m,n,r)						finds m^n modulo r. more efficient than (m^n)%r
+B(n)								     Previous probable prime before n
+F(n)								     Fibonacci number Fn
+L(n)								     Lucas number Ln = Fn-1 + Fn+1
+N(n)								     Next probable prime after n
+PI(n)								    the number of prime numbers less than or equal to n
+P(n)								     Unrestricted Partition Number (number of 
+                 decompositions of n into sums of integers without 
+                 regard to order).
+Gcd(m,n)							  Greatest common divisor of m and n.
+Modinv(m,n)						inverse of m modulo n, only valid when gcd(m,n)=1.
+Modpow(m,n,r)				finds m^n modulo r. more efficient than (m^n)%r
 Totient(n)							finds the number of positive integers less than n 
-                                    which are relatively prime to n.
+                 which are relatively prime to n.
 IsPrime(n)							returns zero if n is not probable prime, -1 if it is.
 NumDivs(n)							Number of positive divisors of n either prime or composite.
 SumDivs(n)							Sum of all positive divisors of n both prime and composite.
-NumDigits(n,r)						Number of digits of n in base r.
-SumDigits(n,r)						Sum of digits of n in base r.
-RevDigits(n,r)						finds the value obtained by writing backwards 
-                                    the digits of n in base r. 
+NumDigits(n,r)			Number of digits of n in base r.
+SumDigits(n,r)			Sum of digits of n in base r.
+RevDigits(n,r)			finds the value obtained by writing backwards 
+                 the digits of n in base r. 
                                     
 Some functions and operators limit the range of their parameters:
-^ or ** (exponent)					0 <= exponent <= 2^31-1, also result is estimated 
-                                    before calculation and if it appears to be > 20,000
-                                    digits an error will be reported.
-*									result is estimated before calculation and if it 
-                                    appears to be > 20,000 digits an error will be reported.
-/ (division)						divisor must not be zero
-% (modulus)							modulus must not be zero
-! (factorial)						0 < number <= 5984 (limits result to 20,000 digits)	
-!! (double factorial)				0 < number <= 11081	(limits result to 20,000 digits)
-# (primorial)						0 < number <= 46340 (limits result to 20,000 digits)
+^ or ** (exponent)				    	  0 <= exponent <= 2^31-1, also result is estimated 
+                             before calculation and if it appears to be > 20,000
+                             digits an error will be reported.
+*									                   result is estimated before calculation and if it 
+                             appears to be > 20,000 digits an error will be reported.
+/ (division)						           divisor must not be zero
+% (modulus)							           modulus must not be zero
+! (factorial)						          0 < number <= 5984 (limits result to 20,000 digits)	
+!! (double factorial)			    	0 < number <= 11081	(limits result to 20,000 digits)
+# (primorial)						          0 < number <= 46340 (limits result to 20,000 digits)
 nCk (binomial coefficient)			(-2^31 <= k <= 2^31-1)	
-<< and >> (shift operators)			-2^63 <= bitshift value <= 2^63-1
+<< and >> (shift operators)		-2^63 <= bitshift value <= 2^63-1
 
-totient(n)							n >= 1
-PI(n)								n <= 10^9 (this is because this calculation can be 
-                                    very slow)
-F(n)								n <= 95700 (limits result to 20,000 digits)
-L(n)								n <= 95700 (limits result to 20,000 digits)
-P(n)								n < 60000
+totient(n)							            n >= 1
+PI(n)								                n <= 10^9 (this is because this calculation can be 
+                             very slow)
+F(n)								                 n <= 95700 (limits result to 20,000 digits)
+L(n)								                 n <= 95700 (limits result to 20,000 digits)
+P(n)								                 n < 60000
