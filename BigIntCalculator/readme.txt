@@ -35,7 +35,7 @@ displayed as 0xf7f. If the number is positive the 1st digit will be in the range
 
 GMP functions used include:
 mpz_probable_prime_p	 test if prime
-mpz_fac_ui					       factorial
+mpz_fac_ui            factorial
 mpz_2fac_ui					      double factorial
 mpz_fib_ui					       fibonacci
 mpz_gcd						         Greatest Common Denominator
@@ -136,9 +136,9 @@ The normal rules for operator precedence and use of brackets to over-ride the de
 of evaluation apply.
 
 the following functions and operators are only in the calculator
-n!									  factorial
-n!!									 double factorial, not to be confused with (n!)!
-n#									  primorial. (DA's calculator requires n to be prime)
+n!									      factorial
+n!!									     double factorial, not to be confused with (n!)!
+n#									      primorial. (DA's calculator requires n to be prime)
 
 B(n)								     Previous probable prime before n
 F(n)								     Fibonacci number Fn
