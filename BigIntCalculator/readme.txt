@@ -151,6 +151,8 @@ P(n)                                Unrestricted Partition Number (number of
 Gcd(m,n)                            Greatest common divisor of m and n.
 Modinv(m,n)                         inverse of m modulo n, only valid when gcd(m,n)=1.
 Modpow(m,n,r)                       finds m^n modulo r. more efficient than (m^n)%r
+                                    NB. If n is -ve, the value is only defined if the inverse of 
+                                    m with respect to r exitst, i.e. only if gcd(m, r) is 1
 Totient(n)                          finds the number of positive integers less than n 
                                     which are relatively prime to n.
 IsPrime(n)                          returns zero if n is not probable prime, -1 if it is.
@@ -174,7 +176,8 @@ Some functions and operators limit the range of their parameters:
 # (primorial)                       0 < number <= 46340 (limits result to 20,000 digits)
 nCk (binomial coefficient)          (-2^31 <= k <= 2^31-1)	
 << and >> (shift operators)         -2^63 <= bitshift value <= 2^63-1
-
+									result is estimated before calculation and if it 
+                                    appears to be > 20,000 digits an error will be reported.
 totient(n)                          n >= 1 (mathematically undefined for n < 1)
 PI(n)                               n <= 10^9 (this is because this calculation can be 
                                     very slow)
