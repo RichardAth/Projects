@@ -126,7 +126,7 @@ SHL or <<         <<     <<         bitwise left shift
 SHR or >>         >>     >>         bitwise arithmetic right shift
  C                N/A    N/A        binomial coeffiecient. nCk = n!/(k!*(n-k)!) but is more efficient
 
-comparision operators <, <=, ==, !=, >, and >= are the same in all three. The calculator
+comparision operators <, <=, ==, !=, >, and >= are similar in all three. The calculator
 returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT to operate
 on the returned values as if they were boolean variables.
 
@@ -183,4 +183,4 @@ PI(n)                               n <= 10^9 (this is because this calculation 
                                     very slow)
 F(n)                                n <= 95700 (limits result to 20,000 digits)
 L(n)                                n <= 95700 (limits result to 20,000 digits)
-P(n)                                n < 60000
+P(n)                                n < 60000 (implementation limit)

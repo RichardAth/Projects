@@ -372,7 +372,7 @@ void BigNbrToBigInt(BigInteger *pBigInt, const int BigNum[], int nbrLenBigNum)
 
 void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen)
 {
-	BigInteger BigInt1, BigInt2, BigGcd;
+	static BigInteger BigInt1, BigInt2, BigGcd;   // follow recommendation not to use stack
 
 	BigNbrToBigInt(&BigInt1, pNbr1, nbrLen);
 	BigNbrToBigInt(&BigInt2, pNbr2, nbrLen);
@@ -447,7 +447,7 @@ void ModInvBigInt(int *num, int *inv, int *mod, int nbrLenBigInt)
 {
 	int NumberLengthBigInt;
 	int NumberLengthBak = NumberLength;
-	BigInteger Numerator, Denominator, Modulus, Quotient;
+	static BigInteger Numerator, Denominator, Modulus, Quotient;  // follow recommendation not to use stack
 	memset(inv, 0, nbrLenBigInt * sizeof(int));
 	while (nbrLenBigInt > 1)
 	{

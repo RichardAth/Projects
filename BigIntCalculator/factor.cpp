@@ -648,7 +648,7 @@ static int Moebius(int N)
 
 static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigInteger *BigBase)
 {
-	BigInteger x, Csal, Dsal, Nbr1;
+	static BigInteger x, Csal, Dsal, Nbr1;  // follow advice not to use stack for these
 	int k;
 
 	BigIntPowerIntExp(BigBase, L, &x);   // x <- BigBase^L.
@@ -806,7 +806,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 //#endif
 	int Expon2, k;
 	//char *ptrFactorsAscii;
-	BigInteger Nbr1, Nbr2;
+	static BigInteger Nbr1, Nbr2;      // follow advice not to use stack for these
 
 	//factorsAscii[0] = 0;    // Indicate no new factor found in advance.
 	Expon2 = Expon;
@@ -943,8 +943,8 @@ static bool ProcessExponent(struct sFactors *pstFactors, const BigInteger *nbrTo
 	char status[200] = { 0 };
 	char *ptrStatus;
 #endif
-	BigInteger NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;
-	BigInteger nextroot, dif;
+	static BigInteger NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;   // follow advice not to use stack for these
+	static BigInteger nextroot, dif;     // follow advice not to use stack for these
 	double log2N;
 #ifdef __EMSCRIPTEN__
 	int elapsedTime = (int)(tenths() - originalTenthSecond);
@@ -1182,8 +1182,8 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 	int nbrs[17];
 	int diffs[17];
 	int i, j, m, r;
-	BigInteger sqrRoot, nextroot;
-	BigInteger a, c, sqr, val;
+	static BigInteger sqrRoot, nextroot;   // follow advice not to use stack for these
+	static BigInteger a, c, sqr, val;      // follow advice not to use stack for these
 
 	if ((nbr->limbs[0].x & 1) == 0)
 	{ // nbr Even
@@ -2648,8 +2648,8 @@ https://www.alpertron.com.ar/4SQUARES.HTM */
 static void ComputeFourSquares(struct sFactors *pstFactors)
 {
 	int indexPrimes;
-	BigInteger p, q, K, Mult1, Mult2, Mult3, Mult4;
-	BigInteger Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4;
+	static BigInteger p, q, K, Mult1, Mult2, Mult3, Mult4;  // follow advice not to use stack for these
+	static BigInteger Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4;  // follow advice not to use stack for these
 	struct sFactors *pstFactor;
 	static limb minusOneMont[MAX_LEN];
 

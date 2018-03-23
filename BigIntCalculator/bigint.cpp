@@ -1205,7 +1205,8 @@ bool checkMinusOne(const limb *value, int nbrLimbs)
 void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
 {
 	int power2 = 0;
-	int index, index2, mask, shRg;
+	long long mask;
+	int index, index2,  shRg;
 	int nbrLimbs = *pNbrLimbs;
 	// Start from least significant limb (number zero).
 	for (index = 0; index < nbrLimbs; index++)

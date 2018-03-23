@@ -80,7 +80,7 @@ void BigIntDivide(const BigInteger *pDividend, const BigInteger *pDivisor,
 void BigIntMultiply(const BigInteger *pFactor1, const BigInteger *pFactor2, BigInteger *pProduct);
 void BigIntRemainder(const BigInteger *pDividend, const BigInteger *pDivisor,
 	BigInteger *pRemainder);
-enum eExprErr BigIntPower(BigInteger *pBase, BigInteger *pExponent, BigInteger *pPower);
+//enum eExprErr BigIntPower(BigInteger *pBase, BigInteger *pExponent, BigInteger *pPower);
 void BigIntPowerIntExp(const BigInteger *pBase, int expon, BigInteger *pPower);
 void BigInteger2Dec(const BigInteger *pBigInt, char *decimal, int groupLen);
 void BigInteger2Hex(const BigInteger *pBigInt, char *decimal, int groupLen);
@@ -123,7 +123,7 @@ bool checkOne(const limb *value, int nbrLimbs);
 bool checkMinusOne(const limb *value, int nbrLimbs);
 void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
 void BigIntModularPower(const BigInteger *base, BigInteger *exponent, BigInteger *power);
-enum eExprErr BigIntGeneralModularPower(BigInteger *base, BigInteger *exponent, BigInteger *mod, BigInteger *power);
+//enum eExprErr BigIntGeneralModularPower(BigInteger *base, BigInteger *exponent, BigInteger *mod, BigInteger *power);
 
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
