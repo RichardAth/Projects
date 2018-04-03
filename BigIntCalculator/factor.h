@@ -15,37 +15,26 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define MAX_FACTORS 1000
-#define FACTOR_ARRSIZE (2*MAX_FACTORS)
 #include "mpir.h"
 #include "boost/multiprecision/gmp.hpp" 
 #include "bignbr.h"
 #include "showtime.h"
 
-#ifdef __EMSCRIPTEN__
-void getCunn(char *url, char *factorsFromServer);
-#endif
+//#ifdef __EMSCRIPTEN__
+//void getCunn(char *url, char *factorsFromServer);
+//#endif
 struct sFactors
 {
 	int *ptrFactor;
 	int multiplicity;
 	int upperBound;
 };
-extern char tofactorDec[30000];
-extern char verbose, prettyprint, cunningham, hexadecimal;
-extern struct sFactors stFactors[MAX_FACTORS];
-extern int *factorArr[FACTOR_ARRSIZE];
+
 void factor(const BigInteger *nbrToFactor, int *number, int *factors, 
 	struct sFactors *pstFactors, char *pcKnownFactors);
-void FactoringSIQS(const limb *pNbrToFactor, limb *pFactor);
+void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
 extern int lang;
-extern int nbrToFactor[MAX_LEN];
-extern struct sFactors astFactorsMod[1000];
-extern int factorsMod[10000];
-//void SendFactorizationToOutput(struct sFactors *pstFactors, char *pptrOutput, bool positive);
-void Totient(BigInteger *result);
-void SumOfDivisors(BigInteger *result);
-char *findChar(char *str, char c);
+
 
 typedef boost::multiprecision::mpz_int Znum;
 /* access underlying mpz_t inside an bigint */

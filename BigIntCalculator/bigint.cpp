@@ -20,8 +20,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "expression.h"
 
 static BigInteger Temp, Temp2, Temp3, Base, Power, expon;
-static char ProcessExpon[2500];
-static char primes[5003];
+static char ProcessExpon[5000];
+static char primes[10003];
 limb Mult1[MAX_LEN];
 extern limb Mult2[MAX_LEN];
 limb Mult3[MAX_LEN];
@@ -29,17 +29,16 @@ limb Mult4[MAX_LEN];
 int q[MAX_LEN];
 extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
-int groupLen = 6;       // also accessed externally
 
-void CopyBigInt(BigInteger *pDest, const BigInteger *pSrc)
-{
+/* copy source to dest */
+void CopyBigInt(BigInteger *pDest, const BigInteger *pSrc) {
 	pDest->sign = pSrc->sign;
 	pDest->nbrLimbs = pSrc->nbrLimbs;
 	memcpy(pDest->limbs, pSrc->limbs, (pSrc->nbrLimbs) * sizeof(limb));
 }
 
-void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigInteger *pSum)
-{
+ /* sum = addend1 + addend2 */
+void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigInteger *pSum) {
 	int ctr, nbrLimbs;
 	const limb *ptrAddend1, *ptrAddend2;
 	limb *ptrSum;
@@ -122,8 +121,8 @@ void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigIntege
 	}
 }
 
-void BigIntNegate(const BigInteger *pSrc, BigInteger *pDest)
-{
+/* Dest = -Src */
+void BigIntNegate(const BigInteger *pSrc, BigInteger *pDest) {
 	if (pSrc != pDest)
 	{
 		CopyBigInt(pDest, pSrc);
@@ -138,8 +137,9 @@ void BigIntNegate(const BigInteger *pSrc, BigInteger *pDest)
 	}
 }
 
-void BigIntSubt(const BigInteger *pMinuend, const BigInteger *pSubtrahend, BigInteger *pDifference)
-{
+/* Difference = Minuend - Subtrahend */
+void BigIntSubt(const BigInteger *pMinuend, const BigInteger *pSubtrahend, 
+	BigInteger *pDifference) {
 	BigIntNegate(pSubtrahend, (BigInteger *)pSubtrahend);
 	BigIntAdd(pMinuend, pSubtrahend, pDifference);
 	if (pSubtrahend != pDifference)
@@ -223,9 +223,9 @@ void BigIntMultiply(const BigInteger *pFactor1, const BigInteger *pFactor2, BigI
 	return;
 }
 
+/* calculate Dividend mod Divisor */
 void BigIntRemainder(const BigInteger *pDividend, const BigInteger *pDivisor,
-	BigInteger *pRemainder)
-{
+	BigInteger *pRemainder) {
 	if (pDivisor->limbs[0].x == 0 && pDivisor->nbrLimbs == 1)
 	{   // If divisor = 0, then remainder is the dividend.
 		return;
@@ -236,9 +236,9 @@ void BigIntRemainder(const BigInteger *pDividend, const BigInteger *pDivisor,
 	BigIntSubt(&Temp2, &Base, pRemainder);
 	return;
 }
-
-void intToBigInteger(BigInteger *bigint, int value)
-{
+ 
+/* bigint = value */
+void intToBigInteger(BigInteger *bigint, int value) {
 	if (value >= 0)
 	{
 		bigint->limbs[0].x = value;
@@ -252,8 +252,8 @@ void intToBigInteger(BigInteger *bigint, int value)
 	bigint->nbrLimbs = 1;
 }
 
-void longToBigInteger(BigInteger *bigint, long long value)
-{
+/* bigint = value */
+void longToBigInteger(BigInteger *bigint, long long value) {
 	int nbrLimbs = 0;
 	bigint->sign = SIGN_POSITIVE;
 	if (value < 0)
@@ -407,7 +407,7 @@ void BigIntDivide2(BigInteger *pArg)
 	}
 }
 
-/* arg = arg*2^power     */
+/* arg = arg*2^power. Throw exception if product is too large */
 static void BigIntMutiplyPower2(BigInteger *pArg, int power2)
 {
 	int ctr;
@@ -445,30 +445,27 @@ bool TestBigNbrEqual(const BigInteger *pNbr1, const BigInteger *pNbr2)
 	int ctr;
 	const limb *ptrLimbs1 = pNbr1->limbs;
 	const limb *ptrLimbs2 = pNbr2->limbs;
-	if (pNbr1->nbrLimbs != pNbr2->nbrLimbs)
-	{        // Sizes of numbers are different.
-		return false;
+	if (pNbr1->nbrLimbs != pNbr2->nbrLimbs) {        
+		return false;  // Sizes of numbers are different.
 	}
-	if (pNbr1->sign != pNbr2->sign)
-	{        // Sign of numbers are different.
-		if (pNbr1->nbrLimbs == 1 && pNbr1->limbs[0].x == 0 && pNbr2->limbs[0].x == 0)
-		{              // Both numbers are zero.
-			return true;
+	if (pNbr1->sign != pNbr2->sign) { 
+	       // Sign of numbers are different.
+		if (pNbr1->nbrLimbs == 1 && pNbr1->limbs[0].x == 0 && pNbr2->limbs[0].x == 0) {              
+			return true; // Both numbers are zero.
 		}
-		return false;
+		return false; // differents signs, therefore cannot be equal
 	}
 
 	// Check whether both numbers are equal.
-	for (ctr = pNbr1->nbrLimbs - 1; ctr >= 0; ctr--)
-	{
-		if ((ptrLimbs1 + ctr)->x != (ptrLimbs2 + ctr)->x)
-		{      // Numbers are different.
-			return false;
+	for (ctr = pNbr1->nbrLimbs - 1; ctr >= 0; ctr--) {
+		if ((ptrLimbs1 + ctr)->x != (ptrLimbs2 + ctr)->x) {      
+			return false;  // Numbers are different.
 		}
-	}        // Numbers are equal.
-	return true;
+	}        
+	return true;  // Numbers are equal.
 }
 
+/* calculate GCD of arg1 & arg2*/
 void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pResult)
 {
 	int nbrLimbs1 = pArg1->nbrLimbs;
@@ -525,8 +522,8 @@ void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pRe
 	BigIntMutiplyPower2(pResult, power2); /* pResult *= 2^power     */
 }
 
-static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend)
-{
+/* add addend to big number */
+static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend) {
 	int ctr;
 	int nbrLimbs = *pNbrLimbs;
 	pLimbs[0].x += addend;
@@ -549,8 +546,8 @@ static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend)
 	pLimbs[ctr].x = 1;   // Most significant limb must be 1.
 }
 
-static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt)
-{
+/* subtract from big number */
+static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 	int nbrLimbs = *pNbrLimbs;
 	pLimbs[0].x -= subt;
 	if (pLimbs[0].x < 0)
@@ -663,14 +660,13 @@ void subtractdivide(BigInteger *pBigInt, int subt, int divisor)
 	pBigInt->nbrLimbs = nbrLimbs;
 }
 
-
+/* calculate BigInt modulo divisor */
 int getRemainder(const BigInteger *pBigInt, int divisor) {
 	int ctr;
 	int remainder = 0;
 	int nbrLimbs = pBigInt->nbrLimbs;
 	double dDivisor = (double)divisor;
 	double dLimb = 0x80000000;
-	//const limb *pLimb = &pBigInt->limbs[nbrLimbs - 1];  // point to LAST limb
 	const limb *pLimb = pBigInt->limbs;    // point to first limb
 	for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
 	{
@@ -686,10 +682,8 @@ int getRemainder(const BigInteger *pBigInt, int divisor) {
 			quotient--;
 			remainder += divisor;
 		}
-		//pLimb--;
 	}
-	if (pBigInt->sign == SIGN_NEGATIVE && remainder != 0)
-	{
+	if (pBigInt->sign == SIGN_NEGATIVE && remainder != 0) 	{
 		remainder = divisor - remainder;
 	}
 	return remainder;
@@ -984,17 +978,16 @@ void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int n
 	*ptrValues = nbrLimbs;
 }
 
-// This routine checks whether the number pointed by pNbr is
-// a perfect power. If it is not, it returns one.
-// If it is a perfect power, it returns the exponent and 
-// it fills the buffer pointed by pBase with the base.
+// This routine checks whether the number pointed by pNbr is a perfect power. 
+// If it is not, it returns one. If it is a perfect power, it returns the  
+// exponent and  it fills the buffer pointed by pBase with the base.
 int PowerCheck(const BigInteger *pBigNbr, BigInteger *pBase)
 {
 	limb *ptrLimb;
 	double dN;
 	int nbrLimbs = pBigNbr->nbrLimbs;
-	const int maxExpon = bitLength(pBigNbr);  // if maxExpon > 2498 throw an exception
-											// this corresponds to about 81 limbs 
+	const int maxExpon = bitLength(pBigNbr);  // if maxExpon > 5000 throw an exception
+											// this corresponds to about 161 limbs 
 	int h, j;
 	int modulus;
 	int intLog2root;
@@ -1169,6 +1162,7 @@ int PowerCheck(const BigInteger *pBigNbr, BigInteger *pBase)
 	return 1;
 }
 
+/* return false if value mod p is not 1 */
 bool checkOne(const limb *value, int nbrLimbs)
 {
 	int idx;
@@ -1182,6 +1176,7 @@ bool checkOne(const limb *value, int nbrLimbs)
 	return true;
 }
 
+/* return false if value mod p is not -1*/
 bool checkMinusOne(const limb *value, int nbrLimbs)
 {
 	int idx;
@@ -1482,7 +1477,7 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 //		memset(limbs + 1, 0, (len - 1) * sizeof(limb));
 //	}
 //}
-
+/* returns true iff value is zero*/
 bool BigNbrIsZero(const limb *value)
 {
 	int ctr;
@@ -1514,17 +1509,17 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs)
 	return dN;
 }
 
-void BigIntPowerOf2(BigInteger *pResult, int expon)
-{
-	int nbrLimbs = expon / BITS_PER_GROUP;
-	if (nbrLimbs > 0)
-	{
-		memset(pResult->limbs, 0, nbrLimbs * sizeof(limb));
-	}
-	pResult->limbs[nbrLimbs].x = 1 << (expon % BITS_PER_GROUP);
-	pResult->nbrLimbs = nbrLimbs + 1;
-	pResult->sign = SIGN_POSITIVE;
-}
+//void BigIntPowerOf2(BigInteger *pResult, int expon)
+//{
+//	int nbrLimbs = expon / BITS_PER_GROUP;
+//	if (nbrLimbs > 0)
+//	{
+//		memset(pResult->limbs, 0, nbrLimbs * sizeof(limb));
+//	}
+//	pResult->limbs[nbrLimbs].x = 1 << (expon % BITS_PER_GROUP);
+//	pResult->nbrLimbs = nbrLimbs + 1;
+//	pResult->sign = SIGN_POSITIVE;
+//}
 
 // Find power of 4 that divides the number.
 // output: pNbrLimbs = pointer to number of limbs

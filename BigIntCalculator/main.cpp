@@ -1,5 +1,4 @@
-﻿#include <cstdio>
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <vector>
 #include <ctype.h>
@@ -21,46 +20,51 @@ static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
 
-/* list of operators, arranged in order of priority */
+/* list of operators, arranged in order of priority. Order is not exaxtly the
+same as C or Python. */
 enum class opCode {
-	oper_comb		 =  0,   // nCk, also known as binomial coefficient
-	oper_power       =  1,
+	oper_power       =  0, 
+	oper_unary_minus =  1,  // C and Python put unary minus above multiply, divide & modulus
 	oper_multiply    =  2,
 	oper_divide      =  3,
-	oper_remainder   =  4,
-	oper_unary_minus =  5,
+	oper_remainder   =  4,  // AKA modulus
+	oper_comb        =  5,   // nCk, also known as binomial coefficient
 	oper_plus        =  6,
 	oper_minus       =  7,
 	oper_shr         =  8,
 	oper_shl         =  9,
 	oper_not_greater = 10,
 	oper_not_less    = 11,
-	oper_not_equal   = 12,
-	oper_equal       = 13,
-	oper_greater     = 14,
-	oper_less        = 15,
-	oper_not         = 16,
-	oper_and         = 17,
-	oper_or          = 18,
-	oper_xor         = 19,
-	oper_leftb       = '(',
+	oper_greater     = 12,
+	oper_less        = 13,
+	oper_not_equal   = 14,
+	oper_equal       = 15,
+	oper_not         = 16,      // C and Python put bitwise not with unary minus
+	oper_and         = 17,      // C and Python but AND before XOR before OR
+	oper_xor         = 18,
+	oper_or          = 19,
+	oper_leftb       = 20,
 	oper_fact,					// !   factorial 
 	oper_dfact,					// !!  double factorial
 	oper_prim,					// #   primorial
 };
 
-/* list of operator priority values. lower value = higher priority */
+/* list of operator priority values. lower value = higher priority. Note: this 
+order is not the same as C or Python */
 const static int operPrio[] =
 {
-	0,				  // combination
-	1,                // Power
+	0,				  // Power
+	1,                // Unary minus.  (C and Python put unary minus above multiply, divide, remainder)
 	2, 2, 2,          // Multiply, divide and remainder.
-	3,                // Unary minus.
+	3,                // combination
 	4, 4,             // Plus and minus.
 	5, 5,             // Shift right and left.
-	6, 6, 6, 6, 6, 6, // Six comparison operators (equal, greater, less, etc.)
-	7,                // NOT.
-	8, 8, 8,          // AND, OR, XOR.
+	6, 6, 6, 6,       // four comparison operators (equal, greater, less, etc.)
+	7, 7,             // == and !=
+	8,                // NOT.   (C and Python put bitwise not with unary minus)
+	9,                // AND, (C and Python but AND before XOR before OR)
+	10,               // XOR
+	11,               // OR
 };
 
 /* error and return codes */
@@ -103,10 +107,10 @@ const unsigned long long max_prime = 1000000000;  // arbitrary limit 10^9,
 /* function declarations, only for functions that have forward references */
 static retCode ComputeExpr(const std::string &expr, Znum &ExpressionResult);
 long long MulPrToLong(const Znum &x);
-void biperm(int n, mpz_t &result);   // declaration for external function
 static bool getBit(const unsigned long long int x, bool array[]);
 void generatePrimes(unsigned long long int max_val);
 
+void biperm(int n, mpz_t &result);   // declaration for external function
  
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
@@ -262,10 +266,10 @@ where p=prime factor and e=exponent.*/
 static Znum ComputeTotient(const Znum n) {
 	std::vector <Znum> factorlist;
 	std::vector <int> exponentlist;
-	Znum quads[4];  // needed, but not used
+	//Znum quads[4];  // needed, but not used
 	if (n == 1)
 		return 1;
-	auto rv = factorise(n, factorlist, exponentlist, quads);
+	auto rv = factorise(n, factorlist, exponentlist, nullptr);
 	if (rv && !factorlist.empty()) {
 		auto divisors = Totient(exponentlist, factorlist);
 		return divisors;
@@ -277,10 +281,10 @@ static Znum ComputeTotient(const Znum n) {
 static Znum ComputeNumDivs(const Znum n) {
 	std::vector <Znum> factorlist;
 	std::vector <int> exponentlist;
-	Znum quads[4];
+	//Znum quads[4];
 	if (n == 1)
 		return 1;  // 1 only has one divisor. NoOfDivisors can't handle that case
-	auto rv = factorise(n, factorlist, exponentlist, quads);
+	auto rv = factorise(n, factorlist, exponentlist, nullptr);
 	if (rv && !factorlist.empty()) {
 		auto divisors = NoOfDivisorsF(exponentlist);
 		return divisors;
@@ -293,10 +297,10 @@ static Znum ComputeNumDivs(const Znum n) {
 static Znum ComputeSumDivs(const Znum n) {
 	std::vector <Znum> factorlist;
 	std::vector <int> exponentlist;
-	Znum quads[4];  // needed but not used
+	//Znum quads[4];  // needed but not used
 	if (n == 1)
 		return 1;   // 1 only has 1 divisor. 
-	auto rv = factorise(n, factorlist, exponentlist, quads);
+	auto rv = factorise(n, factorlist, exponentlist, nullptr);
 	if (rv && !factorlist.empty()) {
 		auto divisors = SumOfDivisors(exponentlist, factorlist);
 		return divisors;
@@ -444,13 +448,13 @@ static Znum  concatFact(Znum mode, Znum num) {
 	std::vector <int> exponentlist;
 	std::string result;
 	Znum rvalue = 0;
-	Znum quads[4];  // needed, but not used
+	//Znum quads[4];  // needed, but not used
 	const bool descending = ((mode & 1) == 1);
 	const bool repeat = ((mode & 2) == 2);
 	char *buffer = NULL;
 
 	/* get factors of num */
-	auto rv = factorise(num, factorlist, exponentlist, quads);
+	auto rv = factorise(num, factorlist, exponentlist, nullptr);
 	if (rv && !factorlist.empty()) {
 		if (descending)   /* start with largest factor */
 			for (ptrdiff_t i = factorlist.size()-1; i >=0; i--) {
@@ -865,7 +869,6 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 	const Znum &secondArg, Znum &result)
 {
 	
-
 	switch (stackOper)
 	{
 	case opCode::oper_comb: {  // calculate nCk AKA binomial coefficient
@@ -1002,9 +1005,9 @@ Operators ! (factorial) !! (double factorial) and # (primorial) are not in this
 list because the convention is that they follow the number or expression they 
 operate on. */
 const static struct oper_list operators[]  {
-	{"C",	 opCode::oper_comb,	       0},
-	{ "^",   opCode::oper_power,       1},
-	{ "**",  opCode::oper_power,       1},     // can use ^ or ** for exponent
+	{"C",	 opCode::oper_comb,	       3},
+	{ "^",   opCode::oper_power,       0},
+	{ "**",  opCode::oper_power,       0},     // can use ^ or ** for exponent
 	{ "*",   opCode::oper_multiply,    2},
 	{ "/",   opCode::oper_divide,      2},
 	{ "%",   opCode::oper_remainder,   2},
@@ -1016,14 +1019,14 @@ const static struct oper_list operators[]  {
 	{ ">>",  opCode::oper_shr,         5},     // can use SHR or >> for right shift
 	{ "<=",  opCode::oper_not_greater, 6},
 	{ ">=",  opCode::oper_not_less,    6},
-	{ "!=",  opCode::oper_not_equal,   6},
-	{ "==",  opCode::oper_equal,       6},
 	{ ">",   opCode::oper_greater,     6},	  // to avoid mismatches > and < must come after >> and <<
 	{ "<",   opCode::oper_less,        6},
-	{ "NOT", opCode::oper_not,         7},      // bitwise NOT
-	{ "AND", opCode::oper_and,         8},      // bitwise AND
-	{ "OR",  opCode::oper_or,          8},      // bitwise OR
-	{ "XOR", opCode::oper_xor,         8}   };  // bitwise exclusive or
+	{ "!=",  opCode::oper_not_equal,   7},
+	{ "==",  opCode::oper_equal,       7},
+	{ "NOT", opCode::oper_not,         8},      // bitwise NOT
+	{ "AND", opCode::oper_and,         9},      // bitwise AND
+	{ "OR",  opCode::oper_or,         11},      // bitwise OR
+	{ "XOR", opCode::oper_xor,        10}   };  // bitwise exclusive or
 
 /* search for operators e.g. '+', '*'  that have format <expression> <operator> <expression>
 or <operator> <expression>. return index of operator or -1 */
@@ -1606,6 +1609,14 @@ void doTests(void) {
 
 	test testvalues [] 
 	{
+		"2 - 3 + 4",                        3,
+		"2 - (3+4)",                       -5,  // + and - have same priority, left-to-right evaluation
+		"-5/2",                            -2,  // uses truncation division
+		"-5%2",                            -1,
+		"2-5/2",                            0,  // division has higher priority than -
+		"(2-5)/2",                         -1,
+		"7 * 11 / 2",                      38,  // * and / have same priority, left-to-right evaluation
+		"7 * (11/2)",                      35,
 		"gcd (12,30)",                      6,
 		"modinv (17,21)",                   5,
 		"20 + 32^2/4*7",                 1812,   // DAs calculator returns 56 which is wrong
@@ -1623,6 +1634,7 @@ void doTests(void) {
 		"p(150)",	              40853235313,   // number of partitions
 		"modinv(7, 19)",                   11,   // modular inverse
 		"7* 11 % 19",                       1,   // verfy modinv in previous test
+		"modinv(11,19)",                    7,
 		"modpow(8, 7, 6)",                  2,   // modular power
 		"modpow(8, -2, 5)",                 4,   // negative exponent OK in some cases
 		"totient(201)",		              132,
@@ -1639,6 +1651,14 @@ void doTests(void) {
 		"(4^3) ^ 2",                     4096,
 		"4 ^ (3*2)",                     4096,
 		"gcd(12, gcd(30, 40))",             2,   // nested function calls
+		"7 * (11%19)",                     77,   // override normal left to right evaluation
+		"(0x12345678) AND 0x018",        0x18,   // brackets round 1st number are needed so that A of AND is not considered part of number
+		"0x12345678 OR 0x1",       0x12345679,
+		"0x12345678 XOR 0x10",     0x12345668,
+		"NOT 0x1234567890abcdef", 0xedcba9876f543210,
+		"5 < 6 == 7 < 8",                  -1,   // returns true (== has lower priority)
+		"5 < 6 != 7 < 8",                   0,   // returns false (!= has lower priority)
+		"5 < (6 != 7) < 8",                -1,   // returns true
 	};
 
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
@@ -1657,22 +1677,22 @@ void doTests(void) {
 
 int main(int argc, char *argv[]) {
 	std::string expr, expupper;
-	Znum Result, pval, pval2;
+	Znum Result;
 	retCode rv;
 
 	char helpmsg[] =
 		"You can enter expressions that use the following operators, functions and parentheses:\n"
-
-		"+       : addition\n"
-		"-       : subtraction\n"
+		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
 		"*       : multiplication\n"
 		"/       : integer division\n"
 		"%%       : modulus (remainder from integer division)\n"
-		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
-		"<, ==, >, <=, >=, != for comparisons. The operators return zero for false and -1 for true.\n"
-		"AND, OR, XOR, NOT for binary logic.\n"
+		"+       : addition\n"
+		"-       : subtraction\n"
 		"SHL or <<: Shift left the number of bits specified on the right operand.\n"
 		"SHR or >>: Shift right the number of bits specified on the right operand.\n"
+		"<, >, <=, >= for comparisons.  The operators return zero for false and -1 for true.\n"
+		"==, != for equality. The operators return zero for false and -1 for true.\n"
+		"NOT, AND, XOR, OR  for bitwise operations.\n"
 		"n!      : factorial (n must be greater than or equal to zero).\n"
 		"n!!     : double factorial (n must be greater than or equal to zero).\n"
 		"p#      : primorial (product of all primes less or equal than p).\n"
@@ -1794,7 +1814,7 @@ int main(int argc, char *argv[]) {
 			std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 		}
 
-		return EXIT_SUCCESS;
+		return EXIT_SUCCESS;  // EXIT command entered
 	}
 
 	/* code below catches C++ 'throw' type exceptions */

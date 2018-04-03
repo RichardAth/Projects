@@ -1487,13 +1487,11 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	int lowU, lowV;
 	double highU, highV;
 	int borrow;
-	if (nbrLen == 1)
-	{
+	if (nbrLen == 1) {
 		inv->x = modInv(num->x, mod->x);
 		return;
 	}
-	if (powerOf2Exponent != 0)
-	{    // TestNbr is a power of 2.
+	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
 		ComputeInversePower2(num, inv, aux);
 		(inv + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
@@ -1515,8 +1513,7 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	b = c = 0;
 	len = nbrLen;
 	// Find length of U.
-	for (lenU = nbrLen - 1; lenU > 0; lenU--)
-	{
+	for (lenU = nbrLen - 1; lenU > 0; lenU--) {
 		if (U[lenU].x != 0)
 		{
 			break;
@@ -1524,10 +1521,8 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	}
 	lenU++;
 	// Find length of V.
-	for (lenV = nbrLen - 1; lenV > 0; lenV--)
-	{
-		if (V[lenV].x != 0)
-		{
+	for (lenV = nbrLen - 1; lenV > 0; lenV--) {
+		if (V[lenV].x != 0) {
 			break;
 		}
 	}
@@ -1535,60 +1530,47 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	lowU = U[0].x;
 	lowV = V[0].x;
 	// Initialize highU and highV.
-	if (lenU > 1 || lenV > 1)
-	{
-		if (lenV >= lenU)
-		{
+	if (lenU > 1 || lenV > 1) {
+		if (lenV >= lenU) {
 			highV = (double)V[lenV - 1].x * (double)LIMB_RANGE + (double)V[lenV - 2].x;
-			if (lenV == lenU)
-			{
+			if (lenV == lenU) {
 				highU = (double)U[lenV - 1].x * (double)LIMB_RANGE + (double)U[lenV - 2].x;
 			}
-			else if (lenV == lenU + 1)
-			{
+			else if (lenV == lenU + 1) {
 				highU = (double)U[lenV - 2].x;
 			}
-			else
-			{
+			else {
 				highU = 0;
 			}
 		}
-		else
-		{
+		else {
 			highU = (double)U[lenU - 1].x * (double)LIMB_RANGE + (double)U[lenU - 2].x;
-			if (lenU == lenV + 1)
-			{
+			if (lenU == lenV + 1) {
 				highV = (double)V[lenU - 2].x;
 			}
-			else
-			{
+			else {
 				highV = 0;
 			}
 		}
 		//  2. while V > 0 do
-		for (;;)
-		{
+		for (;;) {
 			//  3.   if U even then U <- U / 2, S <- 2S
-			if ((lowU & 1) == 0)
-			{     // U is even.
+			if ((lowU & 1) == 0) {     // U is even.
 				lowU >>= 1;
 				highV += highV;
 				// R' <- aR + bS, S' <- cR + dS
 				c *= 2; d *= 2;  // Multiply S by 2.
 			}
 			//  4.   elsif V even then V <- V / 2, R <- 2R
-			else if ((lowV & 1) == 0)
-			{    // V is even.
+			else if ((lowV & 1) == 0) {    // V is even.
 				lowV >>= 1;
 				highU += highU;
 				// R' <- aR + bS, S' <- cR + dS
 				a *= 2; b *= 2;  // Multiply R by 2.
 			}
-			else
-			{
+			else {
 				//  5.   elsif U >= V  then U <- (U - V) / 2, R <- R + S, S <- 2S
-				if (highU > highV)
-				{     // U > V. Perform U <- (U - V) / 2
+				if (highU > highV) {     // U > V. Perform U <- (U - V) / 2
 					lowU = (lowU - lowV) >> 1;
 					highU -= highV;
 					highV += highV;
@@ -1597,8 +1579,7 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 					c *= 2; d *= 2;  // S <- 2S
 				}
 				//  6.   elsif V >= U then V <- (V - U) / 2, S <- S + R, R <- 2R
-				else
-				{    // V >= U. Perform V <- (V - U) / 2
+				else {    // V >= U. Perform V <- (V - U) / 2
 					lowV = (lowV - lowU) >> 1;
 					highV -= highU;
 					highU += highU;
@@ -1625,57 +1606,47 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 					memcpy(V, Vbak, (len + 1) * sizeof(limb));
 					b = c = 0;  // U' = U, V' = V.
 					a = d = 1;
-					while (lenV > 1 || V[0].x > 0)
-					{
+					while (lenV > 1 || V[0].x > 0) {
 						//  3.   if U even then U <- U / 2, S <- 2S
-						if ((U[0].x & 1) == 0)
-						{     // U is even.
+						if ((U[0].x & 1) == 0) {  // U is even.
 							for (i = 0; i < lenU; i++)
 							{  // Loop that divides U by 2.
 								U[i].x = ((U[i].x >> 1) | (U[i + 1].x << (BITS_PER_GROUP - 1))) & MAX_VALUE_LIMB;
 							}
-							if (U[lenU - 1].x == 0)
-							{
+							if (U[lenU - 1].x == 0) {
 								lenU--;
 							}
 							// R' <- aR + bS, S' <- cR + dS
 							c *= 2; d *= 2;  // Multiply S by 2.
 						}
 						//  4.   elsif V even then V <- V / 2, R <- 2R
-						else if ((V[0].x & 1) == 0)
-						{    // V is even.
+						else if ((V[0].x & 1) == 0) {    // V is even.
 							for (i = 0; i < lenV; i++)
 							{  // Loop that divides V by 2.
 								V[i].x = ((V[i].x >> 1) | (V[i + 1].x << (BITS_PER_GROUP - 1))) & MAX_VALUE_LIMB;
 							}
-							if (V[lenV - 1].x == 0)
-							{
+							if (V[lenV - 1].x == 0) {
 								lenV--;
 							}
 							// R' <- aR + bS, S' <- cR + dS
 							a *= 2; b *= 2;  // Multiply R by 2.
 						}
 						//  5.   elsif U >= V  then U <- (U - V) / 2, R <- R + S, S <- 2S
-						else
-						{
+						else {
 							len = (lenU > lenV ? lenU : lenV);
-							for (i = len - 1; i > 0; i--)
-							{
-								if (U[i].x != V[i].x)
-								{
+							for (i = len - 1; i > 0; i--) {
+								if (U[i].x != V[i].x) {
 									break;
 								}
 							}
-							if (U[i].x > V[i].x)
-							{     // U > V
+							if (U[i].x > V[i].x) {     // U > V
 								lenU = HalveDifference(U, V, len); // U <- (U - V) / 2
 																   // R' <- aR + bS, S' <- cR + dS
 								a += c; b += d;  // R <- R + S
 								c *= 2; d *= 2;  // S <- 2S
 							}
 							//  6.   elsif V >= U then V <- (V - U) / 2, S <- S + R, R <- 2R
-							else
-							{    // V >= U
+							else {    // V >= U
 								lenV = HalveDifference(V, U, len); // V <- (V - U) / 2
 																   // R' <- aR + bS, S' <- cR + dS
 								c += a; d += b;  // S <- S + R
@@ -1683,26 +1654,22 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 							}
 						}
 						//  7.   k <- k + 1
-						if (++k % (BITS_PER_GROUP - 1) == 0)
-						{
+						if (++k % (BITS_PER_GROUP - 1) == 0) {
 							break;
 						}
 					}
-					if (lenV == 1 && V[0].x == 0)
-					{
+					if (lenV == 1 && V[0].x == 0) {
 						break;
 					}
 				}
-				else
-				{
+				else {
 					k += steps;
 					for (i = 0; i < lenU; i++)
 					{  // Loop that divides U by 2^(BITS_PER_GROUP - 1).
 						U[i].x = ((U[i].x >> (BITS_PER_GROUP - 1)) | (U[i + 1].x << 1)) & MAX_VALUE_LIMB;
 					}
 					U[lenU].x = 0;
-					while (lenU > 0 && U[lenU - 1].x == 0)
-					{
+					while (lenU > 0 && U[lenU - 1].x == 0) {
 						lenU--;
 					}
 					for (i = 0; i < lenV; i++)
@@ -1710,96 +1677,82 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 						V[i].x = ((V[i].x >> (BITS_PER_GROUP - 1)) | (V[i + 1].x << 1)) & MAX_VALUE_LIMB;
 					}
 					V[lenV].x = 0;
-					while (lenV > 0 && V[lenV - 1].x == 0)
-					{
+					while (lenV > 0 && V[lenV - 1].x == 0) {
 						lenV--;
 					}
 				}
 				steps = 0;
 				AddMult(R, a, b, S, c, d, lenRS);
-				if (R[lenRS].x != 0 || S[lenRS].x != 0)
-				{
+				if (R[lenRS].x != 0 || S[lenRS].x != 0) {
 					lenRS++;
 				}
 				lowU = U[0].x;
 				lowV = V[0].x;
 				b = c = 0;  // U' = U, V' = V.
 				a = d = 1;
-				if (lenU == 0 || lenV == 0 || (lenV == 1 && lenU == 1))
-				{
+				if (lenU == 0 || lenV == 0 || (lenV == 1 && lenU == 1)) {
 					break;
 				}
-				if (lenV >= lenU)
-				{
+				if (lenV >= lenU) {
 					highV = (double)V[lenV - 1].x * (double)LIMB_RANGE + (double)V[lenV - 2].x;
-					if (lenV == lenU)
-					{
+					if (lenV == lenU) {
 						highU = (double)U[lenV - 1].x * (double)LIMB_RANGE + (double)U[lenV - 2].x;
 					}
-					else if (lenV == lenU + 1)
-					{
+					else if (lenV == lenU + 1) {
 						highU = (double)U[lenV - 2].x;
-					}
-					else
-					{
-						highU = 0;
-					}
+						}
+						else {
+							highU = 0;
+						}
 				}
-				else
-				{
+				else {
 					highU = (double)U[lenU - 1].x * (double)LIMB_RANGE + (double)U[lenU - 2].x;
-					if (lenU == lenV + 1)
-					{
+					if (lenU == lenV + 1) {
 						highV = (double)V[lenU - 2].x;
 					}
-					else
-					{
+					else {
 						highV = 0;
 					}
 				}
 			}
 		}
 	}
-	if (lenU > 0)
-	{
+
+	if (lenU > 0) {
 		//  2. while V > 0 do
-		while (lowV > 0)
-		{
+		while (lowV > 0) {
 			//  3.   if U even then U <- U / 2, S <- 2S
-			if ((lowU & 1) == 0)
-			{     // U is even.
+			if ((lowU & 1) == 0) {     // U is even.
 				lowU >>= 1;
 				// R' <- aR + bS, S' <- cR + dS
 				c *= 2; d *= 2;  // Multiply S by 2.
 			}
 			//  4.   elsif V even then V <- V / 2, R <- 2R
-			else if ((lowV & 1) == 0)
-			{    // V is even.
+			else if ((lowV & 1) == 0) {    // V is even.
 				lowV >>= 1;
 				// R' <- aR + bS, S' <- cR + dS
 				a *= 2; b *= 2;  // Multiply R by 2.
-			}
+				}
 			//  5.   elsif U >= V  then U <- (U - V) / 2, R <- R + S, S <- 2S
-			else if (lowU > lowV)
-			{     // U > V. Perform U <- (U - V) / 2
+			else if (lowU > lowV) {     // U > V. Perform U <- (U - V) / 2
 				lowU = (lowU - lowV) >> 1;
 				// R' <- aR + bS, S' <- cR + dS
 				a += c; b += d;  // R <- R + S
 				c *= 2; d *= 2;  // S <- 2S
-			}
+				}
 			//  6.   elsif V >= U then V <- (V - U) / 2, S <- S + R, R <- 2R
-			else
-			{    // V >= U. Perfrom V <- (V - U) / 2
+			else {    // V >= U. Perfrom V <- (V - U) / 2
 				lowV = (lowV - lowU) >> 1;
 				// R' <- aR + bS, S' <- cR + dS
 				c += a; d += b;  // S <- S + R
 				a *= 2; b *= 2;  // R <- 2R
 			}
+
 			//  7.   k <- k + 1
-			if (++steps == BITS_PER_GROUP - 1)
-			{  // compute now R and S and reset a, b, c and d.
+			if (++steps == BITS_PER_GROUP - 1) {  
+			   // compute now R and S and reset a, b, c and d.
 			   // R' <- aR + bS, S' <- cR + dS
-				AddMult(R, a, b, S, c, d, nbrLen + 1);
+			    AddMult(R, a, b, S, c, d, nbrLen + 1);
 				b = c = 0;  // R' = R, S' = S.
 				a = d = 1;
 				k += steps;
@@ -1807,34 +1760,33 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 			}
 		}
 	}
+
 	AddMult(R, a, b, S, c, d, nbrLen + 1);
 	k += steps;
 	//  8. if R >= M then R <- R - M
-	for (i = nbrLen; i > 0; i--)
-	{
-		if (R[i].x != (mod + i)->x)
-		{
+	for (i = nbrLen; i > 0; i--) {
+		if (R[i].x != (mod + i)->x) {
 			break;
 		}
 	}
-	if ((unsigned int)R[i].x >= (unsigned int)(mod + i)->x)
-	{      // R >= M.
+
+	if ((unsigned int)R[i].x >= (unsigned int)(mod + i)->x) {      // R >= M.
 		borrow = 0;
-		for (i = 0; i <= nbrLen; i++)
-		{
+		for (i = 0; i <= nbrLen; i++) {
 			borrow += R[i].x - (mod + i)->x;
 			R[i].x = borrow & MAX_VALUE_LIMB;
 			borrow >>= BITS_PER_GROUP;
 		}
 	}
+
 	//  9. R <- M - R
 	borrow = 0;
-	for (i = 0; i <= nbrLen; i++)
-	{
+	for (i = 0; i <= nbrLen; i++) {
 		borrow += (mod + i)->x - R[i].x;
 		R[i].x = borrow & MAX_VALUE_LIMB;
 		borrow >>= BITS_PER_GROUP;
 	}
+
 	R[nbrLen].x = 0;
 	// At this moment R = x^(-1)*2^k
 	// 10. R <- MonPro(R, R2)
@@ -1844,14 +1796,12 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	// 11. return MonPro(R, 2^(m-k))
 	memset(S, 0, size);
 	bitCount = nbrLen*BITS_PER_GROUP - k;
-	if (bitCount < 0)
-	{
+	if (bitCount < 0) {
 		bitCount += nbrLen*BITS_PER_GROUP;
 		S[bitCount / BITS_PER_GROUP].x = 1 << (bitCount % BITS_PER_GROUP);
 		modmult(R, S, inv);
 	}
-	else
-	{
+	else {
 		S[bitCount / BITS_PER_GROUP].x = 1 << (bitCount % BITS_PER_GROUP);
 		modmult(R, S, inv);
 		modmult(inv, MontgomeryMultR2, inv);
