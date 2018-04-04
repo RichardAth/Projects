@@ -36,12 +36,13 @@ enum eSign
 	SIGN_NEGATIVE,
 };
 
-typedef struct BigInteger
+class BigInteger
 {
+public:
 	limb limbs[MAX_LEN];
 	int nbrLimbs;
 	enum eSign sign;
-} BigInteger;
+} ;
 
 extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR2[MAX_LEN];
@@ -82,8 +83,8 @@ void addmult(BigInteger *pResult, const BigInteger *pMult1, int iMult1, const Bi
 int getRemainder(const BigInteger *pBigInt, int divisor);
 void subtractdivide(BigInteger *pBigInt, int subt, int divisor);
 void addbigint(BigInteger *pResult, int addend);
-bool TestBigNbrEqual(const BigInteger *pNbr1, const BigInteger *pNbr2);
-void CopyBigInt(BigInteger *pDest, const BigInteger *pSrc);
+bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
+BigInteger &CopyBigInt(BigInteger &pDest, const BigInteger &pSrc);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
 //int modInv(int NbrMod, int currentPrime);
 void BigIntDivide2(BigInteger *pArg);

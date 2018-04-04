@@ -31,11 +31,13 @@ extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 
 /* copy source to dest */
-void CopyBigInt(BigInteger *pDest, const BigInteger *pSrc) {
-	pDest->sign = pSrc->sign;
-	pDest->nbrLimbs = pSrc->nbrLimbs;
-	memcpy(pDest->limbs, pSrc->limbs, (pSrc->nbrLimbs) * sizeof(limb));
+BigInteger &CopyBigInt(BigInteger &pDest, const BigInteger &pSrc) {
+	pDest.sign = pSrc.sign;
+	pDest.nbrLimbs = pSrc.nbrLimbs;
+	memcpy(pDest.limbs, pSrc.limbs, (pSrc.nbrLimbs) * sizeof(limb));
+	return pDest;
 }
+
 
  /* sum = addend1 + addend2 */
 void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigInteger *pSum) {
@@ -125,7 +127,7 @@ void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigIntege
 void BigIntNegate(const BigInteger *pSrc, BigInteger *pDest) {
 	if (pSrc != pDest)
 	{
-		CopyBigInt(pDest, pSrc);
+		CopyBigInt(*pDest, *pSrc);
 	}
 	if (pSrc->sign == SIGN_POSITIVE && (pSrc->nbrLimbs != 1 || pSrc->limbs[0].x != 0))
 	{
@@ -230,7 +232,7 @@ void BigIntRemainder(const BigInteger *pDividend, const BigInteger *pDivisor,
 	{   // If divisor = 0, then remainder is the dividend.
 		return;
 	}
-	CopyBigInt(&Temp2, pDividend);
+	CopyBigInt(Temp2, *pDividend);
 	BigIntDivide(pDividend, pDivisor, &Base);   // Get quotient of division.
 	BigIntMultiply(&Base, pDivisor, &Base);
 	BigIntSubt(&Temp2, &Base, pRemainder);
@@ -364,7 +366,7 @@ void BigIntPowerIntExp(const BigInteger *pBase, int exponent, BigInteger *pPower
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	CopyBigInt(&Base, pBase);
+	CopyBigInt(Base, *pBase);
 	pPower->sign = SIGN_POSITIVE;
 	pPower->nbrLimbs = 1;
 	pPower->limbs[0].x = 1;
@@ -440,25 +442,38 @@ static void BigIntMutiplyPower2(BigInteger *pArg, int power2)
 	pArg->nbrLimbs = nbrLimbs;
 }
 
-bool TestBigNbrEqual(const BigInteger *pNbr1, const BigInteger *pNbr2)
+bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2)
 {
 	int ctr;
-	const limb *ptrLimbs1 = pNbr1->limbs;
-	const limb *ptrLimbs2 = pNbr2->limbs;
-	if (pNbr1->nbrLimbs != pNbr2->nbrLimbs) {        
+	/*const limb *ptrLimbs1 = Nbr1.limbs;
+	const limb *ptrLimbs2 = Nbr2.limbs;*/
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+	if (N1Limbs != N2Limbs) {        
 		return false;  // Sizes of numbers are different.
 	}
-	if (pNbr1->sign != pNbr2->sign) { 
+	if (Nbr1.sign != Nbr2.sign) { 
 	       // Sign of numbers are different.
-		if (pNbr1->nbrLimbs == 1 && pNbr1->limbs[0].x == 0 && pNbr2->limbs[0].x == 0) {              
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {              
 			return true; // Both numbers are zero.
 		}
 		return false; // differents signs, therefore cannot be equal
 	}
 
 	// Check whether both numbers are equal.
-	for (ctr = pNbr1->nbrLimbs - 1; ctr >= 0; ctr--) {
-		if ((ptrLimbs1 + ctr)->x != (ptrLimbs2 + ctr)->x) {      
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x != Nbr2.limbs[ctr].x) {
 			return false;  // Numbers are different.
 		}
 	}        
@@ -473,17 +488,17 @@ void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pRe
 	int power2;
 	if (nbrLimbs1 == 1 && pArg1->limbs[0].x == 0)
 	{               // First argument is zero, so the GCD is second argument.
-		CopyBigInt(pResult, pArg2);
+		CopyBigInt(*pResult, *pArg2);
 		return;
 	}
 	if (nbrLimbs2 == 1 && pArg2->limbs[0].x == 0)
 	{               // Second argument is zero, so the GCD is first argument.
-		CopyBigInt(pResult, pArg1);
+		CopyBigInt(*pResult, *pArg1);
 		return;
 	}
 	// Reuse Base and Power temporary variables.
-	CopyBigInt(&Base, pArg1);   // Base = Arg1
-	CopyBigInt(&Power, pArg2);   // Power = Arg2
+	CopyBigInt(Base, *pArg1);   // Base = Arg1
+	CopyBigInt(Power, *pArg2);   // Power = Arg2
 	Base.sign = SIGN_POSITIVE;
 	Power.sign = SIGN_POSITIVE;
 	power2 = 0;
@@ -493,7 +508,7 @@ void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pRe
 		BigIntDivide2(&Power);
 		power2++;
 	}
-	while (TestBigNbrEqual(&Base, &Power) == 0)
+	while (TestBigNbrEqual(Base, Power) == 0)
 	{    // Main GCD loop.
 		if ((Base.limbs[0].x & 1) == 0)
 		{          // Number is even. Divide it by 2.
@@ -508,17 +523,17 @@ void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pRe
 		BigIntSubt(&Base, &Power, pResult);
 		if (pResult->sign == SIGN_POSITIVE)
 		{
-			CopyBigInt(&Base, pResult);
+			CopyBigInt(Base, *pResult);
 			BigIntDivide2(&Base);
 		}
 		else
 		{
-			CopyBigInt(&Power, pResult);
+			CopyBigInt(Power, *pResult);
 			Power.sign = SIGN_POSITIVE;
 			BigIntDivide2(&Power);
 		}
 	}
-	CopyBigInt(pResult, &Base);
+	CopyBigInt(*pResult, Base);
 	BigIntMutiplyPower2(pResult, power2); /* pResult *= 2^power     */
 }
 
@@ -1379,7 +1394,7 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 	memset(Mult3, 0, (nbrLimbs + 1) * sizeof(limb));                // U_0 <- 0.
 	memcpy(Mult4, MontgomeryMultR1, (nbrLimbs + 1) * sizeof(limb));
 	AddBigNbrMod(Mult4, Mult4, Mult4);                              // V_0 <- 2.
-	CopyBigInt(&expon, pValue);
+	CopyBigInt(expon, *pValue);
 	addbigint(&expon, 1);                            // expon <- n + 1.
 	Temp.limbs[nbrLimbs].x = 0;
 	Temp2.limbs[nbrLimbs].x = 0;

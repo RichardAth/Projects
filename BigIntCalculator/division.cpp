@@ -121,7 +121,7 @@ void BigIntDivide(const BigInteger *pDividend, const BigInteger *pDivisor, BigIn
 	else if (nbrLimbsDivisor == 1)
 	{   // Divisor is small: use divide by int.
 		// Sign of quotient is determined later.
-		CopyBigInt(pQuotient, pDividend);
+		*pQuotient = *pDividend; //CopyBigInt(*pQuotient, *pDividend);
 		subtractdivide(pQuotient, 0, pDivisor->limbs[0].x);
 	}
 	else
