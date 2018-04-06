@@ -318,5 +318,11 @@ void BigIntDivide(const BigInteger *pDividend, const BigInteger *pDivisor, BigIn
 	{
 		pQuotient->sign = SIGN_NEGATIVE;
 	}
+
+	while (pQuotient->nbrLimbs > 1) {
+		if (pQuotient->limbs[pQuotient->nbrLimbs - 1].x == 0)
+			pQuotient->nbrLimbs--;
+		else break;
+	}
 	return ;
 }

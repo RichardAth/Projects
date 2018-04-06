@@ -1816,13 +1816,13 @@ void BigIntModularDivision(BigInteger *Num, BigInteger *Den, BigInteger *mod, Bi
 	BigIntRemainder(Num, mod, &tmpNum);
 	if (tmpNum.sign == SIGN_NEGATIVE)
 	{
-		BigIntAdd(&tmpNum, mod, &tmpNum);
+		BigIntAdd(tmpNum, *mod, tmpNum);
 	}
 	// Reduce Den modulo mod.
 	BigIntRemainder(Den, mod, &tmpDen);
 	if (tmpDen.sign == SIGN_NEGATIVE)
 	{
-		BigIntAdd(&tmpDen, mod, &tmpDen);
+		BigIntAdd(tmpDen, *mod, tmpDen);
 	}
 	CompressLimbsBigInteger(aux3, &tmpDen);
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation

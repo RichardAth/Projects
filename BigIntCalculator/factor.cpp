@@ -36,12 +36,7 @@ extern long long lModularMult;
 extern char *ptrInputText;
 
 
-//#define TYP_AURIF  100000000
-//#define TYP_TABLE  150000000
 #define TYP_SIQS   200000000
-//#define TYP_LEHMAN 250000000
-//#define TYP_RABIN  300000000
-//#define TYP_EC     350000000
 
 
 #define MAX_PRIME_SIEVE 7  // Only numbers 7 or 11 are accepted here.
@@ -601,17 +596,17 @@ static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigIn
 	for (k = 1; k < DegreeAurif; k++) {
 		longToBigInteger(&Nbr1, Gamma[k]);
 		BigIntMultiply(&Csal, &x, &Csal);
-		BigIntAdd(&Csal, &Nbr1, &Csal);      // Csal <- Csal * x + Gamma[k]
+		BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
 		longToBigInteger(&Nbr1, Delta[k]);
 		BigIntMultiply(&Dsal, &x, &Dsal);
-		BigIntAdd(&Dsal, &Nbr1, &Dsal);      // Dsal <- Dsal * x + Gamma[k]
+		BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
 	}
 	longToBigInteger(&Nbr1, Gamma[k]);
 	BigIntMultiply(&Csal, &x, &Csal);
-	BigIntAdd(&Csal, &Nbr1, &Csal);        // Csal <- Csal * x + Gamma[k]
+	BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
 	BigIntPowerIntExp(BigBase, (L + 1) / 2, &Nbr1);   // Nbr1 <- Dsal * base^((L+1)/2)
 	BigIntMultiply(&Dsal, &Nbr1, &Nbr1);
-	BigIntAdd(&Csal, &Nbr1, &Dsal);
+	BigIntAdd(Csal, Nbr1, Dsal);
 	if (pstFactors->multiplicity >= Max_Factors) {
 		// factor list is full!
 		std::string line = std::to_string(__LINE__);
@@ -911,7 +906,7 @@ static bool ProcessExponent(struct sFactors *pstFactors, const BigInteger *nbrTo
 		addbigint(&dif, 1);                         // dif <- dif + 1
 		BigIntDivide(&dif, &rootN1, &Temp1);        // Temp1 <- dif / rootN1
 		subtractdivide(&Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
-		BigIntAdd(&Temp1, &nthRoot, &nextroot);        // nextroot <- Temp1 + nthRoot
+		BigIntAdd(Temp1, nthRoot, nextroot);        // nextroot <- Temp1 + nthRoot
 		addbigint(&nextroot, -1);                   // nextroot <- nextroot - 1
 		BigIntSubt(&nextroot, &nthRoot, &nthRoot);        // nthRoot <- nextroot - nthRoot
 		if (nthRoot.sign == SIGN_POSITIVE) {
@@ -932,7 +927,7 @@ static bool ProcessExponent(struct sFactors *pstFactors, const BigInteger *nbrTo
 		addbigint(&dif, 1);                         // dif <- dif + 1
 		BigIntDivide(&dif, &rootN1, &Temp1);        // Temp1 <- dif / rootN1
 		subtractdivide(&Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
-		BigIntAdd(&Temp1, &nthRoot, &nextroot);        // nextroot <- Temp1 + nthRoot
+		BigIntAdd(Temp1, nthRoot, nextroot);        // nextroot <- Temp1 + nthRoot
 		addbigint(&nextroot, -1);                   // nextroot <- nextroot - 1
 		BigIntSubt(&nextroot, &nthRoot, &nthRoot);        // nthRoot <- nextroot - nthRoot
 		if (nthRoot.sign == SIGN_POSITIVE) {
@@ -1155,12 +1150,12 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 		}
 		if (i == 17) { // Test for perfect square
 			intToBigInteger(&c, m * j);           // c <- m * j
-			BigIntAdd(&a, &c, &val);
+			BigIntAdd(a, c, val);
 			BigIntMultiply(&val, &val, &c);       // c <- val * val
 			BigIntSubt(&c, &sqr, &c);             // c <- val * val - sqr
 			squareRoot(c.limbs, sqrRoot.limbs, c.nbrLimbs, &sqrRoot.nbrLimbs);
 			sqrRoot.sign = SIGN_POSITIVE;         // sqrRoot <- sqrt(c)
-			BigIntAdd(&sqrRoot, &val, &sqrRoot);
+			BigIntAdd(sqrRoot, val, sqrRoot);
 			BigIntGcd(&sqrRoot, nbr, &c);         // Get GCD(sqrRoot + val, nbr)
 			if (c.nbrLimbs > 1) {    // Non-trivial factor has been found.
 				CopyBigInt(*factor, c);
@@ -1919,13 +1914,11 @@ static void insertBigFactor(struct sFactors *pstFactors, BigInteger *divisor)
 		NumberLength = *ptrFactor;
 		UncompressBigInteger(ptrFactor, &Temp2);    // Convert known factor to Big Integer.
 		BigIntGcd(divisor, &Temp2, &Temp3);          // Temp3 is the GCD between known factor and divisor.
-		if (Temp3.nbrLimbs == 1 && Temp3.limbs[0].x < 2)
-		{                                           // divisor is not a new factor (GCD = 0 or 1).
-			continue;
+		if (Temp3.nbrLimbs == 1 && Temp3.limbs[0].x < 2) { 
+			continue; // divisor is not a new factor (GCD = 0 or 1).
 		}
-		if (TestBigNbrEqual(Temp2, Temp3))
-		{                                           // GCD is equal to known factor.
-			continue;
+		if (TestBigNbrEqual(Temp2, Temp3)) 	{     
+			continue; // GCD is equal to known factor.
 		}
 		// At this moment both GCD and known factor / GCD are new known factors. Replace the known factor by
 		// known factor / GCD and generate a new known factor entry.
@@ -2372,7 +2365,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 				for (;;) {
 					BigIntMultiply(&Mult1, &Mult1, &Tmp);
 					BigIntMultiply(&Mult2, &Mult2, &Tmp1);
-					BigIntAdd(&Tmp, &Tmp1, &Tmp);
+					BigIntAdd(Tmp, Tmp1, Tmp);
 					BigIntDivide(&Tmp, &p, &K);        // K <- (mult1^2 + mult2^2) / p
 					if (K.nbrLimbs == 1 && K.limbs[0].x == 1) {  // If K = 1...
 						intToBigInteger(&Mult3, 0);
@@ -2381,11 +2374,11 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					}
 					BigIntRemainder(&Mult1, &K, &M1);  // M1 <- Mult1 % K
 					if (M1.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M1, &K, &M1);
+						BigIntAdd(M1, K, M1);
 					}
 					BigIntRemainder(&Mult2, &K, &M2);  // M2 <- Mult2 % K
 					if (M2.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M2, &K, &M2);
+						BigIntAdd(M2, K, M2);
 					}
 					CopyBigInt(Tmp, K);
 					subtractdivide(&Tmp, -1, 2);       // Tmp <- (K+1) / 2
@@ -2400,7 +2393,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					}
 					BigIntMultiply(&Mult1, &M1, &Tmp);
 					BigIntMultiply(&Mult2, &M2, &Tmp1);
-					BigIntAdd(&Tmp, &Tmp1, &Tmp);
+					BigIntAdd(Tmp, Tmp1, Tmp);
 					BigIntDivide(&Tmp, &K, &Tmp2);     // Tmp2 <- (mult1*m1 + mult2*m2) / K
 					BigIntMultiply(&Mult1, &M2, &Tmp);
 					BigIntMultiply(&Mult2, &M1, &Tmp1);
@@ -2458,11 +2451,11 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					// Compute K <- (Mult1^2 + Mult2^2 + Mult3^2 + Mult4^2) / p
 					BigIntMultiply(&Mult1, &Mult1, &Tmp);
 					BigIntMultiply(&Mult2, &Mult2, &Tmp1);
-					BigIntAdd(&Tmp, &Tmp1, &Tmp);
+					BigIntAdd(Tmp, Tmp1, Tmp);
 					BigIntMultiply(&Mult3, &Mult3, &Tmp1);
-					BigIntAdd(&Tmp, &Tmp1, &Tmp);
+					BigIntAdd(Tmp, Tmp1, Tmp);
 					BigIntMultiply(&Mult4, &Mult4, &Tmp1);
-					BigIntAdd(&Tmp, &Tmp1, &Tmp);
+					BigIntAdd(Tmp, Tmp1, Tmp);
 					BigIntDivide(&Tmp, &p, &K);
 					if (K.nbrLimbs == 1 && K.limbs[0].x == 1) {   // K equals 1
 						break;
@@ -2482,11 +2475,11 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 								CopyBigInt(Mult4, Tmp);
 							}
 						} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
-						BigIntAdd(&Mult1, &Mult2, &Tmp1);
+						BigIntAdd(Mult1, Mult2, Tmp1);
 						subtractdivide(&Tmp1, 0, 2);  // Tmp1 <- (Mult1 + Mult2) / 2
 						BigIntSubt(&Mult1, &Mult2, &Tmp2);
 						subtractdivide(&Tmp2, 0, 2);  // Tmp2 <- (Mult1 - Mult2) / 2
-						BigIntAdd(&Mult3, &Mult4, &Tmp3);
+						BigIntAdd(Mult3, Mult4, Tmp3);
 						subtractdivide(&Tmp3, 0, 2);  // Tmp3 <- (Mult3 + Mult4) / 2
 						BigIntSubt(&Mult3, &Mult4, &Mult4);
 						subtractdivide(&Mult4, 0, 2);  // Mult4 <- (Mult3 + Mult4) / 2
@@ -2497,19 +2490,19 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					} /* end if k is even */
 					BigIntRemainder(&Mult1, &K, &M1);    // M1 <- Mult1 % K.
 					if (M1.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M1, &K, &M1);
+						BigIntAdd(M1, K, M1);
 					}
 					BigIntRemainder(&Mult2, &K, &M2);    // M2 <- Mult2 % K.
 					if (M2.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M2, &K, &M2);
+						BigIntAdd(M2, K, M2);
 					}
 					BigIntRemainder(&Mult3, &K, &M3);    // M3 <- Mult3 % K
 					if (M3.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M3, &K, &M3);
+						BigIntAdd(M3, K, M3);
 					}
 					BigIntRemainder(&Mult4, &K, &M4);    // M4 <- Mult4 % K.
 					if (M4.sign == SIGN_NEGATIVE) {
-						BigIntAdd(&M4, &K, &M4);
+						BigIntAdd(M4, K, M4);
 					}
 					CopyBigInt(Tmp, K);
 					subtractdivide(&Tmp, -1, 2);       // Tmp <- (K+1) / 2
@@ -2536,11 +2529,11 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					// Compute Tmp1 <- (Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4) / K
 					BigIntMultiply(&Mult1, &M1, &Tmp);
 					BigIntMultiply(&Mult2, &M2, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntMultiply(&Mult3, &M3, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntMultiply(&Mult4, &M4, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntDivide(&Tmp, &K, &Tmp1);
 
 					// Compute Tmp2 <- (Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3) / K
@@ -2548,7 +2541,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					BigIntMultiply(&Mult2, &M1, &Tmp4);
 					BigIntSubt(&Tmp, &Tmp4, &Tmp);
 					BigIntMultiply(&Mult3, &M4, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntMultiply(&Mult4, &M3, &Tmp4);
 					BigIntSubt(&Tmp, &Tmp4, &Tmp);
 					BigIntDivide(&Tmp, &K, &Tmp2);
@@ -2560,7 +2553,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					BigIntMultiply(&Mult2, &M4, &Tmp4);
 					BigIntSubt(&Tmp, &Tmp4, &Tmp);
 					BigIntMultiply(&Mult4, &M2, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntDivide(&Tmp, &K, &Tmp3);
 
 					// Compute Mult4 <- (Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2) / K
@@ -2568,7 +2561,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					BigIntMultiply(&Mult4, &M1, &Tmp4);
 					BigIntSubt(&Tmp, &Tmp4, &Tmp);
 					BigIntMultiply(&Mult2, &M3, &Tmp4);
-					BigIntAdd(&Tmp, &Tmp4, &Tmp);
+					BigIntAdd(Tmp, Tmp4, Tmp);
 					BigIntMultiply(&Mult3, &M2, &Tmp4);
 					BigIntSubt(&Tmp, &Tmp4, &Tmp);
 					BigIntDivide(&Tmp, &K, &Mult4);
@@ -2582,18 +2575,18 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 		  // Compute Tmp1 <- Mult1*Quad1 + Mult2*Quad2 + Mult3*Quad3 + Mult4*Quad4
 		BigIntMultiply(&Mult1, &Quad1, &Tmp);
 		BigIntMultiply(&Mult2, &Quad2, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp);
+		BigIntAdd(Tmp, Tmp4, Tmp);
 		BigIntMultiply(&Mult3, &Quad3, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp);
+		BigIntAdd(Tmp, Tmp4, Tmp);
 		BigIntMultiply(&Mult4, &Quad4, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp1);
+		BigIntAdd(Tmp, Tmp4, Tmp1);
 
 		// Compute Tmp2 <- Mult1*Quad2 - Mult2*Quad1 + Mult3*Quad4 - Mult4*Quad3
 		BigIntMultiply(&Mult1, &Quad2, &Tmp);
 		BigIntMultiply(&Mult2, &Quad1, &Tmp4);
 		BigIntSubt(&Tmp, &Tmp4, &Tmp);
 		BigIntMultiply(&Mult3, &Quad4, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp);
+		BigIntAdd(Tmp, Tmp4, Tmp);
 		BigIntMultiply(&Mult4, &Quad3, &Tmp4);
 		BigIntSubt(&Tmp, &Tmp4, &Tmp2);
 
@@ -2604,14 +2597,14 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 		BigIntMultiply(&Mult2, &Quad4, &Tmp4);
 		BigIntSubt(&Tmp, &Tmp4, &Tmp);
 		BigIntMultiply(&Mult4, &Quad2, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp3);
+		BigIntAdd(Tmp, Tmp4, Tmp3);
 
 		// Compute Quad4 <- Mult1*Quad4 - Mult4*Quad1 + Mult2*Quad3 - Mult3*Quad2
 		BigIntMultiply(&Mult1, &Quad4, &Tmp);
 		BigIntMultiply(&Mult4, &Quad1, &Tmp4);
 		BigIntSubt(&Tmp, &Tmp4, &Tmp);
 		BigIntMultiply(&Mult2, &Quad3, &Tmp4);
-		BigIntAdd(&Tmp, &Tmp4, &Tmp);
+		BigIntAdd(Tmp, Tmp4, Tmp);
 		BigIntMultiply(&Mult3, &Quad2, &Tmp4);
 		BigIntSubt(&Tmp, &Tmp4, &Quad4);
 

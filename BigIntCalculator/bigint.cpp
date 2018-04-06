@@ -15,6 +15,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <limits.h>
 #include <string>
+#include <assert.h>
 #include <math.h>
 #include "bignbr.h"
 #include "expression.h"
@@ -24,8 +25,8 @@ static char ProcessExpon[5000];
 static char primes[10003];
 limb Mult1[MAX_LEN];
 extern limb Mult2[MAX_LEN];
-limb Mult3[MAX_LEN];
-limb Mult4[MAX_LEN];
+static limb Mult3[MAX_LEN];
+static limb Mult4[MAX_LEN];
 int q[MAX_LEN];
 extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
@@ -35,59 +36,66 @@ BigInteger &CopyBigInt(BigInteger &pDest, const BigInteger &pSrc) {
 	pDest.sign = pSrc.sign;
 	pDest.nbrLimbs = pSrc.nbrLimbs;
 	memcpy(pDest.limbs, pSrc.limbs, (pSrc.nbrLimbs) * sizeof(limb));
+	while (pDest.nbrLimbs > 1) {
+		if (pDest.limbs[pDest.nbrLimbs - 1].x == 0)
+			pDest.nbrLimbs--;
+		else
+			break;
+	}
 	return pDest;
 }
 
 
  /* sum = addend1 + addend2 */
-void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigInteger *pSum) {
+void BigIntAdd(const BigInteger &pAddend1, const BigInteger &pAddend2, BigInteger &pSum) {
 	int ctr, nbrLimbs;
-	const limb *ptrAddend1, *ptrAddend2;
+	const limb *ptrBiggerAdd, *ptrSmallerAdd;
 	limb *ptrSum;
-	const BigInteger *pTemp;
-	if (pAddend1->nbrLimbs < pAddend2->nbrLimbs)
-	{
-		pTemp = pAddend1;    // swap values
-		pAddend1 = pAddend2;
-		pAddend2 = pTemp;
-		/* At this moment, the absolute value of addend1 is greater than or equal
-		to the absolute value of addend2.*/
+	bool A1Smaller = false;
+
+	if (pAddend1.nbrLimbs < pAddend2.nbrLimbs) {
+		A1Smaller = true;
+		/* the absolute value of addend1 is less than the absolute value of addend2.*/
 	}           
 	
-	else if (pAddend1->nbrLimbs == pAddend2->nbrLimbs) 	{
-		for (ctr = pAddend1->nbrLimbs - 1; ctr >= 0; ctr--)
-		{
-			if (pAddend1->limbs[ctr].x != pAddend2->limbs[ctr].x)
-			{
+	else if (pAddend1.nbrLimbs == pAddend2.nbrLimbs) 	{
+		for (ctr = pAddend1.nbrLimbs - 1; ctr >= 0; ctr--) {
+			if (pAddend1.limbs[ctr].x != pAddend2.limbs[ctr].x) {
 				break;
 			}
 		}
-		if (ctr >= 0 && pAddend1->limbs[ctr].x < pAddend2->limbs[ctr].x) {
-			pTemp = pAddend1;    // swap values
-			pAddend1 = pAddend2;
-			pAddend2 = pTemp;
+		if (ctr >= 0 && pAddend1.limbs[ctr].x < pAddend2.limbs[ctr].x) {
+			/* the absolute value of addend1 is less than the absolute value of addend2.*/
+			A1Smaller = true;
 		} 
 	}
+	if (A1Smaller) {
+		nbrLimbs = pAddend1.nbrLimbs;
+		ptrBiggerAdd = pAddend2.limbs;
+		ptrSmallerAdd = pAddend1.limbs;
+	}
+	else {
+		// the absolute value of addend1 is >= the absolute value of addend2.
+		nbrLimbs = pAddend2.nbrLimbs;
+		ptrBiggerAdd = pAddend1.limbs;
+		ptrSmallerAdd = pAddend2.limbs;
+	}
+	ptrSum = pSum.limbs;
 
-	// At this moment, the absolute value of addend1 is greater than or equal than 
-	// the absolute value of addend2.
-	nbrLimbs = pAddend2->nbrLimbs;
-	ptrAddend1 = pAddend1->limbs;
-	ptrAddend2 = pAddend2->limbs;
-	ptrSum = pSum->limbs;
-	if (pAddend1->sign == pAddend2->sign)
+	if (pAddend1.sign == pAddend2.sign)
 	{             // Both addends have the same sign. Sum their absolute values.
 		unsigned int carry = 0;
-		for (ctr = 0; ctr < nbrLimbs; ctr++)
-		{
-			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrAddend1[ctr].x +
-				(unsigned int)ptrAddend2[ctr].x;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x +
+				(unsigned int)ptrSmallerAdd[ctr].x;
 			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
 		}
-		nbrLimbs = pAddend1->nbrLimbs;
-		for (; ctr < nbrLimbs; ctr++)
-		{
-			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrAddend1[ctr].x;
+		if (A1Smaller)
+			nbrLimbs = pAddend2.nbrLimbs;
+		else 
+			nbrLimbs = pAddend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x;
 			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
 		}
 		if (carry >= LIMB_RANGE)
@@ -96,58 +104,144 @@ void BigIntAdd(const BigInteger *pAddend1, const BigInteger *pAddend2, BigIntege
 			nbrLimbs++;
 		}
 	}
-	else
-	{           // Both addends have different sign. Subtract their absolute values.
+	else {    // addends have different signs. Subtract their absolute values.
 		int borrow = 0;
-		for (ctr = 0; ctr < nbrLimbs; ctr++)
-		{
-			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrAddend1[ctr].x - ptrAddend2[ctr].x;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x - ptrSmallerAdd[ctr].x;
 			ptrSum[ctr].x = borrow & MAX_INT_NBR;
 		}
-		nbrLimbs = pAddend1->nbrLimbs;
-		for (; ctr < nbrLimbs; ctr++)
-		{
-			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrAddend1[ctr].x;
+		if (A1Smaller)
+			nbrLimbs = pAddend2.nbrLimbs;
+		else
+			nbrLimbs = pAddend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
 			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-		}
-		while (nbrLimbs > 1 && pSum->limbs[nbrLimbs - 1].x == 0)
-		{     // Loop that deletes non-significant zeros.
-			nbrLimbs--;
 		}
 	}
-	pSum->nbrLimbs = nbrLimbs;
-	pSum->sign = pAddend1->sign;
-	if (pSum->nbrLimbs == 1 && pSum->limbs[0].x == 0)
-	{          // Result is zero.
-		pSum->sign = SIGN_POSITIVE;
+
+	while (nbrLimbs > 1 && pSum.limbs[nbrLimbs - 1].x == 0) {    
+		nbrLimbs--;  // delete leading zeros.
+	}
+
+	pSum.nbrLimbs = nbrLimbs;
+	if (A1Smaller)
+		pSum.sign = pAddend2.sign;  // use sign of addend with larger absolute value
+	else
+		pSum.sign = pAddend1.sign;
+
+	if (pSum.nbrLimbs == 1 && pSum.limbs[0].x == 0) {          
+		pSum.sign = SIGN_POSITIVE; // Result is zero.
 	}
 }
 
-/* Dest = -Src */
-void BigIntNegate(const BigInteger *pSrc, BigInteger *pDest) {
-	if (pSrc != pDest)
+//void BigIntAddOld(const BigInteger *pAddend1, const BigInteger *pAddend2, BigInteger *pSum)
+//{
+//	int ctr, nbrLimbs;
+//	const limb *ptrAddend1, *ptrAddend2;
+//	limb *ptrSum;
+//	const BigInteger *pTemp;
+//	BigInteger CheckCalc;
+//	BigIntAddNew(*pAddend1, *pAddend2, CheckCalc);
+//
+//	if (pAddend1->nbrLimbs < pAddend2->nbrLimbs)
+//	{
+//		pTemp = pAddend1;    // swap values
+//		pAddend1 = pAddend2;
+//		pAddend2 = pTemp;
+//	}           // At this moment, the absolute value of addend1 is greater than
+//				// or equal than the absolute value of addend2.
+//	else if (pAddend1->nbrLimbs == pAddend2->nbrLimbs)
+//	{
+//		for (ctr = pAddend1->nbrLimbs - 1; ctr >= 0; ctr--)
+//		{
+//			if (pAddend1->limbs[ctr].x != pAddend2->limbs[ctr].x)
+//			{
+//				break;
+//			}
+//		}
+//		if (ctr >= 0 && pAddend1->limbs[ctr].x < pAddend2->limbs[ctr].x)
+//		{
+//			pTemp = pAddend1;
+//			pAddend1 = pAddend2;
+//			pAddend2 = pTemp;
+//		}           // At this moment, the absolute value of addend1 is greater than
+//					// or equal than the absolute value of addend2.
+//	}
+//	nbrLimbs = pAddend2->nbrLimbs;
+//	ptrAddend1 = pAddend1->limbs;
+//	ptrAddend2 = pAddend2->limbs;
+//	ptrSum = pSum->limbs;
+//	if (pAddend1->sign == pAddend2->sign)
+//	{             // Both addends have the same sign. Sum their absolute values.
+//		unsigned int carry = 0;
+//		for (ctr = 0; ctr < nbrLimbs; ctr++)
+//		{
+//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)(ptrAddend1++)->x +
+//				(unsigned int)(ptrAddend2++)->x;
+//			(ptrSum++)->x = (int)(carry & MAX_INT_NBR);
+//		}
+//		nbrLimbs = pAddend1->nbrLimbs;
+//		for (; ctr < nbrLimbs; ctr++)
+//		{
+//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)(ptrAddend1++)->x;
+//			(ptrSum++)->x = (int)(carry & MAX_INT_NBR);
+//		}
+//		if (carry >= LIMB_RANGE)
+//		{
+//			ptrSum->x = 1;
+//			nbrLimbs++;
+//		}
+//	}
+//	else
+//	{           // Both addends have different sign. Subtract their absolute values.
+//		int borrow = 0;
+//		for (ctr = 0; ctr < nbrLimbs; ctr++)
+//		{
+//			borrow = (borrow >> BITS_PER_INT_GROUP) + (ptrAddend1++)->x - (ptrAddend2++)->x;
+//			(ptrSum++)->x = borrow & MAX_INT_NBR;
+//		}
+//		nbrLimbs = pAddend1->nbrLimbs;
+//		for (; ctr < nbrLimbs; ctr++)
+//		{
+//			borrow = (borrow >> BITS_PER_INT_GROUP) + (ptrAddend1++)->x;
+//			(ptrSum++)->x = borrow & MAX_INT_NBR;
+//		}
+//	}		
+//	while (nbrLimbs > 1 && pSum->limbs[nbrLimbs - 1].x == 0)
+//	{     // Loop that deletes non-significant zeros.
+//		nbrLimbs--;
+//	}
+//
+//	pSum->nbrLimbs = nbrLimbs;
+//	pSum->sign = pAddend1->sign;
+//	if (pSum->nbrLimbs == 1 && pSum->limbs[0].x == 0)
+//	{          // Result is zero.
+//		pSum->sign = SIGN_POSITIVE;
+//	}
+//	assert(TestBigNbrEqual(CheckCalc, *pSum));
+//}
+
+/* Dest = -Dest */
+void BigIntNegate (BigInteger &pDest) {
+	
+	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
 	{
-		CopyBigInt(*pDest, *pSrc);
-	}
-	if (pSrc->sign == SIGN_POSITIVE && (pSrc->nbrLimbs != 1 || pSrc->limbs[0].x != 0))
-	{
-		pDest->sign = SIGN_NEGATIVE;
+		pDest.sign = SIGN_NEGATIVE;  // pDest > 0, now < 0
 	}
 	else
 	{
-		pDest->sign = SIGN_POSITIVE;
+		pDest.sign = SIGN_POSITIVE; // pDest <=0, now > 0
 	}
 }
 
 /* Difference = Minuend - Subtrahend */
 void BigIntSubt(const BigInteger *pMinuend, const BigInteger *pSubtrahend, 
 	BigInteger *pDifference) {
-	BigIntNegate(pSubtrahend, (BigInteger *)pSubtrahend);
-	BigIntAdd(pMinuend, pSubtrahend, pDifference);
-	if (pSubtrahend != pDifference)
-	{
-		BigIntNegate(pSubtrahend, (BigInteger *)pSubtrahend);    // Put original sign back.
-	}
+	BigInteger temp;
+	CopyBigInt(temp, *pSubtrahend);
+	BigIntNegate(temp);
+	BigIntAdd(*pMinuend, temp, *pDifference);
 }
 
 /* Factor1 will be expanded to the length of Factor2 or vice versa 
@@ -442,8 +536,8 @@ static void BigIntMutiplyPower2(BigInteger *pArg, int power2)
 	pArg->nbrLimbs = nbrLimbs;
 }
 
-bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2)
-{
+/* return true if Nbr1 == Nbr2 */
+bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	int ctr;
 	/*const limb *ptrLimbs1 = Nbr1.limbs;
 	const limb *ptrLimbs2 = Nbr2.limbs;*/
@@ -478,6 +572,54 @@ bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2)
 		}
 	}        
 	return true;  // Numbers are equal.
+}
+
+/* return true if Nbr1 < Nbr2 */
+bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	int ctr;
+	/*const limb *ptrLimbs1 = Nbr1.limbs;
+	const limb *ptrLimbs2 = Nbr2.limbs;*/
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+
+	if (Nbr1.sign != Nbr2.sign) {
+		// Sign of numbers are different.
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {
+			return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
+		}
+		else return (Nbr1.sign == SIGN_NEGATIVE);
+	}
+
+	/* numbers have same sign */
+	if (N1Limbs != N2Limbs) {
+		/* length of numbers is different*/
+		if (Nbr1.sign == SIGN_POSITIVE)
+			return N1Limbs < N2Limbs;
+		else
+			return N1Limbs > N2Limbs;
+	}
+
+	// numbers have same sign and length. Check whether both numbers are equal.
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x < Nbr2.limbs[ctr].x) {
+			return true;  // Nbr1 < Nbr2.
+		}
+		else if (Nbr1.limbs[ctr].x > Nbr2.limbs[ctr].x) {
+			return false;  // Nbr1 > Nbr2.
+		}
+	}
+	return false;  // Numbers are equal.
 }
 
 /* calculate GCD of arg1 & arg2*/
@@ -709,35 +851,30 @@ void addbigint(BigInteger *pResult, int addend) {
 	int nbrLimbs = pResult->nbrLimbs;
 	limb *pResultLimbs = pResult->limbs;
 	auto sign = pResult->sign;
-	if (addend < 0)
-	{
+
+	if (addend < 0) {
+		// reverse signs of addend and result
 		addend = -addend;
-		if (sign == SIGN_POSITIVE)
-		{
+		if (sign == SIGN_POSITIVE) 	{
 			sign = SIGN_NEGATIVE;
 		}
-		else
-		{
+		else {
 			sign = SIGN_POSITIVE;
 		}
 	}
-	if (sign == SIGN_POSITIVE)
-	{   // Add addend to absolute value of pResult.
+
+	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
 		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
 	}
-	else
-	{  // Subtract addend from absolute value of pResult.
-		if (nbrLimbs == 1)
-		{
+	else {  // Subtract addend from absolute value of pResult.
+		if (nbrLimbs == 1) 	{
 			pResultLimbs[0].x -= addend;
-			if (pResultLimbs[0].x < 0)
-			{
+			if (pResultLimbs[0].x < 0) 	{
 				pResultLimbs[0].x = -pResultLimbs[0].x;  // reverse sign of result
-				BigIntNegate(pResult, pResult);
+				BigIntNegate(*pResult);
 			}
 		}
-		else
-		{     // More than one limb.
+		else {     // More than one limb.
 			subtFromAbsValue(pResultLimbs, &nbrLimbs, addend);
 		}
 	}
@@ -788,7 +925,7 @@ void multint(BigInteger *pResult, const BigInteger *pMult, int factor)
 	pResult->sign = pMult->sign;
 	if (!factorPositive)
 	{
-		BigIntNegate(pResult, pResult); // reverse sign because factor is -ve
+		BigIntNegate(*pResult); // reverse sign because factor is -ve
 	}
 }
 
@@ -805,7 +942,7 @@ void addmult(BigInteger *pResult, const BigInteger *pMult1, int iMult1, const Bi
 {
 	multint(pResult, pMult1, iMult1);
 	multint(&Temp, pMult2, iMult2);
-	BigIntAdd(pResult, &Temp, pResult);
+	BigIntAdd(*pResult, Temp, *pResult);
 }
 
 // Get number of bits of given big integer.
@@ -1169,7 +1306,7 @@ int PowerCheck(const BigInteger *pBigNbr, BigInteger *pBase)
 			BigIntSubt(&Temp2, &Temp, &Temp2);
 			InitTempFromInt(Exponent);
 			BigIntDivide(&Temp2, &Temp, &Temp2);
-			BigIntAdd(&Temp2, pBase, pBase);
+			BigIntAdd(Temp2, *pBase, *pBase);
 		}
 	}
 	pBase->nbrLimbs = pBigNbr->nbrLimbs;
@@ -1502,7 +1639,6 @@ bool BigNbrIsZero(const limb *value)
 		{
 			return false;  // Number is not zero.
 		}
-		//value++;
 	}
 	return true;      // Number is zero
 }
