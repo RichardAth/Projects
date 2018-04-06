@@ -236,12 +236,12 @@ void BigIntNegate (BigInteger &pDest) {
 }
 
 /* Difference = Minuend - Subtrahend */
-void BigIntSubt(const BigInteger *pMinuend, const BigInteger *pSubtrahend, 
-	BigInteger *pDifference) {
+void BigIntSubt(const BigInteger &pMinuend, const BigInteger &pSubtrahend, 
+	BigInteger &pDifference) {
 	BigInteger temp;
-	CopyBigInt(temp, *pSubtrahend);
+	CopyBigInt(temp, pSubtrahend);
 	BigIntNegate(temp);
-	BigIntAdd(*pMinuend, temp, *pDifference);
+	BigIntAdd(pMinuend, temp, pDifference);
 }
 
 /* Factor1 will be expanded to the length of Factor2 or vice versa 
@@ -329,57 +329,57 @@ void BigIntRemainder(const BigInteger *pDividend, const BigInteger *pDivisor,
 	CopyBigInt(Temp2, *pDividend);
 	BigIntDivide(pDividend, pDivisor, &Base);   // Get quotient of division.
 	BigIntMultiply(&Base, pDivisor, &Base);
-	BigIntSubt(&Temp2, &Base, pRemainder);
+	BigIntSubt(Temp2, Base, *pRemainder);
 	return;
 }
  
 /* bigint = value */
-void intToBigInteger(BigInteger *bigint, int value) {
+void intToBigInteger(BigInteger &bigint, int value) {
 	if (value >= 0)
 	{
-		bigint->limbs[0].x = value;
-		bigint->sign = SIGN_POSITIVE;
+		bigint.limbs[0].x = value;
+		bigint.sign = SIGN_POSITIVE;
 	}
 	else
 	{
-		bigint->limbs[0].x = -value;
-		bigint->sign = SIGN_NEGATIVE;
+		bigint.limbs[0].x = -value;
+		bigint.sign = SIGN_NEGATIVE;
 	}
-	bigint->nbrLimbs = 1;
+	bigint.nbrLimbs = 1;
 }
 
 /* bigint = value */
-void longToBigInteger(BigInteger *bigint, long long value) {
+void longToBigInteger(BigInteger &bigint, long long value) {
 	int nbrLimbs = 0;
-	bigint->sign = SIGN_POSITIVE;
+	bigint.sign = SIGN_POSITIVE;
 	if (value < 0)
 	{
-		bigint->sign = SIGN_NEGATIVE;
+		bigint.sign = SIGN_NEGATIVE;
 		value = -value;
 	}
 	do
 	{
-		bigint->limbs[nbrLimbs++].x = (int)value & MAX_VALUE_LIMB;
+		bigint.limbs[nbrLimbs++].x = (int)value & MAX_VALUE_LIMB;
 		value >>= BITS_PER_GROUP;
 	} while (value != 0);
-	bigint->nbrLimbs = nbrLimbs;
+	bigint.nbrLimbs = nbrLimbs;
 }
 
 /* BigInt = e^logar*/
-void expBigNbr(BigInteger *bigInt, double logar)
+void expBigNbr(BigInteger &bigInt, double logar)
 {
 	int mostSignificantLimb;
 	logar /= log(2);  // convert log to base 2
-	bigInt->sign = SIGN_POSITIVE;
-	bigInt->nbrLimbs = (int)floor(logar / BITS_PER_GROUP);
-	mostSignificantLimb = (int)floor(exp((logar - BITS_PER_GROUP*bigInt->nbrLimbs) * log(2)) + 0.5);
+	bigInt.sign = SIGN_POSITIVE;
+	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);
+	mostSignificantLimb = (int)floor(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)) + 0.5);
 	if (mostSignificantLimb == LIMB_RANGE)
 	{
 		mostSignificantLimb = 1;
-		bigInt->nbrLimbs++;
+		bigInt.nbrLimbs++;
 	}
-	bigInt->nbrLimbs++;
-	if (bigInt->nbrLimbs > MAX_LEN) {
+	bigInt.nbrLimbs++;
+	if (bigInt.nbrLimbs > MAX_LEN) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot expand BigInteger: ";
 		mesg += __func__;
@@ -387,8 +387,8 @@ void expBigNbr(BigInteger *bigInt, double logar)
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	memset(bigInt->limbs, 0, bigInt->nbrLimbs * sizeof(limb));
-	bigInt->limbs[bigInt->nbrLimbs - 1].x = mostSignificantLimb;
+	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
+	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
 }
 
 /* estimate natural log of BigInt. Only the most significant 62 bits are 
@@ -483,13 +483,13 @@ void BigIntPowerIntExp(const BigInteger *pBase, int exponent, BigInteger *pPower
 }
 
 /* divide by 2, use right shift for speed */
-void BigIntDivide2(BigInteger *pArg)
+void BigIntDivide2(BigInteger &pArg)
 {
-	int nbrLimbs = pArg->nbrLimbs;
+	int nbrLimbs = pArg.nbrLimbs;
 	int ctr = nbrLimbs - 1;
 	unsigned int carry;
 	//limb *ptrLimb = &pArg->limbs[ctr];
-	limb *ptrLimb = pArg->limbs;
+	limb *ptrLimb = pArg.limbs;
 	carry = 0;
 	for (; ctr >= 0; ctr--)
 	{
@@ -497,18 +497,18 @@ void BigIntDivide2(BigInteger *pArg)
 		ptrLimb[ctr].x = (int)(carry >> 1);
 		carry &= 1;
 	}
-	if (nbrLimbs > 1 && pArg->limbs[nbrLimbs - 1].x == 0)
+	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1].x == 0)
 	{     // Most significant limb is zero, so reduce size by one limb.
-		pArg->nbrLimbs--;
+		pArg.nbrLimbs--;
 	}
 }
 
 /* arg = arg*2^power. Throw exception if product is too large */
-static void BigIntMutiplyPower2(BigInteger *pArg, int power2)
+static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 {
 	int ctr;
-	int nbrLimbs = pArg->nbrLimbs;
-	limb *ptrLimbs = pArg->limbs;
+	int nbrLimbs = pArg.nbrLimbs;
+	limb *ptrLimbs = pArg.limbs;
 
 	for (; power2 > 0; power2--) {
 		/*each time round the loop multiplies arg by 2 */
@@ -533,7 +533,7 @@ static void BigIntMutiplyPower2(BigInteger *pArg, int power2)
 			}
 		}
 	}
-	pArg->nbrLimbs = nbrLimbs;
+	pArg.nbrLimbs = nbrLimbs;
 }
 
 /* return true if Nbr1 == Nbr2 */
@@ -622,6 +622,21 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	return false;  // Numbers are equal.
 }
 
+/* return true if Nbr1 > Nbr2 */
+bool TestBigNbrGtr(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	return TestBigNbrLess(Nbr2, Nbr1);
+}
+
+/* return true if Nbr1 >= Nbr2 */
+bool TestBigNbrGe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	return !TestBigNbrLess(Nbr1, Nbr2);
+}
+
+/* return true if Nbr1 <= Nbr2 */
+bool TestBigNbrLe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	return !TestBigNbrLess(Nbr2, Nbr1);
+}
+
 /* calculate GCD of arg1 & arg2*/
 void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pResult)
 {
@@ -646,37 +661,37 @@ void BigIntGcd(const BigInteger *pArg1, const BigInteger *pArg2, BigInteger *pRe
 	power2 = 0;
 	while (((Base.limbs[0].x | Power.limbs[0].x) & 1) == 0)
 	{  // Both values are even
-		BigIntDivide2(&Base);
-		BigIntDivide2(&Power);
+		BigIntDivide2(Base);
+		BigIntDivide2(Power);
 		power2++;
 	}
 	while (TestBigNbrEqual(Base, Power) == 0)
 	{    // Main GCD loop.
 		if ((Base.limbs[0].x & 1) == 0)
 		{          // Number is even. Divide it by 2.
-			BigIntDivide2(&Base);
+			BigIntDivide2(Base);
 			continue;
 		}
 		if ((Power.limbs[0].x & 1) == 0)
 		{          // Number is even. Divide it by 2.
-			BigIntDivide2(&Power);
+			BigIntDivide2(Power);
 			continue;
 		}
-		BigIntSubt(&Base, &Power, pResult);
+		BigIntSubt(Base, Power, *pResult);
 		if (pResult->sign == SIGN_POSITIVE)
 		{
 			CopyBigInt(Base, *pResult);
-			BigIntDivide2(&Base);
+			BigIntDivide2(Base);
 		}
 		else
 		{
 			CopyBigInt(Power, *pResult);
 			Power.sign = SIGN_POSITIVE;
-			BigIntDivide2(&Power);
+			BigIntDivide2(Power);
 		}
 	}
 	CopyBigInt(*pResult, Base);
-	BigIntMutiplyPower2(pResult, power2); /* pResult *= 2^power     */
+	BigIntMutiplyPower2(*pResult, power2); /* pResult *= 2^power     */
 }
 
 /* add addend to big number */
@@ -1287,7 +1302,7 @@ int PowerCheck(const BigInteger *pBigNbr, BigInteger *pBase)
 			BigIntPowerIntExp(pBase, Exponent - 1, &Temp3); // Temp3 <- x^(e-1)
 			BigIntMultiply(&Temp3, pBase, &Temp2);        // Temp2 <- x^e 
 														  // necessary to override const-ness of BigNbr
-			BigIntSubt((BigInteger *)pBigNbr, &Temp2, &Temp2);            // Compare to radicand.
+			BigIntSubt(*pBigNbr, Temp2, Temp2);            // Compare to radicand.
 			if (Temp2.nbrLimbs == 1 && Temp2.limbs[0].x == 0)
 			{                     // Perfect power, so go out.
 				return Exponent;
@@ -1297,13 +1312,13 @@ int PowerCheck(const BigInteger *pBigNbr, BigInteger *pBase)
 				break;
 			}
 			BigIntDivide(pBigNbr, &Temp3, &Temp);         // Temp -> N/x^(e-1)
-			BigIntSubt(&Temp, pBase, &Temp2);             // Temp2 -> N/x^(e-1) - x
+			BigIntSubt(Temp, *pBase, Temp2);             // Temp2 -> N/x^(e-1) - x
 			if (Temp2.nbrLimbs == 1 && Temp2.limbs[0].x == 0)
 			{     // New approximation will be the same as previous. Go out.
 				break;
 			}
 			InitTempFromInt(Exponent - 1);
-			BigIntSubt(&Temp2, &Temp, &Temp2);
+			BigIntSubt(Temp2, Temp, Temp2);
 			InitTempFromInt(Exponent);
 			BigIntDivide(&Temp2, &Temp, &Temp2);
 			BigIntAdd(Temp2, *pBase, *pBase);

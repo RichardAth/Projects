@@ -1602,6 +1602,10 @@ void doFactors(const Znum &Result) {
 void doTests(void) {
 	Znum result;
 	int i;
+	std::vector <Znum> factorlist;
+	std::vector<int> exponentlist;
+	Znum Quad[4];
+
 	struct test {
 		std::string text;        // text of expression to be evaluated
 		long long expected_result;   // can only do tests that return a value <2^63
@@ -1673,6 +1677,28 @@ void doTests(void) {
 		}
 	}
 	std::cout << i << " tests completed\n";
+
+	for (Znum i = 1000; i <= 100000000000000000; ) {
+		Znum x1, x2, x3;
+		mpz_nextprime(ZT(x1), ZT(i));  // get next prime
+		i *= 10;
+		mpz_nextprime(ZT(x2), ZT(i));  // get next prime
+		x3 = x1*x2;
+		factorise(x3, factorlist, exponentlist, Quad);
+
+		result = 1;
+		for (size_t i = 0; i < factorlist.size(); i++)
+			for (int j = 1; j <= exponentlist[i]; j++)
+				result *= factorlist[i];
+		if (result != x3) {
+			std::cout << "expected value " << x3 << " actual value " << result << '\n';
+		}
+		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+		if (result != x3) {
+			std::cout << "expected value " << x3 << " actual value " << result << '\n';
+		}
+	}
+	std::cout << "factorisation tests completed\n";
 }
 
 int main(int argc, char *argv[]) {
