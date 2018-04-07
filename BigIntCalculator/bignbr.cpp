@@ -335,12 +335,11 @@ void IntToBigNbr(int value, int bigNbr[], int nbrLength)
 	}
 }
 
-int BigIntToBigNbr(const BigInteger *pBigInt, int BigNbr[])
+int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[])
 {
 	int ctr;
-	int nbrLenBigNbr = pBigInt->nbrLimbs;
-	//int *ptrBigNbr = BigNbr;
-	const limb *Limbs = pBigInt->limbs;
+	int nbrLenBigNbr = pBigInt.nbrLimbs;
+	const limb *Limbs = pBigInt.limbs;
 
 	for (ctr = 0; ctr < nbrLenBigNbr; ctr++)
 	{
@@ -349,36 +348,34 @@ int BigIntToBigNbr(const BigInteger *pBigInt, int BigNbr[])
 	return nbrLenBigNbr;
 }
 
-void BigNbrToBigInt(BigInteger *pBigInt, const int BigNum[], int nbrLenBigNum)
+void BigNbrToBigInt(BigInteger &pBigInt, const int BigNum[], int nbrLenBigNum)
 {
 	int ctr, nbrLimbs;
 	const int *ptrBigNum = BigNum;
-	limb *Limbs = pBigInt->limbs;
-	pBigInt->sign = SIGN_POSITIVE;
-	for (ctr = 0; ctr < nbrLenBigNum; ctr++)
-	{
+	limb *Limbs = pBigInt.limbs;
+	pBigInt.sign = SIGN_POSITIVE;
+	for (ctr = 0; ctr < nbrLenBigNum; ctr++) {
 		Limbs[ctr].x = BigNum[ctr];
 	}
+
 	nbrLimbs = nbrLenBigNum;
-	do
-	{
-		if (Limbs[nbrLimbs-1].x != 0)
-		{
+	do 	{
+		if (Limbs[nbrLimbs-1].x != 0) {
 			break;
 		}
 	} while (--nbrLimbs > 1);
-	pBigInt->nbrLimbs = nbrLimbs;
+	pBigInt.nbrLimbs = nbrLimbs;
 }
 
 void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen)
 {
 	static BigInteger BigInt1, BigInt2, BigGcd;   // follow recommendation not to use stack
 
-	BigNbrToBigInt(&BigInt1, pNbr1, nbrLen);
-	BigNbrToBigInt(&BigInt2, pNbr2, nbrLen);
-	BigIntGcd(&BigInt1, &BigInt2, &BigGcd);
+	BigNbrToBigInt(BigInt1, pNbr1, nbrLen);
+	BigNbrToBigInt(BigInt2, pNbr2, nbrLen);
+	BigIntGcd(BigInt1, BigInt2, BigGcd);
 	memset(pGcd, 0, NumberLength * sizeof(int));
-	BigIntToBigNbr(&BigGcd, pGcd);
+	BigIntToBigNbr(BigGcd, pGcd);
 }
 
 static void AdjustBigIntModN(int *Nbr, const int *Mod, int nbrLen)
@@ -461,13 +458,13 @@ void ModInvBigInt(int *num, int *inv, int *mod, int nbrLenBigInt)
 	memcpy(TestNbr, mod, NumberLength * sizeof(limb));
 	TestNbr[NumberLength].x = 0;
 	GetMontgomeryParms(NumberLength);
-	BigNbrToBigInt(&Denominator, num, nbrLenBigInt);
-	BigNbrToBigInt(&Modulus, mod, nbrLenBigInt);
+	BigNbrToBigInt(Denominator, num, nbrLenBigInt);
+	BigNbrToBigInt(Modulus, mod, nbrLenBigInt);
 	Numerator.sign = SIGN_POSITIVE;
 	Numerator.nbrLimbs = 1;
 	Numerator.limbs[0].x = 1;    // Numerator <- 1.
-	BigIntModularDivision(&Numerator, &Denominator, &Modulus, &Quotient);
-	NumberLengthBigInt = BigIntToBigNbr(&Quotient, inv);
+	BigIntModularDivision(Numerator, Denominator, Modulus, Quotient);
+	NumberLengthBigInt = BigIntToBigNbr(Quotient, inv);
 	NumberLength = NumberLengthBak;
 	if (NumberLengthBigInt < NumberLength)
 	{

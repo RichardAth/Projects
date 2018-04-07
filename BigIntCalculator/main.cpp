@@ -1697,6 +1697,20 @@ void doTests(void) {
 		if (result != x3) {
 			std::cout << "expected value " << x3 << " actual value " << result << '\n';
 		}
+		x3++;
+		factorise(x3, factorlist, exponentlist, Quad);
+
+		result = 1;
+		for (size_t i = 0; i < factorlist.size(); i++)
+			for (int j = 1; j <= exponentlist[i]; j++)
+				result *= factorlist[i];
+		if (result != x3) {
+			std::cout << "expected value " << x3 << " actual value " << result << '\n';
+		}
+		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+		if (result != x3) {
+			std::cout << "expected value " << x3 << " actual value " << result << '\n';
+		}
 	}
 	std::cout << "factorisation tests completed\n";
 }

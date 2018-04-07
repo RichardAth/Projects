@@ -2216,7 +2216,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	factorSiqs.nbrLimbs = NumberLength;
 	factorSiqs.sign = SIGN_POSITIVE;
 	memcpy(factorSiqs.limbs, pNbrToFactor, NumberLength * sizeof(limb));
-	NumberLength = BigIntToBigNbr(&factorSiqs, Modulus);
+	NumberLength = BigIntToBigNbr(factorSiqs, Modulus);
 	Modulus[NumberLength++] = 0;
 	Modulus[NumberLength] = 0;
 	memcpy(TestNbr2, Modulus, (NumberLength + 1) * sizeof(int));
@@ -3549,7 +3549,7 @@ static void sieveThread(BigInteger *result) {
 				}
 				if (1/*factorSiqs == null*/) {
 					while (!LinearAlgebraPhase(biT, biR, biU, NumberLength));
-					BigNbrToBigInt(result, biT, NumberLength);  // Factor found.
+					BigNbrToBigInt(*result, biT, NumberLength);  // Factor found.
 #if 0
 					synchronized(matrixB)
 					{

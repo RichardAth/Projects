@@ -1013,10 +1013,10 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 #endif
 	if (powerOf2Exponent != 0)
 	{    // TestNbr is a power of 2.
-		UncompressLimbsBigInteger(factor1, &tmpNum);
-		UncompressLimbsBigInteger(factor2, &tmpDen);
-		BigIntMultiply(&tmpNum, &tmpDen, &tmpNum);
-		CompressLimbsBigInteger(product, &tmpNum);
+		UncompressLimbsBigInteger(factor1, tmpNum);
+		UncompressLimbsBigInteger(factor2, tmpDen);
+		BigIntMultiply(tmpNum, tmpDen, tmpNum);
+		CompressLimbsBigInteger(product, tmpNum);
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
@@ -1809,25 +1809,25 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 }
 
 // Compute modular division for odd moduli.
-void BigIntModularDivision(BigInteger *Num, BigInteger *Den, BigInteger *mod, BigInteger *quotient)
+void BigIntModularDivision(BigInteger &Num, BigInteger &Den, BigInteger &mod, BigInteger &quotient)
 {
-	NumberLength = mod->nbrLimbs;
+	NumberLength = mod.nbrLimbs;
 	// Reduce Num modulo mod.
-	BigIntRemainder(Num, mod, &tmpNum);
+	BigIntRemainder(Num, mod, tmpNum);
 	if (tmpNum.sign == SIGN_NEGATIVE)
 	{
-		BigIntAdd(tmpNum, *mod, tmpNum);
+		BigIntAdd(tmpNum, mod, tmpNum);
 	}
 	// Reduce Den modulo mod.
-	BigIntRemainder(Den, mod, &tmpDen);
+	BigIntRemainder(Den, mod, tmpDen);
 	if (tmpDen.sign == SIGN_NEGATIVE)
 	{
-		BigIntAdd(tmpDen, *mod, tmpDen);
+		BigIntAdd(tmpDen, mod, tmpDen);
 	}
-	CompressLimbsBigInteger(aux3, &tmpDen);
+	CompressLimbsBigInteger(aux3, tmpDen);
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
 	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
-	CompressLimbsBigInteger(aux4, &tmpNum);
+	CompressLimbsBigInteger(aux4, tmpNum);
 	modmult(aux3, aux4, aux3);              // aux3 <- Num / Dev in standard notation.
 	UncompressLimbsBigInteger(aux3, quotient);  // Get Num/Den
 	return;
