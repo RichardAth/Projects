@@ -148,12 +148,12 @@ void BigIntNegate (BigInteger &pDest) {
 }
 
 /* Difference = Minuend - Subtrahend */
-void BigIntSubt(const BigInteger &pMinuend, const BigInteger &pSubtrahend, 
-	BigInteger &pDifference) {
+void BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend, 
+	BigInteger &Difference) {
 	BigInteger temp;
-	CopyBigInt(temp, pSubtrahend);
+	temp = Subtrahend; //CopyBigInt(temp, Subtrahend);
 	BigIntNegate(temp);
-	BigIntAdd(pMinuend, temp, pDifference);
+	BigIntAdd(Minuend, temp, Difference);
 }
 
 /* Factor1 will be expanded to the length of Factor2 or vice versa 
@@ -239,7 +239,7 @@ void BigIntRemainder(const BigInteger &pDividend, const BigInteger &pDivisor,
 	{   // If divisor = 0, then remainder is the dividend.
 		return;
 	}
-	CopyBigInt(Temp2, pDividend);
+	Temp2 = pDividend; //CopyBigInt(Temp2, pDividend);
 	BigIntDivide(pDividend, pDivisor, Base);   // Get quotient of division.
 	BigIntMultiply(Base, pDivisor, Base);
 	BigIntSubt(Temp2, Base, pRemainder);
@@ -247,7 +247,7 @@ void BigIntRemainder(const BigInteger &pDividend, const BigInteger &pDivisor,
 }
  
 /* bigint = value */
-void intToBigInteger(BigInteger &bigint, int value) {
+void intToBigInteger(BigInteger &bigint, const int value) {
 	if (value >= 0)
 	{
 		bigint.limbs[0].x = value;
@@ -373,7 +373,7 @@ void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &pPower
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	CopyBigInt(Base, pBase);
+	Base = pBase; // CopyBigInt(Base, pBase);
 	pPower.sign = SIGN_POSITIVE;
 	pPower.nbrLimbs = 1;
 	pPower.limbs[0].x = 1;
@@ -535,40 +535,42 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	return false;  // Numbers are equal.
 }
 
-/* return true if Nbr1 > Nbr2 */
-bool TestBigNbrGtr(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-	return TestBigNbrLess(Nbr2, Nbr1);
-}
-
-/* return true if Nbr1 >= Nbr2 */
-bool TestBigNbrGe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-	return !TestBigNbrLess(Nbr1, Nbr2);
-}
-
-/* return true if Nbr1 <= Nbr2 */
-bool TestBigNbrLe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-	return !TestBigNbrLess(Nbr2, Nbr1);
-}
+///* return true if Nbr1 > Nbr2 */
+//bool TestBigNbrGtr(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+//	return TestBigNbrLess(Nbr2, Nbr1);
+//}
+//
+///* return true if Nbr1 >= Nbr2 */
+//bool TestBigNbrGe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+//	return !TestBigNbrLess(Nbr1, Nbr2);
+//}
+//
+///* return true if Nbr1 <= Nbr2 */
+//bool TestBigNbrLe(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+//	return !TestBigNbrLess(Nbr2, Nbr1);
+//}
 
 /* calculate GCD of arg1 & arg2*/
-void BigIntGcd(const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &pResult)
+void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &pResult)
 {
-	int nbrLimbs1 = pArg1.nbrLimbs;
-	int nbrLimbs2 = pArg2.nbrLimbs;
+	int nbrLimbs1 = Arg1.nbrLimbs;
+	int nbrLimbs2 = Arg2.nbrLimbs;
 	int power2;
-	if (nbrLimbs1 == 1 && pArg1.limbs[0].x == 0)
+	if (nbrLimbs1 == 1 && Arg1.limbs[0].x == 0)
 	{               // First argument is zero, so the GCD is second argument.
-		CopyBigInt(pResult, pArg2);
+		//CopyBigInt(pResult, pArg2);
+		pResult = Arg2;
 		return;
 	}
-	if (nbrLimbs2 == 1 && pArg2.limbs[0].x == 0)
+	if (nbrLimbs2 == 1 && Arg2.limbs[0].x == 0)
 	{               // Second argument is zero, so the GCD is first argument.
-		CopyBigInt(pResult, pArg1);
+		//CopyBigInt(pResult, pArg1);
+		pResult = Arg1;
 		return;
 	}
 	// Reuse Base and Power temporary variables.
-	CopyBigInt(Base, pArg1);   // Base = Arg1
-	CopyBigInt(Power, pArg2);   // Power = Arg2
+	Base = Arg1; // CopyBigInt(Base, Arg1);   
+	Power = Arg2;   //  CopyBigInt(Power, Arg2); 
 	Base.sign = SIGN_POSITIVE;
 	Power.sign = SIGN_POSITIVE;
 	power2 = 0;
@@ -594,17 +596,17 @@ void BigIntGcd(const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &pRe
 		BigIntSubt(Base, Power, pResult);
 		if (pResult.sign == SIGN_POSITIVE)
 		{
-			CopyBigInt(Base, pResult);
+			Base = pResult; // CopyBigInt(Base, pResult);
 			BigIntDivide2(Base);
 		}
 		else
 		{
-			CopyBigInt(Power, pResult);
+			Power = pResult; // CopyBigInt(Power, pResult);
 			Power.sign = SIGN_POSITIVE;
 			BigIntDivide2(Power);
 		}
 	}
-	CopyBigInt(pResult, Base);
+	pResult = Base; // CopyBigInt(pResult, Base);
 	BigIntMutiplyPower2(pResult, power2); /* pResult *= 2^power     */
 }
 
@@ -1394,7 +1396,7 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 	memset(Mult3, 0, (nbrLimbs + 1) * sizeof(limb));                // U_0 <- 0.
 	memcpy(Mult4, MontgomeryMultR1, (nbrLimbs + 1) * sizeof(limb));
 	AddBigNbrMod(Mult4, Mult4, Mult4);                              // V_0 <- 2.
-	CopyBigInt(expon, *pValue);
+	expon = *pValue; // CopyBigInt(expon, *pValue);
 	addbigint(expon, 1);                            // expon <- n + 1.
 	Temp.limbs[nbrLimbs].x = 0;
 	Temp2.limbs[nbrLimbs].x = 0;

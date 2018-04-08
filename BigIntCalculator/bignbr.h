@@ -36,12 +36,51 @@ enum eSign
 	SIGN_NEGATIVE,
 };
 
-class BigInteger
-{
+class BigInteger {
 public:
 	limb limbs[MAX_LEN];
 	int nbrLimbs;
 	enum eSign sign;
+	/* define assignment operator here */
+	BigInteger & operator = (const BigInteger &other) {
+		if (&other == this)
+			return *this;		// if lhs == rhs do nothing
+		nbrLimbs = other.nbrLimbs;
+		sign = other.sign;
+		memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
+		while (nbrLimbs > 1 && limbs[nbrLimbs - 1].x == 0) {
+			nbrLimbs--;  // remove any leading zeros
+		}
+		return *this;
+	}
+	BigInteger & operator = (const int value) {
+		if (value >= 0) {
+			limbs[0].x = value;
+			sign = SIGN_POSITIVE;
+		}
+		else {
+			limbs[0].x = -value;
+			sign = SIGN_NEGATIVE;
+		}
+		nbrLimbs = 1;
+		return *this;
+	}
+	BigInteger & operator = (long long value) {
+		int noOfLimbs = 0;
+		sign = SIGN_POSITIVE;
+		if (value < 0) {
+			sign = SIGN_NEGATIVE;
+			value = -value;
+		}
+
+		do {
+			limbs[noOfLimbs++].x = (int)value & MAX_VALUE_LIMB;
+			value >>= BITS_PER_GROUP;
+		} while (value != 0);
+
+		nbrLimbs = noOfLimbs;
+		return *this;
+	}
 } ;
 
 extern limb TestNbr[MAX_LEN];
@@ -82,9 +121,9 @@ void subtractdivide(BigInteger &pBigInt, int subt, int divisor);
 void addbigint(BigInteger &pResult, int addend);
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
 bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
-bool TestBigNbrGtr(const BigInteger &Nbr1, const BigInteger &Nbr2);
-bool TestBigNbrGe(const BigInteger &Nbr1, const BigInteger &Nbr2);
-bool TestBigNbrLe(const BigInteger &Nbr1, const BigInteger &Nbr2);
+//bool TestBigNbrGtr(const BigInteger &Nbr1, const BigInteger &Nbr2);
+//bool TestBigNbrGe(const BigInteger &Nbr1, const BigInteger &Nbr2);
+//bool TestBigNbrLe(const BigInteger &Nbr1, const BigInteger &Nbr2);
 static bool operator ==(const BigInteger &a, const BigInteger &b) {
 	return TestBigNbrEqual(a, b);
 }
@@ -115,7 +154,7 @@ void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigIntege
 void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint);
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 bool BigNbrIsZero(const limb *value);
-void intToBigInteger(BigInteger &bigint, int value);
+void intToBigInteger(BigInteger &bigint, const int value);
 void longToBigInteger(BigInteger &bigint, long long value);
 void expBigNbr(BigInteger &pBigNbr, double logar);
 double logBigNbr(const BigInteger &pBigNbr);

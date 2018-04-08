@@ -69,14 +69,14 @@ static void MultiplyBigNbrByMinPowerOf2(int &pPower2, limb *number, int len, lim
 // After computing the number of limbs of the results, this routine finds the inverse
 // of the divisor and then multiplies it by the dividend using nbrLimbs+1 limbs.
 // After that, the quotient is adjusted.
-void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigInteger &pQuotient)
+void BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor, BigInteger &Quotient)
 {
 	double inverse;
 	limb oldLimb, newLimb;
 	int nbrLimbs, nbrLimbsDividend, nbrLimbsDivisor;
 
 	// Check whether the divisor is zero.
-	if (pDivisor.limbs[0].x == 0 && pDivisor.nbrLimbs == 1)
+	if (Divisor.limbs[0].x == 0 && Divisor.nbrLimbs == 1)
 	{  // Indicate overflow if divisor is zero.
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot divide by zero: ";
@@ -86,42 +86,42 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 		throw std::range_error(mesg);
 	}
 	// Get number of limbs of quotient.
-	nbrLimbsDividend = pDividend.nbrLimbs;
-	nbrLimbsDivisor = pDivisor.nbrLimbs;
+	nbrLimbsDividend = Dividend.nbrLimbs;
+	nbrLimbsDivisor = Divisor.nbrLimbs;
 	nbrLimbs = nbrLimbsDividend - nbrLimbsDivisor;
 	if (nbrLimbs < 0)
 	{   // Absolute value of dividend is less than absolute value of divisor.
-		pQuotient.limbs[0].x = 0;
-		pQuotient.nbrLimbs = 1;
-		pQuotient.sign = SIGN_POSITIVE;
+		Quotient.limbs[0].x = 0;
+		Quotient.nbrLimbs = 1;
+		Quotient.sign = SIGN_POSITIVE;
 		return ;
 	}
 	if (nbrLimbs == 0)
 	{   // Both divisor and dividend have the same number of limbs.
 		for (nbrLimbs = nbrLimbsDividend - 1; nbrLimbs > 0; nbrLimbs--)
 		{
-			if (pDividend.limbs[nbrLimbs].x != pDivisor.limbs[nbrLimbs].x) {
+			if (Dividend.limbs[nbrLimbs].x != Divisor.limbs[nbrLimbs].x) {
 				break;
 			}
 		}
-		if (pDividend.limbs[nbrLimbs].x < pDivisor.limbs[nbrLimbs].x)
+		if (Dividend.limbs[nbrLimbs].x < Divisor.limbs[nbrLimbs].x)
 		{   // Dividend is less than divisor, so quotient is zero.
-			pQuotient.limbs[0].x = 0;
-			pQuotient.nbrLimbs = 1;
-			pQuotient.sign = SIGN_POSITIVE;
+			Quotient.limbs[0].x = 0;
+			Quotient.nbrLimbs = 1;
+			Quotient.sign = SIGN_POSITIVE;
 			return ;
 		}
 	}
 	if (nbrLimbsDividend == 1)
 	{   // If dividend is small, perform the division directly.
-		pQuotient.limbs[0].x = pDividend.limbs[0].x / pDivisor.limbs[0].x;
-		pQuotient.nbrLimbs = 1;
+		Quotient.limbs[0].x = Dividend.limbs[0].x / Divisor.limbs[0].x;
+		Quotient.nbrLimbs = 1;
 	}
 	else if (nbrLimbsDivisor == 1)
 	{   // Divisor is small: use divide by int.
 		// Sign of quotient is determined later.
-		CopyBigInt(pQuotient, pDividend);
-		subtractdivide(pQuotient, 0, pDivisor.limbs[0].x);
+		Quotient = Dividend; //CopyBigInt(Quotient, Dividend);
+		subtractdivide(Quotient, 0, Divisor.limbs[0].x);
 	}
 	else
 	{
@@ -138,11 +138,11 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 		if (nbrLimbs > nbrLimbsDivisor)
 		{
 			memset(&adjustedArgument[0], 0, (nbrLimbs - nbrLimbsDivisor) * sizeof(limb));
-			memcpy(&adjustedArgument[nbrLimbs - nbrLimbsDivisor], &pDivisor.limbs[0], nbrLimbsDivisor * sizeof(limb));
+			memcpy(&adjustedArgument[nbrLimbs - nbrLimbsDivisor], &Divisor.limbs[0], nbrLimbsDivisor * sizeof(limb));
 		}
 		else
 		{
-			memcpy(&adjustedArgument[0], &pDivisor.limbs[nbrLimbsDivisor - nbrLimbs], nbrLimbs * sizeof(limb));
+			memcpy(&adjustedArgument[0], &Divisor.limbs[nbrLimbsDivisor - nbrLimbs], nbrLimbs * sizeof(limb));
 		}
 		MultiplyBigNbrByMinPowerOf2(power2, adjustedArgument, nbrLimbs, adjustedArgument);
 		// Initialize approximate inverse.
@@ -197,13 +197,13 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 		// Multiply approxInv by argument to obtain the quotient.
 		if (nbrLimbsDividend >= nbrLimbs)
 		{
-			multiply(&pDividend.limbs[nbrLimbsDividend - nbrLimbs], 
+			multiply(&Dividend.limbs[nbrLimbsDividend - nbrLimbs], 
 				approxInv, approxInv, nbrLimbs, NULL);
 		}
 		else
 		{
 			memset(arrAux, 0, (nbrLimbs - nbrLimbsDividend) * sizeof(limb));
-			memcpy(&arrAux[nbrLimbs - nbrLimbsDividend], pDividend.limbs, nbrLimbsDividend * sizeof(limb));
+			memcpy(&arrAux[nbrLimbs - nbrLimbsDividend], Dividend.limbs, nbrLimbsDividend * sizeof(limb));
 			multiply(arrAux, approxInv, approxInv, nbrLimbs, NULL);
 		}             // approxInv holds the quotient.
 					  // Shift left quotient power2 bits into result.
@@ -219,8 +219,8 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 
 		// Determine number of limbs of quotient.
 		nbrLimbsQuotient = nbrLimbsDividend - nbrLimbsDivisor;
-		ptrDivisor = &pDivisor.limbs[nbrLimbsDivisor - 1];
-		ptrDividend = &pDividend.limbs[nbrLimbsDividend - 1];
+		ptrDivisor = &Divisor.limbs[nbrLimbsDivisor - 1];
+		ptrDividend = &Dividend.limbs[nbrLimbsDividend - 1];
 		for (idx = nbrLimbsDivisor - 1; idx > 0; idx--)
 		{
 			if (ptrDividend->x != ptrDivisor->x)
@@ -269,18 +269,18 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 			// It is correct only if multiplied by the divisor, it is <= than the dividend.
 			if (nbrLimbsQuotient > nbrLimbsDivisor)
 			{
-				memcpy(&approxInv[0], pDivisor.limbs, nbrLimbsDivisor * sizeof(limb));
+				memcpy(&approxInv[0], Divisor.limbs, nbrLimbsDivisor * sizeof(limb));
 				memset(&approxInv[nbrLimbsDivisor], 0, (nbrLimbsQuotient - nbrLimbsDivisor) * sizeof(limb));
 				multiply(&approxInv[0], ptrQuot, arrAux, nbrLimbsQuotient, NULL);
 			}
 			else
 			{
 				memset(&approxInv[2 * nbrLimbs], 0, (nbrLimbsDivisor - nbrLimbsQuotient) * sizeof(limb));
-				multiply(pDivisor.limbs, ptrQuot, arrAux, nbrLimbsDivisor, NULL);
+				multiply(Divisor.limbs, ptrQuot, arrAux, nbrLimbsDivisor, NULL);
 			}
-			ptrDividend = (limb *)&pDividend.limbs[pDividend.nbrLimbs - 1];
-			ptrDest = &arrAux[pDividend.nbrLimbs - 1];
-			for (idx = pDividend.nbrLimbs - 1; idx > 0; idx--)
+			ptrDividend = (limb *)&Dividend.limbs[Dividend.nbrLimbs - 1];
+			ptrDest = &arrAux[Dividend.nbrLimbs - 1];
+			for (idx = Dividend.nbrLimbs - 1; idx > 0; idx--)
 			{
 				if (ptrDividend->x != ptrDest->x)
 				{
@@ -306,21 +306,21 @@ void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor, BigIn
 				}
 			}
 		}
-		memcpy(&pQuotient.limbs[0], ptrQuot, nbrLimbsQuotient * sizeof(limb));
-		pQuotient.nbrLimbs = nbrLimbsQuotient;
+		memcpy(&Quotient.limbs[0], ptrQuot, nbrLimbsQuotient * sizeof(limb));
+		Quotient.nbrLimbs = nbrLimbsQuotient;
 	}
-	if (pDividend.sign == pDivisor.sign || (pQuotient.limbs[0].x == 0 && pQuotient.nbrLimbs == 1))
+	if (Dividend.sign == Divisor.sign || (Quotient.limbs[0].x == 0 && Quotient.nbrLimbs == 1))
 	{
-		pQuotient.sign = SIGN_POSITIVE;
+		Quotient.sign = SIGN_POSITIVE;
 	}
 	else
 	{
-		pQuotient.sign = SIGN_NEGATIVE;
+		Quotient.sign = SIGN_NEGATIVE;
 	}
 
-	while (pQuotient.nbrLimbs > 1) {
-		if (pQuotient.limbs[pQuotient.nbrLimbs - 1].x == 0)
-			pQuotient.nbrLimbs--;
+	while (Quotient.nbrLimbs > 1) {
+		if (Quotient.limbs[Quotient.nbrLimbs - 1].x == 0)
+			Quotient.nbrLimbs--;
 		else break;
 	}
 	return ;
