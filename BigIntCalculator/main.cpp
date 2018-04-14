@@ -885,7 +885,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_minus: {
-		result = firstArg - secondArg; //BigIntSubt(firstArg, secondArg, result);
+		result = firstArg - secondArg; 
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_unary_minus: {
@@ -1599,19 +1599,36 @@ void doFactors(const Znum &Result) {
 }
 
 /* perform some simple tests */
-void doTests(void) {
-	Znum result;
-	int i;
+void factortest(const Znum x3) {
 	std::vector <Znum> factorlist;
 	std::vector<int> exponentlist;
-	Znum Quad[4];
+	Znum Quad[4], result;
+
+	factorise(x3, factorlist, exponentlist, Quad);
+
+	result = 1;
+	for (size_t i = 0; i < factorlist.size(); i++)
+		for (int j = 1; j <= exponentlist[i]; j++)
+			result *= factorlist[i];
+	if (result != x3) {
+		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
+	}
+	result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+	if (result != x3) {
+		std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
+	}
+}
+
+void doTests(void) {
+	Znum x3, result;
+	int i;
 
 	struct test {
 		std::string text;        // text of expression to be evaluated
 		long long expected_result;   // can only do tests that return a value <2^63
 	};
 
-	test testvalues [] 
+	static test testvalues [] 
 	{
 		"2 - 3 + 4",                        3,
 		"2 - (3+4)",                       -5,  // + and - have same priority, left-to-right evaluation
@@ -1679,39 +1696,23 @@ void doTests(void) {
 	std::cout << i << " tests completed\n";
 
 	for (Znum i = 1000; i <= 100000000000000000; ) {
-		Znum x1, x2, x3;
+		Znum x1, x2;
 		mpz_nextprime(ZT(x1), ZT(i));  // get next prime
 		i *= 10;
 		mpz_nextprime(ZT(x2), ZT(i));  // get next prime
 		x3 = x1*x2;
-		factorise(x3, factorlist, exponentlist, Quad);
-
-		result = 1;
-		for (size_t i = 0; i < factorlist.size(); i++)
-			for (int j = 1; j <= exponentlist[i]; j++)
-				result *= factorlist[i];
-		if (result != x3) {
-			std::cout << "expected value " << x3 << " actual value " << result << '\n';
-		}
-		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-		if (result != x3) {
-			std::cout << "expected value " << x3 << " actual value " << result << '\n';
-		}
+		factortest(x3);
 		x3++;
-		factorise(x3, factorlist, exponentlist, Quad);
-
-		result = 1;
-		for (size_t i = 0; i < factorlist.size(); i++)
-			for (int j = 1; j <= exponentlist[i]; j++)
-				result *= factorlist[i];
-		if (result != x3) {
-			std::cout << "expected value " << x3 << " actual value " << result << '\n';
-		}
-		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-		if (result != x3) {
-			std::cout << "expected value " << x3 << " actual value " << result << '\n';
-		}
+		factortest(x3);
 	}
+
+	/* exercise code specifically for power +/-1*/
+	mpz_ui_pow_ui(ZT(x3), 10, 20);
+	x3 -= 1;
+	factortest(x3);
+	x3 += 2;
+	factortest(x3);
+
 	std::cout << "factorisation tests completed\n";
 }
 
@@ -1720,7 +1721,7 @@ int main(int argc, char *argv[]) {
 	Znum Result;
 	retCode rv;
 
-	char helpmsg[] =
+	const static char helpmsg[] =
 		"You can enter expressions that use the following operators, functions and parentheses:\n"
 		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
 		"*       : multiplication\n"
@@ -1758,7 +1759,7 @@ int main(int argc, char *argv[]) {
 		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
 		"HELP (this message) and EXIT\n";
 
-	char ayuda[] =
+	const static char ayuda[] =
 		"Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:\n"
 		"+ para suma\n"
 		"- para resta\n"

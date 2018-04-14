@@ -295,6 +295,7 @@ void SubtBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum)
 	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
 }
 
+/* product = factor1*factor2%mod */
 static void smallmodmult(const int factor1, const int factor2, limb *product, int mod)
 {
 	if (mod < SMALL_NUMBER_BOUND)
@@ -1015,7 +1016,7 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	{    // TestNbr is a power of 2.
 		UncompressLimbsBigInteger(factor1, tmpNum);
 		UncompressLimbsBigInteger(factor2, tmpDen);
-		BigIntMultiply(tmpNum, tmpDen, tmpNum);
+		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
 		CompressLimbsBigInteger(product, tmpNum);
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
@@ -1420,7 +1421,7 @@ static int HalveDifference(limb *first, limb *second, int len)
 	return len + 1;
 }
 
-int modInv(int NbrMod, int currentPrime)
+static int modInv(int NbrMod, int currentPrime)
 {
 	int QQ, T1, T3;
 	int V1 = 1;
@@ -1813,16 +1814,14 @@ void BigIntModularDivision(BigInteger &Num, BigInteger &Den, BigInteger &mod, Bi
 {
 	NumberLength = mod.nbrLimbs;
 	// Reduce Num modulo mod.
-	BigIntRemainder(Num, mod, tmpNum);
-	if (tmpNum.sign == SIGN_NEGATIVE)
-	{
-		BigIntAdd(tmpNum, mod, tmpNum);
+	tmpNum = Num%mod; // BigIntRemainder(Num, mod, tmpNum);
+	if (tmpNum < 0) {
+		tmpNum  += mod; //BigIntAdd(tmpNum, mod, tmpNum);
 	}
 	// Reduce Den modulo mod.
-	BigIntRemainder(Den, mod, tmpDen);
-	if (tmpDen.sign == SIGN_NEGATIVE)
-	{
-		BigIntAdd(tmpDen, mod, tmpDen);
+	tmpDen = Den%mod; // BigIntRemainder(Den, mod, tmpDen);
+	if (tmpDen < 0) {
+		tmpDen += mod; //BigIntAdd(tmpDen, mod, tmpDen);
 	}
 	CompressLimbsBigInteger(aux3, tmpDen);
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation

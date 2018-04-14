@@ -436,7 +436,7 @@ static int gcdIsOne(limb *value)
 	if (Temp1.nbrLimbs == 1 && Temp1.limbs[0].x == 0) {
 		return 0;
 	}
-	BigIntSubt(Temp1, Temp2, Temp3);
+	Temp3 = Temp1 - Temp2; // BigIntSubt(Temp1, Temp2, Temp3);
 	if (Temp3.nbrLimbs == 1 && Temp3.limbs[0].x == 0) {
 		return 0;
 	}
@@ -596,18 +596,18 @@ static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigIn
 	Dsal = 1; // intToBigInteger(Dsal, 1);
 	for (k = 1; k < DegreeAurif; k++) {
 		Nbr1 = Gamma[k]; // longToBigInteger(Nbr1, Gamma[k]);
-		BigIntMultiply(Csal, x, Csal);
-		BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
+		Csal *= x;       // BigIntMultiply(Csal, x, Csal);
+		Csal += Nbr1;    // BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
 		Nbr1 = Delta[k]; // longToBigInteger(Nbr1, Delta[k]);
-		BigIntMultiply(Dsal, x, Dsal);
-		BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
+		Dsal *= x;       //BigIntMultiply(Dsal, x, Dsal);
+		Dsal += Nbr1;    // BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
 	}
-	Nbr1 = Gamma[k]; // longToBigInteger(Nbr1, Gamma[k]);
-	BigIntMultiply(Csal, x, Csal);
-	BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
+	Nbr1 = Gamma[k];    // longToBigInteger(Nbr1, Gamma[k]);
+	Csal = Csal*x;      // BigIntMultiply(Csal, x, Csal);
+	Csal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
 	BigIntPowerIntExp(*BigBase, (L + 1) / 2, Nbr1);   // Nbr1 <- Dsal * base^((L+1)/2)
-	BigIntMultiply(Dsal, Nbr1, Nbr1);
-	BigIntAdd(Csal, Nbr1, Dsal);
+	Nbr1 = Nbr1 * Dsal; //BigIntMultiply(Dsal, Nbr1, Nbr1);
+	Dsal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Dsal);
 	if (pstFactors->multiplicity >= Max_Factors) {
 		// factor list is full!
 		std::string line = std::to_string(__LINE__);
@@ -618,7 +618,7 @@ static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigIn
 		throw std::range_error(mesg);
 	}
 	insertBigFactor(pstFactors, &Dsal);
-	BigIntSubt(Csal, Nbr1, Dsal);
+	Dsal = Csal - Nbr1; // BigIntSubt(Csal, Nbr1, Dsal);
 	if (pstFactors->multiplicity >= Max_Factors) {
 		// factor list is full!
 		std::string line = std::to_string(__LINE__);
@@ -781,7 +781,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 	while (Expon2 % 2 == 0 && increment == -1) {
 		Expon2 /= 2;
 		BigIntPowerIntExp(*BigBase, Expon2, Nbr1);
-		addbigint(Nbr1, increment);
+		Nbr1 += increment; //addbigint(Nbr1, increment);
 		if (pstFactors->multiplicity >= Max_Factors) {
 			// factor list is full!
 			std::string line = std::to_string(__LINE__);
@@ -800,7 +800,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 		if (Expon % k == 0) {
 			if (k % 2 != 0) { /* Only for odd exponent */
 				BigIntPowerIntExp(*BigBase, Expon / k, Nbr1);
-				addbigint(Nbr1, increment);
+				Nbr1 += increment; //addbigint(Nbr1, increment);
 				BigIntGcd(Nbr1, *BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
 				if (pstFactors->multiplicity >= Max_Factors) {
 					// factor list is full!
@@ -813,7 +813,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 				}
 				insertBigFactor(pstFactors, &Nbr2);
 				Temp1 = *BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				BigIntDivide(Temp1, Nbr2, Nbr1);
+				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
 				if (pstFactors->multiplicity >= Max_Factors) {
 					// factor list is full!
 					std::string line = std::to_string(__LINE__);
@@ -829,7 +829,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 
 			if ((Expon / k) % 2 != 0) { /* Only for odd exponent */
 				BigIntPowerIntExp(*BigBase, k, Nbr1);
-				addbigint(Nbr1, increment);
+				Nbr1 += increment; //addbigint(Nbr1, increment);
 				BigIntGcd(Nbr1, *BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^k+incre, original)
 				if (pstFactors->multiplicity >= Max_Factors) {
 					// factor list is full!
@@ -842,7 +842,7 @@ static void Cunningham(struct sFactors *pstFactors, const BigInteger *BigBase, i
 				}
 				insertBigFactor(pstFactors, &Nbr2);
 				Temp1 = *BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				BigIntDivide(Temp1, Nbr2, Nbr1);
+				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
 				if (pstFactors->multiplicity >= Max_Factors) {
 					// factor list is full!
 					std::string line = std::to_string(__LINE__);
@@ -874,10 +874,11 @@ static bool ProcessExponent(struct sFactors *pstFactors, const BigInteger *nbrTo
 #ifdef __EMSCRIPTEN__
 	int elapsedTime = (int)(tenths() - originalTenthSecond);
 
-	if (elapsedTime / 10 != oldTimeElapsed / 10) {
+	//if (elapsedTime / 10 != oldTimeElapsed / 10) 
+	{
 		oldTimeElapsed = elapsedTime;
 		ptrStatus = status;
-		strcpy(ptrStatus, lang ? "4\nTranscurrió " : "4\nTime elapsed: ");
+		strcpy(ptrStatus, lang ? "\nTranscurrió " : "\nTime elapsed: ");
 		ptrStatus += strlen(ptrStatus);
 		GetDHMS(&ptrStatus, elapsedTime / 10);
 		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
@@ -888,53 +889,54 @@ static bool ProcessExponent(struct sFactors *pstFactors, const BigInteger *nbrTo
 	}
 #endif
 
-	NFp1 = *nbrToFactor; // CopyBigInt(NFp1, *nbrToFactor);
-	addbigint(NFp1, 1);                    // NFp1 <- NumberToFactor + 1
+	NFp1 = *nbrToFactor; 
+	NFp1 ++;                 // NFp1 <- NumberToFactor + 1
 	NFm1 = *nbrToFactor; // CopyBigInt(NFm1, *nbrToFactor);
-	addbigint(NFm1, -1);                   // NFm1 <- NumberToFactor - 1
+	NFm1 --;        // NFm1 <- NumberToFactor - 1
 	log2N = logBigNbr(NFp1) / Exponent;    // Find nth root of number to factor.
 	expBigNbr(nthRoot, log2N);
 	rootbak = nthRoot;
 
 	for (;;) {
 		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		BigIntMultiply(nthRoot, rootN1, rootN);     // rootN <- nthRoot ^ Exponent
-		BigIntSubt(NFp1, rootN, dif);            // dif <- NFp1 - rootN
-		if (dif.nbrLimbs == 1 && dif.limbs[0].x == 0) { // Perfect power
+		rootN = nthRoot*rootN1; //BigIntMultiply(nthRoot, rootN1, rootN);     // rootN <- nthRoot ^ Exponent
+		dif = NFp1 - rootN; // BigIntSubt(NFp1, rootN, dif);    
+		if (dif == 0) { // Perfect power-1
 			Cunningham(pstFactors, &nthRoot, Exponent, -1, nbrToFactor);
 			return true;
 		}
-		addbigint(dif, 1);                         // dif <- dif + 1
-		BigIntDivide(dif, rootN1, Temp1);        // Temp1 <- dif / rootN1
+		dif ++;        // dif <- dif + 1
+		Temp1 = dif / rootN1;        
 		subtractdivide(Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
-		BigIntAdd(Temp1, nthRoot, nextroot);        // nextroot <- Temp1 + nthRoot
-		addbigint(nextroot, -1);                   // nextroot <- nextroot - 1
-		BigIntSubt(nextroot, nthRoot, nthRoot);        // nthRoot <- nextroot - nthRoot
-		if (nthRoot.sign == SIGN_POSITIVE) {
+		nextroot = Temp1 + nthRoot;         // 
+		nextroot --;  //   nextroot = nextroot - 1             
+		nthRoot = nextroot - nthRoot;     
+		if (nthRoot >= 0) {
 			break; // Not a perfect power
 		}
-		nthRoot = nextroot; // CopyBigInt(nthRoot, nextroot);
+		nthRoot = nextroot; 
 	}
 
 	nthRoot = rootbak;
 	for (;;) {
 		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		BigIntMultiply(nthRoot, rootN1, rootN);     // rootN <- nthRoot ^ Exponent
-		BigIntSubt(NFm1, rootN, dif);            // dif <- NFm1 - rootN
-		if (dif.nbrLimbs == 1 && dif.limbs[0].x == 0)
-		{ // Perfect power
+		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
+		dif = NFm1 - rootN;             
+		if (dif == 0)
+		{ // Perfect power+1
 			Cunningham(pstFactors, &nthRoot, Exponent, 1, nbrToFactor);
+			return true;
 		}
-		addbigint(dif, 1);                         // dif <- dif + 1
-		BigIntDivide(dif, rootN1, Temp1);        // Temp1 <- dif / rootN1
-		subtractdivide(Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
-		BigIntAdd(Temp1, nthRoot, nextroot);        // nextroot <- Temp1 + nthRoot
-		addbigint(nextroot, -1);                   // nextroot <- nextroot - 1
-		BigIntSubt(nextroot, nthRoot, nthRoot);        // nthRoot <- nextroot - nthRoot
-		if (nthRoot.sign == SIGN_POSITIVE) {
-			break;                               // Not a perfect power
+		dif ++;                        // dif <- dif + 1
+		Temp1 = dif / rootN1;   
+		subtractdivide(Temp1, 0, Exponent);   // Temp1 <- Temp1 / Exponent
+		nextroot = Temp1 + nthRoot;       
+		nextroot --;             // nextroot <- nextroot - 1
+		nthRoot = nextroot - nthRoot;   
+		if (nthRoot >= 0) {
+			break;               // Not a perfect power
 		}
-		nthRoot = nextroot; // CopyBigInt(nthRoot, nextroot);
+		nthRoot = nextroot;      // CopyBigInt(nthRoot, nextroot);
 	}
 	return false;
 }
@@ -947,7 +949,7 @@ static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger *nbrToFa
 	int Exponent = 0;
 	int i, j;
 	int modulus;
-	int mod9 = getRemainder(*nbrToFactor, 9);
+	int mod9 = *nbrToFactor % 9; // getRemainder(*nbrToFactor, 9);
 	int maxExpon = nbrToFactor->nbrLimbs * BITS_PER_GROUP;
 	int numPrimes = 2 * maxExpon + 3;
 	/* if numPrimes >= 66472 i.e. maxExpon > 33233 i.e. nbrLimbs > 1072*/
@@ -980,13 +982,13 @@ static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger *nbrToFa
 	// of its square then the number +/- 1 cannot be a perfect power.
 	for (i = 2; i < numPrimes; i++) {
 		if (primes[i >> 3] & (1 << (i & 7))) {      // i is prime according to sieve.
-			unsigned int remainder;
+			unsigned long long remainder;
 			int index;
-			Temp1 = (long long)i*(long long)i; // longToBigInteger(Temp1, (unsigned int)i*(unsigned int)i);
-			BigIntRemainder(*nbrToFactor, Temp1, Temp2);     // Temp2 <- nbrToFactor % (i*i)
+			Temp1 = (long long)i*(long long)i; 
+			Temp2 = *nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (i*i)
 			remainder = (unsigned int)Temp2.limbs[0].x;
 			if (Temp2.nbrLimbs > 1) {
-				remainder += (unsigned int)Temp2.limbs[1].x << BITS_PER_GROUP;
+				remainder += (unsigned long long)Temp2.limbs[1].x << BITS_PER_GROUP;
 			}
 			if (remainder % i == 1 && remainder != 1) {
 				plus1 = true; // NumberFactor cannot be a power + 1
@@ -1018,6 +1020,7 @@ static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger *nbrToFa
 			}
 		}
 	}
+
 	for (j = 2; j < 100; j++) {
 		double u = logar / log(j) + .000005;
 		Exponent = (int)floor(u);
@@ -1028,7 +1031,7 @@ static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger *nbrToFa
 		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7))))
 			continue;
 		if (ProcessExponent(pstFactors, nbrToFactor, Exponent))
-			return;  // number is a perfect power
+			return;  // number is a perfect power +/- 1
 	}
 
 	for (; Exponent >= 2; Exponent--) {
@@ -1039,7 +1042,7 @@ static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger *nbrToFa
 			continue;
 		}
 		if (ProcessExponent(pstFactors, nbrToFactor, Exponent)) {
-			return;   // number is aperfect power
+			return;   // number is  a perfect power
 		}
 	}
 	return;
@@ -1110,53 +1113,49 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 		}
 	}
 
-	sqr = k << 2; // intToBigInteger(sqr, k << 2);
-	BigIntMultiply(sqr, *nbr, sqr);
+	sqr = k << 2; 
+	sqr = sqr * (*nbr); 
 	squareRoot(sqr.limbs, sqrRoot.limbs, sqr.nbrLimbs, &sqrRoot.nbrLimbs);
 	sqrRoot.sign = SIGN_POSITIVE;
-	a = sqrRoot; // CopyBigInt(a, sqrRoot); 
+	a = sqrRoot; 
 
 	for (;;) {
 		if ((a.limbs[0].x & (m - 1)) == r) {
-			BigIntMultiply(a, a, nextroot);
-			BigIntSubt(nextroot, sqr, nextroot);
-			if (nextroot.sign == SIGN_POSITIVE) {
+			nextroot = a*a - sqr; 
+			if (nextroot >= 0) {
 				break;
 			}
 		}
-		addbigint(a, 1);                         // a <- a + 1
+		a ++;              // a <- a + 1
 	}
-	BigIntMultiply(a, a, nextroot);
-	BigIntSubt(nextroot, sqr, c);
+	nextroot = a*a; 
+	c = nextroot - sqr; 
 
 	for (i = 0; i < 17; i++) {
-		int pr = primes[i];
-		nbrs[i] = getRemainder(c, pr);    // nbrs[i] <- c % primes[i]
-		diffs[i] = m * (getRemainder(a, pr) * 2 + m) % pr;
+		//int pr = pr;
+		nbrs[i] = c % primes[i]; // getRemainder(c, pr);    // nbrs[i] <- c % primes[i]
+		diffs[i] = m * ((a% primes[i]) * 2 + m) % primes[i];
 	}
 
 	for (j = 0; j < 10000; j++) {
 		for (i = 0; i < 17; i++) {
 			int shiftBits = nbrs[i];
 			if (shiftBits < 32) {
-				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0)
-				{ // Not a perfect square
-					break;
+				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0) { 
+					break;  // Not a perfect square
 				}
 			}
-			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0)
-			{ // Not a perfect square
-				break;
+			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0) { 
+				break;  // Not a perfect square
 			}
 		}
 		if (i == 17) { // Test for perfect square
-			c = m * j; // intToBigInteger(c, m * j);           
-			BigIntAdd(a, c, val);
-			BigIntMultiply(val, val, c);       // c <- val * val
-			BigIntSubt(c, sqr, c);             // c <- val * val - sqr
+			c = m * j;           
+			val = a + c; 
+			c = val*val - sqr;     
 			squareRoot(c.limbs, sqrRoot.limbs, c.nbrLimbs, &sqrRoot.nbrLimbs);
 			sqrRoot.sign = SIGN_POSITIVE;         // sqrRoot <- sqrt(c)
-			BigIntAdd(sqrRoot, val, sqrRoot);
+			sqrRoot = sqrRoot + val; 
 			BigIntGcd(sqrRoot, *nbr, c);         // Get GCD(sqrRoot + val, nbr)
 			if (c.nbrLimbs > 1) {    // Non-trivial factor has been found.
 				*factor = c; // CopyBigInt(*factor, c);
@@ -1169,7 +1168,7 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
 		}
 	}
-	*factor = 1; // intToBigInteger(*factor, 1);   // Factor not found.
+	*factor = 1;   // Factor not found.
 	return;
 }
 
@@ -1322,7 +1321,7 @@ static enum eEcmResult ecmCurve(BigInteger *N)
 		modmultInt(A02, 9, Aux2);      // Aux2 <- 9*A0^2
 		SubtBigNbrModN(Aux2, MontgomeryMultR1, Aux2, TestNbr, NumberLength); // Aux2 <- 9*A0^2-1
 		modmult(Aux1, Aux2, Aux3);
-		if (BigNbrIsZero(Aux3)) {
+		if (BigNbrIsZero(Aux3, NumberLength)) {
 			continue;
 		}
 		//   Z <- 4 * A0 mod N
@@ -1438,7 +1437,7 @@ static enum eEcmResult ecmCurve(BigInteger *N)
 			} while (P < L1);
 
 			if (Pass == 0) {
-				if (BigNbrIsZero(GcdAccumulated))
+				if (BigNbrIsZero(GcdAccumulated, NumberLength))
 				{ // If GcdAccumulated is
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
@@ -1604,7 +1603,7 @@ static enum eEcmResult ecmCurve(BigInteger *N)
 						memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
 					}
 					if (Pass != 0) {
-						if (BigNbrIsZero(GcdAccumulated)) {           
+						if (BigNbrIsZero(GcdAccumulated, NumberLength)) {
 							// This curve cannot factor the number.
 							break;
 						}
@@ -1636,7 +1635,7 @@ static enum eEcmResult ecmCurve(BigInteger *N)
 
 			if (Pass == 0) {
 				int rc;
-				if (BigNbrIsZero(GcdAccumulated)) { // If GcdAccumulated is zero
+				if (BigNbrIsZero(GcdAccumulated, NumberLength)) { // If GcdAccumulated is zero
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
 					continue; // multiple of TestNbr, continue.
@@ -1755,7 +1754,6 @@ static bool ecm(BigInteger *N, struct sFactors *pstFactors)
 	StepECM = 0; /* do not show pass number on screen */
 	return true;
 }
-
 
 
 /* convert factors from integer lists to Znums */
@@ -1926,7 +1924,7 @@ static void insertBigFactor(struct sFactors *pstFactors, BigInteger *divisor)
 		// known factor / GCD and generate a new known factor entry.
 		NumberLength = Temp3.nbrLimbs;
 		CompressBigInteger(ptrNewFactorLimbs, Temp3);      // Append new known factor.
-		BigIntDivide(Temp2, Temp3, Temp4);     // Divide by this factor.
+		Temp4 = Temp2 / Temp3; // BigIntDivide(Temp2, Temp3, Temp4);     // Divide by this factor.
 		NumberLength = Temp4.nbrLimbs;
 		CompressBigInteger(ptrFactor, Temp4);              // Overwrite old known factor.
 		pstNewFactor->multiplicity = pstCurFactor->multiplicity;
@@ -2302,10 +2300,10 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 	struct sFactors *pstFactor;
 	static limb minusOneMont[MAX_LEN];
 
-	Quad1 = 1; //intToBigInteger(Quad1, 1);     // 1 = 1^2 + 0^2 + 0^2 + 0^2
-	Quad2 = 0; //intToBigInteger(Quad2, 0);
-	Quad3 = 0; //intToBigInteger(Quad3, 0);
-	Quad4 = 0; //intToBigInteger(Quad4, 0);
+	Quad1 = 1;      // 1 = 1^2 + 0^2 + 0^2 + 0^2
+	Quad2 = 0; 
+	Quad3 = 0; 
+	Quad4 = 0; 
 	int Factorix = 1;      // Point to first factor in array of factors.
 	if (pstFactors[0].multiplicity == 1 && pstFactors[1].multiplicity == 1) {
 		/* only 1 factor i.e. number is prime */
@@ -2324,15 +2322,15 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 		NumberLength = *pstFactors[Factorix].ptrFactor;
 		UncompressBigInteger(pstFactors[Factorix].ptrFactor, p);
 		p.sign = SIGN_POSITIVE;
-		q = p; //  CopyBigInt(q, p);
-		addbigint(q, -1);             // q <- p-1
+		q = p; 
+		q --;            // q <- p-1
 		if (p.nbrLimbs == 1 && p.limbs[0].x == 2) {   /* Prime factor is 2 */
-			Mult1 = 1; //intToBigInteger(Mult1, 1); // 2 = 1^2 + 1^2 + 0^2 + 0^2
-			Mult2 = 1; //intToBigInteger(Mult2, 1);
-			Mult3 = 0; //intToBigInteger(Mult3, 0);
-			Mult4 = 0; //intToBigInteger(Mult4, 0);
+			Mult1 = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
+			Mult2 = 1; 
+			Mult3 = 0; 
+			Mult4 = 0; 
 		}
-		else { /* Prime factor is not 2 */
+		else {       /* Prime factor is not 2 */
 			NumberLength = p.nbrLimbs;
 			memcpy(&TestNbr, p.limbs, NumberLength * sizeof(limb));
 			TestNbr[NumberLength].x = 0;
@@ -2341,7 +2339,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 			SubtBigNbrModN(minusOneMont, MontgomeryMultR1, minusOneMont, TestNbr, NumberLength);
 			memset(K.limbs, 0, NumberLength * sizeof(limb));
 			if ((p.limbs[0].x & 3) == 1) { /* if p = 1 (mod 4) */
-				q = p; // CopyBigInt(q, p);
+				q = p; 
 				subtractdivide(q, 1, 4);     // q = (prime-1)/4
 				K.limbs[0].x = 1;
 				do {    // Loop that finds mult1 = sqrt(-1) mod prime in Montgomery notation.
@@ -2366,46 +2364,35 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 					}
 				}
 				for (;;) {
-					BigIntMultiply(Mult1, Mult1, Tmp);
-					BigIntMultiply(Mult2, Mult2, Tmp1);
-					BigIntAdd(Tmp, Tmp1, Tmp);
-					BigIntDivide(Tmp, p, K);        // K <- (mult1^2 + mult2^2) / p
+					Tmp = Mult1 * Mult1 + Mult2 * Mult2; 
+					K = Tmp / p;        // K <- (mult1^2 + mult2^2) / p
 					if (K.nbrLimbs == 1 && K.limbs[0].x == 1) {  // If K = 1...
-						Mult3 = 0; // intToBigInteger(Mult3, 0);
-						Mult4 = 0; // intToBigInteger(Mult4, 0);
+						Mult3 = 0; 
+						Mult4 = 0; 
 						break;
 					}
-					BigIntRemainder(Mult1, K, M1);  // M1 <- Mult1 % K
-					if (M1.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M1, K, M1);
+					M1 = Mult1 % K; //BigIntRemainder(Mult1, K, M1);   
+					if (M1 < 0) {
+						M1 = M1 + K; 
 					}
-					BigIntRemainder(Mult2, K, M2);  // M2 <- Mult2 % K
-					if (M2.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M2, K, M2);
+					M2 = Mult2 % K;  // BigIntRemainder(Mult2, K, M2)
+					if (M2 < 0) {
+						M2 += K; //M2 = M2 + K; 
 					}
 					Tmp = K; // CopyBigInt(Tmp, K);
 					subtractdivide(Tmp, -1, 2);       // Tmp <- (K+1) / 2
-					//BigIntSubt(&M1, &Tmp, &Tmp1);      // Tmp1 <- M1 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)    // If M1 >= K / 2 ... 
-					if (M1 >= Tmp)
-					//if (TestBigNbrLe(Tmp, M1))
+					if (M1 >= Tmp) // If M1 >= K / 2 ... 
 					{
-						BigIntSubt(M1, K, M1);        // M1 <- M1 - K
+						M1 -= K; //M1 = M1 - K; // BigIntSubt(M1, K, M1);        /
 					}
-					//BigIntSubt(&M2, &Tmp, &Tmp1);      // Tmp1 <- M2 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)  { // If M2 >= K / 2 ... 
-					if (M2 >= Tmp) {         //if (TestBigNbrLe(Tmp, M2)) 	{
-						BigIntSubt(M2, K, M2);        // M2 <- M2 - K
+					if (M2 >= Tmp) {     // If M2 >= K / 2 ...     
+						M2 -= K; // M2 = M2 - K;  //BigIntSubt(M2, K, M2);         
 					}
-					BigIntMultiply(Mult1, M1, Tmp);
-					BigIntMultiply(Mult2, M2, Tmp1);
-					BigIntAdd(Tmp, Tmp1, Tmp);
-					BigIntDivide(Tmp, K, Tmp2);     // Tmp2 <- (mult1*m1 + mult2*m2) / K
-					BigIntMultiply(Mult1, M2, Tmp);
-					BigIntMultiply(Mult2, M1, Tmp1);
-					BigIntSubt(Tmp, Tmp1, Tmp);
-					BigIntDivide(Tmp, K, Mult2);    // Mult2 <- (mult1*m2 - mult2*m1) /K
-					Mult1 = Tmp2;  // CopyBigInt(Mult1, Tmp2);
+					Tmp = Mult1*M1 + Mult2*M2;
+					Tmp2 = Tmp / K;  // Tmp2 <- (mult1*m1 + mult2*m2) / K
+					Tmp = Mult1*M2 - Mult2*M1; 
+					Mult2 = Tmp / K;    // Mult2 <- (mult1*m2 - mult2*m1) /K
+					Mult1 = Tmp2; 
 				} /* end while */
 			} /* end p = 1 (mod 4) */
 
@@ -2433,16 +2420,16 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 				// After the loop finishes, Tmp = (-1 - Mult1^2) is a quadratic residue mod p.
 				// Convert Mult1 to standard notation by multiplying by 1 in
 				// Montgomery notation.
-				Mult1 = mult1; // intToBigInteger(Mult1, mult1);
-				q = p; // CopyBigInt(q, p);
+				Mult1 = mult1; 
+				q = p; 
 				subtractdivide(q, -1, 4);  // q <- (p+1)/4.
 				// Find Mult2 <- square root of Tmp = Tmp^q (mod p) in Montgomery notation.
 				modPow(Tmp.limbs, q.limbs, p.nbrLimbs, Mult2.limbs);
 				// Convert Mult2 from Montgomery notation to standard notation.
 				memset(Tmp.limbs, 0, p.nbrLimbs * sizeof(limb));
 				Tmp.limbs[0].x = 1;
-				Mult3 = 1; // intToBigInteger(Mult3, 1);
-				Mult4 = 0; // intToBigInteger(Mult4, 0);
+				Mult3 = 1; 
+				Mult4 = 0; 
 				// Convert Mult2 to standard notation by multiplying by 1 in
 				// Montgomery notation.
 				modmult(Mult2.limbs, Tmp.limbs, Mult2.limbs);
@@ -2455,14 +2442,9 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 				Mult2.sign = SIGN_POSITIVE;
 				for (;;) {
 					// Compute K <- (Mult1^2 + Mult2^2 + Mult3^2 + Mult4^2) / p
-					BigIntMultiply(Mult1, Mult1, Tmp);
-					BigIntMultiply(Mult2, Mult2, Tmp1);
-					BigIntAdd(Tmp, Tmp1, Tmp);
-					BigIntMultiply(Mult3, Mult3, Tmp1);
-					BigIntAdd(Tmp, Tmp1, Tmp);
-					BigIntMultiply(Mult4, Mult4, Tmp1);
-					BigIntAdd(Tmp, Tmp1, Tmp);
-					BigIntDivide(Tmp, p, K);
+					Tmp = Mult1*Mult1 + Mult2*Mult2; 
+					Tmp = Tmp + Mult3*Mult3 + Mult4*Mult4; 
+					K = Tmp / p; 
 					if (K.nbrLimbs == 1 && K.limbs[0].x == 1) {   // K equals 1
 						break;
 					}
@@ -2471,210 +2453,153 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 						{  // If Mult1 + Mult2 is odd...
 							if (((Mult1.limbs[0].x + Mult3.limbs[0].x) & 1) == 0)
 							{   // If Mult1 + Mult3 is even...
-								Tmp = Mult2; // CopyBigInt(Tmp, Mult2);
-								Mult2 = Mult3; // CopyBigInt(Mult2, Mult3);
-								Mult3 = Tmp;  // CopyBigInt(Mult3, Tmp);
+								Tmp = Mult2;  // swap mult2 and mult3
+								Mult2 = Mult3; 
+								Mult3 = Tmp;  
 							}
 							else {
-								Tmp = Mult2; // CopyBigInt(Tmp, Mult2);
-								Mult2 = Mult4; // CopyBigInt(Mult2, Mult4);
-								Mult4 = Tmp; // CopyBigInt(Mult4, Tmp);
+								Tmp = Mult2; // swap mult2 and mult4
+								Mult2 = Mult4; 
+								Mult4 = Tmp; 
 							}
 						} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
-						BigIntAdd(Mult1, Mult2, Tmp1);
+						Tmp1 = Mult1 + Mult2; 
 						subtractdivide(Tmp1, 0, 2);  // Tmp1 <- (Mult1 + Mult2) / 2
-						BigIntSubt(Mult1, Mult2, Tmp2);
+						Tmp2 = Mult1 - Mult2;
 						subtractdivide(Tmp2, 0, 2);  // Tmp2 <- (Mult1 - Mult2) / 2
-						BigIntAdd(Mult3, Mult4, Tmp3);
+						Tmp3 = Mult3 + Mult4; 
 						subtractdivide(Tmp3, 0, 2);  // Tmp3 <- (Mult3 + Mult4) / 2
-						BigIntSubt(Mult3, Mult4, Mult4);
-						subtractdivide(Mult4, 0, 2);  // Mult4 <- (Mult3 + Mult4) / 2
-						Mult3 = Tmp3; // CopyBigInt(Mult3, Tmp3);
-						Mult2 = Tmp2; // CopyBigInt(Mult2, Tmp2);
-						Mult1 = Tmp1;  // CopyBigInt(Mult1, Tmp1);
+						Mult4 = Mult3 - Mult4; 
+						subtractdivide(Mult4, 0, 2);  // Mult4 <- (Mult3 - Mult4) / 2
+						Mult3 = Tmp3; 
+						Mult2 = Tmp2; 
+						Mult1 = Tmp1;  
 						continue;
 					} /* end if k is even */
-					BigIntRemainder(Mult1, K, M1);    // M1 <- Mult1 % K.
-					if (M1.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M1, K, M1);
+					M1 = Mult1 % K;    //BigIntRemainder(Mult1, K, M1) .
+					if (M1 < 0) {
+						M1 += K; // M1 = M1 + K; // BigIntAdd(M1, K, M1);
 					}
-					BigIntRemainder(Mult2, K, M2);    // M2 <- Mult2 % K.
-					if (M2.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M2, K, M2);
+					M2 = Mult2 % K;    // BigIntRemainder(Mult2, K, M2).
+					if (M2 < 0) {
+						M2 = M2 + K; // BigIntAdd(M2, K, M2);
 					}
-					BigIntRemainder(Mult3, K, M3);    // M3 <- Mult3 % K
-					if (M3.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M3, K, M3);
+					M3 = Mult3 % K;    // BigIntRemainder(Mult3, K, M3)
+					if (M3 < 0) {
+						M3 += K; // M3 = M3 + K; // BigIntAdd(M3, K, M3);
 					}
-					BigIntRemainder(Mult4, K, M4);    // M4 <- Mult4 % K.
-					if (M4.sign == SIGN_NEGATIVE) {
-						BigIntAdd(M4, K, M4);
+					M4 = Mult4 % K;    //BigIntRemainder(Mult4, K, M4) .
+					if (M4 < 0) {
+						M4 += K; // M4 = M4 + K; 
 					}
-					Tmp = K; // CopyBigInt(Tmp, K);
+					Tmp = K; 
 					subtractdivide(Tmp, -1, 2);       // Tmp <- (K+1) / 2
-					//BigIntSubt(&M1, &Tmp, &Tmp1);      // Tmp1 <- M1 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)    // If M1 >= K / 2 ... 
-					if (M1 >= Tmp) { // if (TestBigNbrLe(Tmp, M1)) {
-						BigIntSubt(M1, K, M1);        // M1 <- M1 - K
+					if (M1 >= Tmp) { // If M1 >= K / 2 ... 
+						M1 -= K; // M1 = M1 - K;    
 					}
-					//BigIntSubt(&M2, &Tmp, &Tmp1);      // Tmp1 <- M2 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)    // If M2 >= K / 2 ... 
-					if (M2 >= Tmp) { // if (TestBigNbrLe(Tmp, M2)) {
-						BigIntSubt(M2, K, M2);        // M2 <- M2 - K
+					if (M2 >= Tmp) { // If M2 >= K / 2 ... 
+						M2 -= K; // M2 = M2 - K;         
 					}
-					//BigIntSubt(&M3, &Tmp, &Tmp1);      // Tmp1 <- M3 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)    // If M3 >= K / 2 ... 
-					if (M3 >= Tmp) { // if (TestBigNbrLe(Tmp, M3)) {
-						BigIntSubt(M3, K, M3);        // M3 <- M3 - K
+	
+					if (M3 >= Tmp) {  // If M3 >= K / 2 ... 
+						M3 -= K; // M3 = M3 - K;        
 					}
-					//BigIntSubt(&M4, &Tmp, &Tmp1);      // Tmp1 <- M4 - Tmp
-					//if (Tmp1.sign == SIGN_POSITIVE)    // If M4 >= K / 2 ... 
-					if (M4 >= Tmp) { // if (TestBigNbrLe(Tmp, M4)) {
-						BigIntSubt(M4, K, M4);        // M4 <- M4 - K
+					if (M4 >= Tmp) { // If M4 >= K / 2 ... 
+						M4 -= K; //M4 = M4 - K;      // BigIntSubt(M4, K, M4);    
 					}
 					// Compute Tmp1 <- (Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4) / K
-					BigIntMultiply(Mult1, M1, Tmp);
-					BigIntMultiply(Mult2, M2, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult3, M3, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult4, M4, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntDivide(Tmp, K, Tmp1);
+					Tmp = Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4; 
+					Tmp1 = Tmp / K; // BigIntDivide(Tmp, K, Tmp1);
 
 					// Compute Tmp2 <- (Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3) / K
-					BigIntMultiply(Mult1, M2, Tmp);
-					BigIntMultiply(Mult2, M1, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult3, M4, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult4, M3, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntDivide(Tmp, K, Tmp2);
+					Tmp = Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3; 
+					Tmp2 = Tmp / K; 
 
 					// Compute Tmp3 <- (Mult1*M3 - Mult3*M1 - Mult2*M4 + Mult4*M2) / K
-					BigIntMultiply(Mult1, M3, Tmp);
-					BigIntMultiply(Mult3, M1, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult2, M4, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult4, M2, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntDivide(Tmp, K, Tmp3);
+					Tmp = Mult1*M3 - Mult3*M1 - Mult2*M4 + Mult4*M2; 
+					Tmp3 = Tmp / K;
 
 					// Compute Mult4 <- (Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2) / K
-					BigIntMultiply(Mult1, M4, Tmp);
-					BigIntMultiply(Mult4, M1, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult2, M3, Tmp4);
-					BigIntAdd(Tmp, Tmp4, Tmp);
-					BigIntMultiply(Mult3, M2, Tmp4);
-					BigIntSubt(Tmp, Tmp4, Tmp);
-					BigIntDivide(Tmp, K, Mult4);
-					Mult3 = Tmp3; // CopyBigInt(Mult3, Tmp3);
-					Mult2 = Tmp2;  // CopyBigInt(Mult2, Tmp2);
-					Mult1 = Tmp1; // CopyBigInt(Mult1, Tmp1);
+					Tmp = Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2; // BigIntSubt(Tmp, Tmp4, Tmp);
+					Mult4 = Tmp / K; 
+
+					Mult3 = Tmp3; 
+					Mult2 = Tmp2;  
+					Mult1 = Tmp1; 
 				} /* end while */
 			} /* end if p = 3 (mod 4) */
 		} /* end prime not 2 */
 
 		  // Compute Tmp1 <- Mult1*Quad1 + Mult2*Quad2 + Mult3*Quad3 + Mult4*Quad4
-		BigIntMultiply(Mult1, Quad1, Tmp);
-		BigIntMultiply(Mult2, Quad2, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult3, Quad3, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult4, Quad4, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp1);
+		Tmp1 = Mult1*Quad1 + Mult2*Quad2 + Mult3*Quad3 + Mult4*Quad4; 
 
 		// Compute Tmp2 <- Mult1*Quad2 - Mult2*Quad1 + Mult3*Quad4 - Mult4*Quad3
-		BigIntMultiply(Mult1, Quad2, Tmp);
-		BigIntMultiply(Mult2, Quad1, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult3, Quad4, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult4, Quad3, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Tmp2);
+		Tmp2 = Mult1*Quad2 - Mult2*Quad1 + Mult3*Quad4 - Mult4*Quad3; 
 
 		// Compute Tmp3 <- Mult1*Quad3 - Mult3*Quad1 - Mult2*Quad4 + Mult4*Quad2
-		BigIntMultiply(Mult1, Quad3, Tmp);
-		BigIntMultiply(Mult3, Quad1, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult2, Quad4, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult4, Quad2, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp3);
+		Tmp3 = Mult1*Quad3 - Mult3*Quad1 - Mult2*Quad4 + Mult4*Quad2; 
 
 		// Compute Quad4 <- Mult1*Quad4 - Mult4*Quad1 + Mult2*Quad3 - Mult3*Quad2
-		BigIntMultiply(Mult1, Quad4, Tmp);
-		BigIntMultiply(Mult4, Quad1, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult2, Quad3, Tmp4);
-		BigIntAdd(Tmp, Tmp4, Tmp);
-		BigIntMultiply(Mult3, Quad2, Tmp4);
-		BigIntSubt(Tmp, Tmp4, Quad4);
+		Quad4 = Mult1*Quad4 - Mult4*Quad1 + Mult2*Quad3 - Mult3*Quad2; 
 
-		Quad3 = Tmp3; // CopyBigInt(Quad3, Tmp3);
-		Quad2 = Tmp2; // CopyBigInt(Quad2, Tmp2);
-		Quad1 = Tmp1; // CopyBigInt(Quad1, Tmp1);
+		Quad3 = Tmp3; 
+		Quad2 = Tmp2; 
+		Quad1 = Tmp1; 
 	} /* end for indexPrimes */
+
 	pstFactor = pstFactors + 1;      // Point to first factor in array of factors.
 	for (indexPrimes = pstFactors->multiplicity - 1; indexPrimes >= 0; indexPrimes--, pstFactor++)
 	{
 		NumberLength = *pstFactor->ptrFactor;
 		UncompressBigInteger(pstFactor->ptrFactor, p);
 		BigIntPowerIntExp(p, pstFactor->multiplicity / 2, K);
-		BigIntMultiply(Quad1, K, Quad1);
-		BigIntMultiply(Quad2, K, Quad2);
-		BigIntMultiply(Quad3, K, Quad3);
-		BigIntMultiply(Quad4, K, Quad4);
+		Quad1 = Quad1*K; 
+		Quad2 = Quad2*K; 
+		Quad3 = Quad3*K; 
+		Quad4 = Quad4*K; 
 	}
+
 	Quad1.sign = SIGN_POSITIVE;
 	Quad2.sign = SIGN_POSITIVE;
 	Quad3.sign = SIGN_POSITIVE;
 	Quad4.sign = SIGN_POSITIVE;
 
 	// Sort squares: largest in Quad1, smallest in Quad4
-	//if (TestBigNbrLess(Quad1, Quad2))	{  	
+	
 	if(Quad1 < Quad2) {		// Quad1 < Quad2, so exchange them.
-		Tmp = Quad1; // CopyBigInt(Tmp, Quad1);
-		Quad1 = Quad2;  // CopyBigInt(Quad1, Quad2);
-		Quad2 = Tmp; // CopyBigInt(Quad2, Tmp);
+		Tmp = Quad1; 
+		Quad1 = Quad2;  
+		Quad2 = Tmp; 
 	}
 
-	//if (TestBigNbrLess(Quad1, Quad3)) {   // Quad1 < Quad3, so exchange them.
 	if (Quad1 < Quad3) {	// Quad1 < Quad3, so exchange them.
-		Tmp = Quad1; // CopyBigInt(Tmp, Quad1);
-		Quad1 = Quad3; // CopyBigInt(Quad1, Quad3);
-		Quad3 = Tmp; // CopyBigInt(Quad3, Tmp);
+		Tmp = Quad1; 
+		Quad1 = Quad3; 
+		Quad3 = Tmp; 
 	}
 
-	//if (TestBigNbrLess(Quad1, Quad4)) {   // Quad1 < Quad4, so exchange them.
 	if (Quad1 < Quad4) {	// Quad1 < Quad4, so exchange them.
-		Tmp = Quad1; // CopyBigInt(Tmp, Quad1);
-		Quad1 = Quad4; // CopyBigInt(Quad1, Quad4);
-		Quad4 = Tmp; // CopyBigInt(Quad4, Tmp);
+		Tmp = Quad1; 
+		Quad1 = Quad4; 
+		Quad4 = Tmp; 
 	}
 
-	//if (TestBigNbrLess(Quad2, Quad3)) {   // Quad2 < Quad3, so exchange them.
 	if (Quad2 < Quad3) {	// Quad2 < Quad3, so exchange them.
-		Tmp = Quad2; // CopyBigInt(Tmp, Quad2);
-		Quad2 = Quad3; // CopyBigInt(Quad2, Quad3);
-		Quad3 = Tmp; // CopyBigInt(Quad3, Tmp);
+		Tmp = Quad2; 
+		Quad2 = Quad3; 
+		Quad3 = Tmp; 
 	}
 
-	//if (TestBigNbrLess(Quad2, Quad4)) {   // Quad2 < Quad4, so exchange them.
 	if (Quad2 < Quad4) {	// Quad2 < Quad4, so exchange them.
-		Tmp = Quad2; // CopyBigInt(Tmp, Quad2);
-		Quad2 = Quad4; // CopyBigInt(Quad2, Quad4);
-		Quad4 = Tmp; // CopyBigInt(Quad4, Tmp);
+		Tmp = Quad2; 
+		Quad2 = Quad4; 
+		Quad4 = Tmp; 
 	}
 
-	//if (TestBigNbrLess(Quad3, Quad4)) {   // Quad3 < Quad4, so exchange them.
 	if (Quad3 < Quad4) {	// Quad3 < Quad4, so exchange them.
-		Tmp = Quad3; // CopyBigInt(Tmp, Quad3);
-		Quad3 = Quad4; // CopyBigInt(Quad3, Quad4);
-		Quad4 = Tmp; // CopyBigInt(Quad4, Tmp);
+		Tmp = Quad3; 
+		Quad3 = Quad4; 
+		Quad4 = Tmp; 
 	}
 	return;
 }
@@ -2754,7 +2679,7 @@ void ValuestoZ(Znum &numberZ, const int number[]) {
 /* convert number from Znum to BigInteger and factorise it*/
 bool factorise(const Znum numberZ, std::vector <Znum> &factorlist,
 	std::vector <int> &exponentlist, Znum quads[]) {
-	BigInteger NtoFactor;
+	static BigInteger NtoFactor;
 
 	try {
 		factorlist.clear();
