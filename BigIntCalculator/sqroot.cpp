@@ -36,14 +36,16 @@ int bitLengthCycle[20];
 // Find power of 4 that divides the number.
 // output: pNbrLimbs = pointer to number of limbs
 //         pPower4 = pointer to power of 4.
-static void MultiplyBigNbrByMinPowerOf4(/*@in@*/ int *pPower4, /*@in@*/limb *number, int len, /*@out@*/limb *dest)
+static void MultiplyBigNbrByMinPowerOf4(/*@in@*/ int *pPower4, 
+	/*@in@*/const limb *number, int len, /*@out@*/limb *dest)
 {
 	int power4;
 	int power2 = 0;
 	limb mostSignficLimb;
 	int index2, mask, shLeft;
 	limb prevLimb, currLimb;
-	limb *ptrDest, *ptrSrc;
+	limb *ptrDest; 
+	const limb *ptrSrc;
 
 	ptrSrc = number;
 	if ((len & 1) != 0)
@@ -87,7 +89,7 @@ static void MultiplyBigNbrByMinPowerOf4(/*@in@*/ int *pPower4, /*@in@*/limb *num
 	*pPower4 = power4;
 }
 
-void squareRoot(/*@in@*/limb *argument, /*@out@*/limb *sqRoot, int len, /*@out@*/int *pLenSqRoot)
+void squareRoot(/*@in@*/const limb *argument, /*@out@*/limb *sqRoot, int len, /*@out@*/int *pLenSqRoot)
 {
 	int index, lenInvSqrt, lenInvSqrt2;
 	int bitLength;

@@ -14,6 +14,10 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <vector>
+#include "mpir.h"
+#include "boost/multiprecision/gmp.hpp" 
+typedef boost::multiprecision::mpz_int Znum;
+
 #define MAX_LEN 2500        // approximately 20000 digits
 #define BITS_PER_GROUP 31
 #define BITS_PER_INT_GROUP 31
@@ -23,6 +27,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define SMALL_NUMBER_BOUND 32768
 #define _USING64BITS_ 1
 #define Max_Factors 2500  // number of unique factors
+
 struct limb
 {
 	int x=0;      // maximum value in each limb is MAX_VALUE_LIMB
@@ -36,11 +41,58 @@ enum eSign
 };
 
 
+bool BigNbrIsZero(const limb *value, int nbrLength);
+void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
+double getMantissa(const limb *ptrLimb, int nbrLimbs);
+
 class BigInteger {
-public:
+public:                  // ideally, values should be private
 	limb limbs[MAX_LEN];
 	int nbrLimbs = 1;
 	enum eSign sign = SIGN_POSITIVE;
+
+public:
+	int bitLength() const {
+		unsigned int mask;
+		int bitCount;
+		const int lastLimb = nbrLimbs - 1;
+		int bitLen = lastLimb*BITS_PER_GROUP;
+		unsigned int limb = (unsigned int)(limbs[lastLimb].x);
+		mask = 1;
+		for (bitCount = 0; bitCount < BITS_PER_GROUP; bitCount++) {
+			if (limb < mask) {
+				break;
+			}
+			mask *= 2;
+		}
+		return bitLen + bitCount;
+	}
+	bool isEven() const {
+		return ((limbs[0].x & 1) == 0);
+	}
+	BigInteger sqRoot() const {
+		BigInteger sqrRoot;
+		squareRoot((*this).limbs, sqrRoot.limbs, (*this).nbrLimbs, &sqrRoot.nbrLimbs);
+		sqrRoot.sign = SIGN_POSITIVE;
+		return sqrRoot;
+	}
+	long long lldata() const { /* convert to long long */
+		int noOfLimbs; 
+		long long rv = 0;
+		for (noOfLimbs = nbrLimbs - 1; noOfLimbs >= 0; noOfLimbs--) {
+			rv *= LIMB_RANGE;
+			rv += limbs[noOfLimbs].x;
+		}
+		if (sign == SIGN_NEGATIVE)
+			rv = -rv;
+		return rv;  // no check for overflow; just return last 64 bits
+	}
+	double fdata() const { /* convert to double */
+		double rv = getMantissa(limbs+nbrLimbs, nbrLimbs);
+		if (sign == SIGN_NEGATIVE)
+			rv = -rv;
+		return rv;  
+	}
 	/* overload assignment operator here */
 	BigInteger & operator = (const BigInteger &other) {
 		if (&other == this)
@@ -81,7 +133,152 @@ public:
 		nbrLimbs = noOfLimbs;
 		return *this;
 	}
+	BigInteger & operator = (double value) {
+		DoubleToBigInt (*this, value);
+		return *this;
+	}
+	BigInteger & operator = (Znum x) {
+		ZtoBig(*this, x);
+		return *this;
+	}
 	/* other operators are overloaded later */
+	BigInteger(long long i=0) {   // constructor
+		*this = i;
+	}
+	friend BigInteger BigIntAdd      (const BigInteger &Addend1, const BigInteger &Addend2);
+	friend BigInteger BigIntSubt     (const BigInteger &Minuend, const BigInteger &Subtrahend);
+	friend static void BigIntNegate  (BigInteger &pDest);
+	friend BigInteger BigIntDivide   (const BigInteger &Dividend, const BigInteger &Divisor);
+	friend BigInteger BigIntMultiply (const BigInteger &Factor1, const BigInteger &Factor2);
+	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
+	/* calculate base^expon. Throw exception if result is out of range */
+	friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
+	friend void BigIntGcd (const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &Result);
+	friend void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
+		const BigInteger &mod, BigInteger &quotient);
+	friend void subtractdivide(BigInteger &BigInt, int subt, int divisor);
+	friend void addbigint     (BigInteger &Result, int addend); // Result += addend
+
+	friend int getRemainder    (const BigInteger &pBigInt, int divisor);  // BigInt%divisor
+	friend bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
+	friend bool TestBigNbrLess (const BigInteger &Nbr1, const BigInteger &Nbr2);
+	friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
+	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
+	friend void DoubleToBigInt (BigInteger &bigInt, double dvalue);
+	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
+	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
+	friend void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
+	friend void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
+	friend void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigInteger &bigint);
+	friend void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint);
+	friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
+	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
+	friend bool ZtoBig(BigInteger &number, Znum numberZ);
+	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
+
+	BigInteger operator +  (const BigInteger &b) const {
+		return BigIntAdd(*this, b);
+	}
+	BigInteger &operator += (const BigInteger &b) {
+		*this = BigIntAdd(*this, b);
+		return *this;
+	}
+	BigInteger operator -  (const BigInteger &b) const {
+		return BigIntSubt(*this, b);
+	}
+	BigInteger &operator -= (const BigInteger &b) {
+		*this = BigIntSubt(*this, b);
+		return *this;
+	}
+	BigInteger operator /  (const BigInteger &b) const {
+		return BigIntDivide(*this, b);
+	}
+	BigInteger &operator /= (const BigInteger &b) {
+		return *this = BigIntDivide(*this, b);
+	}
+	BigInteger  operator *  (const BigInteger &b) const {
+		return BigIntMultiply(*this, b);
+	}
+	BigInteger &operator *= (const BigInteger &b) {
+		return *this = BigIntMultiply(*this, b);
+	}
+	BigInteger  operator %  (const BigInteger &Divisor) const {
+		return BigIntRemainder(*this, Divisor);
+	}
+
+	/* note that only a few operators are oveloaded for BigInt <op> int */
+	int         operator %  (int divisor) const {
+		return getRemainder(*this, divisor);
+	}
+	BigInteger &operator += (const int b) {
+		addbigint(*this, b);
+		return *this;
+	}
+	BigInteger &operator ++ (int x) {
+		addbigint(*this, 1);
+		return *this;
+	}
+	BigInteger &operator -- (int x) {
+		addbigint(*this, -1);
+		return *this;
+	}
+	BigInteger &operator -= (const int b) {
+		addbigint(*this, -b);
+		return *this;
+	}
+
+	/* overload comparison operators here */
+	bool operator ==(const BigInteger &b) const {
+		return TestBigNbrEqual(*this, b);
+	}
+	bool operator ==(const long long b) const {
+		if (b == 0)
+			return BigNbrIsZero((*this).limbs, (*this).nbrLimbs);
+		BigInteger Btemp;
+		Btemp = b;
+		return TestBigNbrEqual(*this, Btemp);
+	}
+	bool operator !=(const BigInteger &b) const {
+		return !TestBigNbrEqual(*this, b);
+	}
+	bool operator !=(const long long b) const {
+		BigInteger Btemp;
+		Btemp = b;
+		return !TestBigNbrEqual(*this, Btemp);
+	}
+	bool operator < (const BigInteger &b) const {
+		return TestBigNbrLess(*this, b);
+	}
+	bool operator < ( const long long b) const {
+		if (b == 0) {
+			return ((*this).sign == SIGN_NEGATIVE);
+		}
+		BigInteger Btemp = b;
+		return TestBigNbrLess(*this, Btemp);
+	}
+	bool operator > (const BigInteger &b) const {
+		return TestBigNbrLess(b, *this);
+	}
+	bool operator > (const long long b) const {
+		BigInteger Btemp = b;
+		return TestBigNbrLess(Btemp, *this);
+	}
+	bool operator <=(const BigInteger &b) const {
+		return !TestBigNbrLess(b, *this);
+	}
+	bool operator <=(const long long b) const {
+		BigInteger Btemp = b;
+		return !TestBigNbrLess(Btemp, *this);
+	}
+	bool operator >=(const BigInteger &b) const {
+		return !TestBigNbrLess(*this, b);
+	}
+	bool operator >=(const long long b) const {
+		if (b == 0)
+			return ((*this).sign == SIGN_POSITIVE);
+		BigInteger Btemp = b;
+		return !TestBigNbrLess(*this, Btemp);
+	}
 } ;
 
 extern limb TestNbr[MAX_LEN];
@@ -89,14 +286,13 @@ extern limb MontgomeryMultR2[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
-bool BigNbrIsZero(const limb *value, int nbrLength);
-void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *pResultLen);
-void squareRoot(limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
+
+void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
-void AddBigNbrModN(limb *Nbr1, limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
-void SubtBigNbrModN(limb *Nbr1, limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
-void SubtBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum);
+void AddBigNbrModN (const limb *Nbr1, const limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
+void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
+void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 void modmultInt(limb *factorBig, int factorInt, limb *result);
 void modmultIntExtended(limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
@@ -104,156 +300,13 @@ void AddBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum);
 void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
 void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
-//void BigIntAdd(const BigInteger &pAddend1, const BigInteger &pAddend2, BigInteger &pSum);
-BigInteger &BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2);
-static BigInteger &operator +(const BigInteger &a, const BigInteger &b) {
-	return BigIntAdd(a, b);
-}
-static BigInteger &operator +=(BigInteger &a, const BigInteger &b) {
-	a = BigIntAdd(a, b);
-	return a;
-}
-//void BigIntSubt(const BigInteger &pAddend1, const BigInteger &pAddend2, BigInteger &pSum);
-BigInteger &BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend);
-static BigInteger &operator -(const BigInteger &a, const BigInteger &b) {
-	return BigIntSubt(a, b);
-}
-static BigInteger &operator -=(BigInteger &a, const BigInteger &b) {
-	a =  BigIntSubt(a, b);
-	return a;
-}
 
-void BigIntNegate(BigInteger &pDest);
-//void BigIntDivide(const BigInteger &pDividend, const BigInteger &pDivisor,
-//	BigInteger &pQuotient);
-BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor);
-static BigInteger operator / (const BigInteger &a, const BigInteger &b) {
-	return BigIntDivide(a, b);
-}
-
-//void BigIntMultiply(const BigInteger &pFactor1, const BigInteger &pFactor2, BigInteger &pProduct);
-BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2);
-static BigInteger operator * (const BigInteger &a, const BigInteger &b) {
-	return BigIntMultiply(a, b);
-}
-static BigInteger operator *= (BigInteger &a, const BigInteger &b) {
-	return a = BigIntMultiply(a, b);
-}
-
-//void BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor,
-//	BigInteger &Remainder);
-BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
-static BigInteger operator %(const BigInteger &Dividend, const BigInteger &Divisor) {
-	return BigIntRemainder(Dividend, Divisor);
-}
-
-void BigIntPowerIntExp(const BigInteger &pBase, int expon, BigInteger &pPower);
-void BigIntGcd(const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &pResult);
-void BigIntModularDivision(BigInteger &Num, BigInteger &Den, BigInteger &mod, BigInteger &quotient);
-
-int getRemainder(const BigInteger &pBigInt, int divisor);
-static int operator %(const BigInteger &a, const int divisor) {
-	return getRemainder(a, divisor);
-}
-void subtractdivide(BigInteger &pBigInt, int subt, int divisor);
-void addbigint(BigInteger &pResult, int addend);
-static BigInteger operator +=(BigInteger &a, const int b) {
-	addbigint(a, b);
-	return a;
-}
-static BigInteger operator ++(BigInteger &a, int x) {
-	addbigint(a, 1);
-	return a;
-}
-static BigInteger operator --(BigInteger &a, int x) {
-	addbigint(a, -1);
-	return a;
-}
-static BigInteger operator -=(BigInteger &a, const int b) {
-	addbigint(a, -b);
-	return a;
-}
-bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
-bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
-/* overload comparison operators here */
-static bool operator ==(const BigInteger &a, const BigInteger &b) {
-	return TestBigNbrEqual(a, b);
-}
-static bool operator ==(const BigInteger &a, const long long b) {
-	if (b == 0)
-		return BigNbrIsZero(a.limbs, a.nbrLimbs);
-	BigInteger Btemp;
-	Btemp = b;
-	return TestBigNbrEqual(a, Btemp);
-}
-
-static bool operator !=(const BigInteger &a, const BigInteger &b) {
-	return !TestBigNbrEqual(a, b);
-}
-static bool operator !=(const BigInteger &a, const long long b) {
-	BigInteger Btemp;
-	Btemp = b;
-	return !TestBigNbrEqual(a, Btemp);
-}
-
-static bool operator <(const BigInteger &a, const BigInteger &b) {
-	return TestBigNbrLess(a, b);
-}
-static bool operator <(const BigInteger &a, const long long b) {
-	if (b == 0) {
-		return (a.sign == SIGN_NEGATIVE);
-	}
-	BigInteger Btemp;
-	Btemp = b;
-	return TestBigNbrLess(a, Btemp);
-}
-
-static bool operator >(const BigInteger &a, const BigInteger &b) {
-	return TestBigNbrLess(b, a);
-}
-static bool operator >(const BigInteger &a, const long long b) {
-	BigInteger Btemp;
-	Btemp = b;
-	return TestBigNbrLess(Btemp, a);
-}
-
-static bool operator <=(const BigInteger &a, const BigInteger &b) {
-	return !TestBigNbrLess(b, a);
-}
-static bool operator <=(const BigInteger &a, const long long b) {
-	BigInteger Btemp;
-	Btemp = b;
-	return !TestBigNbrLess(Btemp, a);
-}
-static bool operator >=(const BigInteger &a, const BigInteger &b) {
-	return !TestBigNbrLess(a, b);
-}
-static bool operator >=(const BigInteger &a, const long long b) {
-	if (b == 0)
-		return (a.sign == SIGN_POSITIVE);
-	BigInteger Btemp;
-	Btemp = b;
-	return !TestBigNbrLess(a, Btemp);
-}
-
-//BigInteger &CopyBigInt(BigInteger &pDest, const BigInteger &pSrc);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
-//int modInv(int NbrMod, int currentPrime);
-void BigIntDivide2(BigInteger &pArg);
-int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
-int BpswPrimalityTest(const BigInteger *pBigNbr);
-void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
-void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
-void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigInteger &bigint);
-void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint);
-void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 
-//void intToBigInteger(BigInteger &bigint, const int value);
-//void longToBigInteger(BigInteger &bigint, long long value);
-void expBigNbr(BigInteger &pBigNbr, double logar);
-double logBigNbr(const BigInteger &pBigNbr);
+int BpswPrimalityTest(const BigInteger &pBigNbr);
+
+void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
-double getMantissa(const limb *ptrLimb, int nbrLimbs);
 void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
 void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
 bool checkOne(const limb *value, int nbrLimbs);
@@ -281,7 +334,7 @@ void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbr
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
 void ModInvBigInt(int *num, int *inv, int *mod, int NumberLength);
-//void IntToBigNbr(int value, int *bigNbr, int nbrLength);
+
 int JacobiSymbol(int upper, int lower);
 
 typedef void(*mmCback)(void);

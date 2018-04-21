@@ -29,16 +29,17 @@ struct sFactors
 	int multiplicity;
 	int upperBound;
 };
+typedef boost::multiprecision::mpz_int Znum;
 
-void factor(const BigInteger *nbrToFactor, int *number, int *factors, 
-	struct sFactors *pstFactors, char *pcKnownFactors);
+
 void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
 extern int lang;
 
 
-typedef boost::multiprecision::mpz_int Znum;
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
 bool factorise(const Znum numberZ, std::vector <Znum> &factorlist,
 	std::vector <int> &exponentlist, Znum Quad[]);
+
+

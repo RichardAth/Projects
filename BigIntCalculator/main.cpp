@@ -1706,14 +1706,31 @@ void doTests(void) {
 		factortest(x3);
 	}
 
-	/* exercise code specifically for power +/-1*/
+	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);
 	x3 -= 1;
 	factortest(x3);
 	x3 += 2;
 	factortest(x3);
+	ComputeExpr("120#-1", x3);
+	factortest(x3);
+
+	/* test using carmichael numbers. note that 1st example has no small factors  */
+	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
+		60977817398996785 };
+	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
+		factortest(carmichael[i]);
+	}
 
 	std::cout << "factorisation tests completed\n";
+
+	for (double i = 10; i<= 10e25; i *= 10 ) {
+		BigInteger rv;
+		Znum ev;
+		rv = i; // DoubleToBigInt(rv, i);  // test conversion from double to bigint
+		BigtoZ(ev, rv);   //convert to Znum for output
+		std::cout << "i= " << i << " ev = " << ev << "\n";
+	}
 }
 
 int main(int argc, char *argv[]) {

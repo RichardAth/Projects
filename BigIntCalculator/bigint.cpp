@@ -16,9 +16,15 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <limits.h>
 #include <string>
 #include <assert.h>
-#include <math.h>
+#include <cmath>
+#include "factor.h"
+
 #include "bignbr.h"
 #include "expression.h"
+
+typedef boost::multiprecision::mpz_int Znum;
+/* access underlying mpz_t inside an bigint */
+#define ZT(a) a.backend().data()
 
 static BigInteger Temp, Temp2, Temp3, Base, Power, expon;
 static char ProcessExpon[5000];
@@ -31,116 +37,14 @@ int q[MAX_LEN];
 extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 
-/* copy source to dest */
-//BigInteger &CopyBigInt(BigInteger &pDest, const BigInteger &pSrc) {
-//	pDest.sign = pSrc.sign;
-//	pDest.nbrLimbs = pSrc.nbrLimbs;
-//	memcpy(pDest.limbs, pSrc.limbs, (pSrc.nbrLimbs) * sizeof(limb));
-//	while (pDest.nbrLimbs > 1) {
-//		if (pDest.limbs[pDest.nbrLimbs - 1].x == 0)
-//			pDest.nbrLimbs--;
-//		else
-//			break;
-//	}
-//	return pDest;
-//}
-
- /* sum = addend1 + addend2 */
-//void BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2, BigInteger &Sum) {
-//	int ctr, nbrLimbs;
-//	const limb *ptrBiggerAdd, *ptrSmallerAdd;
-//	limb *ptrSum;
-//	bool A1Smaller = false;
-//
-//	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
-//		A1Smaller = true;
-//		/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//	}           
-//	
-//	else if (Addend1.nbrLimbs == Addend2.nbrLimbs) 	{
-//		for (ctr = Addend1.nbrLimbs - 1; ctr >= 0; ctr--) {
-//			if (Addend1.limbs[ctr].x != Addend2.limbs[ctr].x) {
-//				break;
-//			}
-//		}
-//		if (ctr >= 0 && Addend1.limbs[ctr].x < Addend2.limbs[ctr].x) {
-//			/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//			A1Smaller = true;
-//		} 
-//	}
-//	if (A1Smaller) {
-//		nbrLimbs = Addend1.nbrLimbs;
-//		ptrBiggerAdd = Addend2.limbs;
-//		ptrSmallerAdd = Addend1.limbs;
-//	}
-//	else {
-//		// the absolute value of addend1 is >= the absolute value of addend2.
-//		nbrLimbs = Addend2.nbrLimbs;
-//		ptrBiggerAdd = Addend1.limbs;
-//		ptrSmallerAdd = Addend2.limbs;
-//	}
-//	ptrSum = Sum.limbs;
-//
-//	if (Addend1.sign == Addend2.sign)
-//	{             // Both addends have the same sign. Sum their absolute values.
-//		unsigned int carry = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x +
-//				(unsigned int)ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else 
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (carry >= LIMB_RANGE)
-//		{
-//			ptrSum[ctr].x = 1;
-//			nbrLimbs++;
-//		}
-//	}
-//	else {    // addends have different signs. Subtract their absolute values.
-//		int borrow = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x - ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//	}
-//
-//	while (nbrLimbs > 1 && Sum.limbs[nbrLimbs - 1].x == 0) {    
-//		nbrLimbs--;  // delete leading zeros.
-//	}
-//
-//	Sum.nbrLimbs = nbrLimbs;
-//	if (A1Smaller)
-//		Sum.sign = Addend2.sign;  // use sign of addend with larger absolute value
-//	else
-//		Sum.sign = Addend1.sign;
-//
-//	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {          
-//		Sum.sign = SIGN_POSITIVE; // Result is zero.
-//	}
-//}
 
 /*return addend1 + addend2 (used to overload + operator) */
-BigInteger &BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
+BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 	int ctr, nbrLimbs;
 	const limb *ptrBiggerAdd, *ptrSmallerAdd;
 	limb *ptrSum;
 	bool A1Smaller = false;
-	static BigInteger Sum;
+	BigInteger Sum;  // temporar variable 
 
 	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
 		A1Smaller = true;
@@ -220,13 +124,13 @@ BigInteger &BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 		Sum.sign = Addend1.sign;
 
 	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {
-		Sum.sign = SIGN_POSITIVE; // Result is zero.
+		Sum.sign = SIGN_POSITIVE; // Result is zero, so sign is +ve
 	}
 	return Sum;
 }
-/* Dest = -Dest */
 
-void BigIntNegate (BigInteger &pDest) {
+/* Dest = -Dest */
+static void BigIntNegate (BigInteger &pDest) {
 	
 	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
 	{
@@ -234,111 +138,33 @@ void BigIntNegate (BigInteger &pDest) {
 	}
 	else
 	{
-		pDest.sign = SIGN_POSITIVE; // pDest <=0, now > 0
+		pDest.sign = SIGN_POSITIVE; // pDest <=0, now >= 0
 	}
 }
 
-/* Difference = Minuend - Subtrahend */
-//void BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend, 
-//	BigInteger &Difference) {
-//	BigInteger temp;
-//	temp = Subtrahend; //CopyBigInt(temp, Subtrahend);
-//	BigIntNegate(temp);
-//	Difference = Minuend + temp; // BigIntAdd(Minuend, temp, Difference); 
-//}
 
 /* return minuend - subtrahend (used to overload - operator) */
-BigInteger &BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
-	static BigInteger Difference;
+BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
+	BigInteger Difference;
 	static BigInteger temp;
-	temp = Subtrahend; 
+	temp = Subtrahend;   // copy Subtrahend to temporary variable
 	BigIntNegate(temp);
 	Difference = Minuend + temp;
 	return Difference;
 }
 
-/* Factor1 will be expanded to the length of Factor2 or vice versa 
+/* returns Factor1 * Factor2 (used to overload * operator)
+Factor1 will be expanded to the length of Factor2 or vice versa 
 Changed design from returning error code to throw an exception, because error 
 codes need to be tested for after every call, passed up to the calling routine,
 tested for again and so on up to the top level. In practise this wasn't done consistently. */
-//void BigIntMultiply(const BigInteger &pFactor1, const BigInteger &pFactor2, BigInteger &pProduct)
-//{
-//	int nbrLimbsFactor1 = pFactor1.nbrLimbs;
-//	int nbrLimbsFactor2 = pFactor2.nbrLimbs;
-//	int nbrLimbs;
-//	if ((pFactor1.nbrLimbs == 1 && pFactor1.limbs[0].x == 0) ||
-//		(pFactor2.nbrLimbs == 1 && pFactor2.limbs[0].x == 0))
-//	{    // one or both factors are zero.
-//		pProduct.nbrLimbs = 1;      // Product is zero.
-//		pProduct.limbs[0].x = 0;
-//		pProduct.sign = SIGN_POSITIVE;
-//		return;
-//	}
-//	if (pFactor1.nbrLimbs + pFactor2.nbrLimbs > 66438 / BITS_PER_GROUP + 1)  // 2^66438 ~ 10^20000
-//	{
-//		//return EXPR_INTERM_TOO_HIGH;
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "cannot multiply: product out of range ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//
-//	/* Factor1 will be expanded to the length of Factor2 or vice versa. It is necessary to
-//	override the const-ness, but the value represented does not change */
-//	if (nbrLimbsFactor1<nbrLimbsFactor2)
-//	{
-//		memset(&((BigInteger&)pFactor1).limbs[nbrLimbsFactor1], 0, (nbrLimbsFactor2 - nbrLimbsFactor1) * sizeof(limb));
-//		nbrLimbs = nbrLimbsFactor2;
-//	}
-//	else
-//	{
-//		memset(&((BigInteger&)pFactor2).limbs[nbrLimbsFactor2], 0, (nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
-//		nbrLimbs = nbrLimbsFactor1;
-//	}
-//	multiply(&pFactor1.limbs[0], &pFactor2.limbs[0], 
-//		&pProduct.limbs[0], nbrLimbs, &nbrLimbs);
-//	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
-//	if (nbrLimbs > MAX_LEN)  // limit applied earlier is probably lower, this is just insurance
-//	{
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "cannot multiply: product out of range ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//	if (pProduct.limbs[nbrLimbs - 1].x == 0)
-//	{
-//		nbrLimbs--;
-//	}
-//	pProduct.nbrLimbs = nbrLimbs;
-//	if (nbrLimbs == 1 && pProduct.limbs[0].x == 0)
-//	{
-//		pProduct.sign = SIGN_POSITIVE;  // product is zero
-//	}
-//	else
-//	{
-//		if (pFactor1.sign == pFactor2.sign)
-//		{
-//			pProduct.sign = SIGN_POSITIVE;
-//		}
-//		else
-//		{
-//			pProduct.sign = SIGN_NEGATIVE;
-//		}
-//	}
-//	return;
-//}
-
-/* returns Factor1 * Factor2 (used to overload * operator) */
 BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 {
-	static BigInteger Product;
+	BigInteger Product;    // temporary variable 
 	int nbrLimbsFactor1 = Factor1.nbrLimbs;
 	int nbrLimbsFactor2 = Factor2.nbrLimbs;
 	int nbrLimbs;
+
 	if ((Factor1.nbrLimbs == 1 && Factor1.limbs[0].x == 0) ||
 		(Factor2.nbrLimbs == 1 && Factor2.limbs[0].x == 0))
 	{    // one or both factors are zero.
@@ -347,9 +173,10 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		Product.sign = SIGN_POSITIVE;
 		return Product;
 	}
+
 	if (Factor1.nbrLimbs + Factor2.nbrLimbs > 66438 / BITS_PER_GROUP + 1)  // 2^66438 ~ 10^20000
 	{
-		//return EXPR_INTERM_TOO_HIGH;
+		// product out of range; throw exception
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot multiply: product out of range ";
 		mesg += __func__;
@@ -368,6 +195,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		memset(&((BigInteger&)Factor2).limbs[nbrLimbsFactor2], 0, (nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
 		nbrLimbs = nbrLimbsFactor1;
 	}
+
 	multiply(&Factor1.limbs[0], &Factor2.limbs[0],
 		&Product.limbs[0], nbrLimbs, &nbrLimbs);
 	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
@@ -399,72 +227,31 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 }
 
 /* calculate Dividend mod Divisor 
-uses global variables Base & Temp2 */
-////void BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor,
-////	BigInteger &Remainder) {
-////	if (Divisor.limbs[0].x == 0 && Divisor.nbrLimbs == 1)
-////	{   // If divisor = 0, then remainder is the dividend.
-////		return;
-////	}
-////	Temp2 = Dividend;
-////	Base = Dividend / Divisor;    // Get quotient of division.
-////	Base = Base*Divisor; 
-////	Remainder = Temp2 - Base;  
-////	return;
-////}
+uses global variable Base */
 BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor) {
-	BigInteger Remainder;
+	BigInteger Remainder;  
 	if (Divisor == 0) {   // If divisor = 0, then remainder is the dividend.
 		Remainder = Dividend;
 		return Remainder;
 	}
-	//Temp2 = Dividend;
 	Base = Dividend / Divisor;    // Get quotient of division.
 	Base = Base*Divisor;
-	//Remainder = Dividend - Base;
 	return Dividend - Base;
 }
  
-/* bigint = value */
-//void intToBigInteger(BigInteger &bigint, const int value) {
-//	if (value >= 0)
-//	{
-//		bigint.limbs[0].x = value;
-//		bigint.sign = SIGN_POSITIVE;
-//	}
-//	else
-//	{
-//		bigint.limbs[0].x = -value;
-//		bigint.sign = SIGN_NEGATIVE;
-//	}
-//	bigint.nbrLimbs = 1;
-//}
-
-/* bigint = value */
-//void longToBigInteger(BigInteger &bigint, long long value) {
-//	int nbrLimbs = 0;
-//	bigint.sign = SIGN_POSITIVE;
-//	if (value < 0)
-//	{
-//		bigint.sign = SIGN_NEGATIVE;
-//		value = -value;
-//	}
-//	do
-//	{
-//		bigint.limbs[nbrLimbs++].x = (int)value & MAX_VALUE_LIMB;
-//		value >>= BITS_PER_GROUP;
-//	} while (value != 0);
-//	bigint.nbrLimbs = nbrLimbs;
-//}
-
 /* BigInt = e^logar*/
-void expBigNbr(BigInteger &bigInt, double logar)
+void expBigInt(BigInteger &bigInt, double logar)
 {
 	int mostSignificantLimb;
 	logar /= log(2);  // convert log to base 2
+	/* calculate required value for most significnt limb, initially in floating point */
+	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
+	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)));
+
+	/* convert double to BigInteger */
 	bigInt.sign = SIGN_POSITIVE;
-	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);
-	mostSignificantLimb = (int)floor(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)) + 0.5);
+	
+	mostSignificantLimb = (int) value;
 	if (mostSignificantLimb == LIMB_RANGE)
 	{
 		mostSignificantLimb = 1;
@@ -483,27 +270,38 @@ void expBigNbr(BigInteger &bigInt, double logar)
 	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
 }
 
+/* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
+void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
+
+	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
+		long long vv = (long long)round(dvalue); // convert directly to long long if possible
+		bigInt = vv;
+		return;
+	}
+	Znum temp;
+	mpz_set_d(ZT(temp), dvalue);  // convert double to Znum
+	// this method has been tested to be at least as accurate as direct conversion,
+	// and obviously it's easier to use standard library functions.
+	ZtoBig(bigInt, temp);        // convert Znum to BigInt
+	return;
+}
+
 /* estimate natural log of BigInt. Only the most significant 62 bits are 
 taken into account because floating point numbers have limited accuracy anyway. */
-double logBigNbr(const BigInteger &pBigInt)
-{
+double logBigNbr (const BigInteger &pBigInt) {
 	int nbrLimbs;
 	double logar;
 	nbrLimbs = pBigInt.nbrLimbs;
-	if (nbrLimbs == 1)
-	{
+	if (nbrLimbs == 1) {
 		logar = log((double)(pBigInt.limbs[0].x));
 	}
-	else
-	{
+	else {
 		double value = pBigInt.limbs[nbrLimbs - 2].x +
 			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
-		if (nbrLimbs == 2)
-		{
+		if (nbrLimbs == 2) {
 			logar = log(value);
 		}
-		else
-		{
+		else {
 			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
 		}
 		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
@@ -646,8 +444,6 @@ bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 /* return true if Nbr1 < Nbr2 */
 bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	int ctr;
-	/*const limb *ptrLimbs1 = Nbr1.limbs;
-	const limb *ptrLimbs2 = Nbr2.limbs;*/
 	auto N1Limbs = Nbr1.nbrLimbs;
 	auto N2Limbs = Nbr2.nbrLimbs;
 	while (N1Limbs > 1)
@@ -660,7 +456,6 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 			N2Limbs--;
 		else
 			break;
-
 
 	if (Nbr1.sign != Nbr2.sign) {
 		// Sign of numbers are different.
@@ -697,12 +492,12 @@ void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Resul
 	int nbrLimbs1 = Arg1.nbrLimbs;
 	int nbrLimbs2 = Arg2.nbrLimbs;
 	int power2;
-	if (nbrLimbs1 == 1 && Arg1.limbs[0].x == 0)
+	if (Arg1 == 0)
 	{               // First argument is zero, so the GCD is second argument.
 		Result = Arg2;    //CopyBigInt(Result, pArg2);
 		return;
 	}
-	if (nbrLimbs2 == 1 && Arg2.limbs[0].x == 0)
+	if (Arg2 == 0)
 	{               // Second argument is zero, so the GCD is first argument.
 		Result = Arg1;		//CopyBigInt(Result, pArg1);
 		return;
@@ -722,11 +517,11 @@ void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Resul
 
 	while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
 	{    // Main GCD loop.
-		if ((Base.limbs[0].x & 1) == 0) {     // Number is even. Divide it by 2.
+		if (Base.isEven()) {     // Number is even. Divide it by 2.
 			BigIntDivide2(Base);
 			continue;
 		}
-		if ((Power.limbs[0].x & 1) == 0)  {     // Number is even. Divide it by 2.
+		if (Power.isEven())  {     // Number is even. Divide it by 2.
 			BigIntDivide2(Power);
 			continue;
 		}
@@ -947,26 +742,6 @@ void addbigint(BigInteger &Result, int addend) {
 	Result.nbrLimbs = nbrLimbs;
 }
 
-// Get number of bits of given big integer.
-static int bitLength(const BigInteger &pBigNbr)
-{
-	unsigned int mask;
-	int bitCount;
-	const int lastLimb = pBigNbr.nbrLimbs - 1;
-	int bitLen = lastLimb*BITS_PER_GROUP;
-	unsigned int limb = (unsigned int)(pBigNbr.limbs[lastLimb].x);
-	mask = 1;
-	for (bitCount = 0; bitCount < BITS_PER_GROUP; bitCount++)
-	{
-		if (limb < mask)
-		{
-			break;
-		}
-		mask *= 2;
-	}
-	return bitLen + bitCount;
-}
-
 /* returns nbrMod^Expon%currentPrime*/
 int intModPow(int NbrMod, int Expon, int currentPrime)
 {
@@ -1079,12 +854,11 @@ void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigIntege
 /* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
 void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint)
 {
-	if (NumberLength == 1)
-	{
+	if (NumberLength == 1) {
 		ptrValues[0].x = bigint.limbs[0].x;
 	}
 	else {
-		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & nbrLimbs
+		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumberLength
 		if (nbrLimbs >= NumberLength) {
 			memcpy(ptrValues, bigint.limbs, NumberLength * sizeof(limb));
 		}
@@ -1099,6 +873,7 @@ void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int
 {
 	int nbrLimbs = *ptrValues;
 	memcpy(bigNbr, ptrValues + 1, nbrLimbs * sizeof(limb));
+	/* if nbrLen > nbrLimbs set extra limbs to 0*/
 	memset(bigNbr + nbrLimbs, 0, (nbrLen - nbrLimbs) * sizeof(limb));
 }
 
@@ -1116,15 +891,15 @@ void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int n
 	*ptrValues = nbrLimbs;
 }
 
-// This routine checks whether the number pointed by pNbr is a perfect power. 
+// This routine checks whether the number BigInt is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  
-// exponent and  it fills the buffer pointed by Base with the base.
+// exponent and  it fills the buffer referenced by Base with the base.
 int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 {
 	limb *ptrLimb;
 	double dN;
 	int nbrLimbs = BigInt.nbrLimbs;
-	const int maxExpon = bitLength(BigInt);  // if maxExpon > 5000 throw an exception
+	const int maxExpon = BigInt.bitLength();  // if maxExpon > 5000 throw an exception
 											// this corresponds to about 161 limbs 
 	int h, j;
 	int modulus;
@@ -1136,8 +911,7 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 	// Primes of the form 2310x+1.
 	bool expon2 = true, expon3 = true, expon5 = true;
 	bool expon7 = true, expon11 = true;
-	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++)
-	{
+	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
 		int testprime = prime2310x1[h];
 		int mod = BigInt%testprime; // getRemainder(BigInt, testprime);
 		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
@@ -1169,72 +943,54 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 		throw std::range_error(mesg);
 	}
 	
-	for (h = 2; h <= maxExpon; h++)
-	{
+	for (h = 2; h <= maxExpon; h++) {
 		ProcessExpon[h] = true;
 	}
-	for (h = 2; h < primesLength; h++)
-	{
+	for (h = 2; h < primesLength; h++) {
 		primes[h] = true;
 	}
-	for (h = 2; h * h < primesLength; h++)
-	{ // Generation of primes
-		for (j = h * h; j < primesLength; j += h)
-		{ // using Eratosthenes sieve
+	for (h = 2; h * h < primesLength; h++) { // Generation of primes
+		for (j = h * h; j < primesLength; j += h) { // using Eratosthenes sieve
 			primes[j] = false;
 		}
 	}
-	for (h = 13; h < primesLength; h++)
-	{
-		if (primes[h])
-		{
+	for (h = 13; h < primesLength; h++) {
+		if (primes[h]) {
 			int processed = 0;
-			for (j = 2 * h + 1; j < primesLength; j += 2 * h)
-			{
-				if (primes[j])
-				{
+			for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
+				if (primes[j]) {
 					modulus = BigInt % j; // getRemainder(BigInt, j);
-					if (intModPow(modulus, j / h, j) > 1)
-					{
-						for (j = h; j <= maxExpon; j += h)
-						{
+					if (intModPow(modulus, j / h, j) > 1) {
+						for (j = h; j <= maxExpon; j += h) {
 							ProcessExpon[j] = false;
 						}
 						break;
 					}
 				}
-				if (++processed > 10)
-				{
+				if (++processed > 10) {
 					break;
 				}
 			}
 		}
 	}
 	log2N = logBigNbr(BigInt) / log(2);
-	for (Exponent = maxExpon; Exponent >= 2; Exponent--)
-	{
-		if (Exponent % 2 == 0 && !expon2)
-		{
+	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
+		if (Exponent % 2 == 0 && !expon2) {
 			continue; // Not a square
 		}
-		if (Exponent % 3 == 0 && !expon3)
-		{
+		if (Exponent % 3 == 0 && !expon3) {
 			continue; // Not a cube
 		}
-		if (Exponent % 5 == 0 && !expon5)
-		{
+		if (Exponent % 5 == 0 && !expon5) {
 			continue; // Not a fifth power
 		}
-		if (Exponent % 7 == 0 && !expon7)
-		{
+		if (Exponent % 7 == 0 && !expon7) {
 			continue; // Not a 7th power
 		}
-		if (Exponent % 11 == 0 && !expon11)
-		{
+		if (Exponent % 11 == 0 && !expon11) {
 			continue; // Not an 11th power
 		}
-		if (!ProcessExpon[Exponent])
-		{
+		if (!ProcessExpon[Exponent]) {
 			continue;
 		}
 		// Initialize approximation to n-th root (n = Exponent).
@@ -1244,18 +1000,15 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 		ptrLimb = &Base.limbs[nbrLimbs - 1];
 		dN = exp((log2root - intLog2root*BITS_PER_GROUP) * log(2));
 		// All approximations must be >= than true answer.
-		if (nbrLimbs == 1)
-		{
+		if (nbrLimbs == 1) {
 			ptrLimb->x = (int)(unsigned int)ceil(dN);
-			if ((unsigned int)ptrLimb->x == LIMB_RANGE)
-			{
+			if ((unsigned int)ptrLimb->x == LIMB_RANGE) {
 				nbrLimbs = 2;
 				ptrLimb->x = 0;
 				(ptrLimb + 1)->x = 1;
 			}
 		}
-		else
-		{
+		else {
 			dN += 1 / (double)LIMB_RANGE;
 			ptrLimb->x = (int)trunc(dN);
 			dN -= trunc(dN);
@@ -1263,10 +1016,9 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 		}
 		Base.nbrLimbs = nbrLimbs;
 		// Perform Newton iteration for n-th root.
-		for (;;)
-		{   // Check whether the approximate root is actually exact.
+		for (;;) {   // Check whether the approximate root is actually exact.
 			BigIntPowerIntExp(Base, Exponent - 1, Temp3); // Temp3 <- x^(e-1)
-			Temp2 = Temp3*Base; //BigIntMultiply(Temp3, Base, Temp2);        // Temp2 <- x^e 
+			Temp2 = Temp3*Base;        // Temp2 <- x^e 
 				
 			Temp2 = BigInt - Temp2; // BigIntSubt(BigInt, Temp2, Temp2);  // Compare to radicand.
 			if (Temp2.nbrLimbs == 1 && Temp2.limbs[0].x == 0) {                     
@@ -1275,21 +1027,19 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 			if (Temp2 >= 0) {                    
 				break; // x^e > radicand -> not perfect power, so go out.
 			}
-			Temp = BigInt / Temp3; // BigIntDivide(BigInt, Temp3, Temp);         // Temp -> N/x^(e-1)
-			Temp2 = Temp - Base; // BigIntSubt(Temp, Base, Temp2);   // Temp2 -> N/x^(e-1) - x
-			if (Temp2.nbrLimbs == 1 && Temp2.limbs[0].x == 0)
-			{     // New approximation will be the same as previous. Go out.
-				break;
+			Temp = BigInt / Temp3;   // Temp -> N/x^(e-1)
+			Temp2 = Temp - Base;   // Temp2 -> N/x^(e-1) - x
+			if (Temp2 == 0) {    
+				break; // New approximation will be the same as previous. Go out.
 			}
-			Temp = Exponent - 1;// InitTempFromInt(Exponent - 1);
-			Temp2 -= Temp;  // BigIntSubt(Temp2, Temp, Temp2);
-			Temp = Exponent; //InitTempFromInt(Exponent);
+			//Temp = Exponent - 1;   // InitTempFromInt(Exponent - 1);
+			Temp2 -= Exponent - 1;   // BigIntSubt(Temp2, Temp, Temp2);
+			Temp = Exponent;      //InitTempFromInt(Exponent);
 			Temp2 = Temp2 / Temp; // BigIntDivide(Temp2, Temp, Temp2);
-			Base += Temp2;  // BigIntAdd(Temp2, Base, Base);
+			Base += Temp2;        // BigIntAdd(Temp2, Base, Base);
 		}
 	}
-	/*Base.nbrLimbs = BigInt.nbrLimbs;
-	memcpy(Base.limbs, BigInt.limbs, Base.nbrLimbs * sizeof(limb));*/
+	
 	Base = BigInt;
 	return 1;
 }
@@ -1433,33 +1183,30 @@ static void Halve(limb *pValue)
 //         1 = composite: not 2-Fermat pseudoprime.
 //         2 = composite: does not pass 2-SPRP test.
 //         3 = composite: does not pass strong Lucas test.
-int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
+int BpswPrimalityTest(/*@in@*/const BigInteger &Value)
 {
 	int i, Mult3Len, ctr, D, absQ, mult, mask, index, signPowQ;
-	int insidePowering = false;
-	int nbrLimbs = pValue->nbrLimbs;
-	limb *limbs = (limb *)pValue->limbs;  // override const-ness of pValue
-	if (nbrLimbs == 1 && limbs->x <= 2)
-	{
+	bool insidePowering = false;
+	int nbrLimbs = Value.nbrLimbs;
+	limb *limbs = (limb *)Value.limbs;  // override const-ness of pValue
+	if (Value <= 2) {
 		return 0;    // Indicate prime.
 	}
-	if ((limbs->x & 1) == 0)
-	{
+	if (Value.isEven()) {
 		return 1;    // Number is even and different from 2. Indicate composite.
 	}
 	// Perform 2-SPRP test
-	(limbs + nbrLimbs)->x = 0;     // doesn't change actual value of pValue
-	memcpy(q, limbs, (nbrLimbs + 1) * sizeof(limb));
-	q[0]--;                     // q = p - 1 (p is odd, so there is no carry).
-	memcpy(Mult3, q, (nbrLimbs + 1) * sizeof(q[0]));
+	(limbs + nbrLimbs)->x = 0;     // doesn't change actual value of Value
+	memcpy(q, limbs, (nbrLimbs + 1) * sizeof(limb)); // copy Value to q
+	q[0]--;                     // q = q - 1 (q is odd, so there is no carry).
+	memcpy(Mult3, q, (nbrLimbs + 1) * sizeof(q[0]));  // copy q to Mult3
 	Mult3Len = nbrLimbs;
 	DivideBigNbrByMaxPowerOf2(&ctr, Mult3, &Mult3Len);
 	memcpy(TestNbr, limbs, (nbrLimbs + 1) * sizeof(limb));
 	GetMontgomeryParms(nbrLimbs);
 	modPowBaseInt(2, Mult3, Mult3Len, Mult1); // Mult1 = base^Mult3.
-											  // If Mult1 != 1 and Mult1 = TestNbr-1, perform full test.
-	if (!checkOne(Mult1, nbrLimbs) && !checkMinusOne(Mult1, nbrLimbs))
-	{
+		  // If Mult1 != 1 and Mult1 = TestNbr-1, perform full test.
+	if (!checkOne(Mult1, nbrLimbs) && !checkMinusOne(Mult1, nbrLimbs)) {
 		for (i = 0; i < ctr; i++)
 		{               // Loop that squares number.
 			modmult(Mult1, Mult1, Mult4);
@@ -1467,29 +1214,24 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 			{  // Current value is 1 but previous value is not 1 or -1: composite
 				return 2;       // Composite. Not 2-strong probable prime.
 			}
-			if (checkMinusOne(Mult4, nbrLimbs) != 0)
-			{
+			if (checkMinusOne(Mult4, nbrLimbs) != 0) {
 				i = -1;         // Number is strong pseudoprime.
 				break;
 			}
 			memcpy(Mult1, Mult4, nbrLimbs * sizeof(limb));
 		}
-		if (i == ctr)
-		{
+		if (i == ctr) {
 			return 1;         // Not 2-Fermat probable prime.
 		}
-		if (i != -1)
-		{
+		if (i != -1) {
 			return 2;         // Composite. Not 2-strong probable prime.
 		}
 	}
 	// At this point, the number is 2-SPRP, so find value of D.
 	mult = 1;
-	for (D = 5; ; D += 2)
-	{
-		int rem = *pValue % D; // getRemainder(*pValue, D);
-		if (JacobiSymbol(rem, D*mult) == -1)
-		{
+	for (D = 5; ; D += 2) {
+		int rem = Value % D; // getRemainder(*pValue, D);
+		if (JacobiSymbol(rem, D*mult) == -1) {
 			break;
 		}
 		mult = -mult;
@@ -1511,30 +1253,25 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 	memset(Mult3, 0, (nbrLimbs + 1) * sizeof(limb));                // U_0 <- 0.
 	memcpy(Mult4, MontgomeryMultR1, (nbrLimbs + 1) * sizeof(limb));
 	AddBigNbrMod(Mult4, Mult4, Mult4);                              // V_0 <- 2.
-	expon = *pValue; // CopyBigInt(expon, *pValue);
-	expon ++; //addbigint(expon, 1);                            // expon <- n + 1.
+	expon = Value;   // CopyBigInt(expon, *pValue);
+	expon ++;        //addbigint(expon, 1);                        // expon <- n + 1.
 	Temp.limbs[nbrLimbs].x = 0;
 	Temp2.limbs[nbrLimbs].x = 0;
 	expon.limbs[expon.nbrLimbs].x = 0;
 	DivideBigNbrByMaxPowerOf2(&ctr, expon.limbs, &expon.nbrLimbs);
-	for (index = expon.nbrLimbs - 1; index >= 0; index--)
-	{
+	for (index = expon.nbrLimbs - 1; index >= 0; index--) {
 		int groupExp = (int)(expon.limbs[index].x);
-		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1)
-		{
-			if (insidePowering)
-			{
+		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
+			if (insidePowering) {
 				// U_{2k} = U_k * V_k
 				// V_{2k} = (V_k)^2 - 2*Q^K
 				modmult(Mult3, Mult4, Mult3);          // U <- U * V
 				modmult(Mult4, Mult4, Mult4);          // V <- V * V
-				if (signPowQ > 0)
-				{
+				if (signPowQ > 0) {
 					SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
 					SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
 				}
-				else
-				{
+				else {
 					AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
 					AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
 				}
@@ -1567,25 +1304,20 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 		}
 	}
 	// If U is zero, the number passes the BPSW primality test.
-	if (BigNbrIsZero(Mult3, NumberLength))
-	{
+	if (BigNbrIsZero(Mult3, NumberLength)) {
 		return 0;      // Indicate number is probable prime.
 	}
-	for (index = 0; index < ctr; index++)
-	{
+	for (index = 0; index < ctr; index++) {
 		// If V is zero, the number passes the BPSW primality test.
-		if (BigNbrIsZero(Mult4, NumberLength))
-		{
+		if (BigNbrIsZero(Mult4, NumberLength)) {
 			return 0;    // Indicate number is probable prime.
 		}
 		modmult(Mult4, Mult4, Mult4);          // V <- V * V
-		if (signPowQ > 0)
-		{
+		if (signPowQ > 0) {
 			SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
 			SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
 		}
-		else
-		{
+		else {
 			AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
 			AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
 		}
@@ -1594,7 +1326,6 @@ int BpswPrimalityTest(/*@in@*/const BigInteger *pValue)
 	}
 	return 3;        // Number does not pass strong Lucas test.
 }
-
 
 /* returns true iff value is zero*/
 bool BigNbrIsZero(const limb *value, int NumberLength) {
@@ -1607,10 +1338,10 @@ bool BigNbrIsZero(const limb *value, int NumberLength) {
 	return true;      // Number is zero
 }
 
-/* note that ptrLimb points AFTER last valid value in limbs.
+/* convert value in Limb to a double (floating point)
+note that ptrLimb points AFTER last valid value in limbs.
 up to 3 most significant limbs are used. */
-double getMantissa(const limb *ptrLimb, int nbrLimbs)
-{
+double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 	double dN = (double)(ptrLimb - 1)->x;
 	double dInvLimb = 1 / (double)LIMB_RANGE;
 	if (nbrLimbs > 1) {

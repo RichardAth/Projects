@@ -16,8 +16,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 /* equivalent to:
-_ui64toa((unsigned long long)nbr, *ptrOutput, 10));
-*ptroutput += (strlen(*ptrOutput)); */
+_ui64toa((unsigned long long)nbr, *pOutput, 10));
+*pOutput += (strlen(*pOutput)); */
 void int2dec(char **pOutput, long long nbr)
 {
 	char *ptrOutput = *pOutput;
