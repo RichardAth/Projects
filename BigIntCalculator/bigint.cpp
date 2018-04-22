@@ -33,7 +33,6 @@ limb Mult1[MAX_LEN];
 extern limb Mult2[MAX_LEN];
 static limb Mult3[MAX_LEN];
 static limb Mult4[MAX_LEN];
-int q[MAX_LEN];
 extern limb TestNbr[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 
@@ -812,8 +811,7 @@ static int getNbrLimbs(const limb *bigNbr)
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. uses global value NumberLength for number of limbs. */
-void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint)
-{
+void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
 	const limb *destLimb = bigint.limbs;
 	if (NumberLength == 1) {
 		ptrValues[0] = 1;
@@ -831,8 +829,8 @@ void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigin
 }
 
 /* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
-void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigInteger &bigint)
-{
+void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, 
+	/*@out@*/BigInteger &bigint, int NumberLength) {
 	if (NumberLength == 1) {
 		bigint.limbs[0].x = ptrValues[0].x;
 		bigint.nbrLimbs = 1;
@@ -852,15 +850,18 @@ void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigIntege
 }
 
 /* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
-void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint)
+void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, 
+	/*@in@*/const BigInteger &bigint, int NumberLength)
 {
 	if (NumberLength == 1) {
 		ptrValues[0].x = bigint.limbs[0].x;
+		ptrValues[1].x = 0;
 	}
 	else {
 		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumberLength
 		if (nbrLimbs >= NumberLength) {
 			memcpy(ptrValues, bigint.limbs, NumberLength * sizeof(limb));
+			ptrValues[NumberLength].x = 0;
 		}
 		else {
 			memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
@@ -1195,11 +1196,14 @@ int BpswPrimalityTest(/*@in@*/const BigInteger &Value)
 	if (Value.isEven()) {
 		return 1;    // Number is even and different from 2. Indicate composite.
 	}
+
 	// Perform 2-SPRP test
-	(limbs + nbrLimbs)->x = 0;     // doesn't change actual value of Value
-	memcpy(q, limbs, (nbrLimbs + 1) * sizeof(limb)); // copy Value to q
-	q[0]--;                     // q = q - 1 (q is odd, so there is no carry).
-	memcpy(Mult3, q, (nbrLimbs + 1) * sizeof(q[0]));  // copy q to Mult3
+	
+	
+	
+	
+	CompressLimbsBigInteger(Mult3, Value, Value.nbrLimbs); // copy Value to Mult3
+	(Mult3[0].x)--; // Value is odd, so there is no carry
 	Mult3Len = nbrLimbs;
 	DivideBigNbrByMaxPowerOf2(&ctr, Mult3, &Mult3Len);
 	memcpy(TestNbr, limbs, (nbrLimbs + 1) * sizeof(limb));

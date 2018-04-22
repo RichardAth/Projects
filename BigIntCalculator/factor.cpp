@@ -103,7 +103,6 @@ long long Gamma[386];
 long long Delta[386];
 long long AurifQ[386];
 
-extern int q[MAX_LEN];
 static int nbrToFactor[MAX_LEN];
 struct sFactors astFactorsMod[Max_Factors];   // maximum unique factors
 
@@ -423,12 +422,11 @@ static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1)
 
 /* compute gcd of value & Global var TestNbr. return 0 if either
 is zero, 1 if gcd is 1 , 2 if gcd > 1 
-Uses global variables Temp1, Temp2, Temp3, GD
-Uses global var NumberLength indirectly */
+Uses global variables Temp1, Temp2, Temp3, GD,NumberLength */
 static int gcdIsOne(limb *value)
 {
-	UncompressLimbsBigInteger(value, Temp1);    // Temp1 = value
-	UncompressLimbsBigInteger(TestNbr, Temp2);  // Temp2 = TestNbr;
+	UncompressLimbsBigInteger(value, Temp1, NumberLength);    // Temp1 = value
+	UncompressLimbsBigInteger(TestNbr, Temp2, NumberLength);  // Temp2 = TestNbr;
 	// Return zero if value is zero or both numbers are equal.
 	if (Temp1 == 0) {
 		return 0;
@@ -438,7 +436,7 @@ static int gcdIsOne(limb *value)
 		return 0;
 	}
 	BigIntGcd(Temp1, Temp2, Temp3);  
-	CompressLimbsBigInteger(GD, Temp3);  // GD = gcd(value, TestNbr)
+	CompressLimbsBigInteger(GD, Temp3, NumberLength);  // GD = gcd(value, TestNbr)
 	if (Temp3 < 2) {
 		return (int)Temp3.lldata();    // GCD is less than 2.
 	}
@@ -1109,7 +1107,6 @@ static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
 
 	sqr = k << 2; 
 	sqr *= nbr; 
-	//squareRoot(sqr.limbs, sqrRoot.limbs, sqr.nbrLimbs, &sqrRoot.nbrLimbs);
 	a = sqr.sqRoot();
 
 	for (;;) {
@@ -1164,8 +1161,12 @@ static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
 	return;
 }
 
-static enum eEcmResult ecmCurve(BigInteger &N)
-{
+/* can return value:
+FACTOR_NOT_FOUND   (not used??)
+CHANGE_TO_SIQS
+FACTOR_FOUND
+ERROR              (not used??)  */
+static enum eEcmResult ecmCurve(BigInteger &N) {
 	BigInteger potentialFactor;
 #ifdef __EMSCRIPTEN__
 	//char text[20];
@@ -1202,9 +1203,8 @@ static enum eEcmResult ecmCurve(BigInteger &N)
 		Lehman(N, EC % 50000000, potentialFactor);
 
 		if (potentialFactor.lldata() >= LIMB_RANGE) {                // large Factor found.
-			memcpy(GD, potentialFactor.limbs, NumberLength * sizeof(limb));
-			memset(&GD[potentialFactor.nbrLimbs], 0,
-				(NumberLength - potentialFactor.nbrLimbs) * sizeof(limb));
+			/* copy value of potentialFactor to GD */
+			CompressLimbsBigInteger(GD, potentialFactor, NumberLength);
 			foundByLehman = true;
 			return FACTOR_FOUND;
 		}
@@ -1430,10 +1430,10 @@ static enum eEcmResult ecmCurve(BigInteger &N)
 
 			if (Pass == 0) {
 				if (BigNbrIsZero(GcdAccumulated, NumberLength))
-				{ // If GcdAccumulated is
+				{ // If GcdAccumulated is multiple of TestNbr, continue.
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
-					continue; // multiple of TestNbr, continue.
+					continue; // 
 				}
 				if (gcdIsOne(GcdAccumulated) > 1) {
 					return FACTOR_FOUND;
@@ -1651,6 +1651,7 @@ static enum eEcmResult ecmCurve(BigInteger &N)
 	}       /* End curve calculation */
 }
 
+/* returns true if successful */
 static bool ecm(BigInteger &N, struct sFactors *pstFactors)
 {
 	int P, Q;
@@ -1665,7 +1666,7 @@ static bool ecm(BigInteger &N, struct sFactors *pstFactors)
 
 	fieldAA = AA;
 	NumberLength = N.nbrLimbs;
-	memcpy(TestNbr, N.limbs, NumberLength * sizeof(limb));
+	CompressLimbsBigInteger(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
 	GetYieldFrequency();  //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
 	memset(M, 0, NumberLength * sizeof(limb));
@@ -1737,9 +1738,11 @@ static bool ecm(BigInteger &N, struct sFactors *pstFactors)
 		{
 			break;
 		}
+		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)
 			return false;
 	} while (!memcmp(GD, TestNbr, NumberLength * sizeof(limb)));
+
 #if 0
 	lowerTextArea.setText("");
 #endif
@@ -1980,46 +1983,44 @@ static bool factorCarmichael(const BigInteger &pValue, struct sFactors *pstFacto
 {
 	int randomBase = 0;  // pseudo-random number
 	bool factorsFound = false;
-	int nbrLimbsQ, countdown, ctr;
-	int nbrLimbs = pValue.nbrLimbs;
+	int countdown, ctr;
+	const int nbrLimbsP = pValue.nbrLimbs;
 	bool sqrtOneFound = false;
-	int sqrtMinusOneFound = false;
+	bool sqrtMinusOneFound = false;
 	int Aux1Len;
-	limb *pValueLimbs = (limb *)pValue.limbs;  // override const-ness of Pvalue
-	(pValueLimbs + nbrLimbs)->x = 0;         // doesn't change value of pValue
-	memcpy(q, pValueLimbs, (nbrLimbs + 1) * sizeof(limb)); // copy p to q
-	nbrLimbsQ = nbrLimbs;
-	q[0]--;                     // q = p - 1 (p is odd, so there is no carry).
-	memcpy(Aux1, q, (nbrLimbsQ + 1) * sizeof(q[0])); // copy q to Aux1
-	Aux1Len = nbrLimbs;
+
+	CompressLimbsBigInteger(Aux1, pValue, pValue.nbrLimbs);  // copy p to Aux1
+	Aux1[0].x--;       // Aux1 = p - 1 (p is odd, so there is no carry).
+	Aux1Len = nbrLimbsP;
 	DivideBigNbrByMaxPowerOf2(&ctr, Aux1, &Aux1Len);
-	memcpy(TestNbr, pValueLimbs, nbrLimbs * sizeof(limb)); // copy p to TestNbr
-	TestNbr[nbrLimbs].x = 0;
-	GetMontgomeryParms(nbrLimbs);
+	CompressLimbsBigInteger(TestNbr, pValue, pValue.nbrLimbs);  // copy p to TestNbr
+	//memcpy(TestNbr, pValueLimbs, nbrLimbsP * sizeof(limb)); // copy p to TestNbr
+	//TestNbr[nbrLimbsP].x = 0;
+	GetMontgomeryParms(nbrLimbsP);
 	for (countdown = 20; countdown > 0; countdown--) {
 		int i;
-		NumberLength = nbrLimbs;
+		NumberLength = nbrLimbsP;
 		randomBase = (int)((uint64_t)randomBase * 89547121 + 1762281733) & MAX_INT_NBR;
 		modPowBaseInt(randomBase, Aux1, Aux1Len, Aux2); // Aux2 = base^Aux1.
 		// If Mult1 = 1 or Mult1 = TestNbr-1, then try next base.
-		if (checkOne(Aux2, nbrLimbs) != 0 || checkMinusOne(Aux2, nbrLimbs) != 0)
+		if (checkOne(Aux2, nbrLimbsP) != 0 || checkMinusOne(Aux2, nbrLimbsP) != 0)
 		{
 			continue;    // This base cannot find a factor. Try another one.
 		}
 		for (i = 0; i < ctr; i++)
 		{              // Loop that squares number.
 			modmult(Aux2, Aux2, Aux3);
-			if (checkOne(Aux3, nbrLimbs) != 0)
+			if (checkOne(Aux3, nbrLimbsP) != 0)
 			{            // Non-trivial square root of 1 found.
 				if (!sqrtOneFound)
 				{          // Save it to perform GCD later.
-					memcpy(Zaux, Aux2, nbrLimbs * sizeof(limb));
+					memcpy(Zaux, Aux2, nbrLimbsP * sizeof(limb));
 					sqrtOneFound = true;
 				}
 				else
 				{          // Try to find non-trivial factor by doing GCD.
 					SubtBigNbrMod(Aux2, Zaux, Aux4);
-					UncompressLimbsBigInteger(Aux4, Temp2);
+					UncompressLimbsBigInteger(Aux4, Temp2, NumberLength);
 					BigIntGcd(pValue, Temp2, Temp4);
 					if ((Temp4 > 1) && (Temp4 != pValue))
 					{          // Non-trivial factor found.
@@ -2037,13 +2038,11 @@ static bool factorCarmichael(const BigInteger &pValue, struct sFactors *pstFacto
 					}
 				}
 				// Try to find non-trivial factor by doing GCD.
-				NumberLength = nbrLimbs;
+				NumberLength = nbrLimbsP;
 				AddBigNbrMod(Aux2, MontgomeryMultR1, Aux4);
-				UncompressLimbsBigInteger(Aux4, Temp2);
+				UncompressLimbsBigInteger(Aux4, Temp2, NumberLength);
 				BigIntGcd(pValue, Temp2, Temp4);
-				if ((Temp4.nbrLimbs != 1 || Temp4.limbs[0].x > 1) &&
-					(Temp4.nbrLimbs != NumberLength ||
-						memcmp(pValue.limbs, Temp4.limbs, NumberLength * sizeof(limb))))
+				if ((Temp4 > 1) && (Temp4 != pValue))
 				{          // Non-trivial factor found.
 					if (pstFactors->multiplicity >= Max_Factors) {
 						// factor list is full!
@@ -2060,21 +2059,19 @@ static bool factorCarmichael(const BigInteger &pValue, struct sFactors *pstFacto
 				i = ctr;
 				continue;  // Find more factors.
 			}
-			if (checkMinusOne(Aux3, nbrLimbs) != 0)
+			if (checkMinusOne(Aux3, nbrLimbsP) != 0)
 			{            // Square root of 1 found.
 				if (!sqrtMinusOneFound)
 				{          // Save it to perform GCD later.
-					memcpy(Xaux, Aux2, nbrLimbs * sizeof(limb));
+					memcpy(Xaux, Aux2, nbrLimbsP * sizeof(limb));
 					sqrtOneFound = true;
 				}
 				else
 				{          // Try to find non-trivial factor by doing GCD.
 					SubtBigNbrMod(Aux3, Xaux, Aux4);
-					UncompressLimbsBigInteger(Aux4, Temp2);
+					UncompressLimbsBigInteger(Aux4, Temp2, NumberLength);
 					BigIntGcd(pValue, Temp2, Temp4);
-					if ((Temp4.nbrLimbs != 1 || Temp4.limbs[0].x > 1) &&
-						(Temp4.nbrLimbs != NumberLength ||
-							memcmp(pValue.limbs, Temp4.limbs, NumberLength * sizeof(limb))))
+					if ((Temp4 > 1) && (Temp4 != pValue))
 					{          // Non-trivial factor found.
 						if (pstFactors->multiplicity >= Max_Factors) {
 							// factor list is full!
@@ -2092,7 +2089,7 @@ static bool factorCarmichael(const BigInteger &pValue, struct sFactors *pstFacto
 				i = ctr;
 				continue;  // Find more factors.
 			}
-			memcpy(Aux2, Aux3, nbrLimbs * sizeof(limb));
+			memcpy(Aux2, Aux3, nbrLimbsP * sizeof(limb));
 		}
 	}
 	return factorsFound;
@@ -2100,8 +2097,7 @@ static bool factorCarmichael(const BigInteger &pValue, struct sFactors *pstFacto
 
 // pstFactors -> ptrFactor points to end of factors.
 // pstFactors -> multiplicity indicates the number of different factors.
-static bool factor (const BigInteger &toFactor, struct sFactors *pstFactors)
-{
+static bool factor (const BigInteger &toFactor, struct sFactors *pstFactors) {
 	struct sFactors *pstCurFactor;
 	int factorNbr, expon;
 	int remainder, nbrLimbs, ctr;
@@ -2247,6 +2243,7 @@ static bool factor (const BigInteger &toFactor, struct sFactors *pstFactors)
 			}
 		}
 		if (ctr != NumberLength || GD[0].x != 1) {
+			/* GD is not 1 */
 			int numLimbs;
 			Temp1.sign = SIGN_POSITIVE;
 			numLimbs = NumberLength;
@@ -2257,8 +2254,7 @@ static bool factor (const BigInteger &toFactor, struct sFactors *pstFactors)
 				numLimbs--;
 			}
 			/* copy number from GD and convert it to a BigInteger */
-			memcpy(Temp1.limbs, GD, numLimbs * sizeof(limb));
-			Temp1.nbrLimbs = numLimbs;
+			UncompressLimbsBigInteger(GD, Temp1, numLimbs);
 			if (pstFactors->multiplicity >= Max_Factors) {
 				// factor list is full!
 				std::string line = std::to_string(__LINE__);
@@ -2310,7 +2306,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 			continue;
 		}
 		NumberLength = *pstFactors[Factorix].ptrFactor;
-		UncompressBigInteger(pstFactors[Factorix].ptrFactor, p);
+		UncompressBigInteger(pstFactors[Factorix].ptrFactor, p); //copy factor value to p
 		p.sign = SIGN_POSITIVE;
 		q = p; 
 		q --;            // q <- p-1
@@ -2322,12 +2318,11 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 		}
 		else {       /* Prime factor is not 2 */
 			NumberLength = p.nbrLimbs;
-			memcpy(&TestNbr, p.limbs, NumberLength * sizeof(limb));
-			TestNbr[NumberLength].x = 0;
+			CompressLimbsBigInteger(TestNbr, p, NumberLength);  // copy p to TestNbr
 			GetMontgomeryParms(NumberLength);
 			memset(minusOneMont, 0, NumberLength * sizeof(limb));
 			SubtBigNbrModN(minusOneMont, MontgomeryMultR1, minusOneMont, TestNbr, NumberLength);
-			memset(K.limbs, 0, NumberLength * sizeof(limb));
+			K = 0; //memset(K.limbs, 0, NumberLength * sizeof(limb));
 			if ((p.lldata() & 3) == 1) { /* if p = 1 (mod 4) */
 				q = p; 
 				subtractdivide(q, 1, 4);     // q = (prime-1)/4
@@ -2390,7 +2385,7 @@ static void ComputeFourSquares(struct sFactors *pstFactors) {
 				int mult1 = 0;
 				q = p; //  CopyBigInt(q, p);
 				subtractdivide(q, 1, 2);     // q = (prime-1)/2
-				memcpy(K.limbs, q.limbs, q.nbrLimbs * sizeof(limb));
+				K = q; //memcpy(K.limbs, q.limbs, q.nbrLimbs * sizeof(limb));
 				if (p.nbrLimbs > q.nbrLimbs) {
 					K.limbs[q.nbrLimbs].x = 0;
 				}

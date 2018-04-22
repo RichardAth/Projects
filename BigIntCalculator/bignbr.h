@@ -169,8 +169,10 @@ public:
 	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	friend void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	friend void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
-	friend void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, /*@out@*/BigInteger &bigint);
-	friend void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, /*@in@*/const BigInteger &bigint);
+	friend void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, 
+		/*@out@*/BigInteger &bigint, int NumberLength);
+	friend void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, 
+		/*@in@*/const BigInteger &bigint, int NumberLength);
 	friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
@@ -319,7 +321,7 @@ void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
 void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
 void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
 void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
-void AddBigIntModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen);
+void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen);
 void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen);
 void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
 void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProduct[], int nbrLen);

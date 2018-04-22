@@ -93,7 +93,7 @@ void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 	Diff[i] = borrow;
 }
 
-void AddBigIntModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen)
+void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen)
 {
 	int borrow = 0;
 	unsigned int carry = 0;
@@ -406,7 +406,7 @@ void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbr
 		Prod[0] = 0;
 		AdjustBigIntModN(Prod, Mod, nbrLen);
 		MultBigNbrByIntModN(Nbr2, Nbr, arr, Mod, nbrLen);
-		AddBigIntModN(arr, Prod, Prod, Mod, nbrLen);
+		AddBigNbrModN(arr, Prod, Prod, Mod, nbrLen);
 	} while (i > 0);
 }
 

@@ -1005,10 +1005,10 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 #endif
 	if (powerOf2Exponent != 0)
 	{    // TestNbr is a power of 2.
-		UncompressLimbsBigInteger(factor1, tmpNum);
-		UncompressLimbsBigInteger(factor2, tmpDen);
+		UncompressLimbsBigInteger(factor1, tmpNum, NumberLength);
+		UncompressLimbsBigInteger(factor2, tmpDen, NumberLength);
 		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
-		CompressLimbsBigInteger(product, tmpNum);
+		CompressLimbsBigInteger(product, tmpNum, NumberLength);
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
@@ -1814,11 +1814,11 @@ void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den,
 	if (tmpDen < 0) {
 		tmpDen += mod; 
 	}
-	CompressLimbsBigInteger(aux3, tmpDen);
+	CompressLimbsBigInteger(aux3, tmpDen, NumberLength);
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
 	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
-	CompressLimbsBigInteger(aux4, tmpNum);
+	CompressLimbsBigInteger(aux4, tmpNum, NumberLength);
 	modmult(aux3, aux4, aux3);              // aux3 <- Num / Dev in standard notation.
-	UncompressLimbsBigInteger(aux3, quotient);  // Get Num/Den
+	UncompressLimbsBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
 	return;
 }

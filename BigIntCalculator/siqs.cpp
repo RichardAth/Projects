@@ -2805,7 +2805,7 @@ static bool InsertNewRelation(
 		if (Modulus[lenDivisor - 1] == 0) {
 			lenDivisor--;
 		}
-		AddBigIntModN(biR, biT, biR, TestNbr2, lenDivisor);
+		AddBigNbrModN(biR, biT, biR, TestNbr2, lenDivisor);
 		ModInvBigInt(biR, biT, TestNbr2, lenDivisor);
 	}
 
