@@ -43,7 +43,7 @@ BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 	const limb *ptrBiggerAdd, *ptrSmallerAdd;
 	limb *ptrSum;
 	bool A1Smaller = false;
-	BigInteger Sum;  // temporar variable 
+	BigInteger Sum;  // temporary variable 
 
 	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
 		A1Smaller = true;
@@ -586,32 +586,27 @@ static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 	*pNbrLimbs = nbrLimbs;
 }
 
-/* i = (i-subt)/divisor   */
-void subtractdivide(BigInteger &pBigInt, int subt, int divisor)
+/* i = (i-subt)/divisor. Assume (without checking) that divisor > 0.
+Does not appear to handle -ve divisor */
+void subtractdivide(BigInteger &i, int subt, int divisor)
 {
-	int nbrLimbs = pBigInt.nbrLimbs;
-	// Point to most significant limb.
-	limb *pLimbs;
-	int ctr;
+	int nbrLimbs = i.nbrLimbs;
 	int remainder = 0;
-	double dDivisor = (double)divisor;
-	double dInvDivisor = 1 / dDivisor;
-	double dLimb = (double)LIMB_RANGE;
-
+	
 #if 0
 	char *ptrOutput = output;
 	*ptrOutput++ = '2';
 	*ptrOutput++ = '(';
-	int2dec(&ptrOutput, pBigInt->sign);
+	int2dec(&ptrOutput, i->sign);
 	*ptrOutput++ = ',';
 	*ptrOutput++ = ' ';
-	int2dec(&ptrOutput, pBigInt->nbrLimbs);
+	int2dec(&ptrOutput, i->nbrLimbs);
 	*ptrOutput++ = ';';
 	*ptrOutput++ = ' ';
-	int2dec(&ptrOutput, pBigInt->limbs[0].x);
+	int2dec(&ptrOutput, i->limbs[0].x);
 	*ptrOutput++ = ',';
 	*ptrOutput++ = ' ';
-	int2dec(&ptrOutput, pBigInt->limbs[1].x);
+	int2dec(&ptrOutput, i->limbs[1].x);
 	*ptrOutput++ = ',';
 	*ptrOutput++ = ' ';
 	*ptrOutput++ = ')';
@@ -622,59 +617,31 @@ void subtractdivide(BigInteger &pBigInt, int subt, int divisor)
 	*ptrOutput++ = ' ';
 	int2dec(&ptrOutput, divisor);
 	//  databack(output);
-	if ((unsigned int)pBigInt->limbs[0].x >= LIMB_RANGE)
+	if ((unsigned int)i->limbs[0].x >= LIMB_RANGE)
 	{
 		remainder = 1;
 	}
 #endif
-	if (subt >= 0)
-	{
-		if (pBigInt >= 0)
-		{               // Subtract subt to absolute value.
-			subtFromAbsValue(pBigInt.limbs, &nbrLimbs, subt);
+	/* if subt is not zero subtract it from i*/
+	if (subt > 0) {
+		if (i >= 0) {       // Subtract subt from absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, subt);
 		}
-		else
-		{               // Add subt to absolute value.
-			addToAbsValue(pBigInt.limbs, &nbrLimbs, subt);
+		else {               // Add subt to absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, subt);
 		}
 	}
-	else
-	{
-		if (pBigInt >= 0)
-		{               // Subtract subt to absolute value.
-			addToAbsValue(pBigInt.limbs, &nbrLimbs, -subt);
+	else if (subt < 0) {  // subt < 0
+		if (i >= 0) {    // Subtract subt from absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, -subt);
 		}
-		else
-		{               // Add subt to absolute value.
-			subtFromAbsValue(pBigInt.limbs, &nbrLimbs, -subt);
+		else {               // Add subt to absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, -subt);
 		}
-	}
-	//pLimbs = pBigInt->limbs + nbrLimbs - 1;
-	pLimbs = pBigInt.limbs;
-	// Divide number by divisor.
-	for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
-	{
-		double dDividend, dQuotient;
-		unsigned int quotient, dividend;
-		dividend = (remainder << BITS_PER_INT_GROUP) + pLimbs[ctr].x;
-		dDividend = (double)remainder * dLimb + pLimbs[ctr].x;
-		dQuotient = dDividend * dInvDivisor + 0.5;
-		quotient = (unsigned int)dQuotient;   // quotient has correct value or 1 more.
-		remainder = dividend - quotient * divisor;
-		if (remainder < 0)
-		{     // remainder not in range 0 <= remainder < divisor. Adjust.
-			quotient--;
-			remainder += divisor;
-		}
-		//(pLimbs--)->x = (int)quotient;
-		pLimbs[ctr].x = (int)quotient;
 	}
 
-	while (nbrLimbs > 1 && pBigInt.limbs[nbrLimbs - 1].x == 0)
-	{   // Most significant limb is now zero, so discard it.
-		nbrLimbs--;
-	}
-	pBigInt.nbrLimbs = nbrLimbs;
+	// Divide number by divisor.
+	i = BigIntDivideInt(i, divisor);
 }
 
 /* calculate BigInt modulo divisor */
@@ -772,24 +739,16 @@ void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &big
 		throw std::range_error(mesg);
 	}
 	limb *destLimb = bigint.limbs;
-	if (NumberLength == 1)
-	{
+	bigint.sign = SIGN_POSITIVE;
+	if (NumberLength == 1) {
 		destLimb[0].x = ptrValues[1];
 		bigint.nbrLimbs = 1;
 	}
-	else
-	{
-		int ctr, nbrLimbs;
-		nbrLimbs = ptrValues[0];
-		bigint.nbrLimbs = nbrLimbs;
-		for (ctr = 0; ctr < nbrLimbs; ctr++)
-		{
-			destLimb[ctr].x = ptrValues[ctr+1];
-		}
-		for (; ctr < NumberLength; ctr++)
-		{
-			destLimb[ctr].x = 0;  // zeroise any remaining limbs
-		}
+	else {
+		memcpy(destLimb, ptrValues+1, ptrValues[0] * sizeof(ptrValues[0]));
+		bigint.nbrLimbs = ptrValues[0];
+		if (NumberLength > ptrValues[0])  // clear most significant limbs to zero if required
+			memset(destLimb + ptrValues[0], 0, (NumberLength - ptrValues[0]) * sizeof(ptrValues[0]));
 	}
 }
 
@@ -806,31 +765,35 @@ static int getNbrLimbs(const limb *bigNbr)
 		}
 		ix--;   // reduce length because most significant limb is zero
 	}
-	return 1;
+	return 1;  // BigNbr is zero
 }
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. uses global value NumberLength for number of limbs. */
 void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
-	const limb *destLimb = bigint.limbs;
+	const limb *srcLimb = bigint.limbs;
 	if (NumberLength == 1) {
 		ptrValues[0] = 1;
-		ptrValues[1] = destLimb[0].x;
+		ptrValues[1] = srcLimb[0].x;
 	}
 	else {
-		int ctr, nbrLimbs;
-		nbrLimbs = getNbrLimbs(bigint.limbs);  //nbrLimbs <= NumberLength
-		//*ptrValues++ = nbrLimbs;
+		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
 		ptrValues[0] = nbrLimbs;
-		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-			ptrValues[ctr+1] = destLimb[ctr].x;
-		}
+		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
 	}
 }
 
 /* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
 void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, 
 	/*@out@*/BigInteger &bigint, int NumberLength) {
+	if (NumberLength > MAX_LEN || NumberLength < 0 ) {
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "number too big : cannot convert to BigInteger: ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
 	if (NumberLength == 1) {
 		bigint.limbs[0].x = ptrValues[0].x;
 		bigint.nbrLimbs = 1;

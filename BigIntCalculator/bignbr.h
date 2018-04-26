@@ -16,7 +16,27 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include "mpir.h"
 #include "boost/multiprecision/gmp.hpp" 
+#define ZT(a) a.backend().data()
 typedef boost::multiprecision::mpz_int Znum;
+long long MulPrToLong(const Znum &x);
+class Znumx {
+public:
+	boost::multiprecision::mpz_int i;
+	size_t bitlength() const {
+		return mpz_sizeinbase(ZT(i), 2);  // returns 1 if i=0, ignores sign of i
+	}
+	bool isEven() const {
+		return mpz_even_p(ZT(i)) != 0;
+	}
+	Znumx sqRoot() const {
+		Znumx r;
+		mpz_sqrt(ZT(r.i), ZT(i));
+		return r;
+	}
+	long long lldata() const {
+		return MulPrToLong(i);
+	}
+};
 
 #define MAX_LEN 2500        // approximately 20000 digits
 #define BITS_PER_GROUP 31
@@ -93,7 +113,9 @@ public:
 			rv = -rv;
 		return rv;  
 	}
-	/* overload assignment operator here */
+	/* overload assignment operator here 
+	there are 5 overloads, for assignments from BigIntegers, Integers, long long,
+	double and Znum */
 	BigInteger & operator = (const BigInteger &other) {
 		if (&other == this)
 			return *this;		// if lhs == rhs do nothing
@@ -149,6 +171,7 @@ public:
 	friend BigInteger BigIntSubt     (const BigInteger &Minuend, const BigInteger &Subtrahend);
 	friend static void BigIntNegate  (BigInteger &pDest);
 	friend BigInteger BigIntDivide   (const BigInteger &Dividend, const BigInteger &Divisor);
+	friend BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor);
 	friend BigInteger BigIntMultiply (const BigInteger &Factor1, const BigInteger &Factor2);
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
@@ -211,6 +234,13 @@ public:
 	/* note that only a few operators are oveloaded for BigInt <op> int */
 	int         operator %  (int divisor) const {
 		return getRemainder(*this, divisor);
+	}
+	BigInteger operator / (int divisor) const {
+		return BigIntDivideInt(*this, divisor);
+	}
+	BigInteger &operator /= (int divisor) {
+		subtractdivide(*this, 0, divisor);
+		return *this;
 	}
 	BigInteger &operator += (const int b) {
 		addbigint(*this, b);
@@ -292,8 +322,8 @@ extern int groupLen;
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
-void AddBigNbrModN (const limb *Nbr1, const limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, limb *TestNbr, int NumberLength);
+void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
+void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
 void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 void modmultInt(limb *factorBig, int factorInt, limb *result);

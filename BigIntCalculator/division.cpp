@@ -35,8 +35,8 @@ extern int bitLengthCycle[20];
 // All computations are done in little-endian notation.
 // Find power of 2 that divides the number.
 // output: pNbrLimbs = pointer to number of limbs
-//         pPower2 = pointer to power of 2.
-static void MultiplyBigNbrByMinPowerOf2(int &pPower2, limb *number, int len, limb *dest)
+//         pPower2 = reference to power of 2.
+static void MultiplyBigNbrByMinPowerOf2(int &pPower2, const limb *number, int len, limb *dest)
 {
 	limb mostSignficLimb, oldLimb, newLimb;
 	int index2, mask, shLeft;
@@ -119,7 +119,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	{   // Divisor is small: use divide by int.
 		// Sign of quotient is determined later.
 		Quotient = Dividend; //CopyBigInt(Quotient, Dividend);
-		subtractdivide(Quotient, 0, Divisor.limbs[0].x);
+		Quotient /= Divisor.limbs[0].x;   //subtractdivide(Quotient, 0, Divisor.limbs[0].x);
 	}
 	else {
 		int index;
@@ -292,5 +292,26 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 			Quotient.nbrLimbs--;
 		else break;
 	}
+	return Quotient;
+}
+
+BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
+	BigInteger Quotient;
+	int len = Dividend.nbrLimbs;
+	DivBigNbrByInt((int *)Dividend.limbs, abs(Divisor), (int *)Quotient.limbs, len);
+	if (Divisor >= 0)
+		if (Dividend.sign == SIGN_POSITIVE)
+			Quotient.sign = SIGN_POSITIVE;
+		else 
+			Quotient.sign = SIGN_NEGATIVE;
+	else   // Divisor is -ve
+		if (Dividend.sign == SIGN_POSITIVE)
+			Quotient.sign = SIGN_NEGATIVE;
+		else
+			Quotient.sign = SIGN_POSITIVE;
+
+	while (len > 1 && Quotient.limbs[len-1].x == 0)
+		len--;  // remove any leading zeros
+	Quotient.nbrLimbs = len;
 	return Quotient;
 }

@@ -100,7 +100,8 @@ void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[
 	int i;
 	for (i = 0; i < nbrLen; i++)
 	{
-		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
+		carry = (carry >> BITS_PER_INT_GROUP) + 
+			(unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
 		Sum[i] = (int)(carry & MAX_INT_NBR);
 	}
 	carry >>= BITS_PER_INT_GROUP;
@@ -227,15 +228,13 @@ void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProd[], int nbrL
 		ChSignBigNbrB(bigProd, nbrLen);
 	}
 }
-
+/* Quotient = Dividend/divisor */
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen)
 {
 	int ctr;
 	int remainder = 0;
-	double dDivisor = (double)divisor;
+	double dDivisor = (double)divisor;  // assume divisor > 0
 	double dLimb = 0x80000000;
-	//pDividend += nbrLen - 1;
-	//pQuotient += nbrLen - 1;
 	for (ctr = nbrLen - 1; ctr >= 0; ctr--)
 	{
 		double dDividend, dQuotient;
@@ -251,7 +250,6 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 			remainder += divisor;
 		}
 		Quotient[ctr] = quotient;
-		//pDividend--;
 	}
 }
 
@@ -335,28 +333,23 @@ void IntToBigNbr(int value, int bigNbr[], int nbrLength)
 	}
 }
 
+/* BigNbr = BigInt */
 int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[])
 {
-	int ctr;
+
 	int nbrLenBigNbr = pBigInt.nbrLimbs;
 	const limb *Limbs = pBigInt.limbs;
-
-	for (ctr = 0; ctr < nbrLenBigNbr; ctr++)
-	{
-		BigNbr[ctr] = Limbs[ctr].x;
-	}
+	memcpy(BigNbr, Limbs, nbrLenBigNbr * sizeof(int));
 	return nbrLenBigNbr;
 }
 
 void BigNbrToBigInt(BigInteger &pBigInt, const int BigNum[], int nbrLenBigNum)
 {
-	int ctr, nbrLimbs;
+	int nbrLimbs;
 	const int *ptrBigNum = BigNum;
 	limb *Limbs = pBigInt.limbs;
 	pBigInt.sign = SIGN_POSITIVE;
-	for (ctr = 0; ctr < nbrLenBigNum; ctr++) {
-		Limbs[ctr].x = BigNum[ctr];
-	}
+	memcpy(Limbs, BigNum, nbrLenBigNum * sizeof(int));
 
 	nbrLimbs = nbrLenBigNum;
 	do 	{
@@ -378,29 +371,24 @@ void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen)
 	BigIntToBigNbr(BigGcd, pGcd);
 }
 
-static void AdjustBigIntModN(int *Nbr, const int *Mod, int nbrLen)
-{
+static void AdjustBigIntModN(int *Nbr, const int *Mod, int nbrLen) {
 	AdjustModN((limb *)Nbr, (limb *)Mod, nbrLen);
 }
 
-void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen)
-{
+void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen) {
 	int i;
 	int arr[MAX_LIMBS_SIQS];
 
-	if (nbrLen >= 2 && Mod[nbrLen - 1] == 0)
-	{
+	if (nbrLen >= 2 && Mod[nbrLen - 1] == 0) {
 		nbrLen--;
 	}
 	Nbr2[nbrLen] = 0;
 	memset(Prod, 0, nbrLen * sizeof(Prod[0]));
 	i = nbrLen;
-	do
-	{
+	do {
 		int Nbr = Nbr1[--i];
 		int j = nbrLen;
-		do
-		{
+		do {
 			Prod[j] = Prod[j - 1];
 		} while (--j > 0);
 		Prod[0] = 0;
@@ -412,23 +400,20 @@ void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbr
 
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen)
 {
-	if (nbrLen >= 2 && *(Mod + nbrLen - 1) == 0)
-	{
+	if (nbrLen >= 2 && *(Mod + nbrLen - 1) == 0) {
 		nbrLen--;
 	}
 	Nbr1[nbrLen] = 0;
 	modmultIntExtended((limb *)Nbr1, Nbr2, (limb *)Prod, (limb *)Mod, nbrLen);
 }
 
-int intDoubleModPow(int NbrMod, int Expon, int currentPrime)
-{
+/* calculate NbrMod^Expon%currentPrime */
+int intDoubleModPow (int NbrMod, int Expon, int currentPrime) {
 	double Power = 1;
 	double Square = NbrMod;
 	double Modulus = currentPrime;
-	while (Expon != 0)
-	{
-		if ((Expon & 1) == 1)
-		{
+	while (Expon != 0) {
+		if ((Expon & 1) == 1) {
 			Power *= Square;
 			Power -= floor(Power / Modulus)*Modulus;
 		}
@@ -446,10 +431,8 @@ void ModInvBigInt(int *num, int *inv, int *mod, int nbrLenBigInt)
 	int NumberLengthBak = NumberLength;
 	static BigInteger Numerator, Denominator, Modulus, Quotient;  // follow recommendation not to use stack
 	memset(inv, 0, nbrLenBigInt * sizeof(int));
-	while (nbrLenBigInt > 1)
-	{
-		if (*(mod + nbrLenBigInt - 1) != 0)
-		{
+	while (nbrLenBigInt > 1) {
+		if (*(mod + nbrLenBigInt - 1) != 0) {
 			break;
 		}
 		nbrLenBigInt--;
