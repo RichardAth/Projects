@@ -20,6 +20,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_LIMBS_SIQS 15
 
 int NbrBak[MAX_LIMBS_SIQS];
+
+/* nbr = - nbr */
 void ChSignBigNbr(int nbr[], int length)
 {
 	int carry = 0;
@@ -32,6 +34,7 @@ void ChSignBigNbr(int nbr[], int length)
 	}
 }
 
+/* nbr = - nbr */
 static void ChSignBigNbrB(int nbr[], int length)
 {
 	int carry = 0;
@@ -42,9 +45,10 @@ static void ChSignBigNbrB(int nbr[], int length)
 		nbr[ctr] = carry & MAX_INT_NBR;
 		carry >>= BITS_PER_INT_GROUP;
 	}
-	nbr[ctr] = carry - nbr[ctr];
+	nbr[ctr] = carry - nbr[ctr];  /* last word does not have most significant bit masked off */
 }
 
+/* Sum = Nbr1+Nbr2  */
 void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 {
 	unsigned int carry = 0;
@@ -56,6 +60,7 @@ void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 	}
 }
 
+/* Diff = Nbr1-Nbr2 */
 void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 {
 	int borrow = 0;
@@ -67,6 +72,7 @@ void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 	}
 }
 
+/* Sum = Nbr1+Nbr2  */
 void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 {
 	unsigned int carry = 0;
@@ -80,6 +86,7 @@ void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 	Sum[i] = (int)carry;   // last 'digit' is not masked with MAX_INT_NBR
 }
 
+/* Diff = Nbr1-Nbr2 */
 void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 {
 	int borrow = 0;
@@ -90,9 +97,11 @@ void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 		Diff[i] = borrow & MAX_INT_NBR;
 	}
 	borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
-	Diff[i] = borrow;
+	Diff[i] = borrow;  /* B version differs from SubtractBigNbr only in that the most significant
+					   word does not have the most significant bit masked off*/
 }
 
+/* Sum = Nbr1+Nbr2 (mod Mod) */
 void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen)
 {
 	int borrow = 0;
@@ -125,6 +134,7 @@ void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[
 	}
 }
 
+/* Diff = Nbr1-Nbr2 (mod Mod)*/
 void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen)
 {
 	int borrow = 0;
@@ -146,6 +156,7 @@ void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const in
 	}
 }
 
+/* bigProd = bigFactor*factor */
 void MultBigNbrByInt(const int bigFactor[], int factor, int bigProd[], int nbrLen)
 {
 	int *bigProduct = bigProd;
@@ -182,6 +193,7 @@ void MultBigNbrByInt(const int bigFactor[], int factor, int bigProd[], int nbrLe
 	}
 }
 
+/* bigProd = bigFactor*factor */
 void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProd[], int nbrLen)
 {
 	int *bigProduct = bigProd;
@@ -228,6 +240,7 @@ void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProd[], int nbrL
 		ChSignBigNbrB(bigProd, nbrLen);
 	}
 }
+
 /* Quotient = Dividend/divisor */
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen)
 {
@@ -280,6 +293,7 @@ int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen)
 	return remainder;
 }
 
+/* Prod = Fact1*Fact2 */
 void MultBigNbr(const int Fact1[], const int Fact2[], int Prod[], int nbrLen)
 {
 	double dRangeLimb = (double)(1U << BITS_PER_INT_GROUP);
@@ -315,6 +329,7 @@ void MultBigNbr(const int Fact1[], const int Fact2[], int Prod[], int nbrLen)
 	Prod[i + 1] = (int)floor(dAccumulator / dRangeLimb);
 }
 
+/* bigNbr = value */
 void IntToBigNbr(int value, int bigNbr[], int nbrLength)
 {
 	if (value >= 0)
@@ -343,10 +358,11 @@ int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[])
 	return nbrLenBigNbr;
 }
 
+/* BigInt = BigNum */
 void BigNbrToBigInt(BigInteger &pBigInt, const int BigNum[], int nbrLenBigNum)
 {
 	int nbrLimbs;
-	const int *ptrBigNum = BigNum;
+
 	limb *Limbs = pBigInt.limbs;
 	pBigInt.sign = SIGN_POSITIVE;
 	memcpy(Limbs, BigNum, nbrLenBigNum * sizeof(int));
@@ -371,10 +387,12 @@ void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen)
 	BigIntToBigNbr(BigGcd, pGcd);
 }
 
+// Compute Nbr <- Nbr mod Mod.
 static void AdjustBigIntModN(int *Nbr, const int *Mod, int nbrLen) {
 	AdjustModN((limb *)Nbr, (limb *)Mod, nbrLen);
 }
 
+/* Prod = Nbr1*Nbr2 (mod Mod) */
 void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen) {
 	int i;
 	int arr[MAX_LIMBS_SIQS];
@@ -397,7 +415,12 @@ void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbr
 		AddBigNbrModN(arr, Prod, Prod, Mod, nbrLen);
 	} while (i > 0);
 }
+void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod) {
+	Prod = Nbr1*Nbr2;
+	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
+}
 
+/* Prod = Nbr1*Nbr2 (mod Mod) */
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen)
 {
 	if (nbrLen >= 2 && *(Mod + nbrLen - 1) == 0) {
@@ -406,7 +429,10 @@ void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int 
 	Nbr1[nbrLen] = 0;
 	modmultIntExtended((limb *)Nbr1, Nbr2, (limb *)Prod, (limb *)Mod, nbrLen);
 }
-
+void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod) {
+	Prod = Nbr1*Nbr2;
+	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
+}
 /* calculate NbrMod^Expon%currentPrime */
 int intDoubleModPow (int NbrMod, int Expon, int currentPrime) {
 	double Power = 1;

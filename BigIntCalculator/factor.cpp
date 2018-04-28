@@ -2219,11 +2219,15 @@ static bool factor (const BigInteger &toFactor, struct sFactors *pstFactors) {
 		UncompressBigInteger(pstCurFactor->ptrFactor, power);
 		NumberLength = power.nbrLimbs;
 		expon = PowerCheck(power, prime);
-		if (expon > 1) {
-			CompressBigInteger(pstCurFactor->ptrFactor, prime);
-			pstCurFactor->multiplicity *= expon;
+		if (expon > 1) {  /* if power is a perfect power*/
+			CompressBigInteger(pstCurFactor->ptrFactor, prime);  // copy prime to CurFactor
+			pstCurFactor->multiplicity *= expon;                 
 		}
-		result = BpswPrimalityTest(prime);
+		//result = BpswPrimalityTest(prime);
+		Znum Zprime;
+		BigtoZ(Zprime, prime);  // convert prime to type Znum
+		result = BpswPrimalityTestNew(Zprime, upperBound);
+		//assert(result2 == result);
 		if (result == 0) {   // Number is prime power.
 			pstCurFactor->upperBound = 0;   // Indicate that number is prime.
 			continue;                       // Check next factor.
@@ -2495,7 +2499,6 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 	Znum &Mult3, Znum &Mult4) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
 	Znum TestNbr;
-	//static limb minusOneMont[MAX_LEN];
 
 	if (p == 2) {   /* Prime factor is 2 */
 		Mult1 = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
@@ -2509,7 +2512,7 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 	  
 			a = 1;
 			do {    // Loop that finds mult1^2 = (-1) mod p
-				a++; // use 2 3, 5 ... 
+				a++; 
 				assert(a < p);
 				/* Mult1 = a^q(mod p) */
 				mpz_powm(ZT(Mult1), ZT(a), ZT(q), ZT(p));
@@ -2517,27 +2520,15 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 			} while (TestNbr != p-1 && TestNbr != -1);
 
 			Mult1 = abs(Mult1);
-			//Mult1.sign = SIGN_POSITIVE;
-			//memset(Mult2.limbs, 0, p.nbrLimbs * sizeof(limb));
 			Mult2 = 1;
 
-			// Convert Mult1 to standard notation by multiplying by 1 in
-			// Montgomery notation.
-			//modmult(Mult1.limbs, Mult2.limbs, Mult3.limbs);
-			//memcpy(Mult1.limbs, Mult3.limbs, p.nbrLimbs * sizeof(limb));
-			//for (Mult1.nbrLimbs = p.nbrLimbs; Mult1.nbrLimbs > 1; Mult1.nbrLimbs--)
-			//{  // Adjust number of limbs so the most significant limb is not zero.
-			//	if (Mult1.limbs[Mult1.nbrLimbs - 1].x != 0) {
-			//		break;
-			//	}
-			//}
-			for (;;) {
-				Tmp = Mult1 * Mult1 + Mult2 * Mult2;
-				K = Tmp / p;        // K <- (mult1^2 + mult2^2) / p
-				if (K == 1) {
+			for (;;) {  
+				Tmp = Mult1 * Mult1 + Mult2 * Mult2; // K <- (mult1^2 + mult2^2) / p
+				K = Tmp / p;    // in this loop K is smaller each time round   
+				if (K == 1) {  // are we there yet?
 					Mult3 = 0;
 					Mult4 = 0;
-					break;
+					break;     // we are finished
 				}
 				M1 = Mult1 % K;
 				if (M1 < 0) {
@@ -2565,9 +2556,7 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 		} /* end p = 1 (mod 4) */
 
 		else { /* if p = 3 (mod 4) */
-			int mult1 = 0;
 			q = (p-1)/2; //  q = (prime-1)/2
-			K = q;
 			Mult1 = 0;
 			do {
 				Mult1++;
@@ -2575,14 +2564,13 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Tmp = -Tmp;
 				while (Tmp < 0) Tmp += p;
 				mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
-				// At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
-				// Continue loop if it is not 1.
-			} while (Tmp1 != 1);
+				       // At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
+			} while (Tmp1 != 1);  // Continue loop if it is not 1.
 
 			// After the loop finishes, Tmp1 = (-1 - Mult1^2) is a quadratic residue mod p.
 			q = (p+1)/4;
 
-			// Find Mult2 <- square root of Tmp = Tmp^q (mod p) 
+			// Find Mult2 <- square root of Tmp1 = Tmp^q (mod p) 
 			mpz_powm(ZT(Mult2), ZT(Tmp), ZT(q), ZT(p));
 
 			Mult3 = 1;
@@ -2593,16 +2581,17 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Tmp = Mult1*Mult1 + Mult2*Mult2;
 				Tmp = Tmp + Mult3*Mult3 + Mult4*Mult4;
 				assert(Tmp%p == 0);
-				K = Tmp / p;
+				K = Tmp / p;    // in this loop K is smaller each time round
 				assert(K > 0);
 				if (K == 1) {
-					break;  // K equals 1
+					break;  // we are done when K equals 1
 				}
-#define isEven(a) (mpz_even_p(ZT(a)) != 0)
-				if (isEven(K)) { // If K is even ...
-					if (isEven(Mult1) != isEven(Mult2))
+
+
+				if (ZisEven(K)) { // If K is even ...
+					if (ZisEven(Mult1) != ZisEven(Mult2))
 					{  // If Mult1 + Mult2 is odd...
-						if (isEven(Mult1) == isEven(Mult3))
+						if (ZisEven(Mult1) == ZisEven(Mult3))
 						{   // If Mult1 + Mult3 is even...
 							Tmp = Mult2;  // swap mult2 and mult3
 							Mult2 = Mult3;
@@ -2622,7 +2611,7 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 					Mult2 = Tmp2;
 					Mult1 = Tmp1;
 					continue;
-				} /* end if k is even */
+				} /* end if K is even */
 
 				M1 = Mult1 % K;
 				if (M1 < 0) {
@@ -2642,17 +2631,17 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 				}
 				Tmp = (K+1)/2;  // Tmp <- (K+1) / 2
 				if (M1 >= Tmp) { // If M1 >= K / 2 ... 
-					M1 -= K; // M1 = M1 - K;    
+					M1 -= K;     // M1 = M1 - K;    
 				}
 				if (M2 >= Tmp) { // If M2 >= K / 2 ... 
-					M2 -= K; // M2 = M2 - K;         
+					M2 -= K;     // M2 = M2 - K;         
 				}
 
 				if (M3 >= Tmp) {  // If M3 >= K / 2 ... 
-					M3 -= K; // M3 = M3 - K;        
+					M3 -= K;      // M3 = M3 - K;        
 				}
 				if (M4 >= Tmp) { // If M4 >= K / 2 ... 
-					M4 -= K; //M4 = M4 - K;        
+					M4 -= K;     //M4 = M4 - K;        
 				}
 				// Compute Tmp1 <- (Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4) / K
 				Tmp = Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4;
@@ -2680,7 +2669,7 @@ static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
 
 /* show that the number is the sum of 4 or fewer squares. See
 https://www.alpertron.com.ar/4SQUARES.HTM */
-/* use the identity:
+/* uses the identity:
 (a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
                                     + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
 This allows us to find the sum of squares for each factor separately then combine them */
@@ -2839,16 +2828,10 @@ static void ComputeFourSquaresNew(std::vector <Znum> &factorlist,
 		/* use the identity:
 		(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
 		+ (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 */
-		// Compute Tmp1 <- Mult1*quads[0] + Mult2*quads[1] + Mult3*quads[2] + Mult4*quads[3]
+
 		Tmp1 = Mult1*quads[0] + Mult2*quads[1] + Mult3*quads[2] + Mult4*quads[3];
-
-		// Compute Tmp2 <- Mult1*quads[1] - Mult2*quads[0] + Mult3*quads[3] - Mult4*quads[2]
 		Tmp2 = Mult1*quads[1] - Mult2*quads[0] + Mult3*quads[3] - Mult4*quads[2];
-
-		// Compute Tmp3 <- Mult1*quads[2] - Mult3*quads[0] - Mult2*quads[3] + Mult4*quads[1]
 		Tmp3 = Mult1*quads[2] - Mult3*quads[0] - Mult2*quads[3] + Mult4*quads[1];
-
-		// Compute quads[3] <- Mult1*quads[3] - Mult4*quads[0] + Mult2*quads[2] - Mult3*quads[1]
 		quads[3] = Mult1*quads[3] - Mult4*quads[0] + Mult2*quads[2] - Mult3*quads[1];
 
 		quads[2] = Tmp3;

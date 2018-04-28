@@ -17,6 +17,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "mpir.h"
 #include "boost/multiprecision/gmp.hpp" 
 #define ZT(a) a.backend().data()
+#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
 long long MulPrToLong(const Znum &x);
 class Znumx {
@@ -336,6 +337,7 @@ void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
 
 int BpswPrimalityTest(const BigInteger &pBigNbr);
+int BpswPrimalityTestNew(const Znum &Value, int upperBound);
 
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
@@ -363,10 +365,12 @@ int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
 void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen);
+void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod);
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
+void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
 void ModInvBigInt(int *num, int *inv, int *mod, int NumberLength);
 
-int JacobiSymbol(int upper, int lower);
+long long JacobiSymbol(long long upper, long long lower);
 
 typedef void(*mmCback)(void);

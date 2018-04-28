@@ -30,7 +30,7 @@ limb TestNbr[MAX_LEN];
 limb MontgomeryMultN[MAX_LEN];
 limb MontgomeryMultR1[MAX_LEN];
 limb MontgomeryMultR2[MAX_LEN];
-int powerOf2Exponent;
+static int powerOf2Exponent;
 static limb aux[MAX_LEN], aux2[MAX_LEN];
 static limb aux3[MAX_LEN], aux4[MAX_LEN];
 static limb aux5[MAX_LEN], aux6[MAX_LEN];
@@ -44,7 +44,7 @@ static limb Ubak[MAX_LEN], Vbak[MAX_LEN];
 static BigInteger tmpDen, tmpNum, oddValue;
 
 
-// Find the inverse of value mod 2^(NumberLength*BITS_PER_GROUP)
+// Find the inverse of value m 2^(NumberLength*BITS_PER_GROUP)
 static void ComputeInversePower2(const limb *value, limb *result, limb *tmp)
 {
 	int N, x, j;
@@ -72,7 +72,8 @@ static void ComputeInversePower2(const limb *value, limb *result, limb *tmp)
 // Compute R1 = MontgomeryR1 and N = MontgomeryN using the formulas:
 // R1 = R mod M
 // N = -M^(-1) mod R
-/* uses global variables TestNbr, NumberLength, powerOf2Exponent */
+// also compute R2, powerOf2Exponent
+/* uses global variables TestNbr, NumberLength */
 void GetMontgomeryParms(int len) {
 	int j;
 	limb Cy;
@@ -208,8 +209,8 @@ void AdjustModN(limb *Nbr, const limb *Modulus, int nbrLen)
 	}
 }
 
-/* Sum = Nbr1 + Nbr2 */
-void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *mod, int nbrLen)
+/* Sum = Nbr1 + Nbr2 (mod m) */
+void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m, int nbrLen)
 {
 	unsigned int carry = 0;
 	int borrow;
@@ -224,7 +225,7 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 	for (i = 0; i < nbrLen; i++)
 	{
 		borrow = (borrow >> BITS_PER_GROUP) +
-			(unsigned int)Sum[i].x - (mod + i)->x;
+			(unsigned int)Sum[i].x - (m + i)->x;
 		Sum[i].x = (int)(borrow & MAX_VALUE_LIMB);
 	}
 
@@ -234,24 +235,25 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 		for (i = 0; i < nbrLen; i++)
 		{
 			carry = (carry >> BITS_PER_GROUP) +
-				(unsigned int)(Sum + i)->x + (unsigned int)(mod + i)->x;
+				(unsigned int)(Sum + i)->x + (unsigned int)(m + i)->x;
 			Sum[i].x = (int)(carry & MAX_VALUE_LIMB);
 		}
 	}
 }
-
+/* Sum = Nbr1 + Nbr2 (mod TestNbr) */
 void AddBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum)
 {
 	AddBigNbrModNB(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
 }
 
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *mod, int nbrLen)
+/* Diff = Nbr1-Nbr2 (mod m)*/
+void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *m, int nbrLen)
 {
 	int i;
 	int borrow = 0;
 	for (i = 0; i < nbrLen; i++)
 	{
-		borrow = (borrow >> BITS_PER_GROUP) + (Nbr1 + i)->x - (Nbr2 + i)->x;
+		borrow = (borrow >> BITS_PER_GROUP) + Nbr1[i].x - Nbr2[i].x;
 		Diff[i].x = (int)(borrow & MAX_VALUE_LIMB);
 	}
 	if (borrow < 0)
@@ -260,12 +262,12 @@ void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *
 		for (i = 0; i < nbrLen; i++)
 		{
 			carry = (carry >> BITS_PER_GROUP) +
-				(unsigned int)(Diff + i)->x + (unsigned int)(mod + i)->x;
+				(unsigned int)Diff[i].x + (unsigned int)m[i].x;
 			Diff[i].x = (int)(carry & MAX_VALUE_LIMB);
 		}
 	}
 }
-
+/* Sum = Nbr1-Nbr2 (mod Testnbr)*/
 void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
 {
 	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
@@ -974,7 +976,8 @@ static void MontgomeryMult11(const limb *pNbr1, const limb *pNbr2, limb *pProd)
 }
 #endif
 
-/* uses global variables powerOf2Exponent, NumberLength, TestNbr */
+/* product = factor1*factor2 (mod TestNbr)
+uses global variables powerOf2Exponent, NumberLength, TestNbr */
 void modmult(const limb *factor1, const limb *factor2, limb *product)
 {
 	limb carry;
@@ -997,6 +1000,7 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
+
 	if (NumberLength == 1) {
 		smallmodmult(factor1->x, factor2->x, product, TestNbr[0].x);
 		return;
@@ -1166,10 +1170,11 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	return;
 }
 
-// Multiply big number in Montgomery notation by integer.
-// note: factorBig is modified
-void modmultIntExtended(limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen)
-{
+/* Multiply big number in Montgomery notation by integer.
+result = FactorBig* factorInt (mod TestNbr)
+note: factorBig is modified */
+void modmultIntExtended(limb *factorBig, int factorInt, limb *result, 
+	const limb *pTestNbr, int nbrLen) {
 #ifdef _USING64BITS_
 	int64_t carry;
 #else
@@ -1247,6 +1252,7 @@ void modmultIntExtended(limb *factorBig, int factorInt, limb *result, const limb
 	}
 }
 
+/* result = FactorBig* factorInt (mod TestNbr) */
 void modmultInt(limb *factorBig, int factorInt, limb *result) {
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
 }
