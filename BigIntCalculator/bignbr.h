@@ -20,24 +20,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
 long long MulPrToLong(const Znum &x);
-class Znumx {
-public:
-	boost::multiprecision::mpz_int i;
-	size_t bitlength() const {
-		return mpz_sizeinbase(ZT(i), 2);  // returns 1 if i=0, ignores sign of i
-	}
-	bool isEven() const {
-		return mpz_even_p(ZT(i)) != 0;
-	}
-	Znumx sqRoot() const {
-		Znumx r;
-		mpz_sqrt(ZT(r.i), ZT(i));
-		return r;
-	}
-	long long lldata() const {
-		return MulPrToLong(i);
-	}
-};
 
 #define MAX_LEN 2500        // approximately 20000 digits
 #define BITS_PER_GROUP 31
@@ -192,7 +174,7 @@ public:
 	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
 	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
-	friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
+	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
 		/*@out@*/BigInteger &bigint, int NumberLength);
 	friend void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
@@ -343,8 +325,8 @@ int BpswPrimalityTestNew(const Znum &Value, long long upperBound);
 
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
-void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
-void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
+//void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
+//void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
 bool checkOne(const limb *value, int nbrLimbs);
 bool checkMinusOne(const limb *value, int nbrLimbs);
 void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);

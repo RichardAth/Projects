@@ -226,7 +226,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	return Product;
 }
 
-/* calculate Dividend mod Divisor 
+/* calculate Dividend mod Divisor (used for operator overloading) 
 uses global variable Base */
 BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor) {
 	BigInteger Remainder;  
@@ -269,9 +269,7 @@ void expBigInt(BigInteger &bigInt, double logar)
 	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
 	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
 }
-void expBigInt(Znum &bigInt, double logar) {
 
-}
 
 /* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
 void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
@@ -416,7 +414,7 @@ static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 	pArg.nbrLimbs = nbrLimbs;
 }
 
-/* return true if Nbr1 == Nbr2 */
+/* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	int ctr;
 	/*const limb *ptrLimbs1 = Nbr1.limbs;
@@ -454,7 +452,7 @@ bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	return true;  // Numbers are equal.
 }
 
-/* return true if Nbr1 < Nbr2 */
+/* return true if Nbr1 < Nbr2 (used for operator overloading) */
 bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	int ctr;
 	auto N1Limbs = Nbr1.nbrLimbs;
@@ -601,7 +599,8 @@ static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 }
 
 /* i = (i-subt)/divisor. Assume (without checking) that divisor > 0.
-Does not appear to handle -ve divisor */
+Does not appear to handle -ve divisor 
+used for operator overloading */
 void subtractdivide(BigInteger &i, int subt, int divisor)
 {
 	int nbrLimbs = i.nbrLimbs;
@@ -658,7 +657,7 @@ void subtractdivide(BigInteger &i, int subt, int divisor)
 	i = BigIntDivideInt(i, divisor);
 }
 
-/* calculate BigInt modulo divisor */
+/* calculate BigInt modulo divisor (used for operator overloading) */
 int getRemainder(const BigInteger &pBigInt, int divisor) {
 	int ctr;
 	int remainder = 0;
@@ -687,7 +686,7 @@ int getRemainder(const BigInteger &pBigInt, int divisor) {
 	return remainder;
 }
 
-/* result += addend */
+/* result += addend (used for operator overloading) */
 void addbigint(BigInteger &Result, int addend) {
 	int nbrLimbs = Result.nbrLimbs;
 	limb *pResultLimbs = Result.limbs;
@@ -784,19 +783,19 @@ static int getNbrLimbs(const limb *bigNbr)
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. Also uses global value NumberLength for number of ints. */
-void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
-	const limb *srcLimb = bigint.limbs;
-	if (NumberLength == 1) {
-		ptrValues[0] = 1;
-		ptrValues[1] = srcLimb[0].x;
-	}
-	else {
-		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
-		assert(nbrLimbs == bigint.nbrLimbs);
-		ptrValues[0] = nbrLimbs;
-		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
-	}
-}
+//void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
+//	const limb *srcLimb = bigint.limbs;
+//	if (NumberLength == 1) {
+//		ptrValues[0] = 1;
+//		ptrValues[1] = srcLimb[0].x;
+//	}
+//	else {
+//		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
+//		assert(nbrLimbs == bigint.nbrLimbs);
+//		ptrValues[0] = nbrLimbs;
+//		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
+//	}
+//}
 
 /* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
 void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
@@ -848,27 +847,27 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 	}
 }
 
-void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
-{
-	int nbrLimbs = *ptrValues;
-	memcpy(bigNbr, ptrValues + 1, nbrLimbs * sizeof(limb));
-	/* if nbrLen > nbrLimbs set extra limbs to 0*/
-	memset(bigNbr + nbrLimbs, 0, (nbrLen - nbrLimbs) * sizeof(limb));
-}
+//void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
+//{
+//	int nbrLimbs = *ptrValues;
+//	memcpy(bigNbr, ptrValues + 1, nbrLimbs * sizeof(limb));
+//	/* if nbrLen > nbrLimbs set extra limbs to 0*/
+//	memset(bigNbr + nbrLimbs, 0, (nbrLen - nbrLimbs) * sizeof(limb));
+//}
 
-void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen)
-{
-	int nbrLimbs;
-	memcpy(ptrValues + 1, bigint, (nbrLen - 1) * sizeof(limb));
-	for (nbrLimbs = nbrLen - 1; nbrLimbs > 1; nbrLimbs--)
-	{
-		if (ptrValues[nbrLimbs] != 0)
-		{
-			break;
-		}
-	}
-	*ptrValues = nbrLimbs;
-}
+//void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen)
+//{
+//	int nbrLimbs;
+//	memcpy(ptrValues + 1, bigint, (nbrLen - 1) * sizeof(limb));
+//	for (nbrLimbs = nbrLen - 1; nbrLimbs > 1; nbrLimbs--)
+//	{
+//		if (ptrValues[nbrLimbs] != 0)
+//		{
+//			break;
+//		}
+//	}
+//	*ptrValues = nbrLimbs;
+//}
 
 // This routine checks whether the number BigInt is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  

@@ -98,7 +98,7 @@ static limb *fieldAA, *fieldTX, *fieldTZ, *fieldUX, *fieldUZ;
 static void add3(limb *x3, limb *z3, limb *x2, limb *z2, limb *x1, limb *z1, limb *x, limb *z);
 static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1);
 
-static void insertBigFactor(struct sFactors *pstFactors, BigInteger &divisor);
+//static void insertBigFactor(struct sFactors *pstFactors, BigInteger &divisor);
 static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 void ValuestoZ(Znum &numberZ, const int number[]);
 
@@ -589,61 +589,61 @@ void printfactors(const std::vector <zFactors> Factors) {
 	std::cout << '\n';
 }
 
-void printfactors(struct sFactors factors[]) {
-	Znum primefactor;
-	int ix = 1;
-	for (ix = 1; ix <= factors[0].exponent; ix++) {
-		ValuestoZ(primefactor, factors[ix].ptrFactor); // convert prime factor
-		std::cout << primefactor << "^" << factors[ix].exponent << " * ";
-	}
-	std::cout << '\n';
-}
+//void printfactors(struct sFactors factors[]) {
+//	Znum primefactor;
+//	int ix = 1;
+//	for (ix = 1; ix <= factors[0].exponent; ix++) {
+//		ValuestoZ(primefactor, factors[ix].ptrFactor); // convert prime factor
+//		std::cout << primefactor << "^" << factors[ix].exponent << " * ";
+//	}
+//	std::cout << '\n';
+//}
 
-static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigInteger &BigBase)
-{
-	static BigInteger x, Csal, Dsal, Nbr1;  // follow advice not to use stack for these
-	int k;
-
-	BigIntPowerIntExp(BigBase, L, x);   // x <- BigBase^L.
-	Csal = 1; //intToBigInteger(Csal, 1);
-	Dsal = 1; // intToBigInteger(Dsal, 1);
-	for (k = 1; k < DegreeAurif; k++) {
-		Nbr1 = Gamma[k]; // longToBigInteger(Nbr1, Gamma[k]);
-		Csal *= x;       // BigIntMultiply(Csal, x, Csal);
-		Csal += Nbr1;    // BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
-		Nbr1 = Delta[k]; // longToBigInteger(Nbr1, Delta[k]);
-		Dsal *= x;       //BigIntMultiply(Dsal, x, Dsal);
-		Dsal += Nbr1;    // BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
-	}
-	Nbr1 = Gamma[k];    // longToBigInteger(Nbr1, Gamma[k]);
-	Csal = Csal*x;      // BigIntMultiply(Csal, x, Csal);
-	Csal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
-	BigIntPowerIntExp(BigBase, (L + 1) / 2, Nbr1);   // Nbr1 <- Dsal * base^((L+1)/2)
-	Nbr1 = Nbr1 * Dsal; //BigIntMultiply(Dsal, Nbr1, Nbr1);
-	Dsal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Dsal);
-	if (pstFactors[0].exponent >= Max_Factors) {
-		// factor list is full!
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: too many factors: ";
-		mesg += __func__;                 // + function name
-		mesg += " line ";  mesg += line;  // + line number
-		mesg += " in file "; mesg += __FILE__;   // + file name
-		throw std::range_error(mesg);
-	}
-	insertBigFactor(pstFactors, Dsal);
-	Dsal = Csal - Nbr1; // BigIntSubt(Csal, Nbr1, Dsal);
-	if (pstFactors[0].exponent >= Max_Factors) {
-		// factor list is full!
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: too many factors: ";
-		mesg += __func__;                 // + function name
-		mesg += " line ";  mesg += line;  // + line number
-		mesg += " in file "; mesg += __FILE__;   // + file name
-		throw std::range_error(mesg);
-	}
-	insertBigFactor(pstFactors, Dsal);
-	return;
-}
+//static void GetAurifeuilleFactor(struct sFactors *pstFactors, int L, const BigInteger &BigBase)
+//{
+//	static BigInteger x, Csal, Dsal, Nbr1;  // follow advice not to use stack for these
+//	int k;
+//
+//	BigIntPowerIntExp(BigBase, L, x);   // x <- BigBase^L.
+//	Csal = 1; //intToBigInteger(Csal, 1);
+//	Dsal = 1; // intToBigInteger(Dsal, 1);
+//	for (k = 1; k < DegreeAurif; k++) {
+//		Nbr1 = Gamma[k]; // longToBigInteger(Nbr1, Gamma[k]);
+//		Csal *= x;       // BigIntMultiply(Csal, x, Csal);
+//		Csal += Nbr1;    // BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
+//		Nbr1 = Delta[k]; // longToBigInteger(Nbr1, Delta[k]);
+//		Dsal *= x;       //BigIntMultiply(Dsal, x, Dsal);
+//		Dsal += Nbr1;    // BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
+//	}
+//	Nbr1 = Gamma[k];    // longToBigInteger(Nbr1, Gamma[k]);
+//	Csal = Csal*x;      // BigIntMultiply(Csal, x, Csal);
+//	Csal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
+//	BigIntPowerIntExp(BigBase, (L + 1) / 2, Nbr1);   // Nbr1 <- Dsal * base^((L+1)/2)
+//	Nbr1 = Nbr1 * Dsal; //BigIntMultiply(Dsal, Nbr1, Nbr1);
+//	Dsal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Dsal);
+//	if (pstFactors[0].exponent >= Max_Factors) {
+//		// factor list is full!
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "cannot factorise: too many factors: ";
+//		mesg += __func__;                 // + function name
+//		mesg += " line ";  mesg += line;  // + line number
+//		mesg += " in file "; mesg += __FILE__;   // + file name
+//		throw std::range_error(mesg);
+//	}
+//	insertBigFactor(pstFactors, Dsal);
+//	Dsal = Csal - Nbr1; // BigIntSubt(Csal, Nbr1, Dsal);
+//	if (pstFactors[0].exponent >= Max_Factors) {
+//		// factor list is full!
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "cannot factorise: too many factors: ";
+//		mesg += __func__;                 // + function name
+//		mesg += " line ";  mesg += line;  // + line number
+//		mesg += " in file "; mesg += __FILE__;   // + file name
+//		throw std::range_error(mesg);
+//	}
+//	insertBigFactor(pstFactors, Dsal);
+//	return;
+//}
 static void GetAurifeuilleFactor(std::vector<zFactors> &pstFactors, int L, const Znum &BigBase)
 {
 	Znum x, Csal, Dsal, Nbr1;  // follow advice not to use stack for these
@@ -674,96 +674,96 @@ static void GetAurifeuilleFactor(std::vector<zFactors> &pstFactors, int L, const
 	return;
 }
 
-// Get Aurifeuille factors.
-// see https://en.wikipedia.org/wiki/Aurifeuillean_factorization
-static void InsertAurifFactors(struct sFactors *pstFactors, const BigInteger &BigBase, 
-	int Expon, int Incre)
-{
-	if (BigBase >= 386) 	{
-		return;    // Base is very big, so go out.
-	}
-	auto Base = BigBase.lldata();
-
-	if (Expon % 2 == 0 && Incre == -1) {
-		do {
-			Expon /= 2;
-		} while (Expon % 2 == 0);
-
-		Incre = Base % 4 - 2;
-	}
-
-	if (Expon % Base == 0
-		&& Expon / Base % 2 != 0
-		&& ((Base % 4 != 1 && Incre == 1) || (Base % 4 == 1 && Incre == -1)))
-	{
-		int N1, q, L, k;
-		int N = (int)Base;
-		if (N % 4 == 1) {
-			N1 = N;
-		}
-		else {
-			N1 = 2 * N;
-		}
-		DegreeAurif = intTotient(N1) / 2;
-		for (k = 1; k <= DegreeAurif; k += 2) {
-			AurifQ[k] = JacobiSymbol(N, k);
-		}
-		for (k = 2; k <= DegreeAurif; k += 2) {
-			int t1 = k; // Calculate t2 = gcd(k, N1)
-			int t2 = N1;
-			while (t1 != 0) {
-				int t3 = t2 % t1;
-				t2 = t1;
-				t1 = t3;
-			}
-			AurifQ[k] = Moebius(N1 / t2) * intTotient(t2) * Cos((N - 1) * k);
-		}
-		Gamma[0] = Delta[0] = 1;
-		for (k = 1; k <= DegreeAurif / 2; k++) {
-			int j;
-			Gamma[k] = Delta[k] = 0;
-			for (j = 0; j < k; j++) {
-				Gamma[k] =
-					Gamma[k]
-					+ N * AurifQ[2 * k
-					- 2 * j
-					- 1] * Delta[j]
-					- AurifQ[2 * k
-					- 2 * j] * Gamma[j];
-				Delta[k] =
-					Delta[k]
-					+ AurifQ[2 * k
-					+ 1
-					- 2 * j] * Gamma[j]
-					- AurifQ[2 * k
-					- 2 * j] * Delta[j];
-			}
-			Gamma[k] /= 2 * k;
-			Delta[k] = (Delta[k] + Gamma[k]) / (2 * k + 1);
-		}
-
-		for (k = DegreeAurif / 2 + 1; k <= DegreeAurif; k++) {
-			Gamma[k] = Gamma[DegreeAurif - k];
-		}
-
-		for (k = (DegreeAurif + 1) / 2; k < DegreeAurif; k++) {
-			Delta[k] = Delta[DegreeAurif - k - 1];
-		}
-
-		q = Expon / (int)Base;
-		L = 1;
-		while (L * L <= q) {
-			if (q % L == 0) {
-				GetAurifeuilleFactor(pstFactors, L, BigBase);
-				if (q != L * L) {
-					GetAurifeuilleFactor(pstFactors, q / L, BigBase);
-				}
-			}
-			L += 2;
-		}
-	}
-	return;
-}
+/* Get Aurifeuille factors.
+ see https://en.wikipedia.org/wiki/Aurifeuillean_factorization */
+//static void InsertAurifFactors(struct sFactors *pstFactors, const BigInteger &BigBase, 
+//	int Expon, int Incre)
+//{
+//	if (BigBase >= 386) 	{
+//		return;    // Base is very big, so go out.
+//	}
+//	auto Base = BigBase.lldata();
+//
+//	if (Expon % 2 == 0 && Incre == -1) {
+//		do {
+//			Expon /= 2;
+//		} while (Expon % 2 == 0);
+//
+//		Incre = Base % 4 - 2;
+//	}
+//
+//	if (Expon % Base == 0
+//		&& Expon / Base % 2 != 0
+//		&& ((Base % 4 != 1 && Incre == 1) || (Base % 4 == 1 && Incre == -1)))
+//	{
+//		int N1, q, L, k;
+//		int N = (int)Base;
+//		if (N % 4 == 1) {
+//			N1 = N;
+//		}
+//		else {
+//			N1 = 2 * N;
+//		}
+//		DegreeAurif = intTotient(N1) / 2;
+//		for (k = 1; k <= DegreeAurif; k += 2) {
+//			AurifQ[k] = JacobiSymbol(N, k);
+//		}
+//		for (k = 2; k <= DegreeAurif; k += 2) {
+//			int t1 = k; // Calculate t2 = gcd(k, N1)
+//			int t2 = N1;
+//			while (t1 != 0) {
+//				int t3 = t2 % t1;
+//				t2 = t1;
+//				t1 = t3;
+//			}
+//			AurifQ[k] = Moebius(N1 / t2) * intTotient(t2) * Cos((N - 1) * k);
+//		}
+//		Gamma[0] = Delta[0] = 1;
+//		for (k = 1; k <= DegreeAurif / 2; k++) {
+//			int j;
+//			Gamma[k] = Delta[k] = 0;
+//			for (j = 0; j < k; j++) {
+//				Gamma[k] =
+//					Gamma[k]
+//					+ N * AurifQ[2 * k
+//					- 2 * j
+//					- 1] * Delta[j]
+//					- AurifQ[2 * k
+//					- 2 * j] * Gamma[j];
+//				Delta[k] =
+//					Delta[k]
+//					+ AurifQ[2 * k
+//					+ 1
+//					- 2 * j] * Gamma[j]
+//					- AurifQ[2 * k
+//					- 2 * j] * Delta[j];
+//			}
+//			Gamma[k] /= 2 * k;
+//			Delta[k] = (Delta[k] + Gamma[k]) / (2 * k + 1);
+//		}
+//
+//		for (k = DegreeAurif / 2 + 1; k <= DegreeAurif; k++) {
+//			Gamma[k] = Gamma[DegreeAurif - k];
+//		}
+//
+//		for (k = (DegreeAurif + 1) / 2; k < DegreeAurif; k++) {
+//			Delta[k] = Delta[DegreeAurif - k - 1];
+//		}
+//
+//		q = Expon / (int)Base;
+//		L = 1;
+//		while (L * L <= q) {
+//			if (q % L == 0) {
+//				GetAurifeuilleFactor(pstFactors, L, BigBase);
+//				if (q != L * L) {
+//					GetAurifeuilleFactor(pstFactors, q / L, BigBase);
+//				}
+//			}
+//			L += 2;
+//		}
+//	}
+//	return;
+//}
 static void InsertAurifFactors(std::vector<zFactors> &pstFactors, const Znum &BigBase,
 	int Expon, int Incre)
 {
@@ -854,142 +854,143 @@ static void InsertAurifFactors(std::vector<zFactors> &pstFactors, const Znum &Bi
 }
 
 
-static void Cunningham(struct sFactors *pstFactors, const BigInteger &BigBase, int Expon,
-	int increment, const BigInteger &BigOriginal)
-{
-//#ifdef __EMSCRIPTEN__
-//	char url[200];
-//	char *ptrUrl;
-//#endif
-	int Expon2, k;
-	//char *ptrFactorsAscii;
-	static BigInteger Nbr1, Nbr2;      // follow advice not to use stack for these
+//static void Cunningham(struct sFactors *pstFactors, const BigInteger &BigBase, int Expon,
+//	int increment, const BigInteger &BigOriginal)
+//{
+////#ifdef __EMSCRIPTEN__
+////	char url[200];
+////	char *ptrUrl;
+////#endif
+//	int Expon2, k;
+//	//char *ptrFactorsAscii;
+//	static BigInteger Nbr1, Nbr2;      // follow advice not to use stack for these
+//
+//	//factorsAscii[0] = 0;    // Indicate no new factor found in advance.
+//	Expon2 = Expon;
+//	//if (cunningham && BigOriginal->nbrLimbs > 4)
+//	//{   // Enter here on numbers of more than 40 digits if the user selected
+//	//	 //get Cunningham factors from server.
+//	//	#ifdef __EMSCRIPTEN__
+//	//			printf ("%s\n", (lang ? "4\nObteniendo los factores primitivos conocidos del servidor Web.\n" :
+//	//				"4\nRequesting known primitive factors from Web server.\n");
+//	//			// Format URL.
+//	//			ptrUrl = url;
+//	//			strcpy(ptrUrl, "factors.pl?base=");
+//	//			ptrUrl += strlen(ptrUrl);
+//	//			int2dec(&ptrUrl, BigBase->limbs[0].x);
+//	//			strcpy(ptrUrl, "&expon=");
+//	//			ptrUrl += strlen(ptrUrl);
+//	//			int2dec(&ptrUrl, Expon);
+//	//			strcpy(ptrUrl, "&type=");
+//	//			ptrUrl += strlen(ptrUrl);
+//	//			*ptrUrl++ = (increment > 0 ? 'p' : 'm');
+//	//			*ptrUrl = 0;
+//	//			getCunn(url, factorsAscii);
+//	//	#endif
+//	//}
+//	//ptrFactorsAscii = factorsAscii;
+//	//while (*ptrFactorsAscii > ' ')
+//	//{ // Loop through factors found in server.
+//	//	int nbrDigits;
+//	//	char *ptrEndFactor = findChar(ptrFactorsAscii, '*');
+//	//	if (ptrEndFactor == NULL)
+//	//	{
+//	//		nbrDigits = (int)strlen(ptrFactorsAscii);
+//	//		ptrEndFactor = ptrFactorsAscii + nbrDigits;
+//	//	}
+//	//	else
+//	//	{
+//	//		nbrDigits = (int)(ptrEndFactor - ptrFactorsAscii);
+//	//		ptrEndFactor++;
+//	//	}
+//	//	Dec2Bin(ptrFactorsAscii, Nbr1.limbs, nbrDigits, &Nbr1.nbrLimbs);
+//	//	Nbr1.sign = SIGN_POSITIVE;
+//	//	ptrFactorsAscii = ptrEndFactor;
+//	//	insertBigFactor(pstFactors, &Nbr1);
+//	//}
+//	while (Expon2 % 2 == 0 && increment == -1) {
+//		Expon2 /= 2;
+//		BigIntPowerIntExp(BigBase, Expon2, Nbr1);
+//		Nbr1 += increment; //addbigint(Nbr1, increment);
+//		if (pstFactors[0].exponent >= Max_Factors) {
+//			// factor list is full!
+//			std::string line = std::to_string(__LINE__);
+//			std::string mesg = "cannot factorise: too many factors: ";
+//			mesg += __func__;                 // + function name
+//			mesg += " line ";  mesg += line;  // + line number
+//			mesg += " in file "; mesg += __FILE__;   // + file name
+//			throw std::range_error(mesg);
+//		}
+//		insertBigFactor(pstFactors, Nbr1);
+//		InsertAurifFactors(pstFactors, BigBase, Expon2, 1);
+//	}
+//
+//	k = 1;
+//	while (k * k <= Expon) {
+//		if (Expon % k == 0) {
+//			if (k % 2 != 0) { /* Only for odd exponent */
+//				BigIntPowerIntExp(BigBase, Expon / k, Nbr1);
+//				Nbr1 += increment; //addbigint(Nbr1, increment);
+//				BigIntGcd(Nbr1, BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
+//				if (pstFactors[0].exponent >= Max_Factors) {
+//					// factor list is full!
+//					std::string line = std::to_string(__LINE__);
+//					std::string mesg = "cannot factorise: too many factors: ";
+//					mesg += __func__;                 // + function name
+//					mesg += " line ";  mesg += line;  // + line number
+//					mesg += " in file "; mesg += __FILE__;   // + file name
+//					throw std::range_error(mesg);
+//				}
+//				insertBigFactor(pstFactors, Nbr2);
+//				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
+//				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+//				if (pstFactors[0].exponent >= Max_Factors) {
+//					// factor list is full!
+//					std::string line = std::to_string(__LINE__);
+//					std::string mesg = "cannot factorise: too many factors: ";
+//					mesg += __func__;                 // + function name
+//					mesg += " line ";  mesg += line;  // + line number
+//					mesg += " in file "; mesg += __FILE__;   // + file name
+//					throw std::range_error(mesg);
+//				}
+//				insertBigFactor(pstFactors, Nbr1);
+//				InsertAurifFactors(pstFactors, BigBase, Expon / k, increment);
+//			}
+//
+//			if ((Expon / k) % 2 != 0) { /* Only for odd exponent */
+//				BigIntPowerIntExp(BigBase, k, Nbr1);
+//				Nbr1 += increment; //addbigint(Nbr1, increment);
+//				BigIntGcd(Nbr1, BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^k+incre, original)
+//				if (pstFactors[0].exponent >= Max_Factors) {
+//					// factor list is full!
+//					std::string line = std::to_string(__LINE__);
+//					std::string mesg = "cannot factorise: too many factors: ";
+//					mesg += __func__;                 // + function name
+//					mesg += " line ";  mesg += line;  // + line number
+//					mesg += " in file "; mesg += __FILE__;   // + file name
+//					throw std::range_error(mesg);
+//				}
+//				insertBigFactor(pstFactors, Nbr2);
+//				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
+//				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+//				if (pstFactors[0].exponent >= Max_Factors) {
+//					// factor list is full!
+//					std::string line = std::to_string(__LINE__);
+//					std::string mesg = "cannot factorise: too many factors: ";
+//					mesg += __func__;                 // + function name
+//					mesg += " line ";  mesg += line;  // + line number
+//					mesg += " in file "; mesg += __FILE__;   // + file name
+//					throw std::range_error(mesg);
+//				}
+//				insertBigFactor(pstFactors, Nbr1);
+//				InsertAurifFactors(pstFactors, BigBase, k, increment);
+//			}
+//		}
+//		k++;
+//	}
+//	return;
+//}
 
-	//factorsAscii[0] = 0;    // Indicate no new factor found in advance.
-	Expon2 = Expon;
-	//if (cunningham && BigOriginal->nbrLimbs > 4)
-	//{   // Enter here on numbers of more than 40 digits if the user selected
-	//	 //get Cunningham factors from server.
-	//	#ifdef __EMSCRIPTEN__
-	//			printf ("%s\n", (lang ? "4\nObteniendo los factores primitivos conocidos del servidor Web.\n" :
-	//				"4\nRequesting known primitive factors from Web server.\n");
-	//			// Format URL.
-	//			ptrUrl = url;
-	//			strcpy(ptrUrl, "factors.pl?base=");
-	//			ptrUrl += strlen(ptrUrl);
-	//			int2dec(&ptrUrl, BigBase->limbs[0].x);
-	//			strcpy(ptrUrl, "&expon=");
-	//			ptrUrl += strlen(ptrUrl);
-	//			int2dec(&ptrUrl, Expon);
-	//			strcpy(ptrUrl, "&type=");
-	//			ptrUrl += strlen(ptrUrl);
-	//			*ptrUrl++ = (increment > 0 ? 'p' : 'm');
-	//			*ptrUrl = 0;
-	//			getCunn(url, factorsAscii);
-	//	#endif
-	//}
-	//ptrFactorsAscii = factorsAscii;
-	//while (*ptrFactorsAscii > ' ')
-	//{ // Loop through factors found in server.
-	//	int nbrDigits;
-	//	char *ptrEndFactor = findChar(ptrFactorsAscii, '*');
-	//	if (ptrEndFactor == NULL)
-	//	{
-	//		nbrDigits = (int)strlen(ptrFactorsAscii);
-	//		ptrEndFactor = ptrFactorsAscii + nbrDigits;
-	//	}
-	//	else
-	//	{
-	//		nbrDigits = (int)(ptrEndFactor - ptrFactorsAscii);
-	//		ptrEndFactor++;
-	//	}
-	//	Dec2Bin(ptrFactorsAscii, Nbr1.limbs, nbrDigits, &Nbr1.nbrLimbs);
-	//	Nbr1.sign = SIGN_POSITIVE;
-	//	ptrFactorsAscii = ptrEndFactor;
-	//	insertBigFactor(pstFactors, &Nbr1);
-	//}
-	while (Expon2 % 2 == 0 && increment == -1) {
-		Expon2 /= 2;
-		BigIntPowerIntExp(BigBase, Expon2, Nbr1);
-		Nbr1 += increment; //addbigint(Nbr1, increment);
-		if (pstFactors[0].exponent >= Max_Factors) {
-			// factor list is full!
-			std::string line = std::to_string(__LINE__);
-			std::string mesg = "cannot factorise: too many factors: ";
-			mesg += __func__;                 // + function name
-			mesg += " line ";  mesg += line;  // + line number
-			mesg += " in file "; mesg += __FILE__;   // + file name
-			throw std::range_error(mesg);
-		}
-		insertBigFactor(pstFactors, Nbr1);
-		InsertAurifFactors(pstFactors, BigBase, Expon2, 1);
-	}
-
-	k = 1;
-	while (k * k <= Expon) {
-		if (Expon % k == 0) {
-			if (k % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, Expon / k, Nbr1);
-				Nbr1 += increment; //addbigint(Nbr1, increment);
-				BigIntGcd(Nbr1, BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
-				if (pstFactors[0].exponent >= Max_Factors) {
-					// factor list is full!
-					std::string line = std::to_string(__LINE__);
-					std::string mesg = "cannot factorise: too many factors: ";
-					mesg += __func__;                 // + function name
-					mesg += " line ";  mesg += line;  // + line number
-					mesg += " in file "; mesg += __FILE__;   // + file name
-					throw std::range_error(mesg);
-				}
-				insertBigFactor(pstFactors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
-				if (pstFactors[0].exponent >= Max_Factors) {
-					// factor list is full!
-					std::string line = std::to_string(__LINE__);
-					std::string mesg = "cannot factorise: too many factors: ";
-					mesg += __func__;                 // + function name
-					mesg += " line ";  mesg += line;  // + line number
-					mesg += " in file "; mesg += __FILE__;   // + file name
-					throw std::range_error(mesg);
-				}
-				insertBigFactor(pstFactors, Nbr1);
-				InsertAurifFactors(pstFactors, BigBase, Expon / k, increment);
-			}
-
-			if ((Expon / k) % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, k, Nbr1);
-				Nbr1 += increment; //addbigint(Nbr1, increment);
-				BigIntGcd(Nbr1, BigOriginal, Nbr2);   // Nbr2 <- gcd(Base^k+incre, original)
-				if (pstFactors[0].exponent >= Max_Factors) {
-					// factor list is full!
-					std::string line = std::to_string(__LINE__);
-					std::string mesg = "cannot factorise: too many factors: ";
-					mesg += __func__;                 // + function name
-					mesg += " line ";  mesg += line;  // + line number
-					mesg += " in file "; mesg += __FILE__;   // + file name
-					throw std::range_error(mesg);
-				}
-				insertBigFactor(pstFactors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
-				if (pstFactors[0].exponent >= Max_Factors) {
-					// factor list is full!
-					std::string line = std::to_string(__LINE__);
-					std::string mesg = "cannot factorise: too many factors: ";
-					mesg += __func__;                 // + function name
-					mesg += " line ";  mesg += line;  // + line number
-					mesg += " in file "; mesg += __FILE__;   // + file name
-					throw std::range_error(mesg);
-				}
-				insertBigFactor(pstFactors, Nbr1);
-				InsertAurifFactors(pstFactors, BigBase, k, increment);
-			}
-		}
-		k++;
-	}
-	return;
-}
 static void Cunningham(std::vector<zFactors> &pstFactors, const Znum &BigBase, int Expon,
 	int increment, const Znum &BigOriginal) {
 	int Expon2, k;
@@ -1035,86 +1036,86 @@ static void Cunningham(std::vector<zFactors> &pstFactors, const Znum &BigBase, i
 	return;
 }
 
-static bool ProcessExponent(struct sFactors *pstFactors, 
-	const BigInteger &nbrToFactor, int Exponent)
-{
-#ifdef __EMSCRIPTEN__
-	char status[200] = { 0 };
-	char *ptrStatus;
-#endif
-	static BigInteger NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;   // follow advice not to use stack for these
-	static BigInteger nextroot, dif;     // follow advice not to use stack for these
-	double log2N;
-
-#ifdef __EMSCRIPTEN__
-	int elapsedTime = (int)(tenths() - originalTenthSecond);
-
-	if (elapsedTime / 10 != oldTimeElapsed / 10) 
-	{
-		oldTimeElapsed = elapsedTime;
-		ptrStatus = status;
-		strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
-		ptrStatus += strlen(ptrStatus);
-		GetDHMS(&ptrStatus, elapsedTime / 10);
-		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
-			"Power +/- 1 exponent: ");
-		ptrStatus += strlen(ptrStatus);
-		int2dec(&ptrStatus, Exponent);
-		printf ("%s\n", status);
-	}
-#endif
-
-	NFp1 = nbrToFactor; 
-	NFp1 ++;              // NFp1 <- NumberToFactor + 1
-	NFm1 = nbrToFactor;   // CopyBigInt(NFm1, *nbrToFactor);
-	NFm1 --;              // NFm1 <- NumberToFactor - 1
-	log2N = logBigNbr(NFp1) / Exponent;    // Find nth root of number to factor.
-	expBigInt(nthRoot, log2N);
-	rootbak = nthRoot;
-
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1; //BigIntMultiply(nthRoot, rootN1, rootN);     // rootN <- nthRoot ^ Exponent
-		dif = NFp1 - rootN; // BigIntSubt(NFp1, rootN, dif);    
-		if (dif == 0) { // Perfect power-1
-			Cunningham(pstFactors, nthRoot, Exponent, -1, nbrToFactor);
-			return true;
-		}
-		dif ++;        // dif <- dif + 1
-		Temp1 = dif / rootN1;        
-		Temp1 /= Exponent; //subtractdivide(Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;         // 
-		nextroot --;  //   nextroot = nextroot - 1             
-		nthRoot = nextroot - nthRoot;     
-		if (nthRoot >= 0) {
-			break; // Not a perfect power
-		}
-		nthRoot = nextroot; 
-	}
-
-	nthRoot = rootbak;
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
-		dif = NFm1 - rootN;             
-		if (dif == 0)
-		{ // Perfect power+1
-			Cunningham(pstFactors, nthRoot, Exponent, 1, nbrToFactor);
-			return true;
-		}
-		dif ++;                        // dif <- dif + 1
-		Temp1 = dif / rootN1;   
-		Temp1 /= Exponent; //subtractdivide(Temp1, 0, Exponent);   // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;       
-		nextroot --;             // nextroot <- nextroot - 1
-		nthRoot = nextroot - nthRoot;   
-		if (nthRoot >= 0) {
-			break;               // Not a perfect power
-		}
-		nthRoot = nextroot;      // CopyBigInt(nthRoot, nextroot);
-	}
-	return false;
-}
+//static bool ProcessExponent(struct sFactors *pstFactors, 
+//	const BigInteger &nbrToFactor, int Exponent)
+//{
+//#ifdef __EMSCRIPTEN__
+//	char status[200] = { 0 };
+//	char *ptrStatus;
+//#endif
+//	static BigInteger NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;   // follow advice not to use stack for these
+//	static BigInteger nextroot, dif;     // follow advice not to use stack for these
+//	double log2N;
+//
+//#ifdef __EMSCRIPTEN__
+//	int elapsedTime = (int)(tenths() - originalTenthSecond);
+//
+//	if (elapsedTime / 10 != oldTimeElapsed / 10) 
+//	{
+//		oldTimeElapsed = elapsedTime;
+//		ptrStatus = status;
+//		strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
+//		ptrStatus += strlen(ptrStatus);
+//		GetDHMS(&ptrStatus, elapsedTime / 10);
+//		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
+//			"Power +/- 1 exponent: ");
+//		ptrStatus += strlen(ptrStatus);
+//		int2dec(&ptrStatus, Exponent);
+//		printf ("%s\n", status);
+//	}
+//#endif
+//
+//	NFp1 = nbrToFactor; 
+//	NFp1 ++;              // NFp1 <- NumberToFactor + 1
+//	NFm1 = nbrToFactor;   // CopyBigInt(NFm1, *nbrToFactor);
+//	NFm1 --;              // NFm1 <- NumberToFactor - 1
+//	log2N = logBigNbr(NFp1) / Exponent;    // Find nth root of number to factor.
+//	expBigInt(nthRoot, log2N);
+//	rootbak = nthRoot;
+//
+//	for (;;) {
+//		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
+//		rootN = nthRoot*rootN1; //BigIntMultiply(nthRoot, rootN1, rootN);     // rootN <- nthRoot ^ Exponent
+//		dif = NFp1 - rootN; // BigIntSubt(NFp1, rootN, dif);    
+//		if (dif == 0) { // Perfect power-1
+//			Cunningham(pstFactors, nthRoot, Exponent, -1, nbrToFactor);
+//			return true;
+//		}
+//		dif ++;        // dif <- dif + 1
+//		Temp1 = dif / rootN1;        
+//		Temp1 /= Exponent; //subtractdivide(Temp1, 0, Exponent);        // Temp1 <- Temp1 / Exponent
+//		nextroot = Temp1 + nthRoot;         // 
+//		nextroot --;  //   nextroot = nextroot - 1             
+//		nthRoot = nextroot - nthRoot;     
+//		if (nthRoot >= 0) {
+//			break; // Not a perfect power
+//		}
+//		nthRoot = nextroot; 
+//	}
+//
+//	nthRoot = rootbak;
+//	for (;;) {
+//		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
+//		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
+//		dif = NFm1 - rootN;             
+//		if (dif == 0)
+//		{ // Perfect power+1
+//			Cunningham(pstFactors, nthRoot, Exponent, 1, nbrToFactor);
+//			return true;
+//		}
+//		dif ++;                        // dif <- dif + 1
+//		Temp1 = dif / rootN1;   
+//		Temp1 /= Exponent; //subtractdivide(Temp1, 0, Exponent);   // Temp1 <- Temp1 / Exponent
+//		nextroot = Temp1 + nthRoot;       
+//		nextroot --;             // nextroot <- nextroot - 1
+//		nthRoot = nextroot - nthRoot;   
+//		if (nthRoot >= 0) {
+//			break;               // Not a perfect power
+//		}
+//		nthRoot = nextroot;      // CopyBigInt(nthRoot, nextroot);
+//	}
+//	return false;
+//}
 static bool ProcessExponent(std::vector<zFactors> &pstFactors, const Znum &nbrToFactor, int Exponent)
 {
 #ifdef __EMSCRIPTEN__
@@ -1198,108 +1199,108 @@ static bool ProcessExponent(std::vector<zFactors> &pstFactors, const Znum &nbrTo
 
 
 /* check whether the number +/- 1 is a perfect power*/
-static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger &nbrToFactor)
-{
-	bool plus1 = false;
-	bool minus1 = false;
-	int Exponent = 0;
-	int i, j;
-	int modulus;
-	int mod9 = nbrToFactor % 9; // getRemainder(*nbrToFactor, 9);
-	int maxExpon = nbrToFactor.bitLength(); 
-	int numPrimes = 2 * maxExpon + 3;
-	/* if numPrimes >= 66472 i.e. maxExpon > 33233 i.e. nbrLimbs > 1072*/
-	if ((numPrimes >> 3) >= (2 * 33231 + 3 + 7) / 8) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: number exceeds 10,000 digits "; 
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-	double logar = logBigNbr(nbrToFactor);
-	// 33219 = logarithm base 2 of max number supported = 10^10,000.
-	unsigned char ProcessExpon[(33231 + 7) / 8];
-	unsigned char primes[(2 * 33231 + 3 + 7) / 8];
-
-	memset(ProcessExpon, 0xFF, sizeof(ProcessExpon));
-	memset(primes, 0xFF, sizeof(primes));
-
-	for (i = 2; i * i < numPrimes; i++) { // Generation of primes using sieve of Eratosthenes.
-		if (primes[i >> 3] & (1 << (i & 7))) {     // Number i is prime.
-			for (j = i * i; j < numPrimes; j += i)
-			{   // Mark multiple of i as composite.
-				primes[j >> 3] &= ~(1 << (j & 7));
-			}
-		}
-	}
-
-	// If the number +/- 1 is multiple of a prime but not a multiple
-	// of its square then the number +/- 1 cannot be a perfect power.
-	for (i = 2; i < numPrimes; i++) {
-		if (primes[i >> 3] & (1 << (i & 7))) {      // i is prime according to sieve.
-			unsigned long long remainder;
-			int index;
-			Temp1 = (long long)i*(long long)i; 
-			Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (i*i)
-			remainder = Temp2.lldata();
-			if (remainder % i == 1 && remainder != 1) {
-				plus1 = true; // NumberFactor cannot be a power + 1
-			}
-			if (remainder % i == (unsigned int)i - 1 &&
-				remainder != (unsigned int)i*(unsigned int)i - 1) 
-			{
-				minus1 = true; // NumberFactor cannot be a power - 1
-			}
-			if (minus1 && plus1) {
-				return;
-			}
-			index = i / 2;
-			if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
-				continue;
-			}
-			modulus = remainder % i;
-			if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? i - 1 : i - 2)) {
-				for (j = i / 2; j <= maxExpon; j += i / 2) {
-					ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-				}
-			}
-			else {
-				if (modulus == i - 2) {
-					for (j = i - 1; j <= maxExpon; j += i - 1) {
-						ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-					}
-				}
-			}
-		}
-	}
-
-	for (j = 2; j < 100; j++) {
-		double u = logar / log(j) + .000005;
-		Exponent = (int)floor(u);
-		if (u - Exponent > .00001)
-			continue;
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7)
-			continue;
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7))))
-			continue;
-		if (ProcessExponent(pstFactors, nbrToFactor, Exponent))
-			return;  // number is a perfect power +/- 1
-	}
-
-	for (; Exponent >= 2; Exponent--) {
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7) {
-			continue;
-		}
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7)))) {
-			continue;
-		}
-		if (ProcessExponent(pstFactors, nbrToFactor, Exponent)) {
-			return;   // number is  a perfect power
-		}
-	}
-	return;
-}
+//static void PowerPM1Check(struct sFactors *pstFactors, const BigInteger &nbrToFactor)
+//{
+//	bool plus1 = false;
+//	bool minus1 = false;
+//	int Exponent = 0;
+//	int i, j;
+//	int modulus;
+//	int mod9 = nbrToFactor % 9; // getRemainder(*nbrToFactor, 9);
+//	int maxExpon = nbrToFactor.bitLength(); 
+//	int numPrimes = 2 * maxExpon + 3;
+//	/* if numPrimes >= 66472 i.e. maxExpon > 33233 i.e. nbrLimbs > 1072*/
+//	if ((numPrimes >> 3) >= (2 * 33231 + 3 + 7) / 8) {
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "cannot factorise: number exceeds 10,000 digits "; 
+//		mesg += __func__;
+//		mesg += " line ";  mesg += line;
+//		mesg += " in file "; mesg += __FILE__;
+//		throw std::range_error(mesg);
+//	}
+//	double logar = logBigNbr(nbrToFactor);
+//	// 33219 = logarithm base 2 of max number supported = 10^10,000.
+//	unsigned char ProcessExpon[(33231 + 7) / 8];
+//	unsigned char primes[(2 * 33231 + 3 + 7) / 8];
+//
+//	memset(ProcessExpon, 0xFF, sizeof(ProcessExpon));
+//	memset(primes, 0xFF, sizeof(primes));
+//
+//	for (i = 2; i * i < numPrimes; i++) { // Generation of primes using sieve of Eratosthenes.
+//		if (primes[i >> 3] & (1 << (i & 7))) {     // Number i is prime.
+//			for (j = i * i; j < numPrimes; j += i)
+//			{   // Mark multiple of i as composite.
+//				primes[j >> 3] &= ~(1 << (j & 7));
+//			}
+//		}
+//	}
+//
+//	// If the number +/- 1 is multiple of a prime but not a multiple
+//	// of its square then the number +/- 1 cannot be a perfect power.
+//	for (i = 2; i < numPrimes; i++) {
+//		if (primes[i >> 3] & (1 << (i & 7))) {      // i is prime according to sieve.
+//			unsigned long long remainder;
+//			int index;
+//			Temp1 = (long long)i*(long long)i; 
+//			Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (i*i)
+//			remainder = Temp2.lldata();
+//			if (remainder % i == 1 && remainder != 1) {
+//				plus1 = true; // NumberFactor cannot be a power + 1
+//			}
+//			if (remainder % i == (unsigned int)i - 1 &&
+//				remainder != (unsigned int)i*(unsigned int)i - 1) 
+//			{
+//				minus1 = true; // NumberFactor cannot be a power - 1
+//			}
+//			if (minus1 && plus1) {
+//				return;
+//			}
+//			index = i / 2;
+//			if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
+//				continue;
+//			}
+//			modulus = remainder % i;
+//			if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? i - 1 : i - 2)) {
+//				for (j = i / 2; j <= maxExpon; j += i / 2) {
+//					ProcessExpon[j >> 3] &= ~(1 << (j & 7));
+//				}
+//			}
+//			else {
+//				if (modulus == i - 2) {
+//					for (j = i - 1; j <= maxExpon; j += i - 1) {
+//						ProcessExpon[j >> 3] &= ~(1 << (j & 7));
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	for (j = 2; j < 100; j++) {
+//		double u = logar / log(j) + .000005;
+//		Exponent = (int)floor(u);
+//		if (u - Exponent > .00001)
+//			continue;
+//		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7)
+//			continue;
+//		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7))))
+//			continue;
+//		if (ProcessExponent(pstFactors, nbrToFactor, Exponent))
+//			return;  // number is a perfect power +/- 1
+//	}
+//
+//	for (; Exponent >= 2; Exponent--) {
+//		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7) {
+//			continue;
+//		}
+//		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7)))) {
+//			continue;
+//		}
+//		if (ProcessExponent(pstFactors, nbrToFactor, Exponent)) {
+//			return;   // number is  a perfect power
+//		}
+//	}
+//	return;
+//}
 static void PowerPM1Check(std::vector<zFactors> &pstFactors, const Znum &nbrToFactor)
 {
 	bool plus1 = false;
@@ -2016,105 +2017,105 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 }
 
 /* returns true if successful */
-static bool ecm(BigInteger &N)
-{
-#ifdef _DEBUG
-	//Znum Nz;
-	//BigtoZ(Nz, N);
-	//std::cout << "ecm; N = " << Nz << '\n';
-#endif
-	int P, Q;
-#ifndef __EMSCRIPTEN__
-	(void)Factors;     // Ignore parameter.
-#endif
-	fieldTX = TX;
-	fieldTZ = TZ;
-	fieldUX = UX;
-	fieldUZ = UZ;
-
-
-	fieldAA = AA;
-	NumberLength = N.nbrLimbs;
-	BigIntegerToLimbs(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
-	GetYieldFrequency();  //get yield frequency (used by showECMStatus)
-	GetMontgomeryParms(NumberLength);
-	memset(M, 0, NumberLength * sizeof(limb));
-	memset(DX, 0, NumberLength * sizeof(limb));
-	memset(DZ, 0, NumberLength * sizeof(limb));
-	memset(W3, 0, NumberLength * sizeof(limb));
-	memset(W4, 0, NumberLength * sizeof(limb));
-	memset(GD, 0, NumberLength * sizeof(limb));
-	ptrLowerText = lowerText;
-#ifdef __EMSCRIPTEN__ 
-//	*ptrLowerText++ = '3';
-	//if (pstFactors[0].multiplicity > 1)
-	//{    // Some factorization known.
-	//	int NumberLengthBak = NumberLength;
-	//	strcpy(ptrLowerText, "\n");
-	//	ptrLowerText += strlen(ptrLowerText);
-	//	SendFactorizationToOutput(pstFactors, ptrLowerText, N->sign == SIGN_POSITIVE);
-	//	strcpy(ptrLowerText, "\n");
-	//	ptrLowerText += strlen(ptrLowerText);
-	//	NumberLength = NumberLengthBak;
-	//}
-	//strcpy(ptrLowerText, lang ? "\nFactorizando " : 
-	//	"\nFactorizing using Lenstra elliptic-curve factorization (ECM) ");
-	//ptrLowerText += strlen(ptrLowerText);
-	//if (hexadecimal)
-	//{
-	//	Bin2Hex(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
-	//}
-	//else
-	//{
-	//	Bin2Dec(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
-	//}
-	//ptrLowerText += strlen(ptrLowerText);
-	//strcpy(ptrLowerText, "\n");
-	//ptrLowerText += strlen(ptrLowerText);
-	//printf("%s", lowerText);
-#endif
-	EC--; 
-	if (SmallPrime[0] != 2) {
-		SmallPrime[0] = 2;   // put 1st prime into SmallPrime list
-		P = 3;
-		indexM = 1;
-		for (indexM = 1; indexM < sizeof(SmallPrime) / sizeof(SmallPrime[0]); indexM++)
-		{     // Loop that fills the SmallPrime array.
-			SmallPrime[indexM] = (int)P; /* Store prime */
-			do
-			{
-				P += 2;
-				for (Q = 3; Q * Q <= P; Q += 2)
-				{ /* Check if P is prime */
-					if (P % Q == 0)
-					{
-						break;  /* Composite */
-					}
-				}
-			} while (Q * Q <= P);
-		}
-	}
-	foundByLehman = false;
-	do {
-		enum eEcmResult ecmResp = ecmCurve(N);
-		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQSx(TestNbr, GD);
-			break;
-		}
-		else if (ecmResp == FACTOR_FOUND) {
-			break;
-		}
-		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
-		else if (ecmResp == ERROR)
-			return false;
-	} while (!memcmp(GD, TestNbr, NumberLength * sizeof(limb)));
-
-#if 0
-	lowerTextArea.setText("");
-#endif
-	StepECM = 0; /* do not show pass number on screen */
-	return true;
-}
+//static bool ecm(BigInteger &N)
+//{
+//#ifdef _DEBUG
+//	//Znum Nz;
+//	//BigtoZ(Nz, N);
+//	//std::cout << "ecm; N = " << Nz << '\n';
+//#endif
+//	int P, Q;
+//#ifndef __EMSCRIPTEN__
+//	(void)Factors;     // Ignore parameter.
+//#endif
+//	fieldTX = TX;
+//	fieldTZ = TZ;
+//	fieldUX = UX;
+//	fieldUZ = UZ;
+//
+//
+//	fieldAA = AA;
+//	NumberLength = N.nbrLimbs;
+//	BigIntegerToLimbs(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
+//	GetYieldFrequency();  //get yield frequency (used by showECMStatus)
+//	GetMontgomeryParms(NumberLength);
+//	memset(M, 0, NumberLength * sizeof(limb));
+//	memset(DX, 0, NumberLength * sizeof(limb));
+//	memset(DZ, 0, NumberLength * sizeof(limb));
+//	memset(W3, 0, NumberLength * sizeof(limb));
+//	memset(W4, 0, NumberLength * sizeof(limb));
+//	memset(GD, 0, NumberLength * sizeof(limb));
+//	ptrLowerText = lowerText;
+//#ifdef __EMSCRIPTEN__ 
+////	*ptrLowerText++ = '3';
+//	//if (pstFactors[0].multiplicity > 1)
+//	//{    // Some factorization known.
+//	//	int NumberLengthBak = NumberLength;
+//	//	strcpy(ptrLowerText, "\n");
+//	//	ptrLowerText += strlen(ptrLowerText);
+//	//	SendFactorizationToOutput(pstFactors, ptrLowerText, N->sign == SIGN_POSITIVE);
+//	//	strcpy(ptrLowerText, "\n");
+//	//	ptrLowerText += strlen(ptrLowerText);
+//	//	NumberLength = NumberLengthBak;
+//	//}
+//	//strcpy(ptrLowerText, lang ? "\nFactorizando " : 
+//	//	"\nFactorizing using Lenstra elliptic-curve factorization (ECM) ");
+//	//ptrLowerText += strlen(ptrLowerText);
+//	//if (hexadecimal)
+//	//{
+//	//	Bin2Hex(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
+//	//}
+//	//else
+//	//{
+//	//	Bin2Dec(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
+//	//}
+//	//ptrLowerText += strlen(ptrLowerText);
+//	//strcpy(ptrLowerText, "\n");
+//	//ptrLowerText += strlen(ptrLowerText);
+//	//printf("%s", lowerText);
+//#endif
+//	EC--; 
+//	if (SmallPrime[0] != 2) {
+//		SmallPrime[0] = 2;   // put 1st prime into SmallPrime list
+//		P = 3;
+//		indexM = 1;
+//		for (indexM = 1; indexM < sizeof(SmallPrime) / sizeof(SmallPrime[0]); indexM++)
+//		{     // Loop that fills the SmallPrime array.
+//			SmallPrime[indexM] = (int)P; /* Store prime */
+//			do
+//			{
+//				P += 2;
+//				for (Q = 3; Q * Q <= P; Q += 2)
+//				{ /* Check if P is prime */
+//					if (P % Q == 0)
+//					{
+//						break;  /* Composite */
+//					}
+//				}
+//			} while (Q * Q <= P);
+//		}
+//	}
+//	foundByLehman = false;
+//	do {
+//		enum eEcmResult ecmResp = ecmCurve(N);
+//		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
+//			FactoringSIQSx(TestNbr, GD);
+//			break;
+//		}
+//		else if (ecmResp == FACTOR_FOUND) {
+//			break;
+//		}
+//		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
+//		else if (ecmResp == ERROR)
+//			return false;
+//	} while (!memcmp(GD, TestNbr, NumberLength * sizeof(limb)));
+//
+//#if 0
+//	lowerTextArea.setText("");
+//#endif
+//	StepECM = 0; /* do not show pass number on screen */
+//	return true;
+//}
 static bool ecm(Znum &Nz) {
 	static BigInteger N;
 	ZtoBig(N, Nz);  // convert from Znum to BigInteger
@@ -2215,20 +2216,20 @@ static bool ecm(Znum &Nz) {
 }
 
 /* convert factors from integer lists to Znums */
-static void ConvertFactors(const sFactors *pstFactors, std::vector <zFactors> &factorlist) {
-	int ix = 1;
-	Znum primefactor;
-	factorlist.clear();
-
-	/* 1st entry in pstFactors contains the total number of factors.
-	step through list of prime factors. */
-	for (ix = 1; ix <= pstFactors[0].exponent; ix++) {
-		factorlist.resize(ix);
-		ValuestoZ(primefactor, pstFactors[ix].ptrFactor); // convert prime factor
-		factorlist[ix - 1].Factor =primefactor ;                // and copy it
-		factorlist[ix - 1].exponent = pstFactors[ix].exponent;  // copy exponent
-	}
-}
+//static void ConvertFactors(const sFactors *pstFactors, std::vector <zFactors> &factorlist) {
+//	int ix = 1;
+//	Znum primefactor;
+//	factorlist.clear();
+//
+//	/* 1st entry in pstFactors contains the total number of factors.
+//	step through list of prime factors. */
+//	for (ix = 1; ix <= pstFactors[0].exponent; ix++) {
+//		factorlist.resize(ix);
+//		ValuestoZ(primefactor, pstFactors[ix].ptrFactor); // convert prime factor
+//		factorlist[ix - 1].Factor =primefactor ;                // and copy it
+//		factorlist[ix - 1].exponent = pstFactors[ix].exponent;  // copy exponent
+//	}
+//}
 
 /* sort factors into ascending order. If two factors are equal, merge them by adding
 the 2nd exponent to the 1st then removing the second entry by moving any following entries
@@ -2334,66 +2335,66 @@ static void SortFactors(std::vector<zFactors> &Factors) {
 
 /* Insert new factor found into factor array. This factor array must be sorted. 
 Dividend is the known factor that divisor is a factor of */
-static void insertIntFactor(struct sFactors *pstFactors, struct sFactors *pstFactorDividend, 
-	int divisor)
-{
-	struct sFactors *pstCurFactor;
-	int factorNumber;
-	int *ptrFactor = pstFactorDividend->ptrFactor;
-	int nbrLimbs = *ptrFactor;
-	int *ptrValue;
-	pstFactorDividend->upperBound = divisor;
-	// Divide number by factor just found.
-	DivBigNbrByInt(ptrFactor + 1, divisor, ptrFactor + 1, nbrLimbs); // dividend /= divisor
-	if (*(ptrFactor + nbrLimbs) == 0)
-	{
-		(*ptrFactor)--;  // remove leading zero if necessary
-	}
-	// Check whether prime is already in factor list.
-	pstCurFactor = pstFactors + 1;
-	for (factorNumber = 1; factorNumber <= pstFactors[0].exponent; factorNumber++, pstCurFactor++)
-	{
-		ptrValue = pstCurFactor->ptrFactor;  // Point to factor in factor array.
-		if (*ptrValue == 1 && *(ptrValue + 1) == divisor)
-		{  // Prime already found: increment multiplicity and go out.
-			pstCurFactor->exponent += pstFactorDividend->exponent;
-			ptrValue = pstFactorDividend->ptrFactor;
-			if (*ptrValue == 1 && *(ptrValue + 1) == 1)
-			{    // Dividend is 1 now so discard it.
-				*pstFactorDividend = *(pstFactors + pstFactors[0].exponent--);
-			}
-			SortFactors(pstFactors);
-			return;
-		}
-		if (*ptrValue > 1 || *(ptrValue + 1) > divisor)
-		{   // Factor in factor list is greater than factor to insert. Exit loop.
-			break;
-		}
-	}
-	pstFactors[0].exponent++; // Indicate new known factor.
-								// Move all elements.
-	ptrValue = pstFactorDividend->ptrFactor;
-	if (pstFactors[0].exponent > factorNumber)
-	{
-		memmove(pstCurFactor + 1, pstCurFactor,
-			(pstFactors[0].exponent - factorNumber) * sizeof(struct sFactors));
-	}
-	if (*ptrValue == 1 && *(ptrValue + 1) == 1)
-	{
-		pstCurFactor = pstFactorDividend;
-	}
-	else
-	{
-		ptrValue = pstFactors[0].ptrFactor;
-		pstCurFactor->ptrFactor = ptrValue;
-		pstCurFactor->exponent = pstFactorDividend->exponent;
-		pstFactors[0].ptrFactor += 2;  // Next free memory.
-	}
-	pstCurFactor->upperBound = 0;  // show that new factor is prime 
-	*ptrValue = 1;  // Number of limbs.
-	*(ptrValue + 1) = divisor;
-	SortFactors(pstFactors);
-}
+//static void insertIntFactor(struct sFactors *pstFactors, struct sFactors *pstFactorDividend, 
+//	int divisor)
+//{
+//	struct sFactors *pstCurFactor;
+//	int factorNumber;
+//	int *ptrFactor = pstFactorDividend->ptrFactor;
+//	int nbrLimbs = *ptrFactor;
+//	int *ptrValue;
+//	pstFactorDividend->upperBound = divisor;
+//	// Divide number by factor just found.
+//	DivBigNbrByInt(ptrFactor + 1, divisor, ptrFactor + 1, nbrLimbs); // dividend /= divisor
+//	if (*(ptrFactor + nbrLimbs) == 0)
+//	{
+//		(*ptrFactor)--;  // remove leading zero if necessary
+//	}
+//	// Check whether prime is already in factor list.
+//	pstCurFactor = pstFactors + 1;
+//	for (factorNumber = 1; factorNumber <= pstFactors[0].exponent; factorNumber++, pstCurFactor++)
+//	{
+//		ptrValue = pstCurFactor->ptrFactor;  // Point to factor in factor array.
+//		if (*ptrValue == 1 && *(ptrValue + 1) == divisor)
+//		{  // Prime already found: increment multiplicity and go out.
+//			pstCurFactor->exponent += pstFactorDividend->exponent;
+//			ptrValue = pstFactorDividend->ptrFactor;
+//			if (*ptrValue == 1 && *(ptrValue + 1) == 1)
+//			{    // Dividend is 1 now so discard it.
+//				*pstFactorDividend = *(pstFactors + pstFactors[0].exponent--);
+//			}
+//			SortFactors(pstFactors);
+//			return;
+//		}
+//		if (*ptrValue > 1 || *(ptrValue + 1) > divisor)
+//		{   // Factor in factor list is greater than factor to insert. Exit loop.
+//			break;
+//		}
+//	}
+//	pstFactors[0].exponent++; // Indicate new known factor.
+//								// Move all elements.
+//	ptrValue = pstFactorDividend->ptrFactor;
+//	if (pstFactors[0].exponent > factorNumber)
+//	{
+//		memmove(pstCurFactor + 1, pstCurFactor,
+//			(pstFactors[0].exponent - factorNumber) * sizeof(struct sFactors));
+//	}
+//	if (*ptrValue == 1 && *(ptrValue + 1) == 1)
+//	{
+//		pstCurFactor = pstFactorDividend;
+//	}
+//	else
+//	{
+//		ptrValue = pstFactors[0].ptrFactor;
+//		pstCurFactor->ptrFactor = ptrValue;
+//		pstCurFactor->exponent = pstFactorDividend->exponent;
+//		pstFactors[0].ptrFactor += 2;  // Next free memory.
+//	}
+//	pstCurFactor->upperBound = 0;  // show that new factor is prime 
+//	*ptrValue = 1;  // Number of limbs.
+//	*(ptrValue + 1) = divisor;
+//	SortFactors(pstFactors);
+//}
 /* assume each small factor is prime and not a duplicate.
 ix is index of non-prime factor which is a multiple of divisor */
 static void insertIntFactor(std::vector<zFactors> &Factors, int pi, int ix) {
@@ -2438,48 +2439,48 @@ static void insertIntFactor(std::vector<zFactors> &Factors, int pi, int ix) {
 #endif
 }
 
-// Insert new factor found into factor array. This factor array must be sorted.
-// The divisor must be also sorted.
-static void insertBigFactor(struct sFactors *pstFactors, BigInteger &divisor)
-{
-	struct sFactors *pstCurFactor;
-	int factorNumber;
-	int lastFactorNumber = pstFactors[0].exponent;
-	struct sFactors *pstNewFactor = pstFactors + lastFactorNumber + 1;
-	int *ptrNewFactorLimbs = pstFactors[0].ptrFactor;
-	pstCurFactor = pstFactors + 1;
-	for (factorNumber = 1; factorNumber <= lastFactorNumber; factorNumber++, pstCurFactor++)
-	{     // For each known factor...
-		int *ptrFactor = pstCurFactor->ptrFactor;
-		NumberLength = *ptrFactor;
-		IntsToBigInteger(ptrFactor, Temp2);    // Convert known factor to Big Integer.
-		BigIntGcd(divisor, Temp2, Temp3);      // Temp3 is the GCD between known factor and divisor.
-		if (Temp3 < 2) { 
-			continue; // divisor is not a new factor (GCD = 0 or 1).
-		}
-		if (Temp2 == Temp3) {
-			continue; // GCD is equal to known factor.
-		}
-		/* At this moment both GCD and known factor/GCD are new known factors. 
-		Replace the known factor by known factor/GCD 
-		and generate a new known factor entry. */
-		NumberLength = Temp3.nbrLimbs;
-		BigIntegerToInts(ptrNewFactorLimbs, Temp3);      // Append new known factor.
-		Temp4 = Temp2 / Temp3;     // Divide by this factor.
-		NumberLength = Temp4.nbrLimbs;
-		BigIntegerToInts(ptrFactor, Temp4);              // Overwrite old known factor.
-		pstNewFactor->exponent = pstCurFactor->exponent;
-		pstNewFactor->ptrFactor = ptrNewFactorLimbs;
-		pstNewFactor->upperBound = pstCurFactor->upperBound;
-		pstNewFactor++;
-		pstFactors[0].exponent++;
-		ptrNewFactorLimbs += 1 + Temp3.nbrLimbs;
-	}
-	// Sort factors in ascending order. If two factors are equal, coalesce them.
-	// Divide number by factor just found.
-	SortFactors(pstFactors);
-	return;
-}
+/* Insert new factor found into factor array. This factor array must be sorted.
+ The divisor must be also sorted. */
+//static void insertBigFactor(struct sFactors *pstFactors, BigInteger &divisor)
+//{
+//	struct sFactors *pstCurFactor;
+//	int factorNumber;
+//	int lastFactorNumber = pstFactors[0].exponent;
+//	struct sFactors *pstNewFactor = pstFactors + lastFactorNumber + 1;
+//	int *ptrNewFactorLimbs = pstFactors[0].ptrFactor;
+//	pstCurFactor = pstFactors + 1;
+//	for (factorNumber = 1; factorNumber <= lastFactorNumber; factorNumber++, pstCurFactor++)
+//	{     // For each known factor...
+//		int *ptrFactor = pstCurFactor->ptrFactor;
+//		NumberLength = *ptrFactor;
+//		IntsToBigInteger(ptrFactor, Temp2);    // Convert known factor to Big Integer.
+//		BigIntGcd(divisor, Temp2, Temp3);      // Temp3 is the GCD between known factor and divisor.
+//		if (Temp3 < 2) { 
+//			continue; // divisor is not a new factor (GCD = 0 or 1).
+//		}
+//		if (Temp2 == Temp3) {
+//			continue; // GCD is equal to known factor.
+//		}
+//		/* At this moment both GCD and known factor/GCD are new known factors. 
+//		Replace the known factor by known factor/GCD 
+//		and generate a new known factor entry. */
+//		NumberLength = Temp3.nbrLimbs;
+//		BigIntegerToInts(ptrNewFactorLimbs, Temp3);      // Append new known factor.
+//		Temp4 = Temp2 / Temp3;     // Divide by this factor.
+//		NumberLength = Temp4.nbrLimbs;
+//		BigIntegerToInts(ptrFactor, Temp4);              // Overwrite old known factor.
+//		pstNewFactor->exponent = pstCurFactor->exponent;
+//		pstNewFactor->ptrFactor = ptrNewFactorLimbs;
+//		pstNewFactor->upperBound = pstCurFactor->upperBound;
+//		pstNewFactor++;
+//		pstFactors[0].exponent++;
+//		ptrNewFactorLimbs += 1 + Temp3.nbrLimbs;
+//	}
+//	// Sort factors in ascending order. If two factors are equal, coalesce them.
+//	// Divide number by factor just found.
+//	SortFactors(pstFactors);
+//	return;
+//}
 static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 	auto lastfactor = Factors.size();
 	auto ipoint = lastfactor;
@@ -2557,121 +2558,121 @@ static void showECMStatus(void)
 Return: false = No factors found, true = factors found.
  Use: Xaux for square root of -1.
       Zaux for square root of 1. */
-static bool factorCarmichael(const BigInteger &pValue, struct sFactors pstFactors[])
-{
-	int randomBase = 0;  // pseudo-random number
-	bool factorsFound = false;
-	int countdown, ctr;
-	const int nbrLimbsP = pValue.nbrLimbs;
-	bool sqrtOneFound = false;
-	bool sqrtMinusOneFound = false;
-	int Aux1Len;
-
-	BigIntegerToLimbs(Aux1, pValue, pValue.nbrLimbs);  // copy p to Aux1
-	Aux1[0].x--;       // Aux1 = p - 1 (p is odd, so there is no carry).
-	Aux1Len = nbrLimbsP;
-	DivideBigNbrByMaxPowerOf2(&ctr, Aux1, &Aux1Len);  // Aux1 /= 2^ctr
-	BigIntegerToLimbs(TestNbr, pValue, pValue.nbrLimbs);  // copy p to TestNbr
-	//memcpy(TestNbr, pValueLimbs, nbrLimbsP * sizeof(limb)); // copy p to TestNbr
-	//TestNbr[nbrLimbsP].x = 0;
-	GetMontgomeryParms(nbrLimbsP);
-	for (countdown = 20; countdown > 0; countdown--) {
-		int i;
-		NumberLength = nbrLimbsP;
-		randomBase = (int)((uint64_t)randomBase * 89547121 + 1762281733) & MAX_INT_NBR;
-		modPowBaseInt(randomBase, Aux1, Aux1Len, Aux2); // Aux2 = base^Aux1.
-		// If Mult1 = 1 or Mult1 = TestNbr-1, then try next base.
-		if (checkOne(Aux2, nbrLimbsP) != 0 || checkMinusOne(Aux2, nbrLimbsP) != 0)
-		{
-			continue;    // This base cannot find a factor. Try another one.
-		}
-		for (i = 0; i < ctr; i++)
-		{              // Loop that squares number.
-			modmult(Aux2, Aux2, Aux3);
-			if (checkOne(Aux3, nbrLimbsP) != 0)
-			{            // Non-trivial square root of 1 found.
-				if (!sqrtOneFound)
-				{          // Save it to perform GCD later.
-					memcpy(Zaux, Aux2, nbrLimbsP * sizeof(limb));
-					sqrtOneFound = true;
-				}
-				else
-				{          // Try to find non-trivial factor by doing GCD.
-					SubtBigNbrMod(Aux2, Zaux, Aux4);
-					LimbsToBigInteger(Aux4, Temp2, NumberLength);
-					BigIntGcd(pValue, Temp2, Temp4);
-					if ((Temp4 > 1) && (Temp4 != pValue))
-					{          // Non-trivial factor found.
-						if (pstFactors[0].exponent >= Max_Factors) {
-							// factor list is full!
-							std::string line = std::to_string(__LINE__);
-							std::string mesg = "cannot factorise: too many factors: ";
-							mesg += __func__;                 // + function name
-							mesg += " line ";  mesg += line;  // + line number
-							mesg += " in file "; mesg += __FILE__;   // + file name
-							throw std::range_error(mesg);
-						}
-						insertBigFactor(pstFactors, Temp4);
-						factorsFound = true;
-					}
-				}
-				// Try to find non-trivial factor by doing GCD.
-				NumberLength = nbrLimbsP;
-				AddBigNbrMod(Aux2, MontgomeryMultR1, Aux4);
-				LimbsToBigInteger(Aux4, Temp2, NumberLength);
-				BigIntGcd(pValue, Temp2, Temp4);
-				if ((Temp4 > 1) && (Temp4 != pValue))
-				{          // Non-trivial factor found.
-					if (pstFactors[0].exponent >= Max_Factors) {
-						// factor list is full!
-						std::string line = std::to_string(__LINE__);
-						std::string mesg = "cannot factorise: too many factors: ";
-						mesg += __func__;                 // + function name
-						mesg += " line ";  mesg += line;  // + line number
-						mesg += " in file "; mesg += __FILE__;   // + file name
-						throw std::range_error(mesg);
-					}
-					insertBigFactor(pstFactors, Temp4);
-					factorsFound = true;
-				}
-				i = ctr;
-				continue;  // Find more factors.
-			}
-			if (checkMinusOne(Aux3, nbrLimbsP) != 0)
-			{            // Square root of 1 found.
-				if (!sqrtMinusOneFound)
-				{          // Save it to perform GCD later.
-					memcpy(Xaux, Aux2, nbrLimbsP * sizeof(limb));
-					sqrtOneFound = true;
-				}
-				else
-				{          // Try to find non-trivial factor by doing GCD.
-					SubtBigNbrMod(Aux3, Xaux, Aux4);
-					LimbsToBigInteger(Aux4, Temp2, NumberLength);
-					BigIntGcd(pValue, Temp2, Temp4);
-					if ((Temp4 > 1) && (Temp4 != pValue))
-					{          // Non-trivial factor found.
-						if (pstFactors[0].exponent >= Max_Factors) {
-							// factor list is full!
-							std::string line = std::to_string(__LINE__);
-							std::string mesg = "cannot factorise: too many factors: ";
-							mesg += __func__;                 // + function name
-							mesg += " line ";  mesg += line;  // + line number
-							mesg += " in file "; mesg += __FILE__;   // + file name
-							throw std::range_error(mesg);
-						}
-						insertBigFactor(pstFactors, Temp4);
-						factorsFound = true;
-					}
-				}
-				i = ctr;
-				continue;  // Find more factors.
-			}
-			memcpy(Aux2, Aux3, nbrLimbsP * sizeof(limb));
-		}
-	}
-	return factorsFound;
-}
+//static bool factorCarmichael(const BigInteger &pValue, struct sFactors pstFactors[])
+//{
+//	int randomBase = 0;  // pseudo-random number
+//	bool factorsFound = false;
+//	int countdown, ctr;
+//	const int nbrLimbsP = pValue.nbrLimbs;
+//	bool sqrtOneFound = false;
+//	bool sqrtMinusOneFound = false;
+//	int Aux1Len;
+//
+//	BigIntegerToLimbs(Aux1, pValue, pValue.nbrLimbs);  // copy p to Aux1
+//	Aux1[0].x--;       // Aux1 = p - 1 (p is odd, so there is no carry).
+//	Aux1Len = nbrLimbsP;
+//	DivideBigNbrByMaxPowerOf2(&ctr, Aux1, &Aux1Len);  // Aux1 /= 2^ctr
+//	BigIntegerToLimbs(TestNbr, pValue, pValue.nbrLimbs);  // copy p to TestNbr
+//	//memcpy(TestNbr, pValueLimbs, nbrLimbsP * sizeof(limb)); // copy p to TestNbr
+//	//TestNbr[nbrLimbsP].x = 0;
+//	GetMontgomeryParms(nbrLimbsP);
+//	for (countdown = 20; countdown > 0; countdown--) {
+//		int i;
+//		NumberLength = nbrLimbsP;
+//		randomBase = (int)((uint64_t)randomBase * 89547121 + 1762281733) & MAX_INT_NBR;
+//		modPowBaseInt(randomBase, Aux1, Aux1Len, Aux2); // Aux2 = base^Aux1.
+//		// If Mult1 = 1 or Mult1 = TestNbr-1, then try next base.
+//		if (checkOne(Aux2, nbrLimbsP) != 0 || checkMinusOne(Aux2, nbrLimbsP) != 0)
+//		{
+//			continue;    // This base cannot find a factor. Try another one.
+//		}
+//		for (i = 0; i < ctr; i++)
+//		{              // Loop that squares number.
+//			modmult(Aux2, Aux2, Aux3);
+//			if (checkOne(Aux3, nbrLimbsP) != 0)
+//			{            // Non-trivial square root of 1 found.
+//				if (!sqrtOneFound)
+//				{          // Save it to perform GCD later.
+//					memcpy(Zaux, Aux2, nbrLimbsP * sizeof(limb));
+//					sqrtOneFound = true;
+//				}
+//				else
+//				{          // Try to find non-trivial factor by doing GCD.
+//					SubtBigNbrMod(Aux2, Zaux, Aux4);
+//					LimbsToBigInteger(Aux4, Temp2, NumberLength);
+//					BigIntGcd(pValue, Temp2, Temp4);
+//					if ((Temp4 > 1) && (Temp4 != pValue))
+//					{          // Non-trivial factor found.
+//						if (pstFactors[0].exponent >= Max_Factors) {
+//							// factor list is full!
+//							std::string line = std::to_string(__LINE__);
+//							std::string mesg = "cannot factorise: too many factors: ";
+//							mesg += __func__;                 // + function name
+//							mesg += " line ";  mesg += line;  // + line number
+//							mesg += " in file "; mesg += __FILE__;   // + file name
+//							throw std::range_error(mesg);
+//						}
+//						insertBigFactor(pstFactors, Temp4);
+//						factorsFound = true;
+//					}
+//				}
+//				// Try to find non-trivial factor by doing GCD.
+//				NumberLength = nbrLimbsP;
+//				AddBigNbrMod(Aux2, MontgomeryMultR1, Aux4);
+//				LimbsToBigInteger(Aux4, Temp2, NumberLength);
+//				BigIntGcd(pValue, Temp2, Temp4);
+//				if ((Temp4 > 1) && (Temp4 != pValue))
+//				{          // Non-trivial factor found.
+//					if (pstFactors[0].exponent >= Max_Factors) {
+//						// factor list is full!
+//						std::string line = std::to_string(__LINE__);
+//						std::string mesg = "cannot factorise: too many factors: ";
+//						mesg += __func__;                 // + function name
+//						mesg += " line ";  mesg += line;  // + line number
+//						mesg += " in file "; mesg += __FILE__;   // + file name
+//						throw std::range_error(mesg);
+//					}
+//					insertBigFactor(pstFactors, Temp4);
+//					factorsFound = true;
+//				}
+//				i = ctr;
+//				continue;  // Find more factors.
+//			}
+//			if (checkMinusOne(Aux3, nbrLimbsP) != 0)
+//			{            // Square root of 1 found.
+//				if (!sqrtMinusOneFound)
+//				{          // Save it to perform GCD later.
+//					memcpy(Xaux, Aux2, nbrLimbsP * sizeof(limb));
+//					sqrtOneFound = true;
+//				}
+//				else
+//				{          // Try to find non-trivial factor by doing GCD.
+//					SubtBigNbrMod(Aux3, Xaux, Aux4);
+//					LimbsToBigInteger(Aux4, Temp2, NumberLength);
+//					BigIntGcd(pValue, Temp2, Temp4);
+//					if ((Temp4 > 1) && (Temp4 != pValue))
+//					{          // Non-trivial factor found.
+//						if (pstFactors[0].exponent >= Max_Factors) {
+//							// factor list is full!
+//							std::string line = std::to_string(__LINE__);
+//							std::string mesg = "cannot factorise: too many factors: ";
+//							mesg += __func__;                 // + function name
+//							mesg += " line ";  mesg += line;  // + line number
+//							mesg += " in file "; mesg += __FILE__;   // + file name
+//							throw std::range_error(mesg);
+//						}
+//						insertBigFactor(pstFactors, Temp4);
+//						factorsFound = true;
+//					}
+//				}
+//				i = ctr;
+//				continue;  // Find more factors.
+//			}
+//			memcpy(Aux2, Aux3, nbrLimbsP * sizeof(limb));
+//		}
+//	}
+//	return factorsFound;
+//}
 static bool factorCarmichael(const Znum &pValue, std::vector<zFactors> &Factors)
 {
 	Znum randomBase = 0;  // pseudo-random number
@@ -2779,198 +2780,199 @@ static bool factorCarmichael(const Znum &pValue, std::vector<zFactors> &Factors)
 
 // pstFactors -> ptrFactor points to end of factors.
 // pstFactors -> multiplicity indicates the number of different factors.
-static bool factor (const BigInteger &toFactor, struct sFactors *const pstFactors) {
-	struct sFactors *pstCurFactor;
-	static int nbrToFactorI[MAX_LEN];
-	int factorNbr, expon;
-	int remainder, nbrLimbs, ctr;
-	int *ptrFactor;
-	int dividend;
-	bool restartFactoring = false;
-	int result;
-	
-	EC = 1;  // start with 1st curve
-	NumberLength = toFactor.nbrLimbs;
-	BigIntegerToInts(nbrToFactorI, toFactor);  // convert Biginteger to integer list
-	GetYieldFrequency();   //get yield frequency based on NumberLength (used by showECMStatus)
-#ifdef __EMSCRIPTEN__
-	oldTimeElapsed = 0;
-	originalTenthSecond = tenths();    // record start time
-	modmultCallback = showECMStatus;   // Set callback function pointer
-#endif
-	/* initialise factor list */
-	pstFactors[0].exponent = 1;
-	pstFactors[0].ptrFactor = nbrToFactorI + 1 + *nbrToFactorI;  // point past last used entry in nbrToFactorI
-	pstFactors[0].upperBound = 0;
 
-	pstCurFactor = pstFactors + 1;  // point to 1st factor in factor list
-	pstCurFactor->exponent = 1; // initially, 1st factor is equal to the number to factor
-	pstCurFactor->ptrFactor = nbrToFactorI;
-	pstCurFactor->upperBound = 2;
-	if (toFactor.nbrLimbs > 1) {
-		PowerPM1Check(pstFactors, toFactor);  // check if toFactor is a perfect power +/- 1
-	}
-	for (factorNbr = 1; factorNbr <= pstFactors[0].exponent; factorNbr++, pstCurFactor++) {
-		int upperBound = pstCurFactor->upperBound;
-		restartFactoring = false;
-		// If number is prime, do not process it.
-		if (upperBound == 0) {    
-			continue; // Factor is prime.
-		}
-		ptrFactor = pstCurFactor->ptrFactor;
-		nbrLimbs = *ptrFactor;
-		while (upperBound < 100000 && nbrLimbs > 1)
-		{        // Number has at least 2 limbs: Trial division by small numbers.
-			while (pstCurFactor->upperBound != 0) {   // Factor found.
-				ptrFactor = pstCurFactor->ptrFactor;
-				//assert(*ptrFactor < MAX_LEN);
-				remainder = RemDivBigNbrByInt(ptrFactor + 1, upperBound, nbrLimbs);
-				if (remainder != 0) {    
-					break;  // Factor not found. Use new divisor.
-				}
-				/* upperBound is a factor, so add it to the factor list. */
-				if (pstFactors[0].exponent >= Max_Factors) {  
-					// factor list is full!
-					std::string line = std::to_string(__LINE__);
-					std::string mesg = "cannot factorise: too many factors: ";
-					mesg += __func__;                 // + function name
-					mesg += " line ";  mesg += line;  // + line number
-					mesg += " in file "; mesg += __FILE__;   // + file name
-					throw std::range_error(mesg);
-				}
-				insertIntFactor(pstFactors, pstCurFactor, upperBound);
-				restartFactoring = true;
-				break;
-			}
-			if (restartFactoring) {
-				factorNbr = 0;
-				pstCurFactor = pstFactors;
-				break;
-			}
-			if (nbrLimbs == 1) {     // Number completely factored.
-				break;
-			}
-			if (upperBound == 2) {
-				upperBound++;
-			}
-			else if (upperBound % 6 == 1) {
-				upperBound += 4;  // avoid setting upperBound to any multiple of 3
-			}
-			else {
-				upperBound += 2;
-			}
-		}
-		if (restartFactoring) {
-			continue;
-		}
-
-		if (nbrLimbs == 1) {
-			dividend = *(ptrFactor + 1);   
-			while ((unsigned int)upperBound*(unsigned int)upperBound <= (unsigned int)dividend)
-			{              // Trial division by small numbers.
-				if (dividend % upperBound == 0) {            // Factor found.
-					if (pstFactors[0].exponent >= Max_Factors) {
-						// factor list is full!
-						std::string line = std::to_string(__LINE__);
-						std::string mesg = "cannot factorise: too many factors: ";
-						mesg += __func__;                 // + function name
-						mesg += " line ";  mesg += line;  // + line number
-						mesg += " in file "; mesg += __FILE__;   // + file name
-						throw std::range_error(mesg);
-					}
-					insertIntFactor(pstFactors, pstCurFactor, upperBound);
-					restartFactoring = true;
-					break;
-				}
-				if (upperBound == 2) {
-					upperBound++;
-				}
-				else {
-					upperBound += 2;  // use values 2, 3, 5, 7 ... for upperBound
-				}
-			}
-			if (restartFactoring) {
-				factorNbr = 0;
-				pstCurFactor = pstFactors;
-				continue;
-			}
-			pstCurFactor->upperBound = 0;   // Number is prime.
-			continue;
-		}
-
-		/* Any small factors (up to 10,000 i.e 10^5) have now been found by trial division */
-		/* Check whether the residue is prime or prime power. 
-		Given that the residue is less than 10^10,000 the maximum exponent is 2000 
-		for 100003^2000 */
-		NumberLength = *pstCurFactor->ptrFactor;
-		IntsToBigInteger(pstCurFactor->ptrFactor, power);
-		//NumberLength = power.nbrLimbs;
-		//expon = PowerCheck(power, prime);   
-		Znum Zpower, Zprime;
-		BigtoZ(Zpower, power);      // convert power to type Znum
-		expon = (int)PowerCheck(Zpower, Zprime, upperBound-1); // on return; Zprime^expon = Zpower
-		ZtoBig(prime, Zprime);     // convert Zprime to type BigInteger
-
-		if (expon > 1) {  /* if power is a perfect power*/
-			NumberLength = prime.nbrLimbs;
-			BigIntegerToInts(pstCurFactor->ptrFactor, prime);  // copy prime to CurFactor
-			pstCurFactor->exponent *= expon;                 
-		}
-		//result = BpswPrimalityTest(prime);
-		BigtoZ(Zprime, prime);  // convert prime to type Znum
-		result = BpswPrimalityTestNew(Zprime, upperBound-1);
-		if (result == 0) {   // Number is prime.
-			pstCurFactor->upperBound = 0;   // Indicate that number is prime.
-			continue;                       // Check next factor.
-		}
-		if (result > 1) {    // Number is 2-Fermat pseudo-prime. Try to factor it.
-			if (factorCarmichael(prime, pstFactors)) {  // Prime factors found.
-				continue;
-			}
-		}
-		auto rv = ecm(prime);          // Factor number.
-		if (!rv) 
-			return false;  // failed to factorise number
-		// Check whether GD is not one. In this case we found a proper factor.
-		for (ctr = 1; ctr < NumberLength; ctr++) {
-			if (GD[ctr].x != 0) {
-				break;
-			}
-		}
-		if (ctr != NumberLength || GD[0].x != 1) {
-			/* GD is not 1 */
-			int numLimbs;
-			Temp1.sign = SIGN_POSITIVE;
-			numLimbs = NumberLength;
-			while (numLimbs > 1) {    // adjust count of number of limbs
-				if (GD[numLimbs - 1].x != 0) {
-					break;
-				}
-				numLimbs--;
-			}
-			/* copy number from GD and convert it to a BigInteger */
-			LimbsToBigInteger(GD, Temp1, numLimbs);  // Temp1 = GD
-			if (pstFactors[0].exponent >= Max_Factors) {
-				// factor list is full!
-				std::string line = std::to_string(__LINE__);
-				std::string mesg = "cannot factorise: too many factors: ";
-				mesg += __func__;                 // + function name
-				mesg += " line ";  mesg += line;  // + line number
-				mesg += " in file "; mesg += __FILE__;   // + file name
-				throw std::range_error(mesg);
-			}
-			insertBigFactor(pstFactors, Temp1);
-			factorNbr = 0;       // reset counters to start of loop
-			pstCurFactor = pstFactors;
-		}    // End if
-	}      // End for
-#ifdef __EMSCRIPTEN__
-#ifdef FACTORIZATION_APP
-	SaveFactors(Factors);
-#endif
-#endif
-	return true;
-}
+//static bool factor (const BigInteger &toFactor, struct sFactors *const pstFactors) {
+//	struct sFactors *pstCurFactor;
+//	static int nbrToFactorI[MAX_LEN];
+//	int factorNbr, expon;
+//	int remainder, nbrLimbs, ctr;
+//	int *ptrFactor;
+//	int dividend;
+//	bool restartFactoring = false;
+//	int result;
+//	
+//	EC = 1;  // start with 1st curve
+//	NumberLength = toFactor.nbrLimbs;
+//	BigIntegerToInts(nbrToFactorI, toFactor);  // convert Biginteger to integer list
+//	GetYieldFrequency();   //get yield frequency based on NumberLength (used by showECMStatus)
+//#ifdef __EMSCRIPTEN__
+//	oldTimeElapsed = 0;
+//	originalTenthSecond = tenths();    // record start time
+//	modmultCallback = showECMStatus;   // Set callback function pointer
+//#endif
+//	/* initialise factor list */
+//	pstFactors[0].exponent = 1;
+//	pstFactors[0].ptrFactor = nbrToFactorI + 1 + *nbrToFactorI;  // point past last used entry in nbrToFactorI
+//	pstFactors[0].upperBound = 0;
+//
+//	pstCurFactor = pstFactors + 1;  // point to 1st factor in factor list
+//	pstCurFactor->exponent = 1; // initially, 1st factor is equal to the number to factor
+//	pstCurFactor->ptrFactor = nbrToFactorI;
+//	pstCurFactor->upperBound = 2;
+//	if (toFactor.nbrLimbs > 1) {
+//		PowerPM1Check(pstFactors, toFactor);  // check if toFactor is a perfect power +/- 1
+//	}
+//	for (factorNbr = 1; factorNbr <= pstFactors[0].exponent; factorNbr++, pstCurFactor++) {
+//		int upperBound = pstCurFactor->upperBound;
+//		restartFactoring = false;
+//		// If number is prime, do not process it.
+//		if (upperBound == 0) {    
+//			continue; // Factor is prime.
+//		}
+//		ptrFactor = pstCurFactor->ptrFactor;
+//		nbrLimbs = *ptrFactor;
+//		while (upperBound < 100000 && nbrLimbs > 1)
+//		{        // Number has at least 2 limbs: Trial division by small numbers.
+//			while (pstCurFactor->upperBound != 0) {   // Factor found.
+//				ptrFactor = pstCurFactor->ptrFactor;
+//				//assert(*ptrFactor < MAX_LEN);
+//				remainder = RemDivBigNbrByInt(ptrFactor + 1, upperBound, nbrLimbs);
+//				if (remainder != 0) {    
+//					break;  // Factor not found. Use new divisor.
+//				}
+//				/* upperBound is a factor, so add it to the factor list. */
+//				if (pstFactors[0].exponent >= Max_Factors) {  
+//					// factor list is full!
+//					std::string line = std::to_string(__LINE__);
+//					std::string mesg = "cannot factorise: too many factors: ";
+//					mesg += __func__;                 // + function name
+//					mesg += " line ";  mesg += line;  // + line number
+//					mesg += " in file "; mesg += __FILE__;   // + file name
+//					throw std::range_error(mesg);
+//				}
+//				insertIntFactor(pstFactors, pstCurFactor, upperBound);
+//				restartFactoring = true;
+//				break;
+//			}
+//			if (restartFactoring) {
+//				factorNbr = 0;
+//				pstCurFactor = pstFactors;
+//				break;
+//			}
+//			if (nbrLimbs == 1) {     // Number completely factored.
+//				break;
+//			}
+//			if (upperBound == 2) {
+//				upperBound++;
+//			}
+//			else if (upperBound % 6 == 1) {
+//				upperBound += 4;  // avoid setting upperBound to any multiple of 3
+//			}
+//			else {
+//				upperBound += 2;
+//			}
+//		}
+//		if (restartFactoring) {
+//			continue;
+//		}
+//
+//		if (nbrLimbs == 1) {
+//			dividend = *(ptrFactor + 1);   
+//			while ((unsigned int)upperBound*(unsigned int)upperBound <= (unsigned int)dividend)
+//			{              // Trial division by small numbers.
+//				if (dividend % upperBound == 0) {            // Factor found.
+//					if (pstFactors[0].exponent >= Max_Factors) {
+//						// factor list is full!
+//						std::string line = std::to_string(__LINE__);
+//						std::string mesg = "cannot factorise: too many factors: ";
+//						mesg += __func__;                 // + function name
+//						mesg += " line ";  mesg += line;  // + line number
+//						mesg += " in file "; mesg += __FILE__;   // + file name
+//						throw std::range_error(mesg);
+//					}
+//					insertIntFactor(pstFactors, pstCurFactor, upperBound);
+//					restartFactoring = true;
+//					break;
+//				}
+//				if (upperBound == 2) {
+//					upperBound++;
+//				}
+//				else {
+//					upperBound += 2;  // use values 2, 3, 5, 7 ... for upperBound
+//				}
+//			}
+//			if (restartFactoring) {
+//				factorNbr = 0;
+//				pstCurFactor = pstFactors;
+//				continue;
+//			}
+//			pstCurFactor->upperBound = 0;   // Number is prime.
+//			continue;
+//		}
+//
+//		/* Any small factors (up to 10,000 i.e 10^5) have now been found by trial division */
+//		/* Check whether the residue is prime or prime power. 
+//		Given that the residue is less than 10^10,000 the maximum exponent is 2000 
+//		for 100003^2000 */
+//		NumberLength = *pstCurFactor->ptrFactor;
+//		IntsToBigInteger(pstCurFactor->ptrFactor, power);
+//		//NumberLength = power.nbrLimbs;
+//		//expon = PowerCheck(power, prime);   
+//		Znum Zpower, Zprime;
+//		BigtoZ(Zpower, power);      // convert power to type Znum
+//		expon = (int)PowerCheck(Zpower, Zprime, upperBound-1); // on return; Zprime^expon = Zpower
+//		ZtoBig(prime, Zprime);     // convert Zprime to type BigInteger
+//
+//		if (expon > 1) {  /* if power is a perfect power*/
+//			NumberLength = prime.nbrLimbs;
+//			BigIntegerToInts(pstCurFactor->ptrFactor, prime);  // copy prime to CurFactor
+//			pstCurFactor->exponent *= expon;                 
+//		}
+//		//result = BpswPrimalityTest(prime);
+//		BigtoZ(Zprime, prime);  // convert prime to type Znum
+//		result = BpswPrimalityTestNew(Zprime, upperBound-1);
+//		if (result == 0) {   // Number is prime.
+//			pstCurFactor->upperBound = 0;   // Indicate that number is prime.
+//			continue;                       // Check next factor.
+//		}
+//		if (result > 1) {    // Number is 2-Fermat pseudo-prime. Try to factor it.
+//			if (factorCarmichael(prime, pstFactors)) {  // Prime factors found.
+//				continue;
+//			}
+//		}
+//		auto rv = ecm(prime);          // Factor number.
+//		if (!rv) 
+//			return false;  // failed to factorise number
+//		// Check whether GD is not one. In this case we found a proper factor.
+//		for (ctr = 1; ctr < NumberLength; ctr++) {
+//			if (GD[ctr].x != 0) {
+//				break;
+//			}
+//		}
+//		if (ctr != NumberLength || GD[0].x != 1) {
+//			/* GD is not 1 */
+//			int numLimbs;
+//			Temp1.sign = SIGN_POSITIVE;
+//			numLimbs = NumberLength;
+//			while (numLimbs > 1) {    // adjust count of number of limbs
+//				if (GD[numLimbs - 1].x != 0) {
+//					break;
+//				}
+//				numLimbs--;
+//			}
+//			/* copy number from GD and convert it to a BigInteger */
+//			LimbsToBigInteger(GD, Temp1, numLimbs);  // Temp1 = GD
+//			if (pstFactors[0].exponent >= Max_Factors) {
+//				// factor list is full!
+//				std::string line = std::to_string(__LINE__);
+//				std::string mesg = "cannot factorise: too many factors: ";
+//				mesg += __func__;                 // + function name
+//				mesg += " line ";  mesg += line;  // + line number
+//				mesg += " in file "; mesg += __FILE__;   // + file name
+//				throw std::range_error(mesg);
+//			}
+//			insertBigFactor(pstFactors, Temp1);
+//			factorNbr = 0;       // reset counters to start of loop
+//			pstCurFactor = pstFactors;
+//		}    // End if
+//	}      // End for
+//#ifdef __EMSCRIPTEN__
+//#ifdef FACTORIZATION_APP
+//	SaveFactors(Factors);
+//#endif
+//#endif
+//	return true;
+//}
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;
 	long long testP;
@@ -3781,7 +3783,7 @@ void ValuestoZ(Znum &numberZ, const int number[]) {
 if unable to factorise number */
 bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,
 	 Znum quads[]) {
-	static BigInteger NtoFactor;
+	//static BigInteger NtoFactor;
 	//zFactors factors[Max_Factors];
 	std::vector <zFactors> vfactors2;
 
@@ -3789,31 +3791,31 @@ bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,
 		if (numberZ == 0)
 			return false;  // function factor can't factorize zero
 
-		if (ZtoBig(NtoFactor, numberZ)) {
-			auto rv = factor(NtoFactor, astFactors);
-			if (!rv) 
-				return false;  // failed to factorise number 
-			/*  now convert Factor list from integer lists to Znum list */
-			ConvertFactors(astFactors, vfactors2);
+		//if (ZtoBig(NtoFactor, numberZ)) {
+		//	auto rv = factor(NtoFactor, astFactors);
+		//	if (!rv) 
+		//		return false;  // failed to factorise number 
+		//	/*  now convert Factor list from integer lists to Znum list */
+		//	ConvertFactors(astFactors, vfactors2);
 			vfactors.resize(1);
-			rv = factor(numberZ, vfactors);
-			for (int i = 0; i < vfactors.size(); i++) {
-				if (vfactors[i].exponent != vfactors2[i].exponent ||
-					vfactors[i].Factor != vfactors2[i].Factor) {
-					std::cout << "Incorrect result: got: ";
-					printfactors(vfactors);
-					std::cout << "should have been: ";
-					printfactors(astFactors);
-					break;
-				}
-			}
+			auto rv = factor(numberZ, vfactors);
+			//for (int i = 0; i < vfactors.size(); i++) {
+			//	if (vfactors[i].exponent != vfactors2[i].exponent ||
+			//		vfactors[i].Factor != vfactors2[i].Factor) {
+			//		std::cout << "Incorrect result: got: ";
+			//		printfactors(vfactors);
+			//		std::cout << "should have been: ";
+			//		printfactors(astFactors);
+			//		break;
+			//	}
+			//}
 			if (quads != nullptr) {
 				ComputeFourSquaresNew(vfactors, quads);
 			}
 			return true;
-		}
-		else
-			return false;  // ZtoBig can't convert numberZ to BigInteger. It's too big
+		//}
+		//else
+		//	return false;  // ZtoBig can't convert numberZ to BigInteger. It's too big
 	}
 
 	/* code below catches C++ 'throw' type exceptions */

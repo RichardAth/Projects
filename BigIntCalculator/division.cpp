@@ -66,6 +66,7 @@ static void MultiplyBigNbrByMinPowerOf2(int &pPower2, const limb *number, int le
 	pPower2 = shLeft;
 }
 
+/* used for operator overloading */
 // After computing the number of limbs of the results, this routine finds the inverse
 // of the divisor and then multiplies it by the dividend using nbrLimbs+1 limbs.
 // After that, the quotient is adjusted.
@@ -295,6 +296,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	return Quotient;
 }
 
+/* used for operator overloading */
 BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
 	BigInteger Quotient;
 	int len = Dividend.nbrLimbs;
