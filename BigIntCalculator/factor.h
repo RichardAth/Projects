@@ -26,11 +26,18 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 struct sFactors
 {
 	int *ptrFactor;
-	int multiplicity;
+	int exponent;
 	int upperBound;
 };
+
 typedef boost::multiprecision::mpz_int Znum;
 
+class zFactors {
+public:
+	Znum Factor;
+	int exponent;
+	int upperBound;
+};
 
 void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
 extern int lang;
@@ -39,7 +46,5 @@ extern int lang;
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
-bool factorise(const Znum numberZ, std::vector <Znum> &factorlist,
-	std::vector <int> &exponentlist, Znum Quad[]);
-
-
+bool factorise(const Znum numberZ, std::vector <zFactors> &factorlist,
+	Znum Quad[]);

@@ -13,11 +13,11 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <cstdlib>
 #include <string>
 #include "bignbr.h"
-#include "expression.h"
+//#include "expression.h"
 #include <math.h>
 
 extern limb approxInv[MAX_LEN];

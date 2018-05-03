@@ -14,22 +14,22 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <iostream>
 #include <stdexcept>
-#include <limits.h>
+#include <climits>
 #include <string>
-#include <assert.h>
+#include <cassert>
 #include <cmath>
 #include "factor.h"
 
 #include "bignbr.h"
-#include "expression.h"
+//#include "expression.h"
 
 typedef boost::multiprecision::mpz_int Znum;
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
 static BigInteger Temp, Temp2, Temp3, Base, Power, expon;
-static char ProcessExpon[5000];
-static char primes[10003];
+static char ProcessExpon[2003];
+static char primes[4007];
 limb Mult1[MAX_LEN];
 extern limb Mult2[MAX_LEN];
 static limb Mult3[MAX_LEN];
@@ -269,6 +269,9 @@ void expBigInt(BigInteger &bigInt, double logar)
 	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
 	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
 }
+void expBigInt(Znum &bigInt, double logar) {
+
+}
 
 /* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
 void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
@@ -307,6 +310,13 @@ double logBigNbr (const BigInteger &pBigInt) {
 		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
 	}
 	return logar;
+}
+double logBigNbr(const Znum &BigInt) {
+	double BigId;
+	long long BiExp;
+	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
+	double logval = log(BigId)  + BiExp *  log(2);
+	return logval;
 }
 
 /* estimate natural log of BigNbr. Only the most significant 62 bits are
@@ -348,6 +358,9 @@ void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power)
 		}
 	}
 	return;
+}
+void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
+	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
 
 /* divide by 2, use right shift for speed */
@@ -710,26 +723,26 @@ void addbigint(BigInteger &Result, int addend) {
 }
 
 /* returns nbrMod^Expon%currentPrime*/
-int intModPow(int NbrMod, int Expon, int currentPrime)
+static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
 {
-	unsigned int power = 1;
-	unsigned int square = (unsigned int)NbrMod;
+	unsigned long long power = 1;
+	unsigned long long square = (unsigned long long)NbrMod;
 	while (Expon != 0)
 	{
 		if ((Expon & 1) == 1)
 		{
-			power = (power * square) % (unsigned int)currentPrime;
+			power = (power * square) % (unsigned long long)currentPrime;
 		}
-		square = (square * square) % (unsigned int)currentPrime;
+		square = (square * square) % (unsigned long long)currentPrime;
 		Expon >>= 1;
 	}
-	return (int)power;
+	return (long long)power;
 }
 
 /* creates a BigInteger from a list of values.   
-uses global value NumberLength for number of limbs. 1st entry in list is number of values
+uses global value NumberLength for number of ints. 1st entry in list is number of values
 that follow */
-void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint)
+void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint)
 {
 	if (NumberLength > MAX_LEN || NumberLength < 0 || ptrValues[0] > MAX_LEN) {
 		std::string line = std::to_string(__LINE__);
@@ -770,8 +783,8 @@ static int getNbrLimbs(const limb *bigNbr)
 }
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
-values that follow. uses global value NumberLength for number of limbs. */
-void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
+values that follow. Also uses global value NumberLength for number of ints. */
+void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
 	const limb *srcLimb = bigint.limbs;
 	if (NumberLength == 1) {
 		ptrValues[0] = 1;
@@ -779,13 +792,14 @@ void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigin
 	}
 	else {
 		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
+		assert(nbrLimbs == bigint.nbrLimbs);
 		ptrValues[0] = nbrLimbs;
 		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
 	}
 }
 
 /* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
-void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, 
+void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
 	/*@out@*/BigInteger &bigint, int NumberLength) {
 	if (NumberLength > MAX_LEN || NumberLength < 0 ) {
 		std::string line = std::to_string(__LINE__);
@@ -814,7 +828,7 @@ void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues,
 }
 
 /* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
-void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, 
+void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
 	/*@in@*/const BigInteger &bigint, int NumberLength)
 {
 	if (NumberLength == 1) {
@@ -858,27 +872,181 @@ void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int n
 
 // This routine checks whether the number BigInt is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  
-// exponent and  it fills the buffer referenced by Base with the base.
-int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
-{
-	limb *ptrLimb;
-	double dN;
-	int nbrLimbs = BigInt.nbrLimbs;
-	const int maxExpon = BigInt.bitLength();  // if maxExpon > 5000 throw an exception
-											// this corresponds to about 161 limbs 
+// exponent and  the base such that base^exponent = BigInt.
+
+//int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
+//{
+//	limb *ptrLimb;
+//	double dN;
+//	int nbrLimbs = BigInt.nbrLimbs;
+//	const int maxExpon = BigInt.bitLength();  // if maxExpon > 5000 throw an exception
+//											// this corresponds to about 161 limbs 
+//	int h, j;
+//	int modulus;
+//	int intLog2root;
+//	int primesLength, Exponent;
+//	double log2N, log2root;
+//	int prime2310x1[] =
+//	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
+//	// Primes of the form 2310x+1.
+//	bool expon2 = true, expon3 = true, expon5 = true;
+//	bool expon7 = true, expon11 = true;
+//	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
+//		int testprime = prime2310x1[h];
+//		int mod = BigInt%testprime; // getRemainder(BigInt, testprime);
+//		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
+//			expon2 = false;
+//		}
+//		if (expon3 && intModPow(mod, testprime / 3, testprime) > 1) {
+//			expon3 = false;
+//		}
+//		if (expon5 && intModPow(mod, testprime / 5, testprime) > 1) {
+//			expon5 = false;
+//		}
+//		if (expon7 && intModPow(mod, testprime / 7, testprime) > 1) {
+//			expon7 = false;
+//		}
+//		if (expon11 && intModPow(mod, testprime / 11, testprime) > 1) {
+//			expon11 = false;
+//		}
+//	}
+//
+//	primesLength = 2 * maxExpon + 3;
+//	if (primesLength >= sizeof(primes) / sizeof(primes[0]) || 
+//		maxExpon >= sizeof(ProcessExpon) / sizeof(ProcessExpon[0])) {	
+//		
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "number too big : cannot generate prime list. function : ";
+//		mesg += __func__;
+//		mesg += " line ";  mesg += line;
+//		mesg += " in file "; mesg += __FILE__;
+//		throw std::range_error(mesg);
+//	}
+//	
+//	for (h = 2; h <= maxExpon; h++) {
+//		ProcessExpon[h] = true;
+//	}
+//	for (h = 2; h < primesLength; h++) {
+//		primes[h] = true;
+//	}
+//	for (h = 2; h * h < primesLength; h++) { // Generation of primes
+//		for (j = h * h; j < primesLength; j += h) { // using Eratosthenes sieve
+//			primes[j] = false;
+//		}
+//	}
+//	for (h = 13; h < primesLength; h++) {
+//		if (primes[h]) {
+//			int processed = 0;
+//			for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
+//				if (primes[j]) {
+//					modulus = BigInt % j; // getRemainder(BigInt, j);
+//					if (intModPow(modulus, j / h, j) > 1) {
+//						for (j = h; j <= maxExpon; j += h) {
+//							ProcessExpon[j] = false;
+//						}
+//						break;
+//					}
+//				}
+//				if (++processed > 10) {
+//					break;
+//				}
+//			}
+//		}
+//	}
+//	log2N = logBigNbr(BigInt) / log(2);
+//	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
+//		if (Exponent % 2 == 0 && !expon2) {
+//			continue; // Not a square
+//		}
+//		if (Exponent % 3 == 0 && !expon3) {
+//			continue; // Not a cube
+//		}
+//		if (Exponent % 5 == 0 && !expon5) {
+//			continue; // Not a fifth power
+//		}
+//		if (Exponent % 7 == 0 && !expon7) {
+//			continue; // Not a 7th power
+//		}
+//		if (Exponent % 11 == 0 && !expon11) {
+//			continue; // Not an 11th power
+//		}
+//		if (!ProcessExpon[Exponent]) {
+//			continue;
+//		}
+//		// Initialize approximation to n-th root (n = Exponent).
+//		log2root = log2N / Exponent;
+//		intLog2root = (int)floor(log2root / BITS_PER_GROUP);
+//		nbrLimbs = intLog2root + 1;
+//		ptrLimb = &Base.limbs[nbrLimbs - 1];
+//		dN = exp((log2root - intLog2root*BITS_PER_GROUP) * log(2));
+//		// All approximations must be >= than true answer.
+//		if (nbrLimbs == 1) {
+//			ptrLimb->x = (int)(unsigned int)ceil(dN);
+//			if ((unsigned int)ptrLimb->x == LIMB_RANGE) {
+//				nbrLimbs = 2;
+//				ptrLimb->x = 0;
+//				(ptrLimb + 1)->x = 1;
+//			}
+//		}
+//		else {
+//			dN += 1 / (double)LIMB_RANGE;
+//			ptrLimb->x = (int)trunc(dN);
+//			dN -= trunc(dN);
+//			(ptrLimb - 1)->x = (int)trunc(dN*LIMB_RANGE);
+//		}
+//		Base.nbrLimbs = nbrLimbs;
+//		// Perform Newton iteration for n-th root.
+//		for (;;) {   // Check whether the approximate root is actually exact.
+//			BigIntPowerIntExp(Base, Exponent - 1, Temp3); // Temp3 <- x^(e-1)
+//			Temp2 = Temp3*Base;        // Temp2 <- x^e 
+//				
+//			Temp2 = BigInt - Temp2; // BigIntSubt(BigInt, Temp2, Temp2);  // Compare to radicand.
+//			if (Temp2 == 0) {                     
+//				return Exponent;  // Perfect power, so go out.
+//			}
+//			if (Temp2 >= 0) {                    
+//				break; // x^e > radicand -> not perfect power, so go out.
+//			}
+//			Temp = BigInt / Temp3;   // Temp -> N/x^(e-1)
+//			Temp2 = Temp - Base;   // Temp2 -> N/x^(e-1) - x
+//			if (Temp2 == 0) {    
+//				break; // New approximation will be the same as previous. Go out.
+//			}
+//			//Temp = Exponent - 1;   // InitTempFromInt(Exponent - 1);
+//			Temp2 -= Exponent - 1;   // BigIntSubt(Temp2, Temp, Temp2);
+//			Temp = Exponent;      //InitTempFromInt(Exponent);
+//			Temp2 = Temp2 / Temp; // BigIntDivide(Temp2, Temp, Temp2);
+//			Base += Temp2;        // BigIntAdd(Temp2, Base, Base);
+//		}
+//	}
+//	
+//	Base = BigInt;   // not perfect power
+//	return 1;
+//}
+long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
+	/* upperbound is the largest number already tested as a factor by trial division
+	i.e. BigInt has no factors < upperBound. This can be used to put a much
+	smaller limit on maxExpon (max about 2000) */
+
+	double BigId;
+	long long BiExp;
+	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
+	double maxExpd = (log(BigId) / log(2) +BiExp) / (log(upperBound) / log(2));
+	long long maxExpon = (long long) ceil(maxExpd);
+										  
 	int h, j;
-	int modulus;
-	int intLog2root;
-	int primesLength, Exponent;
-	double log2N, log2root;
+	long long modulus;
+	long long primesLength, Exponent;
 	int prime2310x1[] =
 	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
 	// Primes of the form 2310x+1.
 	bool expon2 = true, expon3 = true, expon5 = true;
 	bool expon7 = true, expon11 = true;
+	Znum Zmod, Root;
+
 	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
 		int testprime = prime2310x1[h];
-		int mod = BigInt%testprime; // getRemainder(BigInt, testprime);
+		auto mod = mpz_mod_ui(ZT(Zmod),ZT(BigInt), testprime); // getRemainder(BigInt, testprime);
 		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
 			expon2 = false;
 		}
@@ -897,9 +1065,9 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 	}
 
 	primesLength = 2 * maxExpon + 3;
-	if (primesLength >= sizeof(primes) / sizeof(primes[0]) || 
-		maxExpon >= sizeof(ProcessExpon) / sizeof(ProcessExpon[0])) {	
-		
+	if (primesLength >= sizeof(primes) / sizeof(primes[0]) ||
+		maxExpon >= sizeof(ProcessExpon) / sizeof(ProcessExpon[0])-1) {
+
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot generate prime list. function : ";
 		mesg += __func__;
@@ -907,7 +1075,7 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	
+
 	for (h = 2; h <= maxExpon; h++) {
 		ProcessExpon[h] = true;
 	}
@@ -924,7 +1092,7 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 			int processed = 0;
 			for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
 				if (primes[j]) {
-					modulus = BigInt % j; // getRemainder(BigInt, j);
+					modulus = mpz_mod_ui(ZT(Zmod),ZT(BigInt), j); // getRemainder(BigInt, j);
 					if (intModPow(modulus, j / h, j) > 1) {
 						for (j = h; j <= maxExpon; j += h) {
 							ProcessExpon[j] = false;
@@ -938,7 +1106,7 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 			}
 		}
 	}
-	log2N = logBigNbr(BigInt) / log(2);
+	/* check possible exponent values */
 	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
 		if (Exponent % 2 == 0 && !expon2) {
 			continue; // Not a square
@@ -958,53 +1126,11 @@ int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
 		if (!ProcessExpon[Exponent]) {
 			continue;
 		}
-		// Initialize approximation to n-th root (n = Exponent).
-		log2root = log2N / Exponent;
-		intLog2root = (int)floor(log2root / BITS_PER_GROUP);
-		nbrLimbs = intLog2root + 1;
-		ptrLimb = &Base.limbs[nbrLimbs - 1];
-		dN = exp((log2root - intLog2root*BITS_PER_GROUP) * log(2));
-		// All approximations must be >= than true answer.
-		if (nbrLimbs == 1) {
-			ptrLimb->x = (int)(unsigned int)ceil(dN);
-			if ((unsigned int)ptrLimb->x == LIMB_RANGE) {
-				nbrLimbs = 2;
-				ptrLimb->x = 0;
-				(ptrLimb + 1)->x = 1;
-			}
-		}
-		else {
-			dN += 1 / (double)LIMB_RANGE;
-			ptrLimb->x = (int)trunc(dN);
-			dN -= trunc(dN);
-			(ptrLimb - 1)->x = (int)trunc(dN*LIMB_RANGE);
-		}
-		Base.nbrLimbs = nbrLimbs;
-		// Perform Newton iteration for n-th root.
-		for (;;) {   // Check whether the approximate root is actually exact.
-			BigIntPowerIntExp(Base, Exponent - 1, Temp3); // Temp3 <- x^(e-1)
-			Temp2 = Temp3*Base;        // Temp2 <- x^e 
-				
-			Temp2 = BigInt - Temp2; // BigIntSubt(BigInt, Temp2, Temp2);  // Compare to radicand.
-			if (Temp2.nbrLimbs == 1 && Temp2.limbs[0].x == 0) {                     
-				return Exponent;  // Perfect power, so go out.
-			}
-			if (Temp2 >= 0) {                    
-				break; // x^e > radicand -> not perfect power, so go out.
-			}
-			Temp = BigInt / Temp3;   // Temp -> N/x^(e-1)
-			Temp2 = Temp - Base;   // Temp2 -> N/x^(e-1) - x
-			if (Temp2 == 0) {    
-				break; // New approximation will be the same as previous. Go out.
-			}
-			//Temp = Exponent - 1;   // InitTempFromInt(Exponent - 1);
-			Temp2 -= Exponent - 1;   // BigIntSubt(Temp2, Temp, Temp2);
-			Temp = Exponent;      //InitTempFromInt(Exponent);
-			Temp2 = Temp2 / Temp; // BigIntDivide(Temp2, Temp, Temp2);
-			Base += Temp2;        // BigIntAdd(Temp2, Base, Base);
+		if (mpz_root(ZT(Root), ZT(BigInt), Exponent) != 0) {
+			Base = Root;   // BigInt is a perfect power
+			return Exponent;
 		}
 	}
-	
 	Base = BigInt;   // not perfect power
 	return 1;
 }
@@ -1151,166 +1277,15 @@ long long JacobiSymbol(long long upper, long long lower)
 
 // BPSW primality test:
 // 1) If the input number is 2-SPRP composite, indicate composite and go out.
-// 2) Find the first D in the sequence 5, -7, 9, -11, 13, -15, ...
-//    for which the Jacobi symbol (D/n) is −1. Set P = 1 and Q = (1 - D) / 4.
-// 3) Perform a strong Lucas probable prime test on n using parameters D, P,
-//    and Q. If n is not a strong Lucas probable prime, then n is composite.
+// 2) Perform a Miller-Rabin probable prime test on n 
+//    If n is not a probable prime, then n is composite.
 //    Otherwise, n is almost certainly prime.
 // Output: 0 = probable prime.
 //         1 = composite: not 2-Fermat pseudoprime.
 //         2 = composite: does not pass 2-SPRP test.
 //         3 = composite: does not pass Miller-Rabin test.
 
-//int BpswPrimalityTest(/*@in@*/const BigInteger &Value)
-//{
-//	int i, Mult3Len, ctr, D, absQ, mult, mask, index, signPowQ;
-//	bool insidePowering = false;
-//	int nbrLimbs = Value.nbrLimbs;
-//
-//	if (Value <= 2) {
-//		return 0;    // Indicate prime.
-//	}
-//	if (Value.isEven()) {
-//		return 1;    // Number is even and different from 2. Indicate composite.
-//	}
-//
-//	// Perform base 2 Strong Probable Prime test (2-SPRP)
-//	//see https://en.wikipedia.org/wiki/Probable_prime
-//	
-//	CompressLimbsBigInteger(Mult3, Value, Value.nbrLimbs); // copy Value to Mult3
-//	(Mult3[0].x)--; // Value is odd, so there is no carry  // Mult3 = Value-1
-//	Mult3Len = nbrLimbs;
-//	DivideBigNbrByMaxPowerOf2(&ctr, Mult3, &Mult3Len);  // Mult3 /= 2^ctr
-//	memcpy(TestNbr, Value.limbs, (nbrLimbs + 1) * sizeof(limb));  // TestNbr = Value
-//	GetMontgomeryParms(nbrLimbs);
-//	modPowBaseInt(2, Mult3, Mult3Len, Mult1); // Mult1 = 2^Mult3. (mod Value)
-//		  // If Mult1 != 1 and Mult1 != TestNbr-1, perform full test.
-//	if (!checkOne(Mult1, nbrLimbs) && !checkMinusOne(Mult1, nbrLimbs)) {
-//		for (i = 0; i < ctr; i++) {        // Loop that squares number.
-//			modmult(Mult1, Mult1, Mult4);  // Mult4 = Mult1^2 (mod Value)
-//			if (checkOne(Mult4, nbrLimbs))
-//			{  // Current value is 1 but previous value is not 1 or -1: composite
-//				return 2;       // Composite. Not 2-strong probable prime.
-//			}
-//			if (checkMinusOne(Mult4, nbrLimbs)) {
-//				i = -1;         // Number is strong pseudoprime.
-//				break;
-//			}
-//			memcpy(Mult1, Mult4, nbrLimbs * sizeof(limb)); // Mult1 = Mult4
-//		}
-//
-//		if (i == ctr) {
-//			return 1;         // Not 2-Fermat probable prime.
-//		}
-//		if (i != -1) {
-//			return 2;         // Composite. Not 2-strong probable prime.
-//		}
-//	}
-//
-//	// At this point, the number is 2-SPRP, so find value of D.
-//	mult = 1;
-//	for (D = 5; ; D += 2) {
-//		int rem = Value % D; // getRemainder(*pValue, D);
-//		if (JacobiSymbol(rem, D*mult) == -1) {
-//			break;
-//		}
-//		mult = -mult;
-//	}
-//	absQ = (D + 1) >> 2;
-//	
-//	// Perform strong Lucas primality test on n with parameters D, P=1, Q just found.
-//	// Let d*2^s = n+1 where d is odd.
-//	// Then U_d = 0 or v_{d*2^r} = 0 for some r < s.
-//	// Use the following recurrences:
-//	// U_0 = 0, V_0 = 2.
-//	// U_{2k} = U_k * V_k
-//	// V_{2k} = (V_k)^2 - 2*Q^K
-//	// U_{2k+1} = (U_{2k} + V_{2k})/2
-//	// V_{2k+1} = (D*U_{2k} + V_{2k})/2
-//	// Use the following temporary variables:
-//	// Mult1 for Q^n, Mult3 for U, Mult4 for V, Mult2 for temporary.
-//	memcpy(Mult1, MontgomeryMultR1, (nbrLimbs + 1) * sizeof(limb)); // Q^0 <- 1.
-//	signPowQ = 1;
-//	memset(Mult3, 0, (nbrLimbs + 1) * sizeof(limb));                // U_0 <- 0.
-//	memcpy(Mult4, MontgomeryMultR1, (nbrLimbs + 1) * sizeof(limb));
-//	AddBigNbrMod(Mult4, Mult4, Mult4);                              // V_0 <- 2.
-//	expon = Value;  
-//	expon ++;                               // expon <- n + 1.
-//	Temp.limbs[nbrLimbs].x = 0;
-//	Temp2.limbs[nbrLimbs].x = 0;
-//	expon.limbs[expon.nbrLimbs].x = 0;
-//	DivideBigNbrByMaxPowerOf2(&ctr, expon.limbs, &expon.nbrLimbs); // expon /= 2^ctr
-//	for (index = expon.nbrLimbs - 1; index >= 0; index--) {
-//		int groupExp = (int)(expon.limbs[index].x);
-//		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
-//			if (insidePowering) {
-//				// U_{2k} = U_k * V_k
-//				// V_{2k} = (V_k)^2 - 2*Q^K
-//				modmult(Mult3, Mult4, Mult3);          // U <- U * V (mod Value)
-//				modmult(Mult4, Mult4, Mult4);          // V <- V * V (mod Value)
-//				if (signPowQ > 0) {
-//					SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
-//					SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
-//				}
-//				else {
-//					AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
-//					AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
-//				}
-//				signPowQ = 1;                          // Indicate it is positive. 
-//				modmult(Mult1, Mult1, Mult1);          // Square power of Q.
-//			}
-//			if ((groupExp & mask) != 0)
-//			{        // Bit of exponent is equal to 1.
-//					 // U_{2k+1} = (U_{2k} + V_{2k})/2
-//					 // V_{2k+1} = (D*U_{2k} + V_{2k})/2
-//				Mult3[NumberLength].x = 0;
-//				Mult4[NumberLength].x = 0;
-//				AddBigNbrMod(Mult3, Mult4, Temp.limbs);
-//				Halve(Temp.limbs);                     // Temp <- (U + V)/2 (mod TestNbr)
-//				MultBigNbrByIntModN((int *)Mult3, D, (int *)Temp2.limbs, (int *)TestNbr, nbrLimbs);
-//				// Temp2 = Mult3* D (mod TestNbr)
-//				
-//				if (mult > 0)
-//				{      // D is positive; Mult4 += Temp2
-//					AddBigNbrMod(Mult4, Temp2.limbs, Mult4); // Mult4 = Mult4+Temp2 (mod TestNbr)
-//				}
-//				else
-//				{      // D is negative; Mult4 -= Temp2
-//					SubtBigNbrMod(Mult4, Temp2.limbs, Mult4);  // Mult4 = Mult4-Temp2 (mod TestNbr)
-//				}
-//				Halve(Mult4);                       // V <- (V +/- U*D)/2
-//				memcpy(Mult3, Temp.limbs, NumberLength * sizeof(limb));  // Mult3 =Temp
-//				modmultInt(Mult1, absQ, Mult1);     // Multiply power of Q by Q. Mult1 *= Q
-//				signPowQ = -mult;                   // Attach correct sign to power.
-//				insidePowering = true;
-//			}
-//		}
-//	}
-//	// If U is zero, the number passes the BPSW primality test.
-//	if (BigNbrIsZero(Mult3, NumberLength)) {
-//		return 0;      // Indicate number is probable prime.
-//	}
-//	for (index = 0; index < ctr; index++) {
-//		// If V is zero, the number passes the BPSW primality test.
-//		if (BigNbrIsZero(Mult4, NumberLength)) {
-//			return 0;    // Indicate number is probable prime.
-//		}
-//		modmult(Mult4, Mult4, Mult4);          // V <- V * V
-//		if (signPowQ > 0) {
-//			SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
-//			SubtBigNbrMod(Mult4, Mult1, Mult4);  // V <- V - Q^k
-//		}
-//		else {
-//			AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
-//			AddBigNbrMod(Mult4, Mult1, Mult4);   // V <- V - Q^k
-//		}
-//		modmult(Mult1, Mult1, Mult1);          // Square power of Q. (mod TestNbr)
-//		signPowQ = 1;                          // Indicate it is positive.
-//	}
-//	return 3;        // Number does not pass strong Lucas test.
-//}
-
-int BpswPrimalityTestNew(const Znum &Value, int upperBound) {
+int BpswPrimalityTestNew(const Znum &Value, long long upperBound) {
 	int i, ctr;
 	Znum Mult1, Mult3, Mult4;
 	const Znum two = 2;
@@ -1344,7 +1319,7 @@ int BpswPrimalityTestNew(const Znum &Value, int upperBound) {
 			Mult1 = Mult4;
 		}
 		if (i == ctr) {
-			return 1;         // Not 2-Fermat probable prime.
+			return 1;         // composite. Not 2-Fermat probable prime.
 		}
 		if (i != -1) {
 			return 2;         // Composite. Not 2-strong probable prime.

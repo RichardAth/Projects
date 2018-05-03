@@ -191,13 +191,13 @@ public:
 	friend void DoubleToBigInt (BigInteger &bigInt, double dvalue);
 	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
 	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
-	friend void UncompressBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
-	friend void CompressBigInteger(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
-	friend void UncompressLimbsBigInteger(/*@in@*/const limb *ptrValues, 
+	friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
+	friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
+	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
 		/*@out@*/BigInteger &bigint, int NumberLength);
-	friend void CompressLimbsBigInteger(/*@out@*/limb *ptrValues, 
+	friend void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
 		/*@in@*/const BigInteger &bigint, int NumberLength);
-	friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
+	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
@@ -319,7 +319,9 @@ extern limb MontgomeryMultR2[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
-
+long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
+double logBigNbr(const Znum &BigInt);
+void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
@@ -336,8 +338,8 @@ void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
 
-int BpswPrimalityTest(const BigInteger &pBigNbr);
-int BpswPrimalityTestNew(const Znum &Value, int upperBound);
+//int BpswPrimalityTest(const BigInteger &pBigNbr);
+int BpswPrimalityTestNew(const Znum &Value, long long upperBound);
 
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
@@ -346,7 +348,7 @@ void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int n
 bool checkOne(const limb *value, int nbrLimbs);
 bool checkMinusOne(const limb *value, int nbrLimbs);
 void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
-
+void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
 void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);

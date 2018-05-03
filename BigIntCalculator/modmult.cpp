@@ -16,14 +16,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
 #include "bignbr.h"
-#include "expression.h"
 
 limb MontgomeryR1[MAX_LEN];
 limb TestNbr[MAX_LEN];
@@ -993,10 +992,10 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	}
 #endif
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
-		UncompressLimbsBigInteger(factor1, tmpNum, NumberLength);
-		UncompressLimbsBigInteger(factor2, tmpDen, NumberLength);
+		LimbsToBigInteger(factor1, tmpNum, NumberLength);
+		LimbsToBigInteger(factor2, tmpDen, NumberLength);
 		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
-		CompressLimbsBigInteger(product, tmpNum, NumberLength);
+		BigIntegerToLimbs(product, tmpNum, NumberLength);
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
@@ -1260,7 +1259,7 @@ void modmultInt(limb *factorBig, int factorInt, limb *result) {
 // Input: base = base in Montgomery notation.
 //        exp  = exponent.
 //        nbrGroupsExp = number of limbs of exponent.
-// Output: power = power in Montgomery notation.
+// Output: power = power in Montgomery notation (mod TestNbr).
 void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power) {
 	int mask, index;
 	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(*power));  // power <- 1
@@ -1275,7 +1274,7 @@ void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power) {
 	}
 }
 
-
+// Output: power = power in Montgomery notation (mod TestNbr).
 void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power) {
 	int mask, index;
 	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));  // power <- 1
@@ -1786,11 +1785,11 @@ void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den,
 	if (tmpDen < 0) {
 		tmpDen += mod; 
 	}
-	CompressLimbsBigInteger(aux3, tmpDen, NumberLength);  // aux3 = tmpDen
+	BigIntegerToLimbs(aux3, tmpDen, NumberLength);  // aux3 = tmpDen
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
 	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
-	CompressLimbsBigInteger(aux4, tmpNum, NumberLength);
+	BigIntegerToLimbs(aux4, tmpNum, NumberLength);
 	modmult(aux3, aux4, aux3);              // aux3 <- Num / Dev in standard notation.
-	UncompressLimbsBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
+	LimbsToBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
 	return;
 }

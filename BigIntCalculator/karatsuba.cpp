@@ -17,9 +17,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include "bignbr.h"
-#include <stdio.h>
-#include <math.h>
-#include <stdint.h>
+//#include <stdio.h>
+#include <cmath>
+#include <cstdint>
 
 #define KARATSUBA_CUTOFF 16
 

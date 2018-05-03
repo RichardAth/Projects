@@ -17,16 +17,14 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 #define  _CRT_SECURE_NO_DEPRECATE
 
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <stdint.h>
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <cstdint>
 #include "bignbr.h"
-#include "expression.h"
+//#include "expression.h"
 #include "factor.h"
 #include "showtime.h"
-
-
 
 // These defines are valid for factoring up to 10^110.
 #define MAX_NBR_FACTORS         13

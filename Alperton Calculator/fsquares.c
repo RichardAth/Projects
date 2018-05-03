@@ -756,7 +756,7 @@ void batchCallback(char **pptrOutput)
 	}
 	ptrOutput = *pptrOutput;
 	NumberLength = toProcess.nbrLimbs;
-	CompressBigInteger((int *)number, &toProcess);
+	BigIntegerToInts((int *)number, &toProcess);
 	origNbrLimbs = toProcess.nbrLimbs;
 	memcpy(origNbr, toProcess.limbs, origNbrLimbs * sizeof(limb));
 	result = fsquares();
