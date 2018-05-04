@@ -129,7 +129,7 @@ static bool InsertNewRelation(
 	int NumberLength);
 static void BlockLanczos(void);
 void ShowSIQSStatus(void);
-static unsigned int getFactorsOfA(unsigned int seed, int *aindex);
+static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
 static void sieveThread(BigInteger *result);
 
 //#ifdef __EMSCRIPTEN__

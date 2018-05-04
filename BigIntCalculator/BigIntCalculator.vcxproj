@@ -154,6 +154,7 @@
     <ClCompile Include="bignbr.cpp" />
     <ClCompile Include="bigint.cpp" />
     <ClCompile Include="division.cpp" />
+    <ClCompile Include="ecm.cpp" />
     <ClCompile Include="factor.cpp" />
     <ClCompile Include="karatsuba.cpp" />
     <ClCompile Include="main.cpp" />

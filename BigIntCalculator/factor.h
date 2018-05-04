@@ -23,12 +23,12 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //#ifdef __EMSCRIPTEN__
 //void getCunn(char *url, char *factorsFromServer);
 //#endif
-struct sFactors
-{
-	int *ptrFactor;
-	int exponent;
-	int upperBound;
-};
+//struct sFactors
+//{
+//	int *ptrFactor;
+//	int exponent;
+//	int upperBound;
+//};
 
 typedef boost::multiprecision::mpz_int Znum;
 
@@ -40,8 +40,12 @@ public:
 };
 
 void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
+void showECMStatus(void);
+bool ecm(Znum &Nz);
 extern int lang;
-
+extern limb GD[MAX_LEN];
+extern BigInteger Temp1;
+extern long long lModularMult;
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
