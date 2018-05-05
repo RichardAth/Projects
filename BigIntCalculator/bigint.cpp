@@ -872,156 +872,6 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 // This routine checks whether the number BigInt is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  
 // exponent and  the base such that base^exponent = BigInt.
-
-//int PowerCheck(const BigInteger &BigInt, BigInteger &Base)
-//{
-//	limb *ptrLimb;
-//	double dN;
-//	int nbrLimbs = BigInt.nbrLimbs;
-//	const int maxExpon = BigInt.bitLength();  // if maxExpon > 5000 throw an exception
-//											// this corresponds to about 161 limbs 
-//	int h, j;
-//	int modulus;
-//	int intLog2root;
-//	int primesLength, Exponent;
-//	double log2N, log2root;
-//	int prime2310x1[] =
-//	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
-//	// Primes of the form 2310x+1.
-//	bool expon2 = true, expon3 = true, expon5 = true;
-//	bool expon7 = true, expon11 = true;
-//	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
-//		int testprime = prime2310x1[h];
-//		int mod = BigInt%testprime; // getRemainder(BigInt, testprime);
-//		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
-//			expon2 = false;
-//		}
-//		if (expon3 && intModPow(mod, testprime / 3, testprime) > 1) {
-//			expon3 = false;
-//		}
-//		if (expon5 && intModPow(mod, testprime / 5, testprime) > 1) {
-//			expon5 = false;
-//		}
-//		if (expon7 && intModPow(mod, testprime / 7, testprime) > 1) {
-//			expon7 = false;
-//		}
-//		if (expon11 && intModPow(mod, testprime / 11, testprime) > 1) {
-//			expon11 = false;
-//		}
-//	}
-//
-//	primesLength = 2 * maxExpon + 3;
-//	if (primesLength >= sizeof(primes) / sizeof(primes[0]) || 
-//		maxExpon >= sizeof(ProcessExpon) / sizeof(ProcessExpon[0])) {	
-//		
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "number too big : cannot generate prime list. function : ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//	
-//	for (h = 2; h <= maxExpon; h++) {
-//		ProcessExpon[h] = true;
-//	}
-//	for (h = 2; h < primesLength; h++) {
-//		primes[h] = true;
-//	}
-//	for (h = 2; h * h < primesLength; h++) { // Generation of primes
-//		for (j = h * h; j < primesLength; j += h) { // using Eratosthenes sieve
-//			primes[j] = false;
-//		}
-//	}
-//	for (h = 13; h < primesLength; h++) {
-//		if (primes[h]) {
-//			int processed = 0;
-//			for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
-//				if (primes[j]) {
-//					modulus = BigInt % j; // getRemainder(BigInt, j);
-//					if (intModPow(modulus, j / h, j) > 1) {
-//						for (j = h; j <= maxExpon; j += h) {
-//							ProcessExpon[j] = false;
-//						}
-//						break;
-//					}
-//				}
-//				if (++processed > 10) {
-//					break;
-//				}
-//			}
-//		}
-//	}
-//	log2N = logBigNbr(BigInt) / log(2);
-//	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
-//		if (Exponent % 2 == 0 && !expon2) {
-//			continue; // Not a square
-//		}
-//		if (Exponent % 3 == 0 && !expon3) {
-//			continue; // Not a cube
-//		}
-//		if (Exponent % 5 == 0 && !expon5) {
-//			continue; // Not a fifth power
-//		}
-//		if (Exponent % 7 == 0 && !expon7) {
-//			continue; // Not a 7th power
-//		}
-//		if (Exponent % 11 == 0 && !expon11) {
-//			continue; // Not an 11th power
-//		}
-//		if (!ProcessExpon[Exponent]) {
-//			continue;
-//		}
-//		// Initialize approximation to n-th root (n = Exponent).
-//		log2root = log2N / Exponent;
-//		intLog2root = (int)floor(log2root / BITS_PER_GROUP);
-//		nbrLimbs = intLog2root + 1;
-//		ptrLimb = &Base.limbs[nbrLimbs - 1];
-//		dN = exp((log2root - intLog2root*BITS_PER_GROUP) * log(2));
-//		// All approximations must be >= than true answer.
-//		if (nbrLimbs == 1) {
-//			ptrLimb->x = (int)(unsigned int)ceil(dN);
-//			if ((unsigned int)ptrLimb->x == LIMB_RANGE) {
-//				nbrLimbs = 2;
-//				ptrLimb->x = 0;
-//				(ptrLimb + 1)->x = 1;
-//			}
-//		}
-//		else {
-//			dN += 1 / (double)LIMB_RANGE;
-//			ptrLimb->x = (int)trunc(dN);
-//			dN -= trunc(dN);
-//			(ptrLimb - 1)->x = (int)trunc(dN*LIMB_RANGE);
-//		}
-//		Base.nbrLimbs = nbrLimbs;
-//		// Perform Newton iteration for n-th root.
-//		for (;;) {   // Check whether the approximate root is actually exact.
-//			BigIntPowerIntExp(Base, Exponent - 1, Temp3); // Temp3 <- x^(e-1)
-//			Temp2 = Temp3*Base;        // Temp2 <- x^e 
-//				
-//			Temp2 = BigInt - Temp2; // BigIntSubt(BigInt, Temp2, Temp2);  // Compare to radicand.
-//			if (Temp2 == 0) {                     
-//				return Exponent;  // Perfect power, so go out.
-//			}
-//			if (Temp2 >= 0) {                    
-//				break; // x^e > radicand -> not perfect power, so go out.
-//			}
-//			Temp = BigInt / Temp3;   // Temp -> N/x^(e-1)
-//			Temp2 = Temp - Base;   // Temp2 -> N/x^(e-1) - x
-//			if (Temp2 == 0) {    
-//				break; // New approximation will be the same as previous. Go out.
-//			}
-//			//Temp = Exponent - 1;   // InitTempFromInt(Exponent - 1);
-//			Temp2 -= Exponent - 1;   // BigIntSubt(Temp2, Temp, Temp2);
-//			Temp = Exponent;      //InitTempFromInt(Exponent);
-//			Temp2 = Temp2 / Temp; // BigIntDivide(Temp2, Temp, Temp2);
-//			Base += Temp2;        // BigIntAdd(Temp2, Base, Base);
-//		}
-//	}
-//	
-//	Base = BigInt;   // not perfect power
-//	return 1;
-//}
 long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 	/* upperbound is the largest number already tested as a factor by trial division
 	i.e. BigInt has no factors < upperBound. This can be used to put a much
@@ -1169,53 +1019,54 @@ bool checkMinusOne(const limb *value, int nbrLimbs)
 // Find power of 2 that divides the number.
 // output: pNbrLimbs = pointer to number of limbs
 //         pShRight = pointer to power of 2.
-void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
-{
-	int power2 = 0;
-	long long mask;
-	int index, index2,  shRg;
-	int nbrLimbs = *pNbrLimbs;
-	// Start from least significant limb (number zero).
-	for (index = 0; index < nbrLimbs; index++)
-	{
-		if (number[index].x != 0)
-		{
-			break;
-		}
-		power2 += BITS_PER_GROUP;
-	}
-	for (mask = 0x1; mask <= MAX_VALUE_LIMB; mask *= 2)
-	{
-		if ((number[index].x & mask) != 0)
-		{
-			break;
-		}
-		power2++;
-	}
-	// Divide number by this power.
-	shRg = power2 % BITS_PER_GROUP; // Shift right bit counter
-	if ((number[nbrLimbs - 1].x & (-(1 << shRg))) != 0)
-	{   // Most significant bits set.
-		*pNbrLimbs = nbrLimbs - index;
-	}
-	else
-	{   // Most significant bits not set.
-		*pNbrLimbs = nbrLimbs - index - 1;
-	}
-	// Move number shRg bits to the right.
-	mask = (1 << shRg) - 1;
-	for (index2 = index; index2 < nbrLimbs; index2++)
-	{
-		number[index2].x = ((number[index2].x >> shRg) |
-			(number[index2 + 1].x << (BITS_PER_GROUP - shRg))) &
-			MAX_VALUE_LIMB;
-	}
-	if (index > 0)
-	{   // Move limbs to final position.
-		memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
-	}
-	*pShRight = power2;
-}
+
+//void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
+//{
+//	int power2 = 0;
+//	long long mask;
+//	int index, index2,  shRg;
+//	int nbrLimbs = *pNbrLimbs;
+//	// Start from least significant limb (number zero).
+//	for (index = 0; index < nbrLimbs; index++)
+//	{
+//		if (number[index].x != 0)
+//		{
+//			break;
+//		}
+//		power2 += BITS_PER_GROUP;
+//	}
+//	for (mask = 0x1; mask <= MAX_VALUE_LIMB; mask *= 2)
+//	{
+//		if ((number[index].x & mask) != 0)
+//		{
+//			break;
+//		}
+//		power2++;
+//	}
+//	// Divide number by this power.
+//	shRg = power2 % BITS_PER_GROUP; // Shift right bit counter
+//	if ((number[nbrLimbs - 1].x & (-(1 << shRg))) != 0)
+//	{   // Most significant bits set.
+//		*pNbrLimbs = nbrLimbs - index;
+//	}
+//	else
+//	{   // Most significant bits not set.
+//		*pNbrLimbs = nbrLimbs - index - 1;
+//	}
+//	// Move number shRg bits to the right.
+//	mask = (1 << shRg) - 1;
+//	for (index2 = index; index2 < nbrLimbs; index2++)
+//	{
+//		number[index2].x = ((number[index2].x >> shRg) |
+//			(number[index2 + 1].x << (BITS_PER_GROUP - shRg))) &
+//			MAX_VALUE_LIMB;
+//	}
+//	if (index > 0)
+//	{   // Move limbs to final position.
+//		memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
+//	}
+//	*pShRight = power2;
+//}
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 	Znum two = 2;
 	auto shift = mpz_remove(ZT(number), ZT(number), ZT(two));
@@ -1284,7 +1135,7 @@ long long JacobiSymbol(long long upper, long long lower)
 //         2 = composite: does not pass 2-SPRP test.
 //         3 = composite: does not pass Miller-Rabin test.
 
-int BpswPrimalityTestNew(const Znum &Value, long long upperBound) {
+int PrimalityTest(const Znum &Value, long long upperBound) {
 	int i, ctr;
 	Znum Mult1, Mult3, Mult4;
 	const Znum two = 2;

@@ -44,6 +44,7 @@ void showECMStatus(void);
 bool ecm(Znum &Nz);
 extern int lang;
 extern limb GD[MAX_LEN];
+extern BigInteger BiGD;
 extern BigInteger Temp1;
 extern long long lModularMult;
 

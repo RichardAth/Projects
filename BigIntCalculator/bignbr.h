@@ -321,7 +321,7 @@ void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
 
 //int BpswPrimalityTest(const BigInteger &pBigNbr);
-int BpswPrimalityTestNew(const Znum &Value, long long upperBound);
+int PrimalityTest(const Znum &Value, long long upperBound);
 
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
@@ -329,7 +329,7 @@ double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
 bool checkOne(const limb *value, int nbrLimbs);
 bool checkMinusOne(const limb *value, int nbrLimbs);
-void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
+//void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);

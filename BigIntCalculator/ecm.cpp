@@ -12,13 +12,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* factorise numbers or numeric expressions using fast algorithms ECM and SIQS.
+ECM = Lenstra elliptic-curve factorization
+see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization */
+
 #define  _CRT_SECURE_NO_DEPRECATE
 #include <iostream>
 #include "showtime.h"
 #include "bignbr.h"
 #include "factor.h"
 
-int yieldFreq;
+static int yieldFreq;
 int EC;            // Elliptic Curve Number
 static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250 };
 
@@ -48,7 +53,7 @@ static limb A03[MAX_LEN];
 static limb AA[MAX_LEN];
 static limb DX[MAX_LEN];
 static limb DZ[MAX_LEN];
-limb GD[MAX_LEN];   // used to pass result back to cller
+limb GD[MAX_LEN];   // used to pass result back to caller
 static limb M[MAX_LEN];
 static limb TX[MAX_LEN];
 static limb TZ[MAX_LEN];
@@ -74,7 +79,6 @@ static unsigned char sieve2310[SIEVE_SIZE];
 static int sieveidx[GROUP_SIZE];
 static limb GcdAccumulated[MAX_LEN];
 
-static limb *fieldAA, *fieldTX, *fieldTZ, *fieldUX, *fieldUZ;
 
 static int indexM, maxIndexM;
 static bool foundByLehman;
@@ -83,12 +87,14 @@ static int SmallPrime[670] = { 0 }; /* Primes < 5000 */
 static int nbrPrimes, indexPrimes, StepECM;
 char lowerText[30000];
 char *ptrLowerText;
-BigInteger Temp1;
-static BigInteger Temp2, Temp3, Temp4;
+BigInteger Temp1;  // accessed from other modules
+static BigInteger Temp2, Temp4;
+BigInteger BiGD;
 
-/* function declarations */
+/* forward function declarations */
 static void add3(limb *x3, limb *z3, limb *x2, limb *z2, limb *x1, limb *z1, limb *x, limb *z);
 static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1);
+
 /******************************************************/
 /* Start of code adapted from Paul Zimmermann's ECM4C */
 /******************************************************/
@@ -326,10 +332,10 @@ Modifies: x3, z3, u, v, w.
 static void add3(limb *x3, limb *z3, limb *x2, limb *z2,
 	limb *x1, limb *z1, limb *x, limb *z)
 {
-	limb *t = fieldTX;
-	limb *u = fieldTZ;
-	limb *v = fieldUX;
-	limb *w = fieldUZ;
+	limb *t = TX;
+	limb *u = TZ;
+	limb *v = UX;
+	limb *w = UZ;
 	SubtBigNbrModN(x2, z2, v, TestNbr, NumberLength); // v = x2-z2
 	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1
 	modmult(v, w, u);       // u = (x2-z2)*(x1+z1)
@@ -375,16 +381,16 @@ void print(limb *w)
 #endif
 static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1)
 {
-	limb *u = fieldUZ;
-	limb *v = fieldTX;
-	limb *w = fieldTZ;
-	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1
+	limb *u = UZ;
+	limb *v = TX;
+	limb *w = TZ;
+	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1 (mod testNbr)
 	modmult(w, w, u);       // u = (x1+z1)^2
-	SubtBigNbrModN(x1, z1, w, TestNbr, NumberLength); // w = x1-z1
-	modmult(w, w, v);       // v = (x1-z1)^2
-	modmult(u, v, x2);      // x2 = u*v = (x1^2 - z1^2)^2
-	SubtBigNbrModN(u, v, w, TestNbr, NumberLength);   // w = u-v = 4*x1*z1
-	modmult(fieldAA, w, u);
+	SubtBigNbrModN(x1, z1, w, TestNbr, NumberLength); // w = x1-z1 (mod testNbr)
+	modmult(w, w, v);       // v = (x1-z1)^2 (mod testNbr)
+	modmult(u, v, x2);      // x2 = u*v = (x1^2 - z1^2)^2 (mod testNbr)
+	SubtBigNbrModN(u, v, w, TestNbr, NumberLength);   // w = u-v = 4*x1*z1 (mod testNbr)
+	modmult(AA, w, u);  // u = w*AA (mod testNbr)
 	AddBigNbrModNB(u, v, u, TestNbr, NumberLength);        // u = (v+b*w)
 	modmult(w, u, z2);      // z2 = (w*u)
 }
@@ -392,8 +398,8 @@ static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1)
 
 /* compute gcd of value & Global var TestNbr. return 0 if either
 is zero, 1 if gcd is 1 , 2 if gcd > 1.
-The value of the gcd is returned in GD (also in Temp3)
-Uses global variables Temp1, Temp2, Temp3, GD, NumberLength */
+The value of the gcd is returned in GD (also in BiGD)
+Uses global variables Temp1, Temp2, BiGD, GD, NumberLength */
 static int gcdIsOne(limb *value)
 {
 	LimbsToBigInteger(value, Temp1, NumberLength);    // Temp1 = value
@@ -402,14 +408,13 @@ static int gcdIsOne(limb *value)
 	if (Temp1 == 0) {
 		return 0;
 	}
-	//Temp3 = Temp1 - Temp2; // BigIntSubt(Temp1, Temp2, Temp3);
 	if (Temp1 == Temp2) {
 		return 0;
 	}
-	BigIntGcd(Temp1, Temp2, Temp3);
-	BigIntegerToLimbs(GD, Temp3, NumberLength);  // GD = gcd(value, TestNbr)
-	if (Temp3 < 2) {
-		return (int)Temp3.lldata();    // GCD is less than 2.
+	BigIntGcd(Temp1, Temp2, BiGD);
+	BigIntegerToLimbs(GD, BiGD, NumberLength);  // GD = gcd(value, TestNbr)
+	if (BiGD < 2) {
+		return (int)BiGD.lldata();    // GCD is less than 2.
 	}
 	return 2;      // GCD is greater than one.
 }
@@ -569,8 +574,8 @@ static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
 			sqrRoot = c.sqRoot();   // sqrRoot <- sqrt(c)
 			sqrRoot += val;
 			BigIntGcd(sqrRoot, nbr, c);         // Get GCD(sqrRoot + val, nbr)
-			if (c >= LIMB_RANGE) {    // Non-trivial factor has been found.
-				factor = c;     // CopyBigInt(*factor, c);
+			if (c.nbrLimbs > 1) {    // Non-trivial factor has been found.
+				factor = c;           // CopyBigInt(*factor, c);
 				return;
 			}
 		}
@@ -627,10 +632,10 @@ void showECMStatus(void) {
 /* can return value:
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
-FACTOR_FOUND
+FACTOR_FOUND   - value of factor returned in global variable GD
 ERROR              (not used??)  */
 static enum eEcmResult ecmCurve(BigInteger &N) {
-	BigInteger potentialFactor;
+	BigInteger potentialFactor;  // result from Lehman algorithm
 #ifdef __EMSCRIPTEN__
 	//char text[20];
 #endif
@@ -665,20 +670,21 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 		// Try to factor BigInteger N using Lehman algorithm. Result in potentialFactor.
 		Lehman(N, EC % 50000000, potentialFactor);
 
-		if (potentialFactor.lldata() >= LIMB_RANGE) {                // large Factor found.
+		if (potentialFactor.nbrLimbs > 1) {                // large Factor found.
 			/* copy value of potentialFactor to GD */
-			BigIntegerToLimbs(GD, potentialFactor, NumberLength);
+			BigIntegerToLimbs(GD, potentialFactor, NumberLength); // GD = potentialFactor
+			BiGD = potentialFactor;  // copy to global BigInteger
 			foundByLehman = true;
 			return FACTOR_FOUND;
 		}
-
+		/* set L1, L2, LS, Paux and nbrPrimes according to value of EC */
 		L1 = 2000;
 		L2 = 200000;
 		LS = 45;
 		Paux = EC;
 		nbrPrimes = 303; /* Number of primes less than 2000 */
 		if (EC > 25) {
-			if (EC < 326) {
+			if (EC < 326) {   // 26 to 325
 				L1 = 50000;
 				L2 = 5000000;
 				LS = 224;
@@ -686,14 +692,14 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 				nbrPrimes = 5133; /* Number of primes less than 50000 */
 			}
 			else {
-				if (EC < 2000) {
+				if (EC < 2000) {  // 326 to 1999
 					L1 = 1000000;
 					L2 = 100000000;
 					LS = 1001;
 					Paux = EC - 299;
 					nbrPrimes = 78498; /* Number of primes less than 1000000 */
 				}
-				else {
+				else {   // >= 2000
 					L1 = 11000000;
 					L2 = 1100000000;
 					LS = 3316;
@@ -703,6 +709,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 			}
 		}
 		//#ifdef __EMSCRIPTEN__
+		/* print status message */
 		ptrText = ptrLowerText;  // Point after number that is being factored.
 		auto elapsedTime = (int)(tenths() - originalTenthSecond);
 		GetDHMSt(&ptrText, elapsedTime);
@@ -1124,13 +1131,7 @@ bool ecm(Znum &Nz) {
 #ifndef __EMSCRIPTEN__
 	(void)Factors;     // Ignore parameter.
 #endif
-	fieldTX = TX;
-	fieldTZ = TZ;
-	fieldUX = UX;
-	fieldUZ = UZ;
-
-
-	fieldAA = AA;
+	
 	NumberLength = N.nbrLimbs;
 	BigIntegerToLimbs(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
@@ -1195,10 +1196,11 @@ bool ecm(Znum &Nz) {
 		enum eEcmResult ecmResp = ecmCurve(N);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
 			FactoringSIQSx(TestNbr, GD);
+			LimbsToBigInteger(GD, BiGD, NumberLength);
 			break;  // value of factor found is in global variable GD
 		}
 		else if (ecmResp == FACTOR_FOUND) {
-			break;  // value of factor found is in global variable GD
+			break;  // value of factor found is in global variables GD & BiGD
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)

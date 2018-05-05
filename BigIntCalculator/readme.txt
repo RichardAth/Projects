@@ -59,6 +59,11 @@ alternative that worked was already available.
 
 FACTORIZATION
 
+The BigInteger structure was turned into a C++ class and various operators were 
+overloaded to work with with BigIntegers. Wherever possible, BigInteger function
+calls have been replaced with statements using arithmetic or comparison
+operators. 
+
 As mentioned above it uses algorithms ECM and SIQS.
 
 The factoriser is essentially DAs program, with an interface function that converts 
@@ -68,9 +73,8 @@ Web Browser.
 
 A couple of checks for array index overflows were added. If an error is detected 
 an exception is thrown, an error message is output, and the program continues 
-without factorising the number. I suspect there are other places checks should be 
-added, but realistically any number small enough to be factorised in a reasonable 
-time will not exceed the array bounds.
+without factorising the number. Rrealistically any number small enough to be 
+factorised in a reasonable time will not exceed the array bounds.
 
 Profiling using Visual Studio suggests that changing from DAs BigIntegers to 
 GMP/MPIR would not improve performance much. This would be a huge task.

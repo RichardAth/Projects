@@ -1,7 +1,6 @@
 /* calculators/modmult.c
 c25525c on 10 Dec 2017
 @alpertron alpertron Added general division modulo any composite
-2074 lines (2026 sloc) 72.1 KB */
 /*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
@@ -984,13 +983,13 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	limb Prod[13];
 	unsigned int cy;
 	int index;
-#ifdef __EMSCRIPTEN__
+//#ifdef __EMSCRIPTEN__
 	if (modmultCallback)
 	{
 		modmultCallback();
 		lModularMult++;
 	}
-#endif
+//#endif
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
 		LimbsToBigInteger(factor1, tmpNum, NumberLength);
 		LimbsToBigInteger(factor2, tmpDen, NumberLength);

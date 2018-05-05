@@ -28,28 +28,20 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "factor.h"
 extern int EC;            // Elliptic Curve Number
-//int yieldFreq;
 
-//char lowerText[30000];
-//char *ptrLowerText;
 extern mmCback modmultCallback;
-
 
 extern bool *primeFlags;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 void generatePrimes(unsigned long long int max_val);
 
-static int FactorIndex;
-
 static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 void ValuestoZ(Znum &numberZ, const int number[]);
 
-
-long long Gamma[386];
-long long Delta[386];
-long long AurifQ[386];
-
+static long long Gamma[386];
+static long long Delta[386];
+static long long AurifQ[386];
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -794,21 +786,19 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int expon;
 	EC = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
-	//NumberLength = (int)(mpz_sizeinbase(ZT(toFactor), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
-	//GetYieldFrequency();   //get yield frequency based on NumberLength (used by showECMStatus)
-
+	
 	for (int i = 0; i < Factors.size(); i++) {
 		if (Factors[i].upperBound == -1)
-			continue;  // skip if factor is known to be prime
+			continue;         // skip if factor is known to be prime
 		Zprime = Factors[i].Factor;
 		testP = primeList[Factors[i].upperBound]; // get largest number used in trial division
 		expon = (int)PowerCheck(Zprime, Zpower,  testP - 1); // on return; Zpower^expon = Zprime
-		if (expon > 1) { /* if power is a perfect power*/
+		if (expon > 1) {    /* if power is a perfect power*/
 			Factors[i].Factor = Zpower;
 			Factors[i].exponent *= expon;
 		}
 		
-		int result = BpswPrimalityTestNew(Zpower, testP- 1);
+		int result = PrimalityTest(Zpower, testP- 1);
 		if (result == 0) {   // Number is prime.
 			Factors[i].upperBound = -1; // Indicate that number is prime.
 			continue;
@@ -817,29 +807,14 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (factorCarmichael(Zpower, Factors))
 				continue;
 		}
-		auto rv = ecm(Zpower);          // Factor number.
+		auto rv = ecm(Zpower);          // Factor number. result in BiGD
 		if (!rv)
 			return false;  // failed to factorise number
-		// Check whether GD is not one. In this case we found a proper factor.
-		int ctr;
-		for (ctr = 1; ctr < NumberLength; ctr++) {
-			if (GD[ctr].x != 0) {
-				break;
-			}
-		}
-		if (ctr != 1 || GD[0].x != 1) {
+		 //Check whether GD is not one. In this case we found a proper factor.
+		if (BiGD != 1) {
 			/* GD is not 1 */
-			int numLimbs;
-			numLimbs = NumberLength;
-			while (numLimbs > 1) {    // adjust count of number of limbs
-				if (GD[numLimbs - 1].x != 0) {
-					break;
-				}
-				numLimbs--;
-			}
-			LimbsToBigInteger(GD, Temp1, numLimbs); /* copy number from GD and convert it to a Znum */
 			Znum Zgd;
-			BigtoZ(Zgd, Temp1);
+			BigtoZ(Zgd, BiGD);
 			insertBigFactor(Factors, Zgd);
 			i = 0;			// restart loop at beginning!!
 		}
