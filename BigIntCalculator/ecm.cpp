@@ -53,7 +53,7 @@ static limb A03[MAX_LEN];
 static limb AA[MAX_LEN];
 static limb DX[MAX_LEN];
 static limb DZ[MAX_LEN];
-limb GD[MAX_LEN];   // used to pass result back to caller
+static limb GD[MAX_LEN];   // used to pass gcd back to caller
 static limb M[MAX_LEN];
 static limb TX[MAX_LEN];
 static limb TZ[MAX_LEN];
@@ -79,7 +79,6 @@ static unsigned char sieve2310[SIEVE_SIZE];
 static int sieveidx[GROUP_SIZE];
 static limb GcdAccumulated[MAX_LEN];
 
-
 static int indexM, maxIndexM;
 static bool foundByLehman;
 static bool performLehman;
@@ -87,9 +86,9 @@ static int SmallPrime[670] = { 0 }; /* Primes < 5000 */
 static int nbrPrimes, indexPrimes, StepECM;
 char lowerText[30000];
 char *ptrLowerText;
-BigInteger Temp1;  // accessed from other modules
+static BigInteger Temp1; 
 static BigInteger Temp2, Temp4;
-BigInteger BiGD;
+static BigInteger BiGD;
 
 /* forward function declarations */
 static void add3(limb *x3, limb *z3, limb *x2, limb *z2, limb *x1, limb *z1, limb *x, limb *z);
@@ -632,7 +631,7 @@ void showECMStatus(void) {
 /* can return value:
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
-FACTOR_FOUND   - value of factor returned in global variable GD
+FACTOR_FOUND   - value of factor returned in global variable GD & BiGD
 ERROR              (not used??)  */
 static enum eEcmResult ecmCurve(BigInteger &N) {
 	BigInteger potentialFactor;  // result from Lehman algorithm
@@ -1196,11 +1195,14 @@ bool ecm(Znum &Nz) {
 		enum eEcmResult ecmResp = ecmCurve(N);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
 			FactoringSIQSx(TestNbr, GD);
+			// value of factor found is in global variable GD
 			LimbsToBigInteger(GD, BiGD, NumberLength);
-			break;  // value of factor found is in global variable GD
+			BigtoZ(Zgd, BiGD);
+			break;  
 		}
 		else if (ecmResp == FACTOR_FOUND) {
-			break;  // value of factor found is in global variables GD & BiGD
+			BigtoZ(Zgd, BiGD); // value of factor found is in global variables GD & BiGD
+			break;  
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)

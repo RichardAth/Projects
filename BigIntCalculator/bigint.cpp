@@ -18,6 +18,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cassert>
 #include <cmath>
+#include "bignbr.h"
 #include "factor.h"
 
 #include "bignbr.h"
@@ -1175,8 +1176,12 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 			return 2;         // Composite. Not 2-strong probable prime.
 		}
 	}
-
+	static bool first = true;
 	gmp_randstate_t rstate;
+	if (first) {
+		gmp_randinit_default(rstate);
+		first = false;
+	}
 	gmp_randinit_default(rstate);
 	auto rv = mpz_likely_prime_p(ZT(Value), rstate, upperBound);
 	if (rv == 0)
@@ -1209,4 +1214,58 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 		dN += (double)(ptrLimb - 3)->x * dInvLimb * dInvLimb;
 	}
 	return dN;
+}
+
+/* convert Znum to BigInteger. Returns false if number is too big to convert.
+this function is also used to overload the assignment operator */
+bool ZtoBig(BigInteger &number, Znum numberZ) {
+	number.nbrLimbs = 0;
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		number.limbs[i].x = (int)MulPrToLong(remainder);
+		numberZ = quot;
+		i++;
+		if (i >= MAX_LEN) {
+			return false;   // number too big to convert.
+		}
+	}
+	number.nbrLimbs = i;
+	if (neg) {
+		number.sign = SIGN_NEGATIVE;
+		numberZ = -numberZ;  // put back original value in numberZ
+	}
+	else
+		number.sign = SIGN_POSITIVE;
+
+	return true;
+}
+
+/* convert BigInteger to Znum */
+void BigtoZ(Znum &numberZ, const BigInteger &number) {
+
+	numberZ = 0;
+	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
+		numberZ *= LIMB_RANGE;
+		numberZ += number.limbs[i].x;
+	}
+	if (number.sign == SIGN_NEGATIVE)
+		numberZ = -numberZ;
+}
+
+/* convert integer list to Znum. 1st number in list is the number of entries
+in the list. */
+void ValuestoZ(Znum &numberZ, const int number[]) {
+	numberZ = 0;
+	for (int i = number[0]; i >= 1; i--) {
+		numberZ *= LIMB_RANGE;
+		numberZ += number[i];
+	}
 }

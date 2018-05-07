@@ -1698,8 +1698,8 @@ void doTests(void) {
 	}
 
 	/* exercise code specifically for power +/-1 */
-	mpz_ui_pow_ui(ZT(x3), 10, 20);
-	x3 -= 1;
+	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
+	x3 -= 1;                        // x3 = 10^20-1
 	factortest(x3);
 	x3 += 2;
 	factortest(x3);
@@ -1707,7 +1707,9 @@ void doTests(void) {
 	factortest(x3);
 	ComputeExpr("n(10^15)^2", x3);  // test power of large number
 	factortest(x3);
-	ComputeExpr("n(10^6+20)^1667", x3);  // test power of large number
+	ComputeExpr("n(10^6+20)^1667", x3);  // test power of large prime number
+	factortest(x3);
+	ComputeExpr("n(10^7)^3*n(10^8)^2", x3);  // test powers of two large prime number
 	factortest(x3);
 
 	/* test using carmichael numbers. note that 1st example has no small factors  */

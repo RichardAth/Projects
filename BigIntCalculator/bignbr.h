@@ -19,7 +19,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
-long long MulPrToLong(const Znum &x);
+
 
 #define MAX_LEN 2500        // approximately 20000 digits
 #define BITS_PER_GROUP 31
@@ -301,9 +301,6 @@ extern limb MontgomeryMultR2[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
-long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
-double logBigNbr(const Znum &BigInt);
-void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
@@ -317,12 +314,8 @@ void AddBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum);
 void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
 void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
-
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
-
-//int BpswPrimalityTest(const BigInteger &pBigNbr);
-int PrimalityTest(const Znum &Value, long long upperBound);
-
+void ValuestoZ(Znum &numberZ, const int number[]);
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
@@ -330,7 +323,7 @@ double logLimbs(const limb *pBigNbr, int nbrLimbs);
 bool checkOne(const limb *value, int nbrLimbs);
 bool checkMinusOne(const limb *value, int nbrLimbs);
 //void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
-void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
+
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
 void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
@@ -355,6 +348,5 @@ void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
 void ModInvBigInt(int *num, int *inv, int *mod, int NumberLength);
 
-long long JacobiSymbol(long long upper, long long lower);
-
 typedef void(*mmCback)(void);
+extern mmCback modmultCallback;

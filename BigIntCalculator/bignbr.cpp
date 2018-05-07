@@ -432,6 +432,7 @@ void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod) {
 	Prod = Nbr1*Nbr2;
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
 }
+
 /* calculate NbrMod^Expon%currentPrime */
 int intDoubleModPow (int NbrMod, int Expon, int currentPrime) {
 	double Power = 1;

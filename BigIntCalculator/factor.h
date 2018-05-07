@@ -17,7 +17,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mpir.h"
 #include "boost/multiprecision/gmp.hpp" 
-#include "bignbr.h"
+#define ZT(a) a.backend().data()
+#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
+typedef boost::multiprecision::mpz_int Znum;
+
 #include "showtime.h"
 
 //#ifdef __EMSCRIPTEN__
@@ -43,9 +46,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
 void showECMStatus(void);
 bool ecm(Znum &Nz);
 extern int lang;
-extern limb GD[MAX_LEN];
-extern BigInteger BiGD;
-extern BigInteger Temp1;
+extern Znum Zgd;
 extern long long lModularMult;
 
 /* access underlying mpz_t inside an bigint */
@@ -53,3 +54,10 @@ extern long long lModularMult;
 
 bool factorise(const Znum numberZ, std::vector <zFactors> &factorlist,
 	Znum Quad[]);
+void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power);
+long long MulPrToLong(const Znum &x);
+long long JacobiSymbol(long long upper, long long lower);
+long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
+double logBigNbr(const Znum &BigInt);
+void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
+int PrimalityTest(const Znum &Value, long long upperBound);
