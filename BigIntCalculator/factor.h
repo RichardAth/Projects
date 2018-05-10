@@ -42,12 +42,11 @@ public:
 	int upperBound;
 };
 
-void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
+
 void showECMStatus(void);
-bool ecm(Znum &Nz);
+bool ecm(Znum &Nz, long long maxdivisor);
 extern int lang;
-extern Znum Zgd;
-extern long long lModularMult;
+extern Znum Zfactor;
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()

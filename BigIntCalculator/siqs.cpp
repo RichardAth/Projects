@@ -2804,7 +2804,7 @@ static bool InsertNewRelation(
 			lenDivisor--;
 		}
 		AddBigNbrModN(biR, biT, biR, TestNbr2, lenDivisor);
-		ModInvBigInt(biR, biT, TestNbr2, lenDivisor);
+		ModInvBigNbr(biR, biT, TestNbr2, lenDivisor);
 	}
 
 	else {             // Odd modulus
@@ -2812,7 +2812,7 @@ static bool InsertNewRelation(
 		if (Modulus[lenDivisor - 1] == 0) {
 			lenDivisor--;
 		}
-		ModInvBigInt(biR, biT, Modulus, lenDivisor);
+		ModInvBigNbr(biR, biT, Modulus, lenDivisor);
 	}
 
 	if ((biU[NumberLengthMod - 1] & HALF_INT_RANGE) != 0) {

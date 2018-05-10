@@ -43,10 +43,13 @@ enum eSign
 	SIGN_NEGATIVE,
 };
 
-
+extern long long lModularMult;
 bool BigNbrIsZero(const limb *value, int nbrLength);
 void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
+void squareRoot(const Znum &arg, Znum & sqRoot);
+bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
+void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
 
 class BigInteger {
 public:                  // ideally, values should be private
@@ -346,7 +349,7 @@ void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod);
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
-void ModInvBigInt(int *num, int *inv, int *mod, int NumberLength);
+void ModInvBigNbr(int *num, int *inv, int *mod, int NumberLength);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;

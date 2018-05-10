@@ -24,21 +24,27 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <cassert>
 #include "showtime.h"
-#include "bignbr.h"
 #include "factor.h"
-extern int EC;            // Elliptic Curve Number
-Znum Zgd;
 
+/* miscellaneous external declarations */
+extern int EC;            // Elliptic Curve Number
+
+void int2dec(char **pOutput, long long nbr);
 extern bool *primeFlags;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
+
+typedef void(*mmCback)(void);
+extern mmCback modmultCallback;   // function pointer
 void generatePrimes(unsigned long long int max_val);
 
+/* function forward declarations */
 static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 
 static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
+Znum Zfactor;
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -496,7 +502,10 @@ static void SortFactors(std::vector<zFactors> &Factors) {
 	ptrdiff_t lastfactor = Factors.size();
 	zFactors temp;
 	bool swap = false;
-
+/* this is a bubble sort, with the added twist that if two factors have the same 
+value they are merged. The 1st pass moves the largest element to the last position,
+2nd pass moves the next largest to the next-to-last position and so on. 
+If, on any pass, no swaps are needed, all elements are in sequence and the sort exits. */
 	for (ptrdiff_t i = lastfactor - 1; i > 0 ; i--) {
 		swap = false;
 		for (ptrdiff_t j = 0; j < i; j++) {
@@ -508,15 +517,16 @@ static void SortFactors(std::vector<zFactors> &Factors) {
 				swap = true;
 			}
 			else if (Factors[j + 1].Factor == Factors[j].Factor) {
-				/* factors are equal so merge them */
-				Factors[j].exponent += Factors[j+1].exponent;
-				if (Factors[j+1].upperBound == -1)
-					Factors[j].upperBound = -1;
+				/* factors j and j+1 are equal so merge them */
+				Factors[j].exponent += Factors[j+1].exponent;  // combine the exponents
+				if (Factors[j+1].upperBound == -1)  
+					Factors[j].upperBound = -1; // set upperbound to show factor is prime
 				else if (Factors[j].upperBound != -1
 					&& Factors[j].upperBound < Factors[j+1].upperBound)
+					/* use higher value of upperbound. */
 					Factors[j].upperBound = Factors[j+1].upperBound;
 
-				/* now move index entries higher than j down 1, overwrite index entry j */
+				/* now move index entries higher than j+1 down 1, overwrite index entry j+1 */
 				for (ptrdiff_t k = j+1; k < lastfactor - 1; k++) {
 					Factors[k].exponent = Factors[k + 1].exponent;
 					Factors[k].Factor = Factors[k + 1].Factor;
@@ -703,7 +713,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;
-	if (primeFlags == NULL) {
+	if (primeFlags == NULL) {  // get first 26000 primes
 		generatePrimes(300000);  // takes a while, but only needed on 1st call
 	}
 	
@@ -728,7 +738,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (upperBound == -1)
 				continue;  // factor is prime
 			/* trial division */
-			while (upperBound < (int)prime_list_count) {
+			while (upperBound < std::min((int)prime_list_count,26000)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {
 					Factors[i].upperBound = -1; // show that residue is prime
@@ -778,13 +788,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (factorCarmichael(Zpower, Factors))
 				continue;
 		}
-		auto rv = ecm(Zpower);          // Factor number. result in Zgd
+		auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
 		if (!rv)
 			return false;  // failed to factorise number
-		 //Check whether GD is not one. In this case we found a proper factor.
-		if (Zgd != 1) {
-			/* GD is not 1 */
-			insertBigFactor(Factors, Zgd);
+		 //Check whether factor is not one. In this case we found a proper factor.
+		if (Zfactor != 1) {
+			/* factor is not 1 */
+			insertBigFactor(Factors, Zfactor);
 			i = -1;			// restart loop at beginning!!
 		}
 	}
@@ -1084,12 +1094,6 @@ and the new code that uses Znums, which are really mpz_t integers from MPIR or G
 multiprecision library, with a c++ class wrapped around them that allows them
 to be used pretty much like normal integers. 
 **********************************************************************************/
-
-
-/* convert Znum to long long, checks for overflow. If overflow were to occur,
-the function would throw an exception. */
-extern long long MulPrToLong(const Znum &x);
-
 
 /* factorise number. Returns false if unable to factorise it */
 bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,

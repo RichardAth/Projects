@@ -18,8 +18,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MAX_LIMBS_SIQS 15
 
-int NbrBak[MAX_LIMBS_SIQS];
-
 /* nbr = - nbr */
 void ChSignBigNbr(int nbr[], int length)
 {
@@ -387,8 +385,9 @@ void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen)
 }
 
 // Compute Nbr <- Nbr mod Mod.
-static void AdjustBigIntModN(int *Nbr, const int *Mod, int nbrLen) {
-	AdjustModN((limb *)Nbr, (limb *)Mod, nbrLen);
+static void AdjustBigNbrModN(int *Nbr, const int *Mod, int nbrLen) {
+	/* note use of cast to change ints to limbs! */
+	AdjustModN((limb *)Nbr, (limb *)Mod, nbrLen);  
 }
 
 /* Prod = Nbr1*Nbr2 (mod Mod) */
@@ -409,7 +408,7 @@ void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbr
 			Prod[j] = Prod[j - 1];
 		} while (--j > 0);
 		Prod[0] = 0;
-		AdjustBigIntModN(Prod, Mod, nbrLen);
+		AdjustBigNbrModN(Prod, Mod, nbrLen);
 		MultBigNbrByIntModN(Nbr2, Nbr, arr, Mod, nbrLen);
 		AddBigNbrModN(arr, Prod, Prod, Mod, nbrLen);
 	} while (i > 0);
@@ -451,7 +450,7 @@ int intDoubleModPow (int NbrMod, int Expon, int currentPrime) {
 }
 
 /* get modular inverse of num wrt mod*/
-void ModInvBigInt(int *num, int *inv, int *mod, int nbrLenBigInt)
+void ModInvBigNbr(int *num, int *inv, int *mod, int nbrLenBigInt)
 {
 	int NumberLengthBigInt;
 	int NumberLengthBak = NumberLength;

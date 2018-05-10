@@ -101,7 +101,7 @@ bool *primeFlags = NULL;
 unsigned long long *primeList = NULL;
 unsigned int prime_list_count = 0;
 unsigned long long int primeListMax = 0;
-const unsigned long long max_prime = 1000000000;  // arbitrary limit 10^9,
+const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
 
 
 /* function declarations, only for functions that have forward references */
@@ -383,7 +383,7 @@ static int PrimalityTestSmall(const long long Value) {
 	if ((Value & 1) == 0) return 0;   // even numbers > 2 are not prime
 
 	if (Value <= max_prime) {
-		if (primeFlags == NULL) {
+		if (primeFlags == NULL || primeListMax < max_prime) {
 			generatePrimes(max_prime);  // takes a while, but only needed on 1st call
 		}
 		if (!getBit(Value, primeFlags))
@@ -1711,7 +1711,8 @@ void doTests(void) {
 	factortest(x3);
 	ComputeExpr("n(10^7)^3*n(10^8)^2", x3);  // test powers of two large prime number
 	factortest(x3);
-
+	ComputeExpr("n(3*10^5+50)*n(3*10^5+500)", x3);  // test Lehman factorisation
+	factortest(x3);
 	/* test using carmichael numbers. note that 1st example has no small factors  */
 	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
 		60977817398996785 };

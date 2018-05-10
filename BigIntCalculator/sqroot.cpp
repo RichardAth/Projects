@@ -270,3 +270,16 @@ void squareRoot(/*@in@*/const limb *argument, /*@out@*/limb *sqRoot, int len, /*
 		prev.x = (ptrSrc--)->x;
 	}
 }
+
+void squareRoot(const Znum &arg, Znum & sqRoot) {
+	assert(arg >= 0);  // no imaginary numbers allowed here!!
+	mpz_sqrt(ZT(sqRoot), ZT(arg));
+}
+
+/* return true iff arg is a perfect square */
+bool isPerfectSquare(const Znum &arg, Znum &sqRoot) {
+	Znum rem;
+	assert(arg >= 0);  // no imaginary numbers allowed here!!
+	mpz_sqrtrem(ZT(sqRoot), ZT(rem), ZT(arg));
+	return rem == 0;  // true if arg is a perfect square
+}

@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ static limb A03[MAX_LEN];
 static limb AA[MAX_LEN];
 static limb DX[MAX_LEN];
 static limb DZ[MAX_LEN];
-static limb GD[MAX_LEN];   // used to pass gcd back to caller
+static limb BNgcd[MAX_LEN];  
 static limb M[MAX_LEN];
 static limb TX[MAX_LEN];
 static limb TZ[MAX_LEN];
@@ -81,18 +81,19 @@ static limb GcdAccumulated[MAX_LEN];
 
 static int indexM, maxIndexM;
 static bool foundByLehman;
-static bool performLehman;
+//static bool performLehman;
 static int SmallPrime[670] = { 0 }; /* Primes < 5000 */
 static int nbrPrimes, indexPrimes, StepECM;
 char lowerText[30000];
 char *ptrLowerText;
-static BigInteger Temp1; 
-static BigInteger Temp2, Temp4;
+static BigInteger Temp1, Temp4; 
+//static BigInteger Temp2;
 static BigInteger BiGD;
 
 /* forward function declarations */
-static void add3(limb *x3, limb *z3, limb *x2, limb *z2, limb *x1, limb *z1, limb *x, limb *z);
-static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1);
+static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2, 
+	const limb *x1, const limb *z1, const limb *x, const limb *z);
+static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1);
 
 /******************************************************/
 /* Start of code adapted from Paul Zimmermann's ECM4C */
@@ -322,39 +323,40 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 /* adds Q=(x2:z2) and R=(x1:z1) and puts the result in (x3:z3),
 using 5/6 mul, 6 add/sub and 6 mod. One assumes that Q-R=P or R-Q=P where P=(x:z).
 Uses the following global variables:
-- n : number to factor
+- n : number to factor = TestNbr
 - x, z : coordinates of P
-- u, v, w : auxiliary variables
-Modifies: x3, z3, u, v, w.
+- TX, TZ, UX, UZ : auxiliary (global) variables
+Modifies: x3, z3, TX, TZ, UX, UZ.
 (x3,z3) may be identical to (x2,z2) and to (x,z)
 */
-static void add3(limb *x3, limb *z3, limb *x2, limb *z2,
-	limb *x1, limb *z1, limb *x, limb *z)
+static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
+	const limb *x1, const limb *z1, const limb *x, const limb *z)
 {
-	limb *t = TX;
-	limb *u = TZ;
-	limb *v = UX;
-	limb *w = UZ;
-	SubtBigNbrModN(x2, z2, v, TestNbr, NumberLength); // v = x2-z2
-	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1
-	modmult(v, w, u);       // u = (x2-z2)*(x1+z1)
-	AddBigNbrModNB(x2, z2, w, TestNbr, NumberLength);      // w = x2+z2
-	SubtBigNbrModN(x1, z1, t, TestNbr, NumberLength); // t = x1-z1
-	modmult(t, w, v);       // v = (x2+z2)*(x1-z1)
-	AddBigNbrModNB(u, v, t, TestNbr, NumberLength);        // t = 2*(x1*x2-z1*z2)
-	modmult(t, t, w);       // w = 4*(x1*x2-z1*z2)^2
-	SubtBigNbrModN(u, v, t, TestNbr, NumberLength);   // t = 2*(x2*z1-x1*z2)
-	modmult(t, t, v);       // v = 4*(x2*z1-x1*z2)^2
-	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {
-		memcpy(u, x, NumberLength * sizeof(int));
-		memcpy(t, w, NumberLength * sizeof(int));
-		modmult(z, t, w);
-		modmult(v, u, z3);
-		memcpy(x3, w, NumberLength * sizeof(int));
+	//limb * const TX = TX  // t
+	//limb * const TZ = TZ;   // u
+	//limb * const UX = UX;    // v
+	//limb * const  UZ = UZ;    // w
+	/* N.B. all arithmetic is mod TestNbr */
+	SubtBigNbrModN(x2, z2, UX, TestNbr, NumberLength);   // UX = x2-z2
+	AddBigNbrModNB(x1, z1,  UZ, TestNbr, NumberLength);   //  UZ = x1+z1
+	modmult(UX,  UZ, TZ);                                  // TZ = (x2-z2)*(x1+z1)
+	AddBigNbrModNB(x2, z2,  UZ, TestNbr, NumberLength);   //  UZ = x2+z2
+	SubtBigNbrModN(x1, z1, TX, TestNbr, NumberLength);  // TX = x1-z1
+	modmult(TX,  UZ, UX);                                  // UX = (x2+z2)*(x1-z1)
+	AddBigNbrModNB(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x1*x2-z1*z2)
+	modmult(TX, TX,  UZ);                                 //  UZ = 4*(x1*x2-z1*z2)^2
+	SubtBigNbrModN(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x2*z1-x1*z2)
+	modmult(TX, TX, UX);                                 // UX = 4*(x2*z1-x1*z2)^2
+	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x == x3
+		memcpy(TZ, x, NumberLength * sizeof(int));       // TZ = x
+		memcpy(TX,  UZ, NumberLength * sizeof(int));     // TX = UZ = 4*(x1*x2-z1*z2)^2
+		modmult(z, TX,  UZ);                             // UZ = z*TX
+		modmult(UX, TZ, z3);                             // z3 = UX*TZ
+		memcpy(x3,  UZ, NumberLength * sizeof(int));     // x3 = UZ
 	}
 	else {
-		modmult(w, z, x3); // x3 = 4*z*(x1*x2-z1*z2)^2
-		modmult(x, v, z3); // z3 = 4*x*(x2*z1-x1*z2)^2
+		modmult( UZ, z, x3);            // x3 = 4*z*(x1*x2-z1*z2)^2
+		modmult(x, UX, z3);             // z3 = 4*x*(x2*z1-x1*z2)^2
 	}
 }
 
@@ -378,40 +380,39 @@ void print(limb *w)
 	printf("%s\n\n", pepe);
 }
 #endif
-static void duplicate(limb *x2, limb *z2, limb *x1, limb *z1)
+static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 {
-	limb *u = UZ;
-	limb *v = TX;
-	limb *w = TZ;
+	limb * const u = UZ;
+	limb * const v = TX;
+	limb * const w = TZ;
+	/* N.B. all arithmetic is mod TestNbr */
 	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1 (mod testNbr)
-	modmult(w, w, u);       // u = (x1+z1)^2
+	modmult(w, w, u);                                 // u = (x1+z1)^2 (mod testNbr)
 	SubtBigNbrModN(x1, z1, w, TestNbr, NumberLength); // w = x1-z1 (mod testNbr)
-	modmult(w, w, v);       // v = (x1-z1)^2 (mod testNbr)
-	modmult(u, v, x2);      // x2 = u*v = (x1^2 - z1^2)^2 (mod testNbr)
+	modmult(w, w, v);                         // v = (x1-z1)^2 (mod testNbr)
+	modmult(u, v, x2);             // x2 = u*v = (x1^2 - z1^2)^2 (mod testNbr)
 	SubtBigNbrModN(u, v, w, TestNbr, NumberLength);   // w = u-v = 4*x1*z1 (mod testNbr)
-	modmult(AA, w, u);  // u = w*AA (mod testNbr)
-	AddBigNbrModNB(u, v, u, TestNbr, NumberLength);        // u = (v+b*w)
-	modmult(w, u, z2);      // z2 = (w*u)
+	modmult(AA, w, u);                              // u = w*AA (mod testNbr)
+	AddBigNbrModNB(u, v, u, TestNbr, NumberLength);        // u = (v+b*w) (mod testNbr)
+	modmult(w, u, z2);           // z2 = (w*u) (mod testNbr)
 }
 /* End of code adapted from Paul Zimmermann's ECM4C */
 
-/* compute gcd of value & Global var TestNbr. return 0 if either
-is zero, 1 if gcd is 1 , 2 if gcd > 1.
-The value of the gcd is returned in GD (also in BiGD)
-Uses global variables Temp1, Temp2, BiGD, GD, NumberLength */
-static int gcdIsOne(limb *value)
+/* compute gcd of value & N. return 0 if value is zero or value = N, 
+1 if gcd is 1 , 2 if gcd > 1.
+The value of the gcd is returned in BiGD
+Uses global variables Temp1, BiGD, NumberLength */
+static int gcdIsOne(const limb *value, const BigInteger &N)
 {
 	LimbsToBigInteger(value, Temp1, NumberLength);    // Temp1 = value
-	LimbsToBigInteger(TestNbr, Temp2, NumberLength);  // Temp2 = TestNbr;
-													  // Return zero if value is zero or both numbers are equal.
+  // Return zero if value is zero or both numbers are equal.
 	if (Temp1 == 0) {
 		return 0;
 	}
-	if (Temp1 == Temp2) {
+	if (Temp1 == N) {
 		return 0;
 	}
-	BigIntGcd(Temp1, Temp2, BiGD);
-	BigIntegerToLimbs(GD, BiGD, NumberLength);  // GD = gcd(value, TestNbr)
+	BigIntGcd(Temp1, N, BiGD);     // BiGD = gcd(value, N)
 	if (BiGD < 2) {
 		return (int)BiGD.lldata();    // GCD is less than 2.
 	}
@@ -468,123 +469,168 @@ static void GenerateSieve(int initial)
 #endif
 }
 
-static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
-{
-	unsigned int bitsSqrLow[] =  // could combine low and high into 64 bit integers
-	{
-		0x00000003, // 3
-		0x00000013, // 5
-		0x00000017, // 7
-		0x0000023B, // 11
-		0x0000161B, // 13
-		0x0001A317, // 17
-		0x00030AF3, // 19
-		0x0005335F, // 23
-		0x13D122F3, // 29
-		0x121D47B7, // 31
-		0x5E211E9B, // 37
-		0x82B50737, // 41   N.B. exceeds max for signed int
-		0x83A3EE53, // 43   N.B. exceeds max for signed int
-		0x1B2753DF, // 47
-		0x3303AED3, // 53
-		0x3E7B92BB, // 59
-		0x0A59F23B, // 61
-	};
-	unsigned int bitsSqrHigh[] =
-	{
-		0x00000000, // 3
-		0x00000000, // 5
-		0x00000000, // 7
-		0x00000000, // 11
-		0x00000000, // 13
-		0x00000000, // 17
-		0x00000000, // 19
-		0x00000000, // 23
-		0x00000000, // 29
-		0x00000000, // 31
-		0x00000016, // 37
-		0x000001B3, // 41
-		0x00000358, // 43
-		0x00000435, // 47
-		0x0012DD70, // 53
-		0x022B6218, // 59
-		0x1713E694, // 61
-	};
-	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
-	int nbrs[17];
-	int diffs[17];
-	int i, j, m, r;
-	static BigInteger sqrRoot, nextroot;   // follow advice not to use stack for these
-	static BigInteger a, c, sqr, val;      // follow advice not to use stack for these
+/* see https://en.wikipedia.org/wiki/Fermat%27s_factorization_method */
+/* k is the curve number */
+//static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
+//{
+//	unsigned int bitsSqrLow[] =  // could combine low and high into 64 bit integers
+//	{
+//		0x00000003, // 3  -         3
+//		0x00000013, // 5  -        19
+//		0x00000017, // 7  -        23
+//		0x0000023B, // 11    -    571
+//		0x0000161B, // 13   -    5657
+//		0x0001A317, // 17  -   107287
+//		0x00030AF3, // 19 -    199411
+//		0x0005335F, // 23 -    340831
+//		0x13D122F3, // 29 - ‭332473075‬
+//		0x121D47B7, // 31 - ‭303908791‬
+//		0x5E211E9B, // 37
+//		0x82B50737, // 41   N.B. exceeds max for signed int
+//		0x83A3EE53, // 43   N.B. exceeds max for signed int
+//		0x1B2753DF, // 47
+//		0x3303AED3, // 53
+//		0x3E7B92BB, // 59
+//		0x0A59F23B, // 61
+//	};
+//	unsigned int bitsSqrHigh[] =
+//	{
+//		0x00000000, // 3
+//		0x00000000, // 5
+//		0x00000000, // 7
+//		0x00000000, // 11
+//		0x00000000, // 13
+//		0x00000000, // 17
+//		0x00000000, // 19
+//		0x00000000, // 23
+//		0x00000000, // 29
+//		0x00000000, // 31
+//		0x00000016, // 37
+//		0x000001B3, // 41
+//		0x00000358, // 43
+//		0x00000435, // 47
+//		0x0012DD70, // 53
+//		0x022B6218, // 59
+//		0x1713E694, // 61
+//	};
+//	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
+//	int nbrs[17];
+//	int diffs[17];
+//	int i, j, m, r;
+//	static BigInteger sqrRoot, nextroot;   // follow advice not to use stack for these
+//	static BigInteger a, c, sqr, val;      // follow advice not to use stack for these
+//
+//	if (nbr.isEven()) { // nbr Even
+//		r = 0;
+//		m = 1;
+//	}
+//	else {
+//		if (k % 2 == 0) { // k Even
+//			r = 1;
+//			m = 2;
+//		}
+//		else { // k Odd
+//			r = (k + nbr.lldata()) & 3;   // was limbs[0].x
+//			m = 4;
+//		}
+//	}
+//
+//	sqr = k << 2;  // sqr = 4*k;
+//	sqr *= nbr;
+//	a = sqr.sqRoot();  // a = sqrt(4k*nbr)
+//
+//	for (;;) {
+//		if ((a.lldata() & (m - 1)) == r) {
+//			nextroot = a*a - sqr;
+//			if (nextroot >= 0) {
+//				break;
+//			}
+//		}
+//		a++;              // a <- a + 1
+//	}
+//	nextroot = a*a;
+//	c = nextroot - sqr;
+//
+//	for (i = 0; i < 17; i++) {
+//		//int pr = pr;
+//		nbrs[i] = c % primes[i]; // getRemainder(c, pr);    
+//		diffs[i] = m * ((a% primes[i]) * 2 + m) % primes[i];
+//	}
+//
+//	for (j = 0; j < 10000; j++) {
+//		for (i = 0; i < 17; i++) {
+//			int shiftBits = nbrs[i];
+//			if (shiftBits < 32) {
+//				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0) {
+//					break;  // Not a perfect square
+//				}
+//			}
+//			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0) {
+//				break;  // Not a perfect square
+//			}
+//		}
+//		if (i == 17) { // Test for perfect square
+//			c = m * j;
+//			val = a + c;
+//			c = val*val - sqr;
+//			sqrRoot = c.sqRoot();   // sqrRoot <- sqrt(c)
+//			sqrRoot += val;
+//			BigIntGcd(sqrRoot, nbr, c);         // Get GCD(sqrRoot + val, nbr)
+//			//if (c.nbrLimbs > 1) {     // Non-trivial factor has been found.
+//				factor = c;           // CopyBigInt(*factor, c);
+//				return;
+//			//}
+//		}
+//
+//		for (i = 0; i < 17; i++) {
+//			nbrs[i] = (nbrs[i] + diffs[i]) % primes[i];
+//			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
+//		}
+//	}
+//
+//	factor = 1;   // Factor not found.
+//	return;
+//}
+static void LehmanNew(const Znum &n, Znum &factor) {
+	double logn = logBigNbr(n);  // get log(n)
+	long long K = (long long)std::ceil(std::exp(logn / 3.0));  // calculate n^(1/3)
+	Znum a, b, start, end, temp;
 
-	if (nbr.isEven()) { // nbr Even
-		r = 0;
-		m = 1;
-	}
-	else {
-		if (k % 2 == 0) { // k Even
-			r = 1;
-			m = 2;
-		}
-		else { // k Odd
-			r = (k + nbr.lldata()) & 3;   // was limbs[0].x
-			m = 4;
-		}
-	}
+	for (long long k = 1; k <= K; k++) {
+		/* calculate lowest value for a */
+		start = (Znum)4*k*n;
+		if (!isPerfectSquare(start, start))
+			start++;  // start = (ceil)sqrt(4kn)
 
-	sqr = k << 2;
-	sqr *= nbr;
-	a = sqr.sqRoot();
+		/* calculate highest value for a */
+		double endLog = (logn / 6) ;     // log(n^(1/6))
+		double endd = std::exp(endLog)/(4*sqrt(k));
+		end = start + (long long)ceil(endd); 
+		// end = sqrt(4kn)+ (n^(1/6))/(4k^(1/2))
 
-	for (;;) {
-		if ((a.lldata() & (m - 1)) == r) {
-			nextroot = a*a - sqr;
-			if (nextroot >= 0) {
-				break;
-			}
-		}
-		a++;              // a <- a + 1
-	}
-	nextroot = a*a;
-	c = nextroot - sqr;
-
-	for (i = 0; i < 17; i++) {
-		//int pr = pr;
-		nbrs[i] = c % primes[i]; // getRemainder(c, pr);    
-		diffs[i] = m * ((a% primes[i]) * 2 + m) % primes[i];
-	}
-
-	for (j = 0; j < 10000; j++) {
-		for (i = 0; i < 17; i++) {
-			int shiftBits = nbrs[i];
-			if (shiftBits < 32) {
-				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0) {
-					break;  // Not a perfect square
-				}
-			}
-			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0) {
-				break;  // Not a perfect square
-			}
-		}
-		if (i == 17) { // Test for perfect square
-			c = m * j;
-			val = a + c;
-			c = val*val - sqr;
-			sqrRoot = c.sqRoot();   // sqrRoot <- sqrt(c)
-			sqrRoot += val;
-			BigIntGcd(sqrRoot, nbr, c);         // Get GCD(sqrRoot + val, nbr)
-			if (c.nbrLimbs > 1) {    // Non-trivial factor has been found.
-				factor = c;           // CopyBigInt(*factor, c);
+		for (Znum a = start; a <= end; a++) {
+			temp = a*a - 4 * k*n;
+			if (temp < 0)
+				continue;  // due to rounding error start might be too small 
+			if (isPerfectSquare(temp, b)) { // b = sqrt(a^2 -4kn)
+#ifdef _DEBUG
+				std::cout << "Lehman n = " << n << " start= " << start
+					<< " a= " << a << " b= " << b 
+					<< " k= " << k << '\n';
+#endif
+				factor = gcd(a + b, n);  // one factor of n
+#ifdef _DEBUG
+				temp = gcd(a - b, n);    // other factor of n
+				std::cout << "factors are: " << factor << " & " << temp << '\n';
+#endif
 				return;
 			}
 		}
-
-		for (i = 0; i < 17; i++) {
-			nbrs[i] = (nbrs[i] + diffs[i]) % primes[i];
-			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
-		}
 	}
-	factor = 1;   // Factor not found.
+//#ifdef _DEBUG
+	std::cout << "Lehman failed to factorise " << n << '\n';
+//#endif
+	factor = 1;     // no factor found (should not happen)
 	return;
 }
 
@@ -604,7 +650,7 @@ void showECMStatus(void) {
 	}
 	oldTimeElapsed = elapsedTime;
 	ptrStatus = status;
-	strcpy(ptrStatus, lang ? "4\nTranscurri� " : "4\nTime elapsed: ");
+	strcpy(ptrStatus, lang ? "4\nTranscurrió " : "4\nTime elapsed: ");
 	ptrStatus += strlen(ptrStatus);
 	GetDHMS(&ptrStatus, elapsedTime / 10);
 	switch (StepECM)
@@ -631,13 +677,14 @@ void showECMStatus(void) {
 /* can return value:
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
-FACTOR_FOUND   - value of factor returned in global variable GD & BiGD
+FACTOR_FOUND   - value of factor returned in global variable BiGD
 ERROR              (not used??)  */
-static enum eEcmResult ecmCurve(BigInteger &N) {
-	BigInteger potentialFactor;  // result from Lehman algorithm
+static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long maxdivisor) {
+
 #ifdef __EMSCRIPTEN__
 	//char text[20];
 #endif
+
 	EC %= 50000000;   // Convert to curve number.
 	for (;;) {
 #ifdef __EMSCRIPTEN__
@@ -649,32 +696,20 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 
 		EC++;   // increment curve number
 
-		//#ifdef __EMSCRIPTEN__
+		#ifdef __EMSCRIPTEN__
 		//			text[0] = '7';
 		//ptrText = &text[1];
 		//			int2dec(&ptrText, EC);
 		//			printf ("%s\n", text);
-		//#endif
+		#endif
 		L1 = NumberLength * 9;        // Get number of digits.
 		if (L1 > 30 && L1 <= 90)    // If between 30 and 90 digits...
 		{                             // Switch to SIQS.
-			int limit = limits[((int)L1 - 31) / 5];
-			if (EC % 50000000 >= limit)
-			{                           // Switch to SIQS.
-				EC += TYP_SIQS;
+			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
+			if (EC % 50000000 >= limit) {                          
+				EC += TYP_SIQS;        // Switch to SIQS.
 				return CHANGE_TO_SIQS;
 			}
-		}
-
-		// Try to factor BigInteger N using Lehman algorithm. Result in potentialFactor.
-		Lehman(N, EC % 50000000, potentialFactor);
-
-		if (potentialFactor.nbrLimbs > 1) {                // large Factor found.
-			/* copy value of potentialFactor to GD */
-			BigIntegerToLimbs(GD, potentialFactor, NumberLength); // GD = potentialFactor
-			BiGD = potentialFactor;  // copy to global BigInteger
-			foundByLehman = true;
-			return FACTOR_FOUND;
 		}
 		/* set L1, L2, LS, Paux and nbrPrimes according to value of EC */
 		L1 = 2000;
@@ -707,7 +742,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 				}
 			}
 		}
-		//#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 		/* print status message */
 		ptrText = ptrLowerText;  // Point after number that is being factored.
 		auto elapsedTime = (int)(tenths() - originalTenthSecond);
@@ -715,7 +750,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 		strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
 		ptrText += strlen(ptrText);
 		int2dec(&ptrText, EC);   // Show curve number.
-		strcpy(ptrText, lang ? " usando l�mites B1=" : " using bounds B1=");
+		strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
 		ptrText += strlen(ptrText);
 		int2dec(&ptrText, L1);   // Show first bound.
 		strcpy(ptrText, lang ? " y B2=" : " and B2=");
@@ -761,19 +796,19 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 		lowerTextArea.setText(
 			primalityString + EC + "\n" + UpperLine + "\n" + LowerLine);
 #endif
-		//#endif
+#endif
 
 		//  Compute A0 <- 2 * (EC+1)*modinv(3 * (EC+1) ^ 2 - 1, N) mod N
 		// Aux2 <- 1 in Montgomery notation.
 		memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
-		modmultInt(Aux2, EC + 1, Aux2);            // Aux2 <- EC + 1.
-		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(EC+1)
-		modmultInt(Aux2, EC + 1, Aux3);            // Aux3 <- (EC + 1)^2
-		modmultInt(Aux3, 3, Aux3);                 // Aux3 <- 3*(EC + 1)^2
-												   // Aux2 <- 3*(EC + 1)^2 - 1 
+		modmultInt(Aux2, EC + 1, Aux2);            // Aux2 <- EC + 1 (mod TestNbr)
+		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(EC+1) (mod TestNbr)
+		modmultInt(Aux2, EC + 1, Aux3);            // Aux3 <- (EC + 1)^2 (mod TestNbr)
+		modmultInt(Aux3, 3, Aux3);                 // Aux3 <- 3*(EC + 1)^2 (mod TestNbr)
+												   // Aux2 <- 3*(EC + 1)^2 - 1 (mod TestNbr)
 		SubtBigNbrModN(Aux3, MontgomeryMultR1, Aux2, TestNbr, NumberLength);
 		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);
-		modmult(Aux1, Aux2, A0);                   // A0 <- 2*(EC+1)/(3*(EC+1)^2 - 1)
+		modmult(Aux1, Aux2, A0);                // A0 <- 2*(EC+1)/(3*(EC+1)^2 - 1) (mod TestNbr)
 
 		//  if A0*(A0 ^ 2 - 1)*(9 * A0 ^ 2 - 1) mod N=0 then select another curve.
 		modmult(A0, A0, A02);          // A02 <- A0^2
@@ -808,8 +843,9 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 		/**************/
 		/* First step */
 		/**************/
-		memcpy(Xaux, X, NumberLength * sizeof(limb));
-		memcpy(Zaux, Z, NumberLength * sizeof(limb));
+		memcpy(Xaux, X, NumberLength * sizeof(limb));   // Xaux = X
+		memcpy(Zaux, Z, NumberLength * sizeof(limb));   // Zaux = Z
+		// GcdAccumulated = 1
 		memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
 		for (Pass = 0; Pass < 2; Pass++) {
 			/* For powers of 2 */
@@ -828,7 +864,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 				memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 			}
 			else {
-				if (gcdIsOne(Z) > 1) {
+				if (gcdIsOne(Z, N) > 1) {
 					return FACTOR_FOUND;
 				}
 			}
@@ -847,7 +883,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 					memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 				}
 				else {
-					if (gcdIsOne(Z) > 1) {
+					if (gcdIsOne(Z, N) > 1) {
 						return FACTOR_FOUND;
 					}
 				}
@@ -889,7 +925,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 						memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 					}
 					else {
-						if (gcdIsOne(Z) > 1) {
+						if (gcdIsOne(Z, N) > 1) {
 							return FACTOR_FOUND;
 						}
 					}
@@ -904,7 +940,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
 					continue; // 
 				}
-				if (gcdIsOne(GcdAccumulated) > 1) {
+				if (gcdIsOne(GcdAccumulated, N) > 1) {
 					return FACTOR_FOUND;
 				}
 				break;
@@ -940,7 +976,8 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 			ModInvBigNbr(Z, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, X, root[0]); // root[0] <- X/Z (Q)
 			J = 0;
-			AddBigNbrModNB(X, Z, Aux1, TestNbr, NumberLength);
+			AddBigNbrModNB(X, Z, Aux1, TestNbr, NumberLength);  // Aux1 = X+Z (mod TestNbr)
+
 			modmult(Aux1, Aux1, W1);
 			SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, Aux1, W2);
@@ -981,7 +1018,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 					memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
 				}
 				else {
-					if (gcdIsOne(Aux1) > 1) {
+					if (gcdIsOne(Aux1, N) > 1) {
 						return FACTOR_FOUND;
 					}
 				}
@@ -1067,7 +1104,7 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 						if (BigNbrIsZero(GcdAccumulated, NumberLength)) {
 							break;  // This curve cannot factor the number.
 						}
-						if (gcdIsOne(GcdAccumulated) > 1) {
+						if (gcdIsOne(GcdAccumulated, N) > 1) {
 							return FACTOR_FOUND;
 						}
 					}
@@ -1100,37 +1137,52 @@ static enum eEcmResult ecmCurve(BigInteger &N) {
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
 					continue; // multiple of TestNbr, continue.
 				}
-				rc = gcdIsOne(GcdAccumulated);
+				rc = gcdIsOne(GcdAccumulated, N);
 				if (rc == 1) {
 					break;    // GCD is one, so this curve does not find a factor.
 				}
 				if (rc == 0) {
-					continue;
+					continue;  // GcdAccumulated = N or 0
 				}
-				// GD <- GCD(GcdAccumulated, TestNbr)
-				if (memcmp(GD, TestNbr, NumberLength * sizeof(limb)))
+
+				//if (memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb)))
+				if (BiGD != N)
 				{           // GCD is not 1 or TestNbr
 					return FACTOR_FOUND;
 				}
 			}
 		} /* end for Pass */
 
-		performLehman = true;
+		//performLehman = true;
 	}       /* End curve calculation */
 }
 
-/* returns true if successful. The factor found is returned in global variable GD */
-bool ecm(Znum &Nz) {
-	static BigInteger N;
-	ZtoBig(N, Nz);  // convert from Znum to BigInteger
+/* returns true if successful. The factor found is returned in global Znum Zfactor */
+bool ecm(Znum &Nz, long long maxdivisor) {
+	const static BigInteger N;  
+	ZtoBig((BigInteger &)N, Nz);  // convert N from Znum to BigInteger
+	Znum divCubed = (Znum)maxdivisor * maxdivisor * maxdivisor;
+	int P, Q;
+
 #ifdef _DEBUG
 	//std::cout << "ecm; N = " << Nz << '\n';
 #endif
-	int P, Q;
+
 #ifndef __EMSCRIPTEN__
 	(void)Factors;     // Ignore parameter.
 #endif
-	
+
+	if (Nz <= divCubed) {
+		/* we know that n has no factors < n^(1/3), also that n is not prime,
+		so n must have exactly two prime factors */
+		// Try to factor N using Lehman algorithm. Result in Zfactor.
+		LehmanNew(Nz, Zfactor);
+		if (Zfactor > 1) {                // Factor found.
+			foundByLehman = true;
+			return true;
+		}
+	}
+
 	NumberLength = N.nbrLimbs;
 	BigIntegerToLimbs(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
@@ -1141,7 +1193,7 @@ bool ecm(Znum &Nz) {
 	memset(DZ, 0, NumberLength * sizeof(limb));
 	memset(W3, 0, NumberLength * sizeof(limb));
 	memset(W4, 0, NumberLength * sizeof(limb));
-	memset(GD, 0, NumberLength * sizeof(limb));
+	memset(BNgcd, 0, NumberLength * sizeof(limb));
 	ptrLowerText = lowerText;
 #ifdef __EMSCRIPTEN__ 
 	//	*ptrLowerText++ = '3';
@@ -1192,22 +1244,24 @@ bool ecm(Znum &Nz) {
 	}
 	foundByLehman = false;
 	do {
-		enum eEcmResult ecmResp = ecmCurve(N);
+		enum eEcmResult ecmResp = ecmCurve(N, Nz, maxdivisor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQSx(TestNbr, GD);
-			// value of factor found is in global variable GD
-			LimbsToBigInteger(GD, BiGD, NumberLength);
-			BigtoZ(Zgd, BiGD);
-			break;  
+			FactoringSIQSx(TestNbr, BNgcd);
+			// value of factor found is in global variable BNgcd
+			LimbsToBigInteger(BNgcd, BiGD, NumberLength);  // convert limbs to BigInteger
+			BigtoZ(Zfactor, BiGD);  // copy factor to global Znum Zfactor
+			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
-			BigtoZ(Zgd, BiGD); // value of factor found is in global variables GD & BiGD
-			break;  
+			// value of factor found is in global variable BiGD
+			BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+			break;
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)
 			return false;
-	} while (!memcmp(GD, TestNbr, NumberLength * sizeof(limb))); // while GD != TestNbr
+  //} while (!memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb))); // while BNgcd = TestNbr
+	} while (N == BiGD);
 
 #if 0
 	lowerTextArea.setText("");

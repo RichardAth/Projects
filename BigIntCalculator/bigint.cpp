@@ -269,6 +269,7 @@ void expBigInt(BigInteger &bigInt, double logar)
 	}
 	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
 	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
+
 }
 
 
@@ -843,8 +844,41 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 		}
 		else {
 			memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
+			/* set any extra limbs to zero */
 			memset(ptrValues + nbrLimbs, 0, (NumberLength - nbrLimbs) * sizeof(limb));
 		}
+	}
+}
+void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		if (i >= MAX_LEN) {
+			// number too big to convert.
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "number too big : cannot convert to limbs: ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		number[i].x = (int)MulPrToLong(remainder);
+		numberZ = quot;
+		i++;
+	}
+	if (i < NumberLength) {
+		/* set any extra limbs to zero */
+		memset(number + i, 0, NumberLength - i * sizeof(number[0]));
+	}
+	if (neg) {
+		ChSignBigNbr((int *)number, i + 1);
 	}
 }
 
