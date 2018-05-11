@@ -23,6 +23,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <cmath>
 #include <cassert>
+#include <windows.h>
+#include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
 
@@ -552,11 +554,14 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 Dividend is the known factor that divisor is a factor of */
 /* assume divisor is prime.
 ix is index of non-prime factor which is a multiple of divisor */
-static void insertIntFactor(std::vector<zFactors> &Factors, int pi, int ix) {
+static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long div, int ix) {
 	auto lastfactor = Factors.size();
 	Znum quot, qnew;
-
-	Znum divisor = primeList[pi];
+	Znum divisor;
+	if (pi >= 0)
+		divisor = primeList[pi];
+	else
+		divisor = div;
 
 	quot = Factors[ix].Factor;
 	/* divide quot by divisor as many times as possible */
@@ -705,22 +710,84 @@ static bool factorCarmichael(const Znum &pValue, std::vector<zFactors> &Factors)
 	return factorsFound;
 }
 
+/*
+see: http://lemire.me/blog/2013/12/26/fastest-way-to-compute-the-greatest-common-divisor/
+calculate GCD of a and b. 
+If using gcc compiler use __builtin_ctzll instead of _BitScanForward64
+note use of long long ints to avoid overflow.
+
+u and v are UNSIGNED, caller must use llabs or similar if necessary.
+Note: mathematically gcd(a,b) = gcd(-a,b) = gcd(b,-a) = gcd (-a,-b)
+Note: GCD (greatest common denominator) is also known as HCF (Highest Common Factor).
+*/
+unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
+{
+	BOOLEAN result;
+	int shift, su, sv;
+	if (u == 0) return v;
+	if (v == 0) return u;
+	result = _BitScanForward64((DWORD*)&shift, u | v);  // count any common factor 2s
+	result = _BitScanForward64((DWORD*)&su, u);
+	u >>= su;             // shift u until u is odd
+	do {
+		result = _BitScanForward64((DWORD*)&sv, v);
+		v >>= sv;          // shift v until v is odd
+		if (u > v) {
+			unsigned long long int t = v;
+			v = u - v;
+			u = t;
+		}
+		else
+			v = v - u;
+	} while (v != 0LL);
+	return u << shift;
+}
+
+/* factorise number where we know that it only has 2 prime factors. */
+static void PollardFactor(const long long num, long long &factor) {
+	long long x_fixed = 2, cycle_size = 2, x = 2; 
+	factor = 1;
+	while (factor == 1) {
+		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
+			/* even if x*x overflows, the function as a whole still works OK */
+			x = (x*x + 1) % num;
+			factor = gcd(x - x_fixed, num);
+		}
+		if (factor == num) {
+			/* there is a small possibility that PollardFactor won't work,
+			even when factor is not prime */
+			std::cout << "Pollard factorisation failed for num = " << num << " !!\n";
+			factor = 1;
+			return;   // factorisation failed!! 	
+		}
+		cycle_size *= 2;
+		x_fixed = x;
+	}
+#ifdef _DEBUG
+	std::cout << "Pollard Factor. num = " << num << " factor = " << factor << '\n';
+#endif
+	return;
+}
+
+
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;
-	long long testP;
+	long long testP,  MaxP= 300007;  
+	// MaxP must never exceed 2,642,245 to avoid overflow
+	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
 	/* initialise factor list */
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;
-	if (primeFlags == NULL) {  // get first 26000 primes
-		generatePrimes(300000);  // takes a while, but only needed on 1st call
+	if (primeFlags == NULL) {  // get first 25998 primes
+		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
 	
 	oldTimeElapsed = 0;
 	originalTenthSecond = tenths();    // record start time
 
-	if (toFactor >= 300000LL* 300000LL) {
+	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor);  // check if toFactor is a perfect power +/- 1
 #ifdef _DEBUG
@@ -738,19 +805,37 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (upperBound == -1)
 				continue;  // factor is prime
 			/* trial division */
-			while (upperBound < std::min((int)prime_list_count,26000)) {
+			while (upperBound < min((int)prime_list_count, 26000)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {
 					Factors[i].upperBound = -1; // show that residue is prime
 					break;
 				}
 				if (Factors[i].Factor%testP == 0) {
-					insertIntFactor(Factors, upperBound, i);
+					insertIntFactor(Factors, upperBound, 0, i);
 					restart = true;
 					break;
 				}
 				Factors[i].upperBound = upperBound;
 				upperBound++;
+			}
+			if (!restart && (Factors[i].upperBound != -1) 
+				&& Factors[i].Factor <= LehmanLimit) {
+				long long f;
+				if (PrimalityTest(Factors[i].Factor, primeList[Factors[i].upperBound]) == 0)
+					/* if factor is prime calling PollardFactor would waste a LOT of time*/
+					Factors[i].upperBound = -1; // Indicate that number is prime.
+				else {
+#ifdef _DEBUG
+					std::cout << "factors before Pollard factorisation: ";
+					printfactors(Factors);
+#endif
+					PollardFactor(MulPrToLong(Factors[i].Factor), f);
+					if (f != 1)
+						insertIntFactor(Factors, -1, f, i);
+					/* there is a small possibility that PollardFactor won't work,
+					 even when factor is not prime*/
+				}
 			}
 		}
 	} while (restart);
@@ -1103,12 +1188,12 @@ bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,
 		if (numberZ == 0)
 			return false;  // function factor can't factorize zero
 
-			vfactors.resize(1);
+			vfactors.resize(1);  // change size of factor list to 1
 			auto rv = factor(numberZ, vfactors);
 			if (!rv)
-				return false;  // faied to factorise number
+				return false;  // failed to factorise number
 			if (quads != nullptr) {
-				ComputeFourSquaresNew(vfactors, quads);
+				ComputeFourSquaresNew(vfactors, quads); // get a, b, c, d such that sum of their squares = number
 			}
 			return true;
 	}

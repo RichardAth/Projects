@@ -332,10 +332,6 @@ Modifies: x3, z3, TX, TZ, UX, UZ.
 static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	const limb *x1, const limb *z1, const limb *x, const limb *z)
 {
-	//limb * const TX = TX  // t
-	//limb * const TZ = TZ;   // u
-	//limb * const UX = UX;    // v
-	//limb * const  UZ = UZ;    // w
 	/* N.B. all arithmetic is mod TestNbr */
 	SubtBigNbrModN(x2, z2, UX, TestNbr, NumberLength);   // UX = x2-z2
 	AddBigNbrModNB(x1, z1,  UZ, TestNbr, NumberLength);   //  UZ = x1+z1
@@ -364,8 +360,8 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 Uses the following global variables:
 - n : number to factor
 - b : (a+2)/4 mod n
-- u, v, w : auxiliary variables
-Modifies: x2, z2, u, v, w
+- UZ,  TX,  TZ : auxiliary variables
+Modifies: x2, z2, UZ,  TX,  TZ
 */
 #if 0
 void print(limb *w)
@@ -382,19 +378,19 @@ void print(limb *w)
 #endif
 static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 {
-	limb * const u = UZ;
-	limb * const v = TX;
-	limb * const w = TZ;
+	//limb * const u = UZ;
+	//limb * const v = TX;
+	//limb * const w = TZ;
 	/* N.B. all arithmetic is mod TestNbr */
-	AddBigNbrModNB(x1, z1, w, TestNbr, NumberLength);      // w = x1+z1 (mod testNbr)
-	modmult(w, w, u);                                 // u = (x1+z1)^2 (mod testNbr)
-	SubtBigNbrModN(x1, z1, w, TestNbr, NumberLength); // w = x1-z1 (mod testNbr)
-	modmult(w, w, v);                         // v = (x1-z1)^2 (mod testNbr)
-	modmult(u, v, x2);             // x2 = u*v = (x1^2 - z1^2)^2 (mod testNbr)
-	SubtBigNbrModN(u, v, w, TestNbr, NumberLength);   // w = u-v = 4*x1*z1 (mod testNbr)
-	modmult(AA, w, u);                              // u = w*AA (mod testNbr)
-	AddBigNbrModNB(u, v, u, TestNbr, NumberLength);        // u = (v+b*w) (mod testNbr)
-	modmult(w, u, z2);           // z2 = (w*u) (mod testNbr)
+	AddBigNbrModNB(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1+z1 (mod testNbr)
+	modmult(TZ, TZ, UZ);                                    // UZ = (x1+z1)^2 (mod testNbr)
+	SubtBigNbrModN(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1-z1 (mod testNbr)
+	modmult(TZ, TZ,  TX);                                    //  TX = (x1-z1)^2 (mod testNbr)
+	modmult(UZ, TX, x2);                      // x2 = UZ* TX = (x1^2 - z1^2)^2 (mod testNbr)
+	SubtBigNbrModN(UZ, TX, TZ, TestNbr, NumberLength);      //  TZ = UZ- TX = 4*x1*z1 (mod testNbr)
+	modmult(AA, TZ, UZ);                                   // UZ =  TZ*AA (mod testNbr)
+	AddBigNbrModNB(UZ, TX, UZ, TestNbr, NumberLength);      // UZ = ( TX+b* TZ) (mod testNbr)
+	modmult(TZ, UZ, z2);                                   // z2 = ( TZ*u) (mod testNbr)
 }
 /* End of code adapted from Paul Zimmermann's ECM4C */
 
@@ -470,132 +466,20 @@ static void GenerateSieve(int initial)
 }
 
 /* see https://en.wikipedia.org/wiki/Fermat%27s_factorization_method */
-/* k is the curve number */
-//static void Lehman(const BigInteger &nbr, int k, BigInteger &factor)
-//{
-//	unsigned int bitsSqrLow[] =  // could combine low and high into 64 bit integers
-//	{
-//		0x00000003, // 3  -         3
-//		0x00000013, // 5  -        19
-//		0x00000017, // 7  -        23
-//		0x0000023B, // 11    -    571
-//		0x0000161B, // 13   -    5657
-//		0x0001A317, // 17  -   107287
-//		0x00030AF3, // 19 -    199411
-//		0x0005335F, // 23 -    340831
-//		0x13D122F3, // 29 - ‭332473075‬
-//		0x121D47B7, // 31 - ‭303908791‬
-//		0x5E211E9B, // 37
-//		0x82B50737, // 41   N.B. exceeds max for signed int
-//		0x83A3EE53, // 43   N.B. exceeds max for signed int
-//		0x1B2753DF, // 47
-//		0x3303AED3, // 53
-//		0x3E7B92BB, // 59
-//		0x0A59F23B, // 61
-//	};
-//	unsigned int bitsSqrHigh[] =
-//	{
-//		0x00000000, // 3
-//		0x00000000, // 5
-//		0x00000000, // 7
-//		0x00000000, // 11
-//		0x00000000, // 13
-//		0x00000000, // 17
-//		0x00000000, // 19
-//		0x00000000, // 23
-//		0x00000000, // 29
-//		0x00000000, // 31
-//		0x00000016, // 37
-//		0x000001B3, // 41
-//		0x00000358, // 43
-//		0x00000435, // 47
-//		0x0012DD70, // 53
-//		0x022B6218, // 59
-//		0x1713E694, // 61
-//	};
-//	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
-//	int nbrs[17];
-//	int diffs[17];
-//	int i, j, m, r;
-//	static BigInteger sqrRoot, nextroot;   // follow advice not to use stack for these
-//	static BigInteger a, c, sqr, val;      // follow advice not to use stack for these
-//
-//	if (nbr.isEven()) { // nbr Even
-//		r = 0;
-//		m = 1;
-//	}
-//	else {
-//		if (k % 2 == 0) { // k Even
-//			r = 1;
-//			m = 2;
-//		}
-//		else { // k Odd
-//			r = (k + nbr.lldata()) & 3;   // was limbs[0].x
-//			m = 4;
-//		}
-//	}
-//
-//	sqr = k << 2;  // sqr = 4*k;
-//	sqr *= nbr;
-//	a = sqr.sqRoot();  // a = sqrt(4k*nbr)
-//
-//	for (;;) {
-//		if ((a.lldata() & (m - 1)) == r) {
-//			nextroot = a*a - sqr;
-//			if (nextroot >= 0) {
-//				break;
-//			}
-//		}
-//		a++;              // a <- a + 1
-//	}
-//	nextroot = a*a;
-//	c = nextroot - sqr;
-//
-//	for (i = 0; i < 17; i++) {
-//		//int pr = pr;
-//		nbrs[i] = c % primes[i]; // getRemainder(c, pr);    
-//		diffs[i] = m * ((a% primes[i]) * 2 + m) % primes[i];
-//	}
-//
-//	for (j = 0; j < 10000; j++) {
-//		for (i = 0; i < 17; i++) {
-//			int shiftBits = nbrs[i];
-//			if (shiftBits < 32) {
-//				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0) {
-//					break;  // Not a perfect square
-//				}
-//			}
-//			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0) {
-//				break;  // Not a perfect square
-//			}
-//		}
-//		if (i == 17) { // Test for perfect square
-//			c = m * j;
-//			val = a + c;
-//			c = val*val - sqr;
-//			sqrRoot = c.sqRoot();   // sqrRoot <- sqrt(c)
-//			sqrRoot += val;
-//			BigIntGcd(sqrRoot, nbr, c);         // Get GCD(sqrRoot + val, nbr)
-//			//if (c.nbrLimbs > 1) {     // Non-trivial factor has been found.
-//				factor = c;           // CopyBigInt(*factor, c);
-//				return;
-//			//}
-//		}
-//
-//		for (i = 0; i < 17; i++) {
-//			nbrs[i] = (nbrs[i] + diffs[i]) % primes[i];
-//			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
-//		}
-//	}
-//
-//	factor = 1;   // Factor not found.
-//	return;
-//}
+/* use Lehman's algorithm to factorise n, knowing that there are no factors
+ less than n^1/3 and that n is not prime. It follows that n has exactly two 
+ prime factors. */
 static void LehmanNew(const Znum &n, Znum &factor) {
-	double logn = logBigNbr(n);  // get log(n)
-	long long K = (long long)std::ceil(std::exp(logn / 3.0));  // calculate n^(1/3)
+	const double logn = logBigNbr(n);  // get log(n)
+	const double endLog = (logn / 6);     // log(n^(1/6))
+	/* calculate n^(1/3). note that using a 64-bit integer restricts the maximum 
+	value of n, but this algorithm is too slow anyway for very large numbers. */
+	const long long K = (long long)std::ceil(std::exp(logn / 3.0));  
 	Znum a, b, start, end, temp;
 
+	/* We need to find integers k, a and b such that 4kn = a^2 – b^2. 
+	It can be shown that 1 <= k <= n^(1/3) and
+	sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k))*/
 	for (long long k = 1; k <= K; k++) {
 		/* calculate lowest value for a */
 		start = (Znum)4*k*n;
@@ -603,8 +487,7 @@ static void LehmanNew(const Znum &n, Znum &factor) {
 			start++;  // start = (ceil)sqrt(4kn)
 
 		/* calculate highest value for a */
-		double endLog = (logn / 6) ;     // log(n^(1/6))
-		double endd = std::exp(endLog)/(4*sqrt(k));
+		double endd = std::exp(endLog)/(4*sqrt(k));  // endd = (n^(1/6)/(4.sqrt(k))
 		end = start + (long long)ceil(endd); 
 		// end = sqrt(4kn)+ (n^(1/6))/(4k^(1/2))
 
@@ -627,9 +510,9 @@ static void LehmanNew(const Znum &n, Znum &factor) {
 			}
 		}
 	}
-//#ifdef _DEBUG
-	std::cout << "Lehman failed to factorise " << n << '\n';
-//#endif
+
+	/* logic failure; did't find factor */
+	std::cerr << "Lehman failed to factorise " << n << '\n';
 	factor = 1;     // no factor found (should not happen)
 	return;
 }
@@ -1153,7 +1036,6 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 			}
 		} /* end for Pass */
 
-		//performLehman = true;
 	}       /* End curve calculation */
 }
 
@@ -1161,7 +1043,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 bool ecm(Znum &Nz, long long maxdivisor) {
 	const static BigInteger N;  
 	ZtoBig((BigInteger &)N, Nz);  // convert N from Znum to BigInteger
-	Znum divCubed = (Znum)maxdivisor * maxdivisor * maxdivisor;
+	const Znum divCubed = (Znum)maxdivisor * maxdivisor * maxdivisor;
 	int P, Q;
 
 #ifdef _DEBUG
