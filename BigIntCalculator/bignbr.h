@@ -49,10 +49,10 @@ void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
-void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor);
+
 
 class BigInteger {
-public:                  // ideally, values should be private
+//public:                  // ideally, values should be private
 	limb limbs[MAX_LEN];
 	int nbrLimbs = 1;
 	enum eSign sign = SIGN_POSITIVE;
@@ -99,8 +99,8 @@ public:
 			rv = -rv;
 		return rv;  
 	}
-	/* overload assignment operator here 
-	there are 5 overloads, for assignments from BigIntegers, Integers, long long,
+	/* overload assignment operator here. There are 5 overloads, 
+	for assignments from BigIntegers, Integers, long long,
 	double and Znum */
 	BigInteger & operator = (const BigInteger &other) {
 		if (&other == this)
@@ -186,6 +186,9 @@ public:
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
+	friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
+	friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
+	friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumberLength);
 
 	BigInteger operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);
@@ -304,6 +307,8 @@ extern limb MontgomeryMultR2[MAX_LEN];
 extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
+
+void FactoringSIQSx(const BigInteger &NbrToFactor, BigInteger &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
@@ -318,7 +323,7 @@ void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
 void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
-void ValuestoZ(Znum &numberZ, const int number[]);
+void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
@@ -341,15 +346,13 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
 void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
 void IntToBigNbr(int value, int bigNbr[], int nbrLength);
-int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
-void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
 void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod);
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
-void ModInvBigNbr(int *num, int *inv, int *mod, int NumberLength);
+void ZtoLimbs(limb *number, Znum &numberZ, int NumberLength);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;

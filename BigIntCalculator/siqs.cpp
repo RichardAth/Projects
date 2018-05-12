@@ -2172,7 +2172,7 @@ static unsigned int getFactorsOfA(unsigned int seed, int *indexA)
 /*        (u*2^n/M to (u+1)*2^n/M exclusive).                           */
 /* Partial and full relation routines must be synchronized.             */
 /************************************************************************/
-void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
+void FactoringSIQSx(const BigInteger &NbrToFactor, BigInteger &Factor) {
 	int origNumberLength;
 	int FactorBase;
 	int currentPrime;
@@ -2202,7 +2202,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	newSeed = 0;
 
 	//  threadArray = new Thread[numberThreads];
-	Temp = logLimbs(pNbrToFactor, origNumberLength);
+	Temp = logBigNbr(NbrToFactor);
 	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.318);
 	SieveLimit = (int)exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
 	if (SieveLimit > MAX_SIEVE_LIMIT)
@@ -2211,9 +2211,13 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	}
 	nbrFactorsA = (int)(Temp*0.051 + 1);
 	NbrPolynomials = (1 << (nbrFactorsA - 1)) - 1;
-	factorSiqs.nbrLimbs = NumberLength;
+
+	/* copy NbrToFactor to factorSiqs */
+	/*factorSiqs.nbrLimbs = NumberLength;
 	factorSiqs.sign = SIGN_POSITIVE;
-	memcpy(factorSiqs.limbs, pNbrToFactor, NumberLength * sizeof(limb));
+	memcpy(factorSiqs.limbs, pNbrToFactor, NumberLength * sizeof(limb));*/
+	//BigNbrToBigInt(factorSiqs, (const int *)pNbrToFactor, NumberLength);
+	factorSiqs = NbrToFactor; 
 	NumberLength = BigIntToBigNbr(factorSiqs, Modulus);
 	Modulus[NumberLength++] = 0;
 	Modulus[NumberLength] = 0;
@@ -2240,7 +2244,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 		rowPrimeTrialDivisionData->exp3 = rowPrimeTrialDivisionData->exp4 =
 		rowPrimeTrialDivisionData->exp5 = rowPrimeTrialDivisionData->exp6 = 0;
 
-	NbrMod = pNbrToFactor->x & 7;
+	NbrMod = NbrToFactor%8;  // get last 3 bits
 	for (j = 0; j<sizeof(arrmult) / sizeof(arrmult[0]); j++) {
 		int mod = (NbrMod * arrmult[j]) & 7;
 		adjustment[j] = 0.34657359; /*  (ln 2)/2  */
@@ -2293,7 +2297,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	MultBigNbrByInt(TestNbr2, multiplier, Modulus, NumberLength);
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
-	rowPrimeSieveData->modsqrt = (pNbrToFactor->x & 1) ? 1 : 0;
+	rowPrimeSieveData->modsqrt = (NbrToFactor.isEven()) ? 0 : 1;
 
 	switch ((int)Modulus[0] & 0x07) {
 	case 1:
@@ -2448,8 +2452,8 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
 	// Convert array of limbs to BigInteger and find its logarithm.
-	dlogNumberToFactor = logLimbs(pNbrToFactor, origNumberLength);
-	dNumberToFactor = exp(dlogNumberToFactor);
+	dlogNumberToFactor = logBigNbr(NbrToFactor);
+	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);
 	databack(lowerText);
@@ -2503,9 +2507,10 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 	/*********************************************/
 	sieveThread(&TempResult);
 	NumberLength = origNumberLength;
-	memcpy(pFactor, TempResult.limbs, TempResult.nbrLimbs * sizeof(limb));
-	memset(pFactor + TempResult.nbrLimbs, 0, (NumberLength - TempResult.nbrLimbs) * sizeof(limb));
-
+	//memcpy(Factor, TempResult.limbs, TempResult.nbrLimbs * sizeof(limb));
+	//memset(Factor + TempResult.nbrLimbs, 0, (NumberLength - TempResult.nbrLimbs) * sizeof(limb));
+	//BigIntegerToLimbs(Factor, TempResult, NumberLength);
+	Factor = TempResult;
 #if 0
 	for (threadNumber = 0; threadNumber<numberThreads; threadNumber++)
 	{
@@ -2535,7 +2540,7 @@ void FactoringSIQSx(const limb *pNbrToFactor, limb *pFactor) {
 		}
 	}
 #endif
-	if (/*getTerminateThread() ||*/ (TempResult.nbrLimbs == 1 && TempResult.limbs[0].x == 0))
+	if (/*getTerminateThread() ||*/ (TempResult == 0))
 	{
 		//throw new ArithmeticException();
 	}

@@ -66,6 +66,30 @@ operators.
 
 As mentioned above it uses algorithms ECM and SIQS.
 
+At all stages a factor list is maintained that contains all known factors, whether
+prime or not, that have not yet been split into smaller factors. Initially the
+factor list just contains the number to be factorised. Whenever a new factor is found,
+existing factors that are multiples of that factor are split into two factors. If
+this process creates equal factors they are merged. 
+
+Step 1: if number to factor is > than the the square of the largest prime used in trial
+division, check if the number is a perfect power +/- 1 and if so attempt to factorise it.
+This step may return factors that are not prime factors.
+
+Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
+using a list of primes. If a factor is found that is less than the cube of the largest 
+prime used, and has no factors in the prime list, and the factor is not prime (in this 
+case the factor can only have two prime factors) factorise it using Pollard's Rho
+algorithm. 
+
+Step 3: For each factor that is not already known to be prime:
+A. If the factor is a perfect power replace it with the number which is the root 
+   (and adjust the the factor's exponent accordingly)
+B. Test whether the number is prime: 
+   If it is a Carmichael number factorise it using a specific algorithm. 
+   If it is prime mark it as such. 
+   Otherwise factorise it using ECM/SIQS
+
 The factoriser is essentially DAs program, with an interface function that converts 
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
 messages it produces have been modified to work with a console window instead of a 
@@ -73,7 +97,7 @@ Web Browser.
 
 A couple of checks for array index overflows were added. If an error is detected 
 an exception is thrown, an error message is output, and the program continues 
-without factorising the number. Rrealistically any number small enough to be 
+without factorising the number. Realistically any number small enough to be 
 factorised in a reasonable time will not exceed the array bounds.
 
 Profiling using Visual Studio suggests that changing from DAs BigIntegers to 

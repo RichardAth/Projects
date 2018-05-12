@@ -240,7 +240,8 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
 	return Dividend - Base;
 }
  
-/* BigInt = e^logar*/
+/* BigInt = e^logar
+throw exception if result would be to large for a BigInteger */
 void expBigInt(BigInteger &bigInt, double logar)
 {
 	int mostSignificantLimb;
@@ -269,7 +270,6 @@ void expBigInt(BigInteger &bigInt, double logar)
 	}
 	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
 	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
-
 }
 
 
@@ -849,7 +849,7 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 		}
 	}
 }
-void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+void ZtoLimbs(limb *number, Znum &numberZ, int NumberLength) {
 	bool neg = false;
 	Znum quot, remainder;
 
@@ -879,6 +879,7 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	}
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
+		numberZ = -numberZ;  // restore original value of numberZ
 	}
 }
 
@@ -1287,19 +1288,20 @@ void BigtoZ(Znum &numberZ, const BigInteger &number) {
 
 	numberZ = 0;
 	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
-		numberZ *= LIMB_RANGE;
-		numberZ += number.limbs[i].x;
+		//numberZ *= LIMB_RANGE;
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number.limbs[i].x;      // add next limb
 	}
 	if (number.sign == SIGN_NEGATIVE)
 		numberZ = -numberZ;
 }
 
-/* convert integer list to Znum. 1st number in list is the number of entries
-in the list. */
-void ValuestoZ(Znum &numberZ, const int number[]) {
+/* convert integer list to Znum. */
+void ValuestoZ(Znum &numberZ, const int number[], int NumberLength) {
 	numberZ = 0;
-	for (int i = number[0]; i >= 1; i--) {
-		numberZ *= LIMB_RANGE;
+	for (int i = NumberLength-1; i >= 0; i--) {
+		//numberZ *= LIMB_RANGE;
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i];
 	}
 }

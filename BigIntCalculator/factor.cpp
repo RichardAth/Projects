@@ -550,10 +550,10 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 #endif
 }
 
-/* Insert new factor found into factor array.  
-Dividend is the known factor that divisor is a factor of */
-/* assume divisor is prime.
-ix is index of non-prime factor which is a multiple of divisor */
+/* Insert new factor found into factor array. */
+/* assume divisor is prime. ix is index of non-prime factor which is a multiple 
+of divisor. either pi is the index into the prime list of the divisor, or the  
+divisor is in div */
 static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long div, int ix) {
 	auto lastfactor = Factors.size();
 	Znum quot, qnew;
@@ -769,17 +769,19 @@ static void PollardFactor(const long long num, long long &factor) {
 	return;
 }
 
-
+/* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;
 	long long testP,  MaxP= 300007;  
-	// MaxP must never exceed 2,642,245 to avoid overflow
+	// MaxP must never exceed 2,642,245 to avoid overflow of LehmanLimit
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
+
 	/* initialise factor list */
+	Factors.resize(1);  // change size of factor list to 1
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
-	Factors[0].upperBound = 0;
+	Factors[0].upperBound = 0;  // assume it's not prime
 	if (primeFlags == NULL) {  // get first 25998 primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
@@ -826,6 +828,8 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 					/* if factor is prime calling PollardFactor would waste a LOT of time*/
 					Factors[i].upperBound = -1; // Indicate that number is prime.
 				else {
+					/* as factor is not prime, and it has no factors < MaxP, it must have
+					just two prime factors. */
 #ifdef _DEBUG
 					std::cout << "factors before Pollard factorisation: ";
 					printfactors(Factors);
@@ -1188,7 +1192,6 @@ bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,
 		if (numberZ == 0)
 			return false;  // function factor can't factorize zero
 
-			vfactors.resize(1);  // change size of factor list to 1
 			auto rv = factor(numberZ, vfactors);
 			if (!rv)
 				return false;  // failed to factorise number

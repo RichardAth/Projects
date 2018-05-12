@@ -345,14 +345,13 @@ void IntToBigNbr(int value, int bigNbr[], int nbrLength)
 	}
 }
 
-/* BigNbr = BigInt */
-int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[])
+/* BigNbr = BigInt. Return value is number of limbs */
+int BigIntToBigNbr(const BigInteger &BigInt, int BigNbr[])
 {
-
-	int nbrLenBigNbr = pBigInt.nbrLimbs;
-	const limb *Limbs = pBigInt.limbs;
-	memcpy(BigNbr, Limbs, nbrLenBigNbr * sizeof(int));
-	return nbrLenBigNbr;
+	/*int nbrLenBigNbr = BigInt.nbrLimbs;
+	const limb *Limbs = BigInt.limbs;*/
+	memcpy(BigNbr, BigInt.limbs, BigInt.nbrLimbs * sizeof(int));
+	return BigInt.nbrLimbs;
 }
 
 /* BigInt = BigNum */

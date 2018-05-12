@@ -53,7 +53,7 @@ static limb A03[MAX_LEN];
 static limb AA[MAX_LEN];
 static limb DX[MAX_LEN];
 static limb DZ[MAX_LEN];
-static limb BNgcd[MAX_LEN];  
+//static limb BNgcd[MAX_LEN];  
 static limb M[MAX_LEN];
 static limb TX[MAX_LEN];
 static limb TZ[MAX_LEN];
@@ -560,9 +560,9 @@ void showECMStatus(void) {
 /* can return value:
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
-FACTOR_FOUND   - value of factor returned in global variable BiGD
+FACTOR_FOUND   - value of factor is returned in global variable BiGD
 ERROR              (not used??)  */
-static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long maxdivisor) {
+static enum eEcmResult ecmCurve(const BigInteger &N) {
 
 #ifdef __EMSCRIPTEN__
 	//char text[20];
@@ -748,7 +748,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 			}
 			else {
 				if (gcdIsOne(Z, N) > 1) {
-					return FACTOR_FOUND;
+					return FACTOR_FOUND;     // ** found a factor returned in global variable BiGD**
 				}
 			}
 
@@ -767,7 +767,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 				}
 				else {
 					if (gcdIsOne(Z, N) > 1) {
-						return FACTOR_FOUND;
+						return FACTOR_FOUND;     // ** found a factor returned in global variable BiGD**
 					}
 				}
 			} while (SmallPrime[indexM - 1] <= LS);
@@ -809,7 +809,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 					}
 					else {
 						if (gcdIsOne(Z, N) > 1) {
-							return FACTOR_FOUND;
+							return FACTOR_FOUND;   // ** found a factor returned in global variable BiGD**
 						}
 					}
 				}
@@ -824,7 +824,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 					continue; // 
 				}
 				if (gcdIsOne(GcdAccumulated, N) > 1) {
-					return FACTOR_FOUND;
+					return FACTOR_FOUND;   // ** found a factor ** returned in global variable BiGD
 				}
 				break;
 			}
@@ -902,7 +902,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 				}
 				else {
 					if (gcdIsOne(Aux1, N) > 1) {
-						return FACTOR_FOUND;
+						return FACTOR_FOUND;   // ** found a factor ** returned in global variable BiGD
 					}
 				}
 				if (I == HALF_SIEVE_SIZE) {
@@ -988,7 +988,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 							break;  // This curve cannot factor the number.
 						}
 						if (gcdIsOne(GcdAccumulated, N) > 1) {
-							return FACTOR_FOUND;
+							return FACTOR_FOUND;    // ** found a factor ** returned in global variable BiGD
 						}
 					}
 				}   // End for.
@@ -1031,7 +1031,7 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 				//if (memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb)))
 				if (BiGD != N)
 				{           // GCD is not 1 or TestNbr
-					return FACTOR_FOUND;
+					return FACTOR_FOUND;     // ** found a factor ** returned in global variable BiGD
 				}
 			}
 		} /* end for Pass */
@@ -1040,33 +1040,34 @@ static enum eEcmResult ecmCurve(const BigInteger &N, const Znum &Nz, long long m
 }
 
 /* returns true if successful. The factor found is returned in global Znum Zfactor */
-bool ecm(Znum &Nz, long long maxdivisor) {
+bool ecm(Znum &zN, long long maxdivisor) {
 	const static BigInteger N;  
-	ZtoBig((BigInteger &)N, Nz);  // convert N from Znum to BigInteger
+	ZtoBig((BigInteger &)N, zN);  // convert N from Znum to BigInteger
 	const Znum divCubed = (Znum)maxdivisor * maxdivisor * maxdivisor;
 	int P, Q;
 
 #ifdef _DEBUG
-	//std::cout << "ecm; N = " << Nz << '\n';
+	//std::cout << "ecm; N = " << zN << '\n';
 #endif
 
 #ifndef __EMSCRIPTEN__
 	(void)Factors;     // Ignore parameter.
 #endif
 
-	if (Nz <= divCubed) {
+	if (zN <= divCubed) {
 		/* we know that n has no factors < n^(1/3), also that n is not prime,
 		so n must have exactly two prime factors */
 		// Try to factor N using Lehman algorithm. Result in Zfactor.
-		LehmanNew(Nz, Zfactor);
+		LehmanNew(zN, Zfactor);
 		if (Zfactor > 1) {                // Factor found.
 			foundByLehman = true;
 			return true;
 		}
 	}
 
-	NumberLength = N.nbrLimbs;
-	BigIntegerToLimbs(TestNbr, N, N.nbrLimbs);  // copy N to TestNbr
+	NumberLength = (int)(mpz_sizeinbase(ZT(zN), 2)  + BITS_PER_GROUP-1)/ BITS_PER_GROUP; // calculate number of limbs
+	//BigIntegerToLimbs(TestNbr, N, NumberLength);  // copy N to TestNbr
+	ZtoLimbs(TestNbr, zN, NumberLength);  // copy zN to TestNbr
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
 	/* set variables to zero */
@@ -1075,7 +1076,7 @@ bool ecm(Znum &Nz, long long maxdivisor) {
 	memset(DZ, 0, NumberLength * sizeof(limb));
 	memset(W3, 0, NumberLength * sizeof(limb));
 	memset(W4, 0, NumberLength * sizeof(limb));
-	memset(BNgcd, 0, NumberLength * sizeof(limb));
+	//memset(BNgcd, 0, NumberLength * sizeof(limb));
 	ptrLowerText = lowerText;
 #ifdef __EMSCRIPTEN__ 
 	//	*ptrLowerText++ = '3';
@@ -1126,11 +1127,9 @@ bool ecm(Znum &Nz, long long maxdivisor) {
 	}
 	foundByLehman = false;
 	do {
-		enum eEcmResult ecmResp = ecmCurve(N, Nz, maxdivisor);
+		enum eEcmResult ecmResp = ecmCurve(N);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQSx(TestNbr, BNgcd);
-			// value of factor found is in global variable BNgcd
-			LimbsToBigInteger(BNgcd, BiGD, NumberLength);  // convert limbs to BigInteger
+			FactoringSIQSx(N, BiGD); // factor found is returned in BiGD
 			BigtoZ(Zfactor, BiGD);  // copy factor to global Znum Zfactor
 			break;
 		}
