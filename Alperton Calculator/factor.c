@@ -1117,26 +1117,26 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 			m = 4;
 		}
 	}
-	intToBigInteger(&sqr, k << 2);
-	BigIntMultiply(&sqr, nbr, &sqr);
+	intToBigInteger(&sqr, k << 2);   // sqr = k <<2
+	BigIntMultiply(&sqr, nbr, &sqr);  // sqr *= nbr
 	squareRoot(sqr.limbs, sqrRoot.limbs, sqr.nbrLimbs, &sqrRoot.nbrLimbs);
-	sqrRoot.sign = SIGN_POSITIVE;
-	CopyBigInt(&a, &sqrRoot);
+	sqrRoot.sign = SIGN_POSITIVE;   // sqrRoot = sqrt(sqr)
+	CopyBigInt(&a, &sqrRoot);        // a = sqrRoot
 	for (;;)
 	{
-		if ((a.limbs[0].x & (m - 1)) == r)
+		if ((a.limbs[0].x & (m - 1)) == r)  // if (a & (m-1) == r)
 		{
-			BigIntMultiply(&a, &a, &nextroot);
-			BigIntSubt(&nextroot, &sqr, &nextroot);
+			BigIntMultiply(&a, &a, &nextroot);    // nextroot = a*a
+			BigIntSubt(&nextroot, &sqr, &nextroot);   // nextroot -= sqr
 			if (nextroot.sign == SIGN_POSITIVE)
 			{
-				break;
+				break;  // if nextroot >= 0
 			}
 		}
 		addbigint(&a, 1);                         // a <- a + 1
 	}
-	BigIntMultiply(&a, &a, &nextroot);
-	BigIntSubt(&nextroot, &sqr, &c);
+	BigIntMultiply(&a, &a, &nextroot);   // nextroot = a*a
+	BigIntSubt(&nextroot, &sqr, &c);     // c = nextroot-sqr
 	for (i = 0; i < 17; i++)
 	{
 		int pr = primes[i];
@@ -1163,7 +1163,7 @@ static void Lehman(BigInteger *nbr, int k, BigInteger *factor)
 		if (i == 17)
 		{ // Test for perfect square
 			intToBigInteger(&c, m * j);           // c <- m * j
-			BigIntAdd(&a, &c, &val);
+			BigIntAdd(&a, &c, &val);              // val = a+c
 			BigIntMultiply(&val, &val, &c);       // c <- val * val
 			BigIntSubt(&c, &sqr, &c);             // c <- val * val - sqr
 			squareRoot(c.limbs, sqrRoot.limbs, c.nbrLimbs, &sqrRoot.nbrLimbs);

@@ -849,7 +849,9 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 		}
 	}
 }
-void ZtoLimbs(limb *number, Znum &numberZ, int NumberLength) {
+/* number = numberZ*/
+void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+// note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum quot, remainder;
 
@@ -875,14 +877,20 @@ void ZtoLimbs(limb *number, Znum &numberZ, int NumberLength) {
 	}
 	if (i < NumberLength) {
 		/* set any extra limbs to zero */
-		memset(number + i, 0, NumberLength - i * sizeof(number[0]));
+		memset(number + i, 0, (NumberLength - i) * sizeof(number[0]));
 	}
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
-		numberZ = -numberZ;  // restore original value of numberZ
 	}
 }
 
+void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
+	numberZ = 0;
+	for (int i = NumberLength - 1; i >= 0; i--) {
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number[i].x;      // add next limb
+	}
+}
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
 //{
 //	int nbrLimbs = *ptrValues;

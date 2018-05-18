@@ -554,7 +554,7 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 /* assume divisor is prime. ix is index of non-prime factor which is a multiple 
 of divisor. either pi is the index into the prime list of the divisor, or the  
 divisor is in div */
-static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long div, int ix) {
+static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long div, ptrdiff_t ix) {
 	auto lastfactor = Factors.size();
 	Znum quot, qnew;
 	Znum divisor;
@@ -771,8 +771,8 @@ static void PollardFactor(const long long num, long long &factor) {
 
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
-	int upperBound;
-	long long testP,  MaxP= 300007;  
+	int upperBound;         
+	long long testP,  MaxP= 393203;  
 	// MaxP must never exceed 2,642,245 to avoid overflow of LehmanLimit
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
@@ -782,7 +782,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;  // assume it's not prime
-	if (primeFlags == NULL) {  // get first 25998 primes
+	if (primeFlags == NULL) {  // get first 33333 primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
 	
@@ -857,7 +857,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	EC = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
 	
-	for (int i = 0; i < Factors.size(); i++) {
+	for (ptrdiff_t i = 0; i < Factors.size(); i++) {
 		if (Factors[i].upperBound == -1)
 			continue;         // skip if factor is known to be prime
 		Zprime = Factors[i].Factor;
@@ -876,6 +876,16 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		if (result > 1) {  /* number is a pseudo-prime */
 			if (factorCarmichael(Zpower, Factors))
 				continue;
+		}
+		if (Zpower <= LehmanLimit) {
+			long long f;
+			PollardFactor(MulPrToLong(Zpower), f);
+			if (f != 1) {
+				insertIntFactor(Factors, -1, f, i);
+				/* there is a small possibility that PollardFactor won't work,
+				even when factor is not prime*/
+				continue;
+			}
 		}
 		auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
 		if (!rv)

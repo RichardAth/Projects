@@ -1733,6 +1733,50 @@ void doTests(void) {
 	}
 }
 
+void doTests2(void) {
+	/* uses global variables NumberLength, TestNbr etc.
+	Demonstrates that Modular multiplication using limbs in Mongomery
+	notation is about twice as fast as using Znums */
+	srand(756128234);
+	Znum mod = (Znum)rand()*rand()*rand()*rand()*rand()*rand()*rand()*rand();
+	Znum a = (Znum)rand();
+	Znum b = (Znum)rand();
+	Znum p;
+	limb Bmod[MAX_LEN], Ba[MAX_LEN], Bb[MAX_LEN], Bp[MAX_LEN], Aux2[MAX_LEN];
+	NumberLength = (int)(mpz_sizeinbase(ZT(mod), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
+
+	ZtoLimbs(Ba, a, NumberLength);
+	ZtoLimbs(Bb, b, NumberLength);
+
+#define modmult(a, b, p) {p = a*b; p %= mod;}
+	auto start = clock();	// used to measure execution time
+	for (long long int i = 1; i <= 100000000; i++) {
+		modmult(a, b, p);
+		a = p;
+	}
+	auto end = clock();   // measure amount of time used
+	double elapsed = (double)end - start;
+	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+#undef modmult
+
+	ZtoLimbs(TestNbr, mod, NumberLength);  // TestNbr = mod
+	GetMontgomeryParms(NumberLength);
+	// Aux2 <- 1 in Montgomery notation.
+	memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
+	modmult(Aux2, Ba, Ba);            // Ba changed to Mongomery notation
+	modmult(Aux2, Bb, Bb);            // Bb changed to Mongomery notation
+
+	start = clock();	// used to measure execution time
+	for (long long int i = 1; i <= 100000000; i++) {
+		modmult(Ba, Bb, Bp);   // p = a*b (mod TestNbr)
+		memcpy(Ba, Bp, NumberLength * sizeof(limb));
+	}
+	modmult(Ba, MontgomeryMultR2, Aux2);
+	end = clock();   // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+}
+
 int main(int argc, char *argv[]) {
 	std::string expr, expupper;
 	Znum Result;
@@ -1840,6 +1884,10 @@ int main(int argc, char *argv[]) {
 			if (expupper == "TEST") {
 				doTests();         // do basic tests 
 				continue; 
+			}
+			if (expupper == "TEST2") {
+				doTests2();         // do basic tests 
+				continue;
 			}
 
 			auto start = clock();	// used to measure execution time

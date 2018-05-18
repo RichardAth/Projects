@@ -2172,7 +2172,9 @@ static unsigned int getFactorsOfA(unsigned int seed, int *indexA)
 /*        (u*2^n/M to (u+1)*2^n/M exclusive).                           */
 /* Partial and full relation routines must be synchronized.             */
 /************************************************************************/
-void FactoringSIQSx(const BigInteger &NbrToFactor, BigInteger &Factor) {
+void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
+	const static BigInteger NbrToFactor;
+	ZtoBig((BigInteger &)NbrToFactor, zN);  // convert N from Znum to BigInteger
 	int origNumberLength;
 	int FactorBase;
 	int currentPrime;

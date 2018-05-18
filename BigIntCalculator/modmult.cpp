@@ -24,7 +24,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "bignbr.h"
 
 limb MontgomeryR1[MAX_LEN];
-limb TestNbr[MAX_LEN];
+limb TestNbr[MAX_LEN];      // used as modulus for modmult, modInvBigNbr etc 
 limb MontgomeryMultN[MAX_LEN];
 limb MontgomeryMultR1[MAX_LEN];
 limb MontgomeryMultR2[MAX_LEN];
@@ -36,7 +36,7 @@ static limb resultModOdd[MAX_LEN], resultModPower2[MAX_LEN];
 static int NumberLength2;
 int NumberLength, NumberLengthR1;
 long long lModularMult;
-mmCback modmultCallback;     // function pointer
+mmCback modmultCallback = nullptr;     // function pointer
 static limb U[MAX_LEN], V[MAX_LEN], R[MAX_LEN], S[MAX_LEN];
 static limb Ubak[MAX_LEN], Vbak[MAX_LEN];
 static BigInteger tmpDen, tmpNum, oddValue;
@@ -984,17 +984,17 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	unsigned int cy;
 	int index;
 //#ifdef __EMSCRIPTEN__
-	if (modmultCallback)
+	if (modmultCallback != nullptr)
 	{
-		modmultCallback();
-		lModularMult++;
+		modmultCallback();  // display status
+		lModularMult++;  // increase counter used to control status display
 	}
 //#endif
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
-		LimbsToBigInteger(factor1, tmpNum, NumberLength);
-		LimbsToBigInteger(factor2, tmpDen, NumberLength);
+		LimbsToBigInteger(factor1, tmpNum, NumberLength);  // tmpNum = factor1
+		LimbsToBigInteger(factor2, tmpDen, NumberLength);  // tmpDen = factor2
 		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
-		BigIntegerToLimbs(product, tmpNum, NumberLength);
+		BigIntegerToLimbs(product, tmpNum, NumberLength);  // product = tmpNum = factor1*factor2
 		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
@@ -1788,7 +1788,7 @@ void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den,
 	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
 	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
 	BigIntegerToLimbs(aux4, tmpNum, NumberLength);
-	modmult(aux3, aux4, aux3);              // aux3 <- Num / Dev in standard notation.
+	modmult(aux3, aux4, aux3);              // aux3 <- Num / Den in standard notation.
 	LimbsToBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
 	return;
 }

@@ -308,7 +308,7 @@ extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
 
-void FactoringSIQSx(const BigInteger &NbrToFactor, BigInteger &Factor);
+void FactoringSIQSx(const Znum &NbrToFactor, BigInteger &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
@@ -352,7 +352,8 @@ void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod);
 void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
-void ZtoLimbs(limb *number, Znum &numberZ, int NumberLength);
+void ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
+void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;
