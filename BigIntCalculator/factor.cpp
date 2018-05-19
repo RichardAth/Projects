@@ -857,7 +857,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	EC = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
 	
-	for (ptrdiff_t i = 0; i < Factors.size(); i++) {
+	for (size_t i = 0; i < Factors.size(); i++) {
 		if (Factors[i].upperBound == -1)
 			continue;         // skip if factor is known to be prime
 		Zprime = Factors[i].Factor;
@@ -874,8 +874,10 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			continue;
 		}
 		if (result > 1) {  /* number is a pseudo-prime */
-			if (factorCarmichael(Zpower, Factors))
+			if (factorCarmichael(Zpower, Factors)) {
+				i = -1;			// restart loop at beginning!!
 				continue;
+			}
 		}
 		if (Zpower <= LehmanLimit) {
 			long long f;

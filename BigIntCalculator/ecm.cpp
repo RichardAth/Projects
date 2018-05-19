@@ -562,58 +562,192 @@ void showECMStatus(void) {
 
 #endif
 
-// Perform (modified) Lehman algorithm. Try to factorise nbr.
-// this produces a result when n is a product of two factors which are not
-// too far apart in value. e.g larger factor is less than 40 times the smaller.
-static void Lehman(const BigInteger *nbr, int k, BigInteger *factor) {
-	int bitsSqrLow[] =
-	{
-		0x00000003, // 3
-		0x00000013, // 5
-		0x00000017, // 7
-		0x0000023B, // 11
-		0x0000161B, // 13
-		0x0001A317, // 17
-		0x00030AF3, // 19
-		0x0005335F, // 23
-		0x13D122F3, // 29
-		0x121D47B7, // 31
-		0x5E211E9B, // 37
-		0x82B50737, // 41
-		0x83A3EE53, // 43
-		0x1B2753DF, // 47
-		0x3303AED3, // 53
-		0x3E7B92BB, // 59
-		0x0A59F23B, // 61
-	};
-	int bitsSqrHigh[] =
-	{
-		0x00000000, // 3
-		0x00000000, // 5
-		0x00000000, // 7
-		0x00000000, // 11
-		0x00000000, // 13
-		0x00000000, // 17
-		0x00000000, // 19
-		0x00000000, // 23
-		0x00000000, // 29
-		0x00000000, // 31
-		0x00000016, // 37
-		0x000001B3, // 41
-		0x00000358, // 43
-		0x00000435, // 47
-		0x0012DD70, // 53
-		0x022B6218, // 59
-		0x1713E694, // 61
+/* Perform (modified) Lehman algorithm. Try to factorise nbr.
+This produces a result when nbr is a product of two factors which are not
+too far apart in value. e.g larger factor is less than k times the smaller.
+The factors produced may not be primes. 
+We need to find integers k, a and b such that 4kn = a^2 – b^2.
+It can be shown that 1 <= k <= n^(1/3) and
+sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k)) 
+However, searching the whole range of possible values would be much too slow. */
+//static void Lehman(const BigInteger *nbr, int k, BigInteger *factor) {
+//	//const int bitsSqrLow[] =
+//	//{
+//	//	0x00000003, // 3
+//	//	0x00000013, // 5
+//	//	0x00000017, // 7
+//	//	0x0000023B, // 11
+//	//	0x0000161B, // 13
+//	//	0x0001A317, // 17
+//	//	0x00030AF3, // 19
+//	//	0x0005335F, // 23
+//	//	0x13D122F3, // 29
+//	//	0x121D47B7, // 31
+//	//	0x5E211E9B, // 37
+//	//	0x82B50737, // 41  too large for int - generates warning during compilation
+//	//	0x83A3EE53, // 43  too large for int - generates warning during compilation
+//	//	0x1B2753DF, // 47
+//	//	0x3303AED3, // 53
+//	//	0x3E7B92BB, // 59
+//	//	0x0A59F23B, // 61
+//	//};
+//	//const int bitsSqrHigh[] =
+//	//{
+//	//	0x00000000, // 3
+//	//	0x00000000, // 5
+//	//	0x00000000, // 7
+//	//	0x00000000, // 11
+//	//	0x00000000, // 13
+//	//	0x00000000, // 17
+//	//	0x00000000, // 19
+//	//	0x00000000, // 23
+//	//	0x00000000, // 29
+//	//	0x00000000, // 31
+//	//	0x00000016, // 37
+//	//	0x000001B3, // 41
+//	//	0x00000358, // 43
+//	//	0x00000435, // 47
+//	//	0x0012DD70, // 53
+//	//	0x022B6218, // 59
+//	//	0x1713E694, // 61
+//	//};
+//	const long long bitsSqr[] = {
+//		0x0000000000000003, // 3
+//		0x0000000000000013, // 5
+//		0x0000000000000017, // 7
+//		0x000000000000023B, // 11
+//		0x000000000000161B, // 13
+//		0x000000000001A317, // 17
+//		0x0000000000030AF3, // 19
+//		0x000000000005335F, // 23
+//		0x0000000013D122F3, // 29
+//		0x00000000121D47B7, // 31
+//		0x000000165E211E9B, // 37
+//		0x000001B382B50737, // 41  
+//		0x0000035883A3EE53, // 43  
+//		0x000004351B2753DF, // 47
+//		0x0012DD703303AED3, // 53
+//		0x022B62183E7B92BB, // 59
+//		0x1713E6940A59F23B, // 61
+//	};
+//	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
+//	int nbrs[17];
+//	int diffs[17];
+//	int i, j, m, r;
+//	BigInteger sqrRoot, nextroot;
+//	BigInteger a, c, sqr, val;
+//
+//	if ((*nbr).isEven())
+//	{ // nbr is Even (this would be strange, because small factors such as 2 are removed during trial division)
+//		r = 0;
+//		m = 1;
+//	}
+//	else {
+//		if (k % 2 == 0) { // k Even
+//			r = 1;
+//			m = 2;
+//		}
+//		else { // k Odd
+//			r = (k + (*nbr).lldata()) & 3;
+//			m = 4;
+//		}
+//	}
+//
+//	sqr = k << 2;      // sqr = 4k
+//	sqr *= *nbr;      // sqr = 4kn
+//	sqrRoot = sqr.sqRoot();      // sqrRoot = sqrt(4kn)
+//	a = sqrRoot;                 // a = sqrt(4kn)
+//	
+//	for (;;) {
+//		if ((a.lldata() & (m - 1)) == r) {
+//			nextroot = a*a;  
+//			nextroot -= sqr; 
+//			if (nextroot >= 0)
+//			{
+//				break;  // a*a >= 4kn
+//			}
+//		}
+//		a++;                           
+//	}
+//	nextroot = a*a;          
+//	c = nextroot - sqr;  // c = a*a- 4kn    
+//
+//	for (i = 0; i < 17; i++) {
+//		int pr = primes[i];
+//		nbrs[i]  = c % primes[i];      
+//		diffs[i] = m * ((a %pr) * 2 + m) % pr;
+//	}
+//
+//	for (j = 0; j < 10000; j++) {
+//		for (i = 0; i < 17; i++) {
+//			int shiftBits = nbrs[i];
+//			if ((bitsSqr[i] & (1LL << shiftBits)) == 0)
+//				break;   // Not a perfect square
+//
+//			//if (shiftBits < 32) {
+//			//	if ((bitsSqrLow[i] & (1 << shiftBits)) == 0)
+//			//	{ // Not a perfect square
+//			//		break;
+//			//	}
+//			//}
+//			//else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0)
+//			//{ // Not a perfect square
+//			//	break;
+//			//}
+//		}
+//
+//		if (i == 17) {            // Test for perfect square
+//			c = m * j;                 
+//			val = a + c;     // a + m*j       
+//			c = val * val;   // (a + m*j)^2       
+//			c -= sqr;        //  (a + m*j)^2 - 4kn  
+//			sqrRoot = c.sqRoot();       // sqrRoot <- sqrt(c)
+//			sqrRoot += val;              
+//			BigIntGcd(sqrRoot, *nbr, c); // Get GCD(sqrRoot + val, nbr)
+//			if (c > 1) {       // factor has been found.
+//				*factor = c;            
+//				return;
+//			}
+//		}
+//
+//		for (i = 0; i < 17; i++)
+//		{
+//			nbrs[i] = (nbrs[i] + diffs[i]) % primes[i];
+//			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
+//		}
+//	}
+//
+//	/* failed to factorise in 1000 cycles, so stop trying */
+//	*factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
+//}
+static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
+	const long long bitsSqr[] = {
+		0x0000000000000003, // 3
+		0x0000000000000013, // 5
+		0x0000000000000017, // 7
+		0x000000000000023B, // 11
+		0x000000000000161B, // 13
+		0x000000000001A317, // 17
+		0x0000000000030AF3, // 19
+		0x000000000005335F, // 23
+		0x0000000013D122F3, // 29
+		0x00000000121D47B7, // 31
+		0x000000165E211E9B, // 37
+		0x000001B382B50737, // 41  
+		0x0000035883A3EE53, // 43  
+		0x000004351B2753DF, // 47
+		0x0012DD703303AED3, // 53
+		0x022B62183E7B92BB, // 59
+		0x1713E6940A59F23B, // 61
 	};
 	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
 	int nbrs[17];
 	int diffs[17];
 	int i, j, m, r;
-	BigInteger sqrRoot, nextroot;
-	BigInteger a, c, sqr, val;
+	Znum sqrRoot, nextroot;
+	Znum a, c, sqr, val;
 
-	if ((*nbr).isEven())
+	if (ZisEven(nbr))
 	{ // nbr is Even (this would be strange, because small factors such as 2 are removed during trial division)
 		r = 0;
 		m = 1;
@@ -624,62 +758,53 @@ static void Lehman(const BigInteger *nbr, int k, BigInteger *factor) {
 			m = 2;
 		}
 		else { // k Odd
-			r = (k + (*nbr).lldata()) & 3;
+			r = (int)MulPrToLong((k + nbr)& 3) ;
 			m = 4;
 		}
 	}
 
 	sqr = k << 2;      // sqr = 4k
-	sqr *= *nbr;      // sqr = 4kn
-	sqrRoot = sqr.sqRoot();      // sqrRoot = sqrt(4kn)
+	sqr *= nbr;      // sqr = 4kn
+	squareRoot(sqr, sqrRoot);      // sqrRoot = sqrt(4kn)
 	a = sqrRoot;                 // a = sqrt(4kn)
-	
-	for (;;)
-	{
-		if ((a.lldata() & (m - 1)) == r) {
-			nextroot = a*a;  
-			nextroot -= sqr; 
+
+	for (;;) {
+		if ((a & (m - 1)) == r) {
+			nextroot = a*a;
+			nextroot -= sqr;
 			if (nextroot >= 0)
 			{
-				break;  // a*a >= sqr
+				break;  // a*a >= 4kn
 			}
 		}
-		a++;                           
+		a++;
 	}
-	nextroot = a*a;          
-	c = nextroot - sqr;     
+	nextroot = a*a;
+	c = nextroot - sqr;  // c = a*a- 4kn    
 
 	for (i = 0; i < 17; i++) {
 		int pr = primes[i];
-		nbrs[i]  = c % primes[i];      
-		diffs[i] = m * ((a %pr) * 2 + m) % pr;
+		nbrs[i] = (int)MulPrToLong(c % primes[i]);
+		diffs[i] = m * (int)MulPrToLong(((a %pr) * 2 + m) % pr);
 	}
 
 	for (j = 0; j < 10000; j++) {
 		for (i = 0; i < 17; i++) {
 			int shiftBits = nbrs[i];
-			if (shiftBits < 32) {
-				if ((bitsSqrLow[i] & (1 << shiftBits)) == 0)
-				{ // Not a perfect square
-					break;
-				}
-			}
-			else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0)
-			{ // Not a perfect square
-				break;
-			}
+			if ((bitsSqr[i] & (1LL << shiftBits)) == 0)
+				break;   // Not a perfect square
 		}
 
 		if (i == 17) {            // Test for perfect square
-			c = m * j;                 
-			val = a + c;          
-			c = val * val;          
-			c -= sqr;             
-			sqrRoot = c.sqRoot();       // sqrRoot <- sqrt(c)
-			sqrRoot += val;              
-			BigIntGcd(sqrRoot, *nbr, c); // Get GCD(sqrRoot + val, nbr)
-			if (c >= LIMB_RANGE) {       // Non-trivial factor has been found.
-				*factor = c;            
+			c = m * j;
+			val = a + c;     // a + m*j       
+			c = val * val;   // (a + m*j)^2       
+			c -= sqr;        //  (a + m*j)^2 - 4kn  
+			squareRoot(c, sqrRoot);       // sqrRoot <- sqrt(c)
+			sqrRoot += val;
+			c = gcd(sqrRoot, nbr); // Get GCD(sqrRoot + val, nbr)
+			if (c > 1) {       // factor has been found.
+				factor = c;
 				return;
 			}
 		}
@@ -692,7 +817,7 @@ static void Lehman(const BigInteger *nbr, int k, BigInteger *factor) {
 	}
 
 	/* failed to factorise in 1000 cycles, so stop trying */
-	*factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
+	factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
 }
 
 /* can return value:
@@ -738,13 +863,14 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 
 		/* Try to factor BigInteger N using Lehman algorithm. Result in potentialFactor. 
 		This seldom achieves anything, but when it does it saves a lot of time */
-		Lehman(&N, EC % 50000000, &potentialFactor);
-		if (potentialFactor > LIMB_RANGE) {                
+		//Lehman(&N, EC % 50000000, &potentialFactor);
+		LehmanZ(zN, EC % 50000000, Zfactor);
+		if (Zfactor > LIMB_RANGE) {
 			foundByLehman = true;     // Factor found.
-			BigtoZ(Zfactor, potentialFactor); // copy factor to global Znum
-#ifdef _DEBUG
+			//BigtoZ(Zfactor, potentialFactor); // copy factor to global Znum
+//#ifdef _DEBUG
 			std::cout << "Lehman factor found. N= " << zN << " factor = " << Zfactor << '\n';
-#endif
+//#endif
 			return FACTOR_FOUND;
 		}
 

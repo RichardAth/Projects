@@ -72,15 +72,17 @@ factor list just contains the number to be factorised. Whenever a new factor is 
 existing factors that are multiples of that factor are split into two factors. If
 this process creates equal factors they are merged. 
 
-Step 1: if number to factor is > than the the square of the largest prime used in trial
+Step 1: if number to factor is > than the the square of the largest prime to be used in trial
 division, check if the number is a perfect power +/- 1 and if so attempt to factorise it.
 This step may return factors that are not prime factors.
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
-using a list of primes. If a factor is found that is less than the cube of the largest 
-prime used, and has no factors in the prime list, and the factor is not prime (in this 
-case the factor can only have two prime factors) factorise it using Pollard's Rho
-algorithm. 
+using a list of primes. If a factor is found that is: 
+    less than the cube of the largest prime used and 
+    has no factors in the list of primes, and 
+    the factor is not prime 
+(in this case the factor can only have two prime factors) 
+factorise it using Pollard's Rho algorithm. 
 
 Step 3: For each factor that is not already known to be prime:
 A. If the factor is a perfect power replace it with the number which is the root 
@@ -88,17 +90,17 @@ A. If the factor is a perfect power replace it with the number which is the root
 B. Test whether the number is prime: 
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
-   Otherwise factorise it using ECM/SIQS
+   Otherwise factorise it using ECM, SIQS and Lehman algorithms
 
 The factoriser is essentially DAs program, with an interface function that converts 
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
 messages it produces have been modified to work with a console window instead of a 
 Web Browser. 
 
-A couple of checks for array index overflows were added. If an error is detected 
+A couple of checks for overflows were added. If an error is detected 
 an exception is thrown, an error message is output, and the program continues 
 without factorising the number. Realistically any number small enough to be 
-factorised in a reasonable time will not exceed the array bounds.
+factorised in a reasonable time will not cause an overflow.
 
 Profiling using Visual Studio suggests that changing from DAs BigIntegers to 
 GMP/MPIR would not improve performance much. This would be a huge task.
@@ -111,7 +113,7 @@ took 291 seconds
 
 40526 919504 877216 755680 601905 432322 134980 384796 226602 145184 481280 000000 000000 (77 digits)
  = 2^53 * 3^27 * 5^13 * 7^9 * 11^5 * 13^4 * 17^3 * 19^3 * 23^2 * 29 * 31 * 37 * 41 * 43 * 47 * 53
- took 0.054 seconds. The larger number was facorised in about 1/5000 of the time!
+ took 0.054 seconds. The larger number was factorised in about 1/5000 of the time!
 
  The time required depends mainly on the size of the 2nd largest factor, but you don't
  know what that is in advance.
@@ -152,7 +154,8 @@ XOR               ^      ^          bitwise exclusive or. Do not confuse XOR wit
 NOT               ~      ~          bitwise not
 SHL or <<         <<     <<         bitwise left shift
 SHR or >>         >>     >>         bitwise arithmetic right shift
- C                N/A    N/A        binomial coeffiecient. nCk = n!/(k!*(n-k)!) but is more efficient
+ C                N/A    N/A        binomial coeffiecient. nCk = n!/(k!*(n-k)!) but is 
+                                    more efficient
 
 comparision operators <, <=, ==, !=, >, and >= are similar in all three. The calculator
 returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT to operate

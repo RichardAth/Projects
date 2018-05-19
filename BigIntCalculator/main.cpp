@@ -1719,8 +1719,8 @@ void doTests(void) {
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
 		factortest(carmichael[i]);
 	}
-	//ComputeExpr("n(10^24)*n(10^25)*n(10^26)", x3);  // take up to 5 minutes
-	//factortest(x3);
+	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
+	factortest(x3);
 
 	std::cout << "factorisation tests completed\n";
 
