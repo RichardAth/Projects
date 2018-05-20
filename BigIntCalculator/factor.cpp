@@ -29,7 +29,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "factor.h"
 
 /* miscellaneous external declarations */
-extern int EC;            // Elliptic Curve Number
+extern int ElipCurvNo;            // Elliptic Curve Number
 
 void int2dec(char **pOutput, long long nbr);
 extern bool *primeFlags;
@@ -854,7 +854,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
 	Znum Zpower, Zprime;
 	int expon;
-	EC = 1;  // start with 1st curve
+	ElipCurvNo = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
 	
 	for (size_t i = 0; i < Factors.size(); i++) {

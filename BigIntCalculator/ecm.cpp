@@ -24,7 +24,7 @@ see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization */
 #include "factor.h"
 
 static int yieldFreq;
-int EC;            // Elliptic Curve Number
+int ElipCurvNo;            // Elliptic Curve Number
 static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250 };
 
 #define __EMSCRIPTEN__
@@ -834,7 +834,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 	//char text[20];
 #endif
 
-	EC %= 50000000;   // Convert to curve number.
+	ElipCurvNo %= 50000000;   // Convert to curve number.
 	for (;;) {
 #ifdef __EMSCRIPTEN__
 		char *ptrText;
@@ -843,64 +843,72 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		int i, j, u;
 		long long L1, L2, LS, P, IP, Paux = 1;
 
-		EC++;   // increment curve number
+		ElipCurvNo++;   // increment curve number
 
 		#ifdef __EMSCRIPTEN__
 		//			text[0] = '7';
 		//ptrText = &text[1];
-		//			int2dec(&ptrText, EC);
+		//			int2dec(&ptrText, ElipCurvNo);
 		//			printf ("%s\n", text);
 		#endif
 		L1 = NumberLength * 9;        // Get number of digits.
 		if (L1 > 30 && L1 <= 90)    // If between 30 and 90 digits...
 		{                             // Switch to SIQS.
 			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
-			if (EC % 50000000 >= limit) {                          
-				EC += TYP_SIQS;        // Switch to SIQS.
-				return CHANGE_TO_SIQS;
+			if (ElipCurvNo  >= limit) {                          
+				//ElipCurvNo += TYP_SIQS;        
+				return CHANGE_TO_SIQS;           // Switch to SIQS.
 			}
 		}
 
 		/* Try to factor BigInteger N using Lehman algorithm. Result in potentialFactor. 
 		This seldom achieves anything, but when it does it saves a lot of time */
-		//Lehman(&N, EC % 50000000, &potentialFactor);
-		LehmanZ(zN, EC % 50000000, Zfactor);
-		if (Zfactor > LIMB_RANGE) {
-			foundByLehman = true;     // Factor found.
-			//BigtoZ(Zfactor, potentialFactor); // copy factor to global Znum
-//#ifdef _DEBUG
-			std::cout << "Lehman factor found. N= " << zN << " factor = " << Zfactor << '\n';
-//#endif
-			return FACTOR_FOUND;
+		//Lehman(&N, ElipCurvNo , &potentialFactor);
+		int kx = ElipCurvNo;
+		const int mult = 5;  /* could change value of mult to use Lehman 
+							 more, or less, relative to ECM. Benchmark testing
+							 needed to estimate best value */
+		for (int k = (kx - 1)*mult + 1; k <= kx*mult; k++) {
+			/* for curve no 1, k = 1 to 5, curve no 2, k = 6 to 10, etc*/
+			LehmanZ(zN, k, Zfactor);
+			if (Zfactor > LIMB_RANGE) {
+				foundByLehman = true;     // Factor found.
+				//BigtoZ(Zfactor, potentialFactor); // copy factor to global Znum
+	//#ifdef _DEBUG
+				std::cout << "Lehman factor found. k = " << k << " N= " << zN 
+					<< " factor = " << Zfactor << '\n';
+				//#endif
+				return FACTOR_FOUND;
+			}
 		}
 
-		/* set L1, L2, LS, Paux and nbrPrimes according to value of EC */
+		/* set L1, L2, LS, Paux and nbrPrimes according to value of ElipCurvNo */
 		L1 = 2000;
 		L2 = 200000;
 		LS = 45;
-		Paux = EC;
+		Paux = ElipCurvNo;
 		nbrPrimes = 303; /* Number of primes less than 2000 */
-		if (EC > 25) {
-			if (EC < 326) {   // 26 to 325
+		if (ElipCurvNo > 25) {
+			if (ElipCurvNo < 326) {   // 26 to 325
 				L1 = 50000;
 				L2 = 5000000;
 				LS = 224;
-				Paux = EC - 24;
+				Paux = ElipCurvNo - 24;
 				nbrPrimes = 5133; /* Number of primes less than 50000 */
 			}
 			else {
-				if (EC < 2000) {  // 326 to 1999
+				if (ElipCurvNo < 2000) {  // 326 to 1999
 					L1 = 1000000;
 					L2 = 100000000;
 					LS = 1001;
-					Paux = EC - 299;
+					Paux = ElipCurvNo - 299;
 					nbrPrimes = 78498; /* Number of primes less than 1000000 */
 				}
 				else {   // >= 2000
 					L1 = 11000000;
 					L2 = 1100000000;
 					LS = 3316;
-					Paux = EC - 1900;
+					Paux = ElipCurvNo - 1900;
 					nbrPrimes = 726517; /* Number of primes less than 11000000 */
 				}
 			}
@@ -912,7 +920,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		GetDHMSt(&ptrText, elapsedTime);
 		strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
 		ptrText += strlen(ptrText);
-		int2dec(&ptrText, EC);   // Show curve number.
+		int2dec(&ptrText, ElipCurvNo);   // Show curve number.
 		strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
 		ptrText += strlen(ptrText);
 		int2dec(&ptrText, L1);   // Show first bound.
@@ -957,21 +965,21 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			}
 		} /* end for */
 		lowerTextArea.setText(
-			primalityString + EC + "\n" + UpperLine + "\n" + LowerLine);
+			primalityString + ElipCurvNo + "\n" + UpperLine + "\n" + LowerLine);
 #endif
 #endif
 
-		//  Compute A0 <- 2 * (EC+1)*modinv(3 * (EC+1) ^ 2 - 1, N) mod N
+		//  Compute A0 <- 2 * (ElipCurvNo+1)*modinv(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N
 		// Aux2 <- 1 in Montgomery notation.
 		memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
-		modmultInt(Aux2, EC + 1, Aux2);            // Aux2 <- EC + 1 (mod TestNbr)
-		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(EC+1) (mod TestNbr)
-		modmultInt(Aux2, EC + 1, Aux3);            // Aux3 <- (EC + 1)^2 (mod TestNbr)
-		modmultInt(Aux3, 3, Aux3);                 // Aux3 <- 3*(EC + 1)^2 (mod TestNbr)
-		// Aux2 <- 3*(EC + 1)^2 - 1 (mod TestNbr)
+		modmultInt(Aux2, ElipCurvNo + 1, Aux2);            // Aux2 <- ElipCurvNo + 1 (mod TestNbr)
+		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(ElipCurvNo+1) (mod TestNbr)
+		modmultInt(Aux2, ElipCurvNo + 1, Aux3);            // Aux3 <- (ElipCurvNo + 1)^2 (mod TestNbr)
+		modmultInt(Aux3, 3, Aux3);                 // Aux3 <- 3*(ElipCurvNo + 1)^2 (mod TestNbr)
+		// Aux2 <- 3*(ElipCurvNo + 1)^2 - 1 (mod TestNbr)
 		SubtBigNbrModN(Aux3, MontgomeryMultR1, Aux2, TestNbr, NumberLength);
 		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);
-		modmult(Aux1, Aux2, A0);       // A0 <- 2*(EC+1)/(3*(EC+1)^2 - 1) (mod TestNbr)
+		modmult(Aux1, Aux2, A0);       // A0 <- 2*(ElipCurvNo+1)/(3*(ElipCurvNo+1)^2 - 1) (mod TestNbr)
 
 		//  if A0*(A0 ^ 2 - 1)*(9 * A0 ^ 2 - 1) mod N=0 then select another curve.
 		modmult(A0, A0, A02);          // A02 <- A0^2
@@ -1372,7 +1380,7 @@ static void ecminit(Znum zN) {
 	//ptrLowerText += strlen(ptrLowerText);
 	//printf("%s", lowerText);
 #endif
-	EC--;  // decrement curve number
+	ElipCurvNo--;  // decrement curve number
 	/* fill SmallPrime array unless it's already set up */
 	if (SmallPrime[0] != 2) {
 		SmallPrime[0] = 2;   // put 1st prime into SmallPrime list
