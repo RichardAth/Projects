@@ -2235,7 +2235,8 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	newSeed = 0;
 
 	//  threadArray = new Thread[numberThreads];
-	Temp = logBigNbr(NbrToFactor);
+	//Temp = logBigNbr(NbrToFactor);
+	Temp = logBigNbr(zN);
 	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.318);
 	SieveLimit = (int)exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
 	if (SieveLimit > MAX_SIEVE_LIMIT)
@@ -2482,7 +2483,8 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
 	// Convert array of limbs to BigInteger and find its logarithm.
-	dlogNumberToFactor = logBigNbr(NbrToFactor);
+	//dlogNumberToFactor = logBigNbr(NbrToFactor);
+	dlogNumberToFactor = logBigNbr(zN);
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);

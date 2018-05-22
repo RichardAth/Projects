@@ -161,7 +161,7 @@ public:
 	friend BigInteger BigIntMultiply (const BigInteger &Factor1, const BigInteger &Factor2);
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
-	friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
+	//friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
 	friend void BigIntGcd (const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &Result);
 	friend void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
 		const BigInteger &mod, BigInteger &quotient);
@@ -172,11 +172,11 @@ public:
 	friend bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
 	friend bool TestBigNbrLess (const BigInteger &Nbr1, const BigInteger &Nbr2);
 	friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
-	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
+	//friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt (BigInteger &bigInt, double dvalue);
-	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
+	//friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
 	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
-	friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
+	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
 		/*@out@*/BigInteger &bigint, int NumberLength);
@@ -325,11 +325,11 @@ void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
 void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
-double logLimbs(const limb *pBigNbr, int nbrLimbs);
+//double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
 //void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
-bool checkOne(const limb *value, int nbrLimbs);
-bool checkMinusOne(const limb *value, int nbrLimbs);
+//bool checkOne(const limb *value, int nbrLimbs);
+//bool checkMinusOne(const limb *value, int nbrLimbs);
 //void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
 
 void ChSignBigNbr(int nbr[], int length);

@@ -1729,10 +1729,10 @@ void doTests(void) {
 }
 
 void doTests2(void) {
-	
 	srand(756128234);
 	Znum x = (Znum)rand();
 	auto start = clock();	// used to measure execution time
+
 	for (int i = 1; i <= 44; i++) {
 		if (i <= 39)
 			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits

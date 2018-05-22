@@ -242,35 +242,35 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
  
 /* BigInt = e^logar
 throw exception if result would be to large for a BigInteger */
-void expBigInt(BigInteger &bigInt, double logar)
-{
-	int mostSignificantLimb;
-	logar /= log(2);  // convert log to base 2
-	/* calculate required value for most significnt limb, initially in floating point */
-	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
-	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)));
-
-	/* convert double to BigInteger */
-	bigInt.sign = SIGN_POSITIVE;
-	
-	mostSignificantLimb = (int) value;
-	if (mostSignificantLimb == LIMB_RANGE)
-	{
-		mostSignificantLimb = 1;
-		bigInt.nbrLimbs++;
-	}
-	bigInt.nbrLimbs++;
-	if (bigInt.nbrLimbs > MAX_LEN) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "number too big : cannot expand BigInteger: ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
-	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
-}
+//void expBigInt(BigInteger &bigInt, double logar)
+//{
+//	int mostSignificantLimb;
+//	logar /= log(2);  // convert log to base 2
+//	/* calculate required value for most significnt limb, initially in floating point */
+//	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
+//	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)));
+//
+//	/* convert double to BigInteger */
+//	bigInt.sign = SIGN_POSITIVE;
+//	
+//	mostSignificantLimb = (int) value;
+//	if (mostSignificantLimb == LIMB_RANGE)
+//	{
+//		mostSignificantLimb = 1;
+//		bigInt.nbrLimbs++;
+//	}
+//	bigInt.nbrLimbs++;
+//	if (bigInt.nbrLimbs > MAX_LEN) {
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "number too big : cannot expand BigInteger: ";
+//		mesg += __func__;
+//		mesg += " line ";  mesg += line;
+//		mesg += " in file "; mesg += __FILE__;
+//		throw std::range_error(mesg);
+//	}
+//	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
+//	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
+//}
 
 
 /* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
@@ -291,26 +291,26 @@ void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 
 /* estimate natural log of BigInt. Only the most significant 62 bits are 
 taken into account because floating point numbers have limited accuracy anyway. */
-double logBigNbr (const BigInteger &pBigInt) {
-	int nbrLimbs;
-	double logar;
-	nbrLimbs = pBigInt.nbrLimbs;
-	if (nbrLimbs == 1) {
-		logar = log((double)(pBigInt.limbs[0].x));
-	}
-	else {
-		double value = pBigInt.limbs[nbrLimbs - 2].x +
-			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
-		if (nbrLimbs == 2) {
-			logar = log(value);
-		}
-		else {
-			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
-		}
-		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
-	}
-	return logar;
-}
+//double logBigNbr (const BigInteger &pBigInt) {
+//	int nbrLimbs;
+//	double logar;
+//	nbrLimbs = pBigInt.nbrLimbs;
+//	if (nbrLimbs == 1) {
+//		logar = log((double)(pBigInt.limbs[0].x));
+//	}
+//	else {
+//		double value = pBigInt.limbs[nbrLimbs - 2].x +
+//			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
+//		if (nbrLimbs == 2) {
+//			logar = log(value);
+//		}
+//		else {
+//			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
+//		}
+//		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
+//	}
+//	return logar;
+//}
 double logBigNbr(const Znum &BigInt) {
 	double BigId;
 	long long BiExp;
@@ -321,44 +321,44 @@ double logBigNbr(const Znum &BigInt) {
 
 /* estimate natural log of BigNbr. Only the most significant 62 bits are
 taken into account because floating point numbers have limited accuracy anyway. */
-double logLimbs(const limb *pBigNbr, int nbrLimbs)
-{
-	double logar;
-	if (nbrLimbs > 1)
-	{
-		logar = log( (double)pBigNbr[nbrLimbs - 2].x +
-				(double)pBigNbr[nbrLimbs - 1].x * LIMB_RANGE) +
-			(double)(nbrLimbs - 2)*log((double)LIMB_RANGE);
-	}
-	else
-	{
-		logar = log((double)pBigNbr[nbrLimbs - 1].x) +
-			(double)(nbrLimbs - 1)*log((double)LIMB_RANGE);
-	}
-	return logar;
-}
+//double logLimbs(const limb *pBigNbr, int nbrLimbs)
+//{
+//	double logar;
+//	if (nbrLimbs > 1)
+//	{
+//		logar = log( (double)pBigNbr[nbrLimbs - 2].x +
+//				(double)pBigNbr[nbrLimbs - 1].x * LIMB_RANGE) +
+//			(double)(nbrLimbs - 2)*log((double)LIMB_RANGE);
+//	}
+//	else
+//	{
+//		logar = log((double)pBigNbr[nbrLimbs - 1].x) +
+//			(double)(nbrLimbs - 1)*log((double)LIMB_RANGE);
+//	}
+//	return logar;
+//}
 
 /* calculate base^exponent. Throw exception if result is out of range */
-void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
-	int mask;
-	if (pBase == 0) {     // Base = 0 -> power = 0
-		Power = 0;
-		return; // base = 0, so result is zero
-	}
-	Power = 1;
-	for (mask = 1 << 30; mask != 0; mask >>= 1) {
-		if ((exponent & mask) != 0) {
-			for (; mask != 0; mask >>= 1) {
-				Power *= Power;// BigIntMultiply(Power, Power, Power);
-				if ((exponent & mask) != 0) {
-					Power *= pBase; //BigIntMultiply(Power, Base, Power);
-				}
-			}
-			break;
-		}
-	}
-	return;
-}
+//void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
+//	int mask;
+//	if (pBase == 0) {     // Base = 0 -> power = 0
+//		Power = 0;
+//		return; // base = 0, so result is zero
+//	}
+//	Power = 1;
+//	for (mask = 1 << 30; mask != 0; mask >>= 1) {
+//		if ((exponent & mask) != 0) {
+//			for (; mask != 0; mask >>= 1) {
+//				Power *= Power;// BigIntMultiply(Power, Power, Power);
+//				if ((exponent & mask) != 0) {
+//					Power *= pBase; //BigIntMultiply(Power, Base, Power);
+//				}
+//			}
+//			break;
+//		}
+//	}
+//	return;
+//}
 void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
@@ -743,29 +743,29 @@ static long long intModPow(long long NbrMod, long long Expon, long long currentP
 /* creates a BigInteger from a list of values.   
 uses global value NumberLength for number of ints. 1st entry in list is number of values
 that follow */
-void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint)
-{
-	if (NumberLength > MAX_LEN || NumberLength < 0 || ptrValues[0] > MAX_LEN) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "number too big : cannot convert to BigInteger: ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-	limb *destLimb = bigint.limbs;
-	bigint.sign = SIGN_POSITIVE;
-	if (NumberLength == 1) {
-		destLimb[0].x = ptrValues[1];
-		bigint.nbrLimbs = 1;
-	}
-	else {
-		memcpy(destLimb, ptrValues+1, ptrValues[0] * sizeof(ptrValues[0]));
-		bigint.nbrLimbs = ptrValues[0];
-		if (NumberLength > ptrValues[0])  // clear most significant limbs to zero if required
-			memset(destLimb + ptrValues[0], 0, (NumberLength - ptrValues[0]) * sizeof(ptrValues[0]));
-	}
-}
+//void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint)
+//{
+//	if (NumberLength > MAX_LEN || NumberLength < 0 || ptrValues[0] > MAX_LEN) {
+//		std::string line = std::to_string(__LINE__);
+//		std::string mesg = "number too big : cannot convert to BigInteger: ";
+//		mesg += __func__;
+//		mesg += " line ";  mesg += line;
+//		mesg += " in file "; mesg += __FILE__;
+//		throw std::range_error(mesg);
+//	}
+//	limb *destLimb = bigint.limbs;
+//	bigint.sign = SIGN_POSITIVE;
+//	if (NumberLength == 1) {
+//		destLimb[0].x = ptrValues[1];
+//		bigint.nbrLimbs = 1;
+//	}
+//	else {
+//		memcpy(destLimb, ptrValues+1, ptrValues[0] * sizeof(ptrValues[0]));
+//		bigint.nbrLimbs = ptrValues[0];
+//		if (NumberLength > ptrValues[0])  // clear most significant limbs to zero if required
+//			memset(destLimb + ptrValues[0], 0, (NumberLength - ptrValues[0]) * sizeof(ptrValues[0]));
+//	}
+//}
 
 /* uses global value NumberLength for starting value for number of limbs. */
 static int getNbrLimbs(const limb *bigNbr)
@@ -1029,36 +1029,36 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 }
 
 /* return true if value is 1 (mod p)*/
-bool checkOne(const limb *value, int nbrLimbs)
-{
-	int idx;
-	for (idx = 0; idx < nbrLimbs; idx++)
-	{
-		if ((value++)->x != MontgomeryMultR1[idx].x)
-		{
-			return false;    // Go out if value is not 1 (mod p)
-		}
-	}
-	return true; // value = 1 (mod p)
-}
+//bool checkOne(const limb *value, int nbrLimbs)
+//{
+//	int idx;
+//	for (idx = 0; idx < nbrLimbs; idx++)
+//	{
+//		if ((value++)->x != MontgomeryMultR1[idx].x)
+//		{
+//			return false;    // Go out if value is not 1 (mod p)
+//		}
+//	}
+//	return true; // value = 1 (mod p)
+//}
 
 /* return true if value is -1 (mod p) */
-bool checkMinusOne(const limb *value, int nbrLimbs)
-{
-	int idx;
-	unsigned int carry;
-	carry = 0;
-	for (idx = 0; idx < nbrLimbs; idx++)
-	{
-		carry += (unsigned int)(value++)->x + (unsigned int)MontgomeryMultR1[idx].x;
-		if ((carry & MAX_VALUE_LIMB) != (unsigned int)TestNbr[idx].x)
-		{
-			return false;    // Go out if value is not -1 (mod p)
-		}
-		carry >>= BITS_PER_GROUP;
-	}
-	return true;    // value is -1 (mod p)
-}
+//bool checkMinusOne(const limb *value, int nbrLimbs)
+//{
+//	int idx;
+//	unsigned int carry;
+//	carry = 0;
+//	for (idx = 0; idx < nbrLimbs; idx++)
+//	{
+//		carry += (unsigned int)(value++)->x + (unsigned int)MontgomeryMultR1[idx].x;
+//		if ((carry & MAX_VALUE_LIMB) != (unsigned int)TestNbr[idx].x)
+//		{
+//			return false;    // Go out if value is not -1 (mod p)
+//		}
+//		carry >>= BITS_PER_GROUP;
+//	}
+//	return true;    // value is -1 (mod p)
+//}
 
 // Find power of 2 that divides the number.
 // output: pNbrLimbs = pointer to number of limbs
