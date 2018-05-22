@@ -8,17 +8,13 @@
 #include "bignbr.h"
 #include "factor.h"
 
-
-typedef boost::multiprecision::mpz_int Znum;
-/* access underlying mpz_t inside a Znum */
-#define ZT(a) a.backend().data()
-
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
 static int stackIndex=0; 
 static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
+HANDLE hConsole;
 
 /* list of operators, arranged in order of priority. Order is not exaxtly the
 same as C or Python. */
@@ -1594,7 +1590,9 @@ void doFactors(const Znum &Result) {
 void factortest(const Znum x3) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
+	long long totalFactors = 0;
 
+	std::cout << "\nTest: factorise " << x3 << '\n';
 	factorise(x3, factorlist, Quad);
 
 	result = 1;
@@ -1608,6 +1606,11 @@ void factortest(const Znum x3) {
 	if (result != x3) {
 		std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
 	}
+	for (auto f : factorlist) {
+		totalFactors += f.exponent;
+	}
+	std::cout << "found " << factorlist.size() << " unique factors, total "
+		<< totalFactors << " factors\n";
 }
 
 void doTests(void) {
@@ -1721,60 +1724,31 @@ void doTests(void) {
 	}
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
 	factortest(x3);
-
 	std::cout << "factorisation tests completed\n";
 
-	for (double i = 10; i<= 10e25; i *= 10 ) {
-		BigInteger rv;
-		Znum ev;
-		rv = i; // DoubleToBigInt(rv, i);  // test conversion from double to bigint
-		BigtoZ(ev, rv);   //convert to Znum for output
-		std::cout << "i= " << i << " ev = " << ev << "\n";
-	}
 }
 
 void doTests2(void) {
-	/* uses global variables NumberLength, TestNbr etc.
-	Demonstrates that Modular multiplication using limbs in Mongomery
-	notation is about twice as fast as using Znums */
+	
 	srand(756128234);
-	Znum mod = (Znum)rand()*rand()*rand()*rand()*rand()*rand()*rand()*rand();
-	Znum a = (Znum)rand();
-	Znum b = (Znum)rand();
-	Znum p;
-	limb Bmod[MAX_LEN], Ba[MAX_LEN], Bb[MAX_LEN], Bp[MAX_LEN], Aux2[MAX_LEN];
-	NumberLength = (int)(mpz_sizeinbase(ZT(mod), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
-
-	ZtoLimbs(Ba, a, NumberLength);
-	ZtoLimbs(Bb, b, NumberLength);
-
-#define modmult(a, b, p) {p = a*b; p %= mod;}
+	Znum x = (Znum)rand();
 	auto start = clock();	// used to measure execution time
-	for (long long int i = 1; i <= 100000000; i++) {
-		modmult(a, b, p);
-		a = p;
+	for (int i = 1; i <= 44; i++) {
+		if (i <= 39)
+			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
+		x += rand();
+		auto numLen = (int)mpz_sizeinbase(ZT(x), 2) ;
+		std::cout << "\nTest # " << i << '\n';
+		ShowLargeNumber(x, 6, true, false);
+		std::cout << '\n';
+		doFactors(x); /* factorise x, calculate number of divisors etc */
 	}
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
-#undef modmult
 
-	ZtoLimbs(TestNbr, mod, NumberLength);  // TestNbr = mod
-	GetMontgomeryParms(NumberLength);
-	// Aux2 <- 1 in Montgomery notation.
-	memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
-	modmult(Aux2, Ba, Ba);            // Ba changed to Mongomery notation
-	modmult(Aux2, Bb, Bb);            // Bb changed to Mongomery notation
 
-	start = clock();	// used to measure execution time
-	for (long long int i = 1; i <= 100000000; i++) {
-		modmult(Ba, Bb, Bp);   // p = a*b (mod TestNbr)
-		memcpy(Ba, Bp, NumberLength * sizeof(limb));
-	}
-	modmult(Ba, MontgomeryMultR2, Aux2);
-	end = clock();   // measure amount of time used
-	elapsed = (double)end - start;
-	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	
 }
 
 int main(int argc, char *argv[]) {
@@ -1851,6 +1825,14 @@ int main(int argc, char *argv[]) {
 		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
 
 	try {
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
+		if (hConsole == INVALID_HANDLE_VALUE)
+		{
+			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
+			Beep(750, 1000);
+			return EXIT_FAILURE;
+		}
+
 		setlocale(LC_ALL, "en-EN");  // allows non-ascii characters to print
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
 		printf("%s", banner);

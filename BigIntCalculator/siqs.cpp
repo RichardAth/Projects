@@ -21,10 +21,15 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cmath>
 #include <cstdint>
+#include <Windows.h>
 #include "bignbr.h"
-//#include "expression.h"
 #include "factor.h"
 #include "showtime.h"
+
+extern HANDLE hConsole;
+static bool first = true;
+static COORD coordScreen = { 0, 0 };    // home for the cursor 
+static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 // These defines are valid for factoring up to 10^110.
 #define MAX_NBR_FACTORS         13
@@ -34,12 +39,13 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define LENGTH_OFFSET            0
 #define MAX_SIEVE_LIMIT     100000
 #define DEBUG_SIQS               0
+#define __EMSCRIPTEN__
 
-//#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 extern char lowerText[], *ptrLowerText;
 char *ptrSIQSStrings;
 int startSieveTenths;
-//#endif
+#endif
 
 typedef struct {
 	int value;
@@ -132,14 +138,14 @@ void ShowSIQSStatus(void);
 static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
 static void sieveThread(BigInteger *result);
 
-//#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "\nResolviendo la matriz de congruencias de " : "\nSolving ");
+	strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, rows);   // Show number of rows.
-	strcpy(ptrText, " &times; ");
+	strcpy(ptrText, " X ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, cols);   // Show number of columns.
 	strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
@@ -148,17 +154,21 @@ static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 	printf("%s", ptrLowerText);
 }
 
+static void upOneLine(void) {
+	SetConsoleCursorPosition(hConsole, coordScreen);
+}
+
 static void InitSIQSStrings(int SieveLimit)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "\nParámetros de SIQS: " : "\nSIQS parameters: ");
+	strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, nbrFactorBasePrimes);   // Show number of primes in factor base.
 	strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
-	strcpy(ptrText, "\n");
-	ptrText += strlen(ptrText);
+	//strcpy(ptrText, "\n");
+	//ptrText += strlen(ptrText);
 	ptrSIQSStrings = ptrText;
 	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
@@ -167,32 +177,30 @@ static void InitSIQSStrings(int SieveLimit)
 }
 
 // Append multiplier and factor base to SIQS string.
-//static void getMultAndFactorBase(int multiplier, int FactorBase)
-//{
-//	char *ptrText = ptrSIQSStrings;
-//	strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
-//	ptrText += strlen(ptrText);
-//	int2dec(&ptrText, multiplier);  // Show Knuth-Schroeppel multiplier.
-//	strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
-//	ptrText += strlen(ptrText);
-//	int2dec(&ptrText, FactorBase);  // Show factor base.
-//	strcpy(ptrText, "\n");
-//	ptrText += strlen(ptrText);
-//	ptrSIQSStrings = ptrText;
-//}
+static void getMultAndFactorBase(int multiplier, int FactorBase)
+{
+	char *ptrText = ptrSIQSStrings;
+	strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
+	ptrText += strlen(ptrText);
+	int2dec(&ptrText, multiplier);  // Show Knuth-Schroeppel multiplier.
+	strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
+	ptrText += strlen(ptrText);
+	int2dec(&ptrText, FactorBase);  // Show factor base.
+	strcpy(ptrText, "\n");
+	ptrText += strlen(ptrText);
+	ptrSIQSStrings = ptrText;
+}
 
-/* print status: timeSieve = Seive time in seconds*/
+/* print status: timeSieve = Sieve time so far in seconds*/
 static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength, int elapsedTime)
 {
 	char SIQSInfo[200] = { 0 };
 	int percentage = (int)((float)(congruencesFound * 100) / (float)matrixBLength);
 	int u = (int)((double)timeSieve * (double)(matrixBLength - congruencesFound) / (double)congruencesFound);
 	char *ptrText = SIQSInfo;
-	//strcpy(ptrText, "\n");
-	//ptrText += strlen(ptrText);
+
 	GetDHMS(&ptrText, elapsedTime);
-	//strcpy(ptrText, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-	//ptrText += strlen(ptrText);
+
 	int2dec(&ptrText, congruencesFound);  // Show number of congruences found.
 	strcpy(ptrText, lang ? " congruencias halladas (" : " congruences found (");
 	ptrText += strlen(ptrText);
@@ -209,10 +217,22 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 		strcpy(ptrText, "%)\n");
 	}
 	//databack(SIQSInfo);
+	if (first) {
+		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+		{
+			fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+			Beep(750, 1000);
+		}
+		coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
+		coordScreen.Y = csbi.dwCursorPosition.Y;
+	}
+	else
+		upOneLine();
 	printf("%s", SIQSInfo);
+	first = false;
 }
 
-//#endif
+#endif
 
 static void PerformSiqsSieveStage(PrimeSieveData *primeSieveData,
 	short *SieveArray,
@@ -2172,7 +2192,7 @@ static unsigned int getFactorsOfA(unsigned int seed, int *indexA)
 /*        (u*2^n/M to (u+1)*2^n/M exclusive).                           */
 /* Partial and full relation routines must be synchronized.             */
 /************************************************************************/
-void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
+void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	const static BigInteger NbrToFactor;
 	ZtoBig((BigInteger &)NbrToFactor, zN);  // convert N from Znum to BigInteger
 	int origNumberLength;
@@ -2191,6 +2211,17 @@ void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
 		47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97 };
 	double adjustment[sizeof(arrmult) / sizeof(arrmult[0])];
 	double dNumberToFactor, dlogNumberToFactor;
+
+	first = true;
+	if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+	{
+		fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+		Beep(750, 1000);
+	}
+
+	coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
+	coordScreen.Y = csbi.dwCursorPosition.Y;
+
 	origNumberLength = NumberLength;
 	nbrThreadFinishedPolySet = 0;
 	trialDivisions = 0;
@@ -2215,10 +2246,7 @@ void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
 	NbrPolynomials = (1 << (nbrFactorsA - 1)) - 1;
 
 	/* copy NbrToFactor to factorSiqs */
-	/*factorSiqs.nbrLimbs = NumberLength;
-	factorSiqs.sign = SIGN_POSITIVE;
-	memcpy(factorSiqs.limbs, pNbrToFactor, NumberLength * sizeof(limb));*/
-	//BigNbrToBigInt(factorSiqs, (const int *)pNbrToFactor, NumberLength);
+	
 	factorSiqs = NbrToFactor; 
 	NumberLength = BigIntToBigNbr(factorSiqs, Modulus);
 	Modulus[NumberLength++] = 0;
@@ -2458,7 +2486,8 @@ void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);
-	databack(lowerText);
+	//databack(lowerText);
+	printf("%s", lowerText);
 #endif
 
 	firstLimit = 2;
@@ -2509,10 +2538,7 @@ void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
 	/*********************************************/
 	sieveThread(&TempResult);
 	NumberLength = origNumberLength;
-	//memcpy(Factor, TempResult.limbs, TempResult.nbrLimbs * sizeof(limb));
-	//memset(Factor + TempResult.nbrLimbs, 0, (NumberLength - TempResult.nbrLimbs) * sizeof(limb));
-	//BigIntegerToLimbs(Factor, TempResult, NumberLength);
-	Factor = TempResult;
+	BigtoZ (Factor, TempResult);
 #if 0
 	for (threadNumber = 0; threadNumber<numberThreads; threadNumber++)
 	{
@@ -2571,7 +2597,7 @@ void FactoringSIQSx(const Znum &zN, BigInteger &Factor) {
 }
 
 static void ShowSIQSStatus(void) {
-//#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 	int elapsedTime = (int)(tenths() - originalTenthSecond);
 	if (elapsedTime / 10 != oldTimeElapsed / 10)
 	{   // send no more than 1 message per second
@@ -2579,7 +2605,7 @@ static void ShowSIQSStatus(void) {
 		ShowSIQSInfo((elapsedTime - startSieveTenths) / 10, congruencesFound, matrixBLength,
 			elapsedTime / 10);
 	}
-//#endif
+#endif
 }
 
 static int EraseSingletons(int nbrFactorBasePrimes) {
@@ -3126,16 +3152,17 @@ static void BlockLanczos(void)
 			char SIQSInfo[200];
 			char *ptrText = SIQSInfo;
 			oldTimeElapsed = elapsedTime;
-			strcpy(ptrText, "4\n");
-			ptrText += strlen(ptrText);
+			//strcpy(ptrText, "4\n");
+			//ptrText += strlen(ptrText);
 			GetDHMS(&ptrText, elapsedTime / 10);
-			strcpy(ptrText, "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+			strcpy(ptrText, "  ");
 			ptrText += strlen(ptrText);
 			strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
 			ptrText += strlen(ptrText);
 			int2dec(&ptrText, stepNbr * 3200 / matrixRows);
 			strcpy(ptrText, "%\n");
-			databack(SIQSInfo);
+			//databack(SIQSInfo);
+			printf("%s", SIQSInfo);
 		}
 #endif
 		//if (getTerminateThread())
@@ -3585,9 +3612,9 @@ static void sieveThread(BigInteger *result) {
 				{                        // Get the values of the factors of A.
 					afact[index] = primeSieveData[aindex[index]].value;
 				}
-				// Compute the leading coefficient in biQuadrCoeff.
 
-				IntToBigNbr(afact[0], biQuadrCoeff, NumberLength);
+				// Compute the leading coefficient in biQuadrCoeff.
+				IntToBigNbr(afact[0], biQuadrCoeff, NumberLength); // bIQuadrCoeff = afact[0]
 
 				for (index = 1; index < nbrFactorsA; index++) {
 					MultBigNbrByInt(biQuadrCoeff, afact[index], biQuadrCoeff,

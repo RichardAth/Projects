@@ -26,12 +26,6 @@ typedef boost::multiprecision::mpz_int Znum;
 //#ifdef __EMSCRIPTEN__
 //void getCunn(char *url, char *factorsFromServer);
 //#endif
-//struct sFactors
-//{
-//	int *ptrFactor;
-//	int exponent;
-//	int upperBound;
-//};
 
 typedef boost::multiprecision::mpz_int Znum;
 

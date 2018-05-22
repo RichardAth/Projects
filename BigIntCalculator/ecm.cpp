@@ -19,16 +19,23 @@ see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization */
 
 #define  _CRT_SECURE_NO_DEPRECATE
 #include <iostream>
+#include <Windows.h>
 #include "showtime.h"
 #include "bignbr.h"
 #include "factor.h"
+
+extern HANDLE hConsole;
+static bool first = true;
+static COORD coordScreen = { 0, 0 };    // home for the cursor 
+static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 static int yieldFreq;
 int ElipCurvNo;            // Elliptic Curve Number
 static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250 };
 
+
 #define __EMSCRIPTEN__
-#define TYP_SIQS   200000000
+
 #define MAX_PRIME_SIEVE 7  // Only numbers 7 or 11 are accepted here.
 #if MAX_PRIME_SIEVE == 11
 #define SIEVE_SIZE (2*3*5*7*11)
@@ -44,36 +51,24 @@ enum eEcmResult
 	FACTOR_NOT_FOUND = 0,
 	FACTOR_FOUND,
 	CHANGE_TO_SIQS,
-	ERROR
+	ECM_ERROR
 };
 
-static limb A0[MAX_LEN];
-static limb A02[MAX_LEN];
-static limb A03[MAX_LEN];
 static limb AA[MAX_LEN];
 static limb DX[MAX_LEN];
 static limb DZ[MAX_LEN];
- 
 static limb M[MAX_LEN];
 static limb TX[MAX_LEN];
 static limb TZ[MAX_LEN];
 static limb UX[MAX_LEN];
 static limb UZ[MAX_LEN];
-static limb W1[MAX_LEN];
-static limb W2[MAX_LEN];
 static limb W3[MAX_LEN];
 static limb W4[MAX_LEN];
-static limb WX[MAX_LEN];
-static limb WZ[MAX_LEN];
-static limb X[MAX_LEN];
-static limb Z[MAX_LEN];
 static limb Aux1[MAX_LEN];
 static limb Aux2[MAX_LEN];
 static limb Aux3[MAX_LEN];
 static limb Aux4[MAX_LEN];
-static limb Xaux[MAX_LEN];
-static limb Zaux[MAX_LEN];
-static limb root[GROUP_SIZE][MAX_LEN];
+
 static unsigned char sieve[10 * SIEVE_SIZE];
 static unsigned char sieve2310[SIEVE_SIZE];
 static int sieveidx[GROUP_SIZE];
@@ -86,10 +81,7 @@ static int SmallPrime[670] = { 0 }; /* Primes < 5000 */
 static int nbrPrimes, indexPrimes, StepECM;
 char lowerText[30000];
 char *ptrLowerText;
-static BigInteger Temp1, Temp4; 
-
-static BigInteger BiGD;
-
+static Znum BiGD;   // used by function gcdIsOne to return result
 /* forward function declarations */
 static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2, 
 	const limb *x1, const limb *z1, const limb *x, const limb *z);
@@ -398,26 +390,26 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 1 if gcd is 1 , 2 if gcd > 1.
 The value of the gcd is returned in BiGD
 Uses global variables Temp1, BiGD, NumberLength */
-static int gcdIsOne(const limb *value, const BigInteger &N)
-{
-	LimbsToBigInteger(value, Temp1, NumberLength);    // Temp1 = value
+static int gcdIsOne(const limb *value, const Znum &zN) {
+	static Znum Temp1;
 
-  // Return zero if value is zero or both numbers are equal.
+	LimbstoZ(value, Temp1, NumberLength);    // Temp1 = value
+
+    // Return zero if value is zero or both numbers are equal.
 	if (Temp1 == 0) {
 		return 0;
 	}
-	if (Temp1 == N) {
+	if (Temp1 == zN) {
 		return 0;
 	}
-	BigIntGcd(Temp1, N, BiGD);     // BiGD = gcd(value, N)
+	BiGD = gcd(Temp1, zN);     // BiGD = gcd(value, N)
 	if (BiGD < 2) {
-		return (int)BiGD.lldata();    // GCD is less than 2.
+		return (int)MulPrToLong(BiGD);    // GCD is less than 2.
 	}
 	return 2;      // GCD is greater than one.
 }
 
-static void GenerateSieve(int initial)
-{
+static void GenerateSieve(int initial) {
 	int i, j, Q, initModQ;
 	for (i = 0; i < 10 * SIEVE_SIZE; i += SIEVE_SIZE)
 	{
@@ -570,156 +562,6 @@ We need to find integers k, a and b such that 4kn = a^2 – b^2.
 It can be shown that 1 <= k <= n^(1/3) and
 sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k)) 
 However, searching the whole range of possible values would be much too slow. */
-//static void Lehman(const BigInteger *nbr, int k, BigInteger *factor) {
-//	//const int bitsSqrLow[] =
-//	//{
-//	//	0x00000003, // 3
-//	//	0x00000013, // 5
-//	//	0x00000017, // 7
-//	//	0x0000023B, // 11
-//	//	0x0000161B, // 13
-//	//	0x0001A317, // 17
-//	//	0x00030AF3, // 19
-//	//	0x0005335F, // 23
-//	//	0x13D122F3, // 29
-//	//	0x121D47B7, // 31
-//	//	0x5E211E9B, // 37
-//	//	0x82B50737, // 41  too large for int - generates warning during compilation
-//	//	0x83A3EE53, // 43  too large for int - generates warning during compilation
-//	//	0x1B2753DF, // 47
-//	//	0x3303AED3, // 53
-//	//	0x3E7B92BB, // 59
-//	//	0x0A59F23B, // 61
-//	//};
-//	//const int bitsSqrHigh[] =
-//	//{
-//	//	0x00000000, // 3
-//	//	0x00000000, // 5
-//	//	0x00000000, // 7
-//	//	0x00000000, // 11
-//	//	0x00000000, // 13
-//	//	0x00000000, // 17
-//	//	0x00000000, // 19
-//	//	0x00000000, // 23
-//	//	0x00000000, // 29
-//	//	0x00000000, // 31
-//	//	0x00000016, // 37
-//	//	0x000001B3, // 41
-//	//	0x00000358, // 43
-//	//	0x00000435, // 47
-//	//	0x0012DD70, // 53
-//	//	0x022B6218, // 59
-//	//	0x1713E694, // 61
-//	//};
-//	const long long bitsSqr[] = {
-//		0x0000000000000003, // 3
-//		0x0000000000000013, // 5
-//		0x0000000000000017, // 7
-//		0x000000000000023B, // 11
-//		0x000000000000161B, // 13
-//		0x000000000001A317, // 17
-//		0x0000000000030AF3, // 19
-//		0x000000000005335F, // 23
-//		0x0000000013D122F3, // 29
-//		0x00000000121D47B7, // 31
-//		0x000000165E211E9B, // 37
-//		0x000001B382B50737, // 41  
-//		0x0000035883A3EE53, // 43  
-//		0x000004351B2753DF, // 47
-//		0x0012DD703303AED3, // 53
-//		0x022B62183E7B92BB, // 59
-//		0x1713E6940A59F23B, // 61
-//	};
-//	int primes[] = { 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61 };
-//	int nbrs[17];
-//	int diffs[17];
-//	int i, j, m, r;
-//	BigInteger sqrRoot, nextroot;
-//	BigInteger a, c, sqr, val;
-//
-//	if ((*nbr).isEven())
-//	{ // nbr is Even (this would be strange, because small factors such as 2 are removed during trial division)
-//		r = 0;
-//		m = 1;
-//	}
-//	else {
-//		if (k % 2 == 0) { // k Even
-//			r = 1;
-//			m = 2;
-//		}
-//		else { // k Odd
-//			r = (k + (*nbr).lldata()) & 3;
-//			m = 4;
-//		}
-//	}
-//
-//	sqr = k << 2;      // sqr = 4k
-//	sqr *= *nbr;      // sqr = 4kn
-//	sqrRoot = sqr.sqRoot();      // sqrRoot = sqrt(4kn)
-//	a = sqrRoot;                 // a = sqrt(4kn)
-//	
-//	for (;;) {
-//		if ((a.lldata() & (m - 1)) == r) {
-//			nextroot = a*a;  
-//			nextroot -= sqr; 
-//			if (nextroot >= 0)
-//			{
-//				break;  // a*a >= 4kn
-//			}
-//		}
-//		a++;                           
-//	}
-//	nextroot = a*a;          
-//	c = nextroot - sqr;  // c = a*a- 4kn    
-//
-//	for (i = 0; i < 17; i++) {
-//		int pr = primes[i];
-//		nbrs[i]  = c % primes[i];      
-//		diffs[i] = m * ((a %pr) * 2 + m) % pr;
-//	}
-//
-//	for (j = 0; j < 10000; j++) {
-//		for (i = 0; i < 17; i++) {
-//			int shiftBits = nbrs[i];
-//			if ((bitsSqr[i] & (1LL << shiftBits)) == 0)
-//				break;   // Not a perfect square
-//
-//			//if (shiftBits < 32) {
-//			//	if ((bitsSqrLow[i] & (1 << shiftBits)) == 0)
-//			//	{ // Not a perfect square
-//			//		break;
-//			//	}
-//			//}
-//			//else if ((bitsSqrHigh[i] & (1 << (shiftBits - 32))) == 0)
-//			//{ // Not a perfect square
-//			//	break;
-//			//}
-//		}
-//
-//		if (i == 17) {            // Test for perfect square
-//			c = m * j;                 
-//			val = a + c;     // a + m*j       
-//			c = val * val;   // (a + m*j)^2       
-//			c -= sqr;        //  (a + m*j)^2 - 4kn  
-//			sqrRoot = c.sqRoot();       // sqrRoot <- sqrt(c)
-//			sqrRoot += val;              
-//			BigIntGcd(sqrRoot, *nbr, c); // Get GCD(sqrRoot + val, nbr)
-//			if (c > 1) {       // factor has been found.
-//				*factor = c;            
-//				return;
-//			}
-//		}
-//
-//		for (i = 0; i < 17; i++)
-//		{
-//			nbrs[i] = (nbrs[i] + diffs[i]) % primes[i];
-//			diffs[i] = (diffs[i] + 2 * m * m) % primes[i];
-//		}
-//	}
-//
-//	/* failed to factorise in 1000 cycles, so stop trying */
-//	*factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
-//}
 static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	const long long bitsSqr[] = {
 		0x0000000000000003, // 3
@@ -820,21 +662,35 @@ static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
 }
 
+static 
+void upOneLine(void) {
+	SetConsoleCursorPosition(hConsole, coordScreen);
+}
+
 /* can return value:
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
 FACTOR_FOUND   - value of factor is returned in global variable BiGD
 ERROR              (not used??)  */
 static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
-	const static BigInteger N; 
-	BigInteger potentialFactor;
-	ZtoBig((BigInteger &)N, zN);  // convert N from Znum to BigInteger
+	static limb A0[MAX_LEN];
+	static limb A02[MAX_LEN];
+	static limb A03[MAX_LEN];
+
+	static limb W1[MAX_LEN];
+	static limb W2[MAX_LEN];
+	static limb WX[MAX_LEN];
+	static limb WZ[MAX_LEN];
+	static limb X[MAX_LEN];
+	static limb Z[MAX_LEN];
+	static limb Xaux[MAX_LEN];
+	static limb Zaux[MAX_LEN];
+	static limb root[GROUP_SIZE][MAX_LEN];
 
 #ifdef __EMSCRIPTEN__
 	//char text[20];
 #endif
 
-	ElipCurvNo %= 50000000;   // Convert to curve number.
 	for (;;) {
 #ifdef __EMSCRIPTEN__
 		char *ptrText;
@@ -861,9 +717,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			}
 		}
 
-		/* Try to factor BigInteger N using Lehman algorithm. Result in potentialFactor. 
+		/* Try to factor N using Lehman algorithm. Result in Zfactor. 
 		This seldom achieves anything, but when it does it saves a lot of time */
-		//Lehman(&N, ElipCurvNo , &potentialFactor);
 		int kx = ElipCurvNo;
 		const int mult = 5;  /* could change value of mult to use Lehman 
 							 more, or less, relative to ECM. Benchmark testing
@@ -873,7 +728,6 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			LehmanZ(zN, k, Zfactor);
 			if (Zfactor > LIMB_RANGE) {
 				foundByLehman = true;     // Factor found.
-				//BigtoZ(Zfactor, potentialFactor); // copy factor to global Znum
 	//#ifdef _DEBUG
 				std::cout << "Lehman factor found. k = " << k << " N= " << zN 
 					<< " factor = " << Zfactor << '\n';
@@ -929,7 +783,19 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		int2dec(&ptrText, L2);   // Show second bound.
 		strcpy(ptrText, "\n");
 		ptrText += strlen(ptrText);
+		if (first) {
+			if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+			{
+				fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+				Beep(750, 1000);
+			}
+			coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
+			coordScreen.Y = csbi.dwCursorPosition.Y;
+		}
+		else
+			upOneLine();
 		printf("%s", ptrLowerText);
+		first = false;
 #if 0
 		primalityString =
 			textAreaContents
@@ -1036,8 +902,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 			}
 			else {
-				if (gcdIsOne(Z, N) > 1) {
-					BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+				if (gcdIsOne(Z, zN) > 1) {
+					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					Zfactor = BiGD;
 					return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 				}
 			}
@@ -1056,8 +923,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 				}
 				else {
-					if (gcdIsOne(Z, N) > 1) {
-						BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					if (gcdIsOne(Z, zN) > 1) {
+						//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+						Zfactor = BiGD;
 						return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 					}
 				}
@@ -1099,8 +967,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 						memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 					}
 					else {
-						if (gcdIsOne(Z, N) > 1) {
-							BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+						if (gcdIsOne(Z, zN) > 1) {
+							//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+							Zfactor = BiGD;
 							return FACTOR_FOUND;   // ** found a factor in global variable BiGD**
 						}
 					}
@@ -1115,8 +984,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
 					continue; // 
 				}
-				if (gcdIsOne(GcdAccumulated, N) > 1) {
-					BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+				if (gcdIsOne(GcdAccumulated, zN) > 1) {
+					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					Zfactor = BiGD;
 					return FACTOR_FOUND;   // ** found a factor **  in global variable BiGD
 				}
 				break;  // exit for loop
@@ -1194,8 +1064,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
 				}
 				else {
-					if (gcdIsOne(Aux1, N) > 1) {
-						BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					if (gcdIsOne(Aux1, zN) > 1) {
+						//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+						Zfactor = BiGD;
 						return FACTOR_FOUND;   // ** found a factor in global variable BiGD
 					}
 				}
@@ -1281,8 +1152,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 						if (BigNbrIsZero(GcdAccumulated, NumberLength)) {
 							break;  // This curve cannot factor the number.
 						}
-						if (gcdIsOne(GcdAccumulated, N) > 1) {
-							BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+						if (gcdIsOne(GcdAccumulated, zN) > 1) {
+							//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+							Zfactor = BiGD;
 							return FACTOR_FOUND;    // ** found a factor in global variable BiGD
 						}
 					}
@@ -1315,7 +1187,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
 					continue; // multiple of TestNbr, continue.
 				}
-				rc = gcdIsOne(GcdAccumulated, N);
+				rc = gcdIsOne(GcdAccumulated, zN);
 				if (rc == 1) {
 					break;    // GCD is one, so this curve does not find a factor.
 				}
@@ -1324,9 +1196,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				}
 
 				//if (memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb)))
-				if (BiGD != N)
+				if (BiGD != zN)
 				{           // GCD is not 1 or TestNbr
-					BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
+					Zfactor = BiGD;
 					return FACTOR_FOUND;     // ** found a factor in global variable BiGD
 				}
 			}
@@ -1344,6 +1217,7 @@ static void ecminit(Znum zN) {
 	ZtoLimbs(TestNbr, zN, NumberLength);  // copy zN to TestNbr
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
+	first = true;
 
 	/* set variables to zero */
 	memset(M, 0, NumberLength * sizeof(limb));
@@ -1403,7 +1277,6 @@ static void ecminit(Znum zN) {
 
 /* returns true if successful. The factor found is returned in global Znum Zfactor */
 bool ecm(Znum &zN, long long maxdivisor) {
-	//const Znum divCubed = (Znum)maxdivisor * maxdivisor * maxdivisor;
 
 #ifdef _DEBUG
 	//std::cout << "ecm; N = " << zN << '\n';
@@ -1419,8 +1292,7 @@ bool ecm(Znum &zN, long long maxdivisor) {
 	do {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQSx(zN, BiGD); // factor found is returned in BiGD
-			BigtoZ(Zfactor, BiGD);  // copy factor to global Znum Zfactor
+			FactoringSIQSx(zN, Zfactor); // factor found is returned in Zfactor
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
@@ -1429,9 +1301,8 @@ bool ecm(Znum &zN, long long maxdivisor) {
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)
 			return false;
-		//} while (!memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb))); // while BNgcd = TestNbr
-		//} while (zN == BiGD);
-	} while (true);
+	//} while (!memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb))); // while BNgcd = TestNbr
+	} while (zN == BiGD);
 
 #if 0
 	lowerTextArea.setText("");

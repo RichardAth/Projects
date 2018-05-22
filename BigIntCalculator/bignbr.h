@@ -308,7 +308,7 @@ extern limb MontgomeryMultR1[MAX_LEN];
 extern int NumberLength, NumberLengthR1;
 extern int groupLen;
 
-void FactoringSIQSx(const Znum &NbrToFactor, BigInteger &Factor);
+void FactoringSIQSx(const Znum &NbrToFactor, Znum &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);

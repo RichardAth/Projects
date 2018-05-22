@@ -807,7 +807,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (upperBound == -1)
 				continue;  // factor is prime
 			/* trial division */
-			while (upperBound < min((int)prime_list_count, 26000)) {
+			while (upperBound < min((int)prime_list_count, 33333)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {
 					Factors[i].upperBound = -1; // show that residue is prime
