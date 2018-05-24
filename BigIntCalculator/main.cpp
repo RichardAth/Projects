@@ -1746,9 +1746,6 @@ void doTests2(void) {
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
-
-
-	
 }
 
 int main(int argc, char *argv[]) {

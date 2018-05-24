@@ -34,7 +34,7 @@ int ElipCurvNo;            // Elliptic Curve Number
 static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250 };
 
 
-#define __EMSCRIPTEN__
+#define __EMSCRIPTEN__   // turn on status messages
 
 #define MAX_PRIME_SIEVE 7  // Only numbers 7 or 11 are accepted here.
 #if MAX_PRIME_SIEVE == 11
@@ -701,14 +701,16 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 
 		ElipCurvNo++;   // increment curve number
 
-		#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 		//			text[0] = '7';
 		//ptrText = &text[1];
 		//			int2dec(&ptrText, ElipCurvNo);
 		//			printf ("%s\n", text);
-		#endif
-		L1 = NumberLength * 9;        // Get number of digits.
-		if (L1 > 30 && L1 <= 90)    // If between 30 and 90 digits...
+#endif
+		L2 = mpz_sizeinbase(ZT(zN),10);        // Get number of digits.
+		L1 = NumberLength * 9;        /* Get number of digits, rounded (usually 
+									  upwards) to a multiple of 9 */
+		if (L1 > 30 && L1 <= 90 && L2 >= 30 && L2 <= 90)    // If between 30 and 90 digits...
 		{                             // Switch to SIQS.
 			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
 			if (ElipCurvNo  >= limit) {                          
@@ -728,10 +730,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			LehmanZ(zN, k, Zfactor);
 			if (Zfactor > LIMB_RANGE) {
 				foundByLehman = true;     // Factor found.
-	//#ifdef _DEBUG
+//#ifdef _DEBUG
 				std::cout << "Lehman factor found. k = " << k << " N= " << zN 
 					<< " factor = " << Zfactor << '\n';
-				//#endif
+//#endif
 				return FACTOR_FOUND;
 			}
 		}
@@ -783,6 +785,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		int2dec(&ptrText, L2);   // Show second bound.
 		strcpy(ptrText, "\n");
 		ptrText += strlen(ptrText);
+
 		if (first) {
 			if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 			{
@@ -794,6 +797,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		}
 		else
 			upOneLine();
+
 		printf("%s", ptrLowerText);
 		first = false;
 #if 0
@@ -1280,10 +1284,6 @@ bool ecm(Znum &zN, long long maxdivisor) {
 
 #ifdef _DEBUG
 	//std::cout << "ecm; N = " << zN << '\n';
-#endif
-
-#ifndef __EMSCRIPTEN__
-	(void)Factors;     // Ignore parameter.
 #endif
 
 	ecminit(zN);  // initialise values

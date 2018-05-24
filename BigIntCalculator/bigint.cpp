@@ -21,23 +21,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "bignbr.h"
 #include "factor.h"
 
-#include "bignbr.h"
-//#include "expression.h"
-
-typedef boost::multiprecision::mpz_int Znum;
-/* access underlying mpz_t inside an bigint */
-#define ZT(a) a.backend().data()
-
-static BigInteger Temp, Temp2, Temp3, Base, Power, expon;
+static BigInteger Base;
 static char ProcessExpon[2003];
 static char primes[4007];
-limb Mult1[MAX_LEN];
-extern limb Mult2[MAX_LEN];
-static limb Mult3[MAX_LEN];
-static limb Mult4[MAX_LEN];
-extern limb TestNbr[MAX_LEN];
-extern limb MontgomeryMultR1[MAX_LEN];
-
 
 /*return addend1 + addend2 (used to overload + operator) */
 BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
@@ -505,6 +491,7 @@ void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Resul
 	int nbrLimbs1 = Arg1.nbrLimbs;
 	int nbrLimbs2 = Arg2.nbrLimbs;
 	int power2;
+	static BigInteger Power;
 	if (Arg1 == 0)
 	{               // First argument is zero, so the GCD is second argument.
 		Result = Arg2;    //CopyBigInt(Result, pArg2);
@@ -768,20 +755,20 @@ that follow */
 //}
 
 /* uses global value NumberLength for starting value for number of limbs. */
-static int getNbrLimbs(const limb *bigNbr)
-{
-	//const limb *ptrLimb = bigNbr + NumberLength;
-	auto ix = NumberLength;
-	while (ix > 0)
-	{
-		if (bigNbr[ix-1].x != 0)
-		{
-			return (int)(ix);
-		}
-		ix--;   // reduce length because most significant limb is zero
-	}
-	return 1;  // BigNbr is zero
-}
+//static int getNbrLimbs(const limb *bigNbr)
+//{
+//	//const limb *ptrLimb = bigNbr + NumberLength;
+//	auto ix = NumberLength;
+//	while (ix > 0)
+//	{
+//		if (bigNbr[ix-1].x != 0)
+//		{
+//			return (int)(ix);
+//		}
+//		ix--;   // reduce length because most significant limb is zero
+//	}
+//	return 1;  // BigNbr is zero
+//}
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. Also uses global value NumberLength for number of ints. */
@@ -882,6 +869,28 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
 	}
+}
+int ZtoBigNbr(int number[], Znum numberZ) {
+	// note: numberZ is a copy of the original. Its value is changed
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		number[i] = (int)MulPrToLong(remainder);
+		numberZ = quot;
+		i++;
+	}
+
+	if (neg) {
+		ChSignBigNbr(number, i);
+	}
+	return i;
 }
 
 void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {

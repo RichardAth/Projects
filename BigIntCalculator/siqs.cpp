@@ -14,6 +14,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
+
+SIQS = Self-initializing quadratic sieve
+see http://www.mersennewiki.org/index.php/Self-Initializing_Quadratic_Sieve
+or https://en.wikipedia.org/wiki/Quadratic_sieve
 */
 #define  _CRT_SECURE_NO_DEPRECATE
 
@@ -28,7 +32,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 extern HANDLE hConsole;
 static bool first = true;
-static COORD coordScreen = { 0, 0 };    // home for the cursor 
+static COORD coordScreen = { 0, 0 };    // home position for the cursor 
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 // These defines are valid for factoring up to 10^110.
@@ -40,6 +44,8 @@ static CONSOLE_SCREEN_BUFFER_INFO csbi;
 #define MAX_SIEVE_LIMIT     100000
 #define DEBUG_SIQS               0
 #define __EMSCRIPTEN__
+
+extern int NumberLength;
 
 #ifdef __EMSCRIPTEN__
 extern char lowerText[], *ptrLowerText;
@@ -66,27 +72,26 @@ typedef struct {
 	int exp6;
 } PrimeTrialDivisionData;
 
-unsigned char SIQSInfoText[300];
-int numberThreads = 1;
-extern int NumberLength;
-int matrixBLength;
-long trialDivisions;
-long smoothsFound;
-long totalPartials;
-long partialsFound;
-long ValuesSieved;
-int nbrFactorBasePrimes;
-int congruencesFound;
-long polynomialsSieved;
-int nbrPartials;
-int multiplier;
-int nbrFactorsA;
-int afact[MAX_NBR_FACTORS];
-long startTime;
-int Modulus[MAX_LIMBS_SIQS];
-int TestNbr2[MAX_LIMBS_SIQS];
-int biQuadrCoeff[MAX_LIMBS_SIQS];
-int biLinearDelta[MAX_LIMBS_SIQS][MAX_LIMBS_SIQS];
+static unsigned char SIQSInfoText[300];
+static int numberThreads = 1;
+static int matrixBLength;
+static long trialDivisions;
+static long smoothsFound;
+static long totalPartials;
+static long partialsFound;
+static long ValuesSieved;
+static int nbrFactorBasePrimes;
+static int congruencesFound;
+static long polynomialsSieved;
+static int nbrPartials;
+static int multiplier;
+static int nbrFactorsA;
+static int afact[MAX_NBR_FACTORS];
+static long startTime;
+static int Modulus[MAX_LIMBS_SIQS];
+static int TestNbr2[MAX_LIMBS_SIQS];
+static int biQuadrCoeff[MAX_LIMBS_SIQS];
+static int biLinearDelta[MAX_LIMBS_SIQS][MAX_LIMBS_SIQS];
 static long largePrimeUpperBound;
 static unsigned char logar2;
 static int aindex[MAX_NBR_FACTORS];
@@ -123,10 +128,10 @@ static int newColumns[MAX_PRIMES];
 static int matrixCalc3[MAX_PRIMES];
 static int matrixTemp2[MAX_PRIMES];
 static int nbrPrimes2;
-static BigInteger factorSiqs;
+//static BigInteger factorSiqs;
 static unsigned char onlyFactoring;
 static int matrixRows, matrixCols;
-PrimeSieveData *firstPrimeSieveData;
+static PrimeSieveData *firstPrimeSieveData;
 
 /* function forward declarations */
 static bool InsertNewRelation(
@@ -136,7 +141,7 @@ static bool InsertNewRelation(
 static void BlockLanczos(void);
 void ShowSIQSStatus(void);
 static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
-static void sieveThread(BigInteger *result);
+static void sieveThread(Znum &result);
 
 #ifdef __EMSCRIPTEN__
 static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
@@ -2193,13 +2198,13 @@ static unsigned int getFactorsOfA(unsigned int seed, int *indexA)
 /* Partial and full relation routines must be synchronized.             */
 /************************************************************************/
 void FactoringSIQSx(const Znum &zN, Znum &Factor) {
-	const static BigInteger NbrToFactor;
-	ZtoBig((BigInteger &)NbrToFactor, zN);  // convert N from Znum to BigInteger
+	//const static BigInteger NbrToFactor;
+	//ZtoBig((BigInteger &)NbrToFactor, zN);  // convert N from Znum to BigInteger
 	int origNumberLength;
 	int FactorBase;
 	int currentPrime;
 	int NbrMod;
-	BigInteger TempResult;
+	//BigInteger TempResult;
 	PrimeSieveData *rowPrimeSieveData;
 	PrimeTrialDivisionData *rowPrimeTrialDivisionData;
 	int Power2, SqrRootMod, fact;
@@ -2246,10 +2251,10 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	nbrFactorsA = (int)(Temp*0.051 + 1);
 	NbrPolynomials = (1 << (nbrFactorsA - 1)) - 1;
 
-	/* copy NbrToFactor to factorSiqs */
-	
-	factorSiqs = NbrToFactor; 
-	NumberLength = BigIntToBigNbr(factorSiqs, Modulus);
+	//factorSiqs = NbrToFactor;  
+	//NumberLength = BigIntToBigNbr(factorSiqs, Modulus);
+	NumberLength = ZtoBigNbr(Modulus, zN);
+
 	Modulus[NumberLength++] = 0;
 	Modulus[NumberLength] = 0;
 	memcpy(TestNbr2, Modulus, (NumberLength + 1) * sizeof(int));
@@ -2275,7 +2280,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 		rowPrimeTrialDivisionData->exp3 = rowPrimeTrialDivisionData->exp4 =
 		rowPrimeTrialDivisionData->exp5 = rowPrimeTrialDivisionData->exp6 = 0;
 
-	NbrMod = NbrToFactor%8;  // get last 3 bits
+	NbrMod = (int)mpz_fdiv_ui(ZT(zN), 8);  // get last 3 bits
 	for (j = 0; j<sizeof(arrmult) / sizeof(arrmult[0]); j++) {
 		int mod = (NbrMod * arrmult[j]) & 7;
 		adjustment[j] = 0.34657359; /*  (ln 2)/2  */
@@ -2328,7 +2333,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	MultBigNbrByInt(TestNbr2, multiplier, Modulus, NumberLength);
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
-	rowPrimeSieveData->modsqrt = (NbrToFactor.isEven()) ? 0 : 1;
+	rowPrimeSieveData->modsqrt = (ZisEven(zN)) ? 0 : 1;
 
 	switch ((int)Modulus[0] & 0x07) {
 	case 1:
@@ -2482,7 +2487,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
-	// Convert array of limbs to BigInteger and find its logarithm.
+	// find logarithm of number to factor.
 	//dlogNumberToFactor = logBigNbr(NbrToFactor);
 	dlogNumberToFactor = logBigNbr(zN);
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
@@ -2538,9 +2543,9 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	/*********************************************/
 	/* Generate sieve threads                    */
 	/*********************************************/
-	sieveThread(&TempResult);
+	sieveThread(Factor);
 	NumberLength = origNumberLength;
-	BigtoZ (Factor, TempResult);
+	//BigtoZ (Factor, TempResult);
 #if 0
 	for (threadNumber = 0; threadNumber<numberThreads; threadNumber++)
 	{
@@ -2570,7 +2575,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 		}
 	}
 #endif
-	if (/*getTerminateThread() ||*/ (TempResult == 0))
+	if (/*getTerminateThread() ||*/ (Factor == 0))
 	{
 		//throw new ArithmeticException();
 	}
@@ -2691,7 +2696,7 @@ static bool LinearAlgebraPhase(
 		for (j = 0; j < matrixBLength; j++)
 		{
 			char *ptrOutput = output;
-			Znum k;
+			BigInteger k;
 			memcpy(k.limbs, vectLeftHandSide[j], NumberLength * sizeof(limb));
 			k.nbrLimbs = NumberLength;
 			k.sign = SIGN_POSITIVE;
@@ -2791,7 +2796,7 @@ static bool InsertNewRelation(
 #if 0 // DEBUG_SIQS
 	{
 		char *ptrOutput = output;
-		Znum k;
+		BigInteger k;
 		memcpy(k.limbs, biR, NumberLength * sizeof(limb));
 		k.nbrLimbs = NumberLength;
 		k.sign = SIGN_POSITIVE;
@@ -2866,7 +2871,7 @@ static bool InsertNewRelation(
 #if 0 // DEBUG_SIQS
 	{
 		char *ptrOutput = output;
-		Znum k;
+		BigInteger k;
 		memcpy(k.limbs, biR, NumberLength * sizeof(limb));
 		k.nbrLimbs = NumberLength;
 		k.sign = SIGN_POSITIVE;
@@ -3512,10 +3517,11 @@ static void BlockLanczos(void)
 	}
 }
 
-/****************/
-/* Sieve thread */
-/****************/
-static void sieveThread(BigInteger *result) {
+/*********************************/
+/* Sieve thread                  */
+/* return factor found in result */
+/*********************************/
+static void sieveThread(Znum &result) {
 	int polySet;
 	int biT[MAX_LIMBS_SIQS];
 	int biU[MAX_LIMBS_SIQS];
@@ -3581,9 +3587,10 @@ static void sieveThread(BigInteger *result) {
 				if (nbrThreadFinishedPolySet < polySet * numberThreads) {
 					return;
 				}
-				if (1/*factorSiqs == null*/) {
+				if (1 /* factorSiqs == null */ ) {
 					while (!LinearAlgebraPhase(biT, biR, biU, NumberLength));
-					BigNbrToBigInt(*result, biT, NumberLength);  // Factor found.
+					//BigNbrToBigInt(*result, biT, NumberLength);  // Factor found.
+					ValuestoZ(result, biT, NumberLength); // Factor found. copy its value to result
 #if 0
 					synchronized(matrixB)
 					{
@@ -3600,6 +3607,7 @@ static void sieveThread(BigInteger *result) {
 					}
 #endif
 				}
+
 				return;
 			}
 

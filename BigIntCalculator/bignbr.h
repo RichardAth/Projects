@@ -353,6 +353,7 @@ void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int 
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
 void ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
+int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);
 
 typedef void(*mmCback)(void);
