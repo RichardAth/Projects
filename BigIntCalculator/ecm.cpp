@@ -794,6 +794,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			}
 			coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
 			coordScreen.Y = csbi.dwCursorPosition.Y;
+			if (csbi.dwCursorPosition.Y >= csbi.dwSize.Y - 1)
+				coordScreen.Y--;  // if window is full, allow for text scrolling up
 		}
 		else
 			upOneLine();

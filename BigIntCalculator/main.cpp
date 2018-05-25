@@ -1517,7 +1517,7 @@ void removeBlanks(std::string &msg) {
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
-void doFactors(const Znum &Result) {
+void doFactors(const Znum &Result, bool test) {
 	std::vector <zFactors> factorlist;
 	//std::vector<int> exponentlist;
 	Znum Quad[4];
@@ -1581,6 +1581,19 @@ void doFactors(const Znum &Result) {
 			c++;
 		}
 		std::cout << '\n';
+		if (test) {
+			Znum result = 1;
+			for (size_t i = 0; i < factorlist.size(); i++)
+				for (int j = 1; j <= factorlist[i].exponent; j++)
+					result *= factorlist[i].Factor;
+			if (result != Result) {
+				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
+			}
+			result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+			if (result != Result) {
+				std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
+			}
+		}
 	}
 	else
 		std::cout << " cannot be factorised\n";
@@ -1741,7 +1754,7 @@ void doTests2(void) {
 		std::cout << "\nTest # " << i << '\n';
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
-		doFactors(x); /* factorise x, calculate number of divisors etc */
+		doFactors(x, true); /* factorise x, calculate number of divisors etc */
 	}
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
@@ -1890,7 +1903,7 @@ int main(int argc, char *argv[]) {
 				ShowLargeNumber(Result, 6, true, hex);
 				std::cout << '\n';				
 				if (factorFlag) {
-					doFactors(Result); /* factorise Result, calculate number of divisors etc */
+					doFactors(Result,false); /* factorise Result, calculate number of divisors etc */
 				}
 			}
 
