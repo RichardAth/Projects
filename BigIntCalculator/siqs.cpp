@@ -179,7 +179,7 @@ static void InitSIQSStrings(int SieveLimit)
 	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
 	//databack(lowerText);
-	printf("%s", lowerText);
+	printf("%s", ptrLowerText);
 }
 
 // Append multiplier and factor base to SIQS string.
@@ -1811,7 +1811,6 @@ static void PartialRelationFound(
 	int indexFactorA = 0;
 	int nbrSquares;
 	int NumberLengthDivid;
-	int biT0, biT1, biT2, biT3, biT4, biT5, biT6;
 	int squareRootSize = NumberLength / 2 + 1;
 	int nbrColumns;
 	PrimeTrialDivisionData *rowPrimeTrialDivisionData;
@@ -1877,13 +1876,7 @@ static void PartialRelationFound(
 					NumberLengthDivid--;
 				}
 			}
-			biT0 = biT[0];
-			biT1 = biT[1];
-			biT2 = biT[2];
-			biT3 = biT[3];
-			biT4 = biT[4];
-			biT5 = biT[5];
-			biT6 = biT[6];
+
 			for (index = 1; index < nbrFactorBasePrimes; index++)
 			{
 				expParity = 0;
@@ -1899,38 +1892,11 @@ static void PartialRelationFound(
 				Divisor = rowPrimeTrialDivisionData->value;
 				for (;;)
 				{
-					switch (NumberLengthDivid)
-					{
-					case 7:
-						dRem = (double)biT6*(double)rowPrimeTrialDivisionData->exp[5] +
-							(double)biT5*(double)rowPrimeTrialDivisionData->exp[4] +
-							(double)biT4*(double)rowPrimeTrialDivisionData->exp[3] +
-							(double)biT3*(double)rowPrimeTrialDivisionData->exp[2] +
-							(double)biT2*(double)rowPrimeTrialDivisionData->exp[1];
-						break;
-					case 6:
-						dRem = (double)biT5*(double)rowPrimeTrialDivisionData->exp[4] +
-							(double)biT4*(double)rowPrimeTrialDivisionData->exp[3] +
-							(double)biT3*(double)rowPrimeTrialDivisionData->exp[2] +
-							(double)biT2*(double)rowPrimeTrialDivisionData->exp[1];
-						break;
-					case 5:
-						dRem = (double)biT4*(double)rowPrimeTrialDivisionData->exp[3] +
-							(double)biT3*(double)rowPrimeTrialDivisionData->exp[2] +
-							(double)biT2*(double)rowPrimeTrialDivisionData->exp[1];
-						break;
-					case 4:
-						dRem = (double)biT3*(double)rowPrimeTrialDivisionData->exp[2] +
-							(double)biT2*(double)rowPrimeTrialDivisionData->exp[1];
-						break;
-					case 3:
-						dRem = (double)biT2*(double)rowPrimeTrialDivisionData->exp[1];
-						break;
-					default:
-						dRem = 0;
-						break;
+					dRem = 0;
+					for (int ix = 0; ix < NumberLengthDivid - 1; ix++) {
+						dRem += (double)biT[ix + 1] * (double)rowPrimeTrialDivisionData->exp[ix];
 					}
-					dRem += (double)biT1*(double)rowPrimeTrialDivisionData->exp[0] + biT0;
+					dRem +=  biT[0];
 					dDivisor = (double)Divisor;
 					dRem -= floor(dRem / dDivisor)*dDivisor;
 					if (dRem != 0)
@@ -1939,20 +1905,14 @@ static void PartialRelationFound(
 					}
 					expParity = 1 - expParity;
 					DivBigNbrByInt(biT, Divisor, biT, NumberLengthDivid);
-					biT0 = biT[0];
-					biT1 = biT[1];
-					biT2 = biT[2];
-					biT3 = biT[3];
-					biT4 = biT[4];
-					biT5 = biT[5];
-					biT6 = biT[6];
+
 					if (expParity == 0)
 					{
 						rowSquares[rowSquares[0]++] = (int)Divisor;
 					}
 					if (NumberLengthDivid <= 2)
 					{
-						if (biT0 == 1 && biT1 == 0)
+						if (biT[0] == 1 && biT[1] == 0)
 						{               // biT = 1, so division has ended.
 							break;
 						}
@@ -2231,6 +2191,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
 	coordScreen.Y = csbi.dwCursorPosition.Y;
 
+	/* initialise variables */
 	origNumberLength = NumberLength;
 	nbrThreadFinishedPolySet = 0;
 	trialDivisions = 0;
@@ -2785,6 +2746,9 @@ static bool LinearAlgebraPhase(
 }
 
 static int nn;
+/* return true if relation added to matrixB, 
+or if matrixB is full. 
+return false if relation already in matrixB */
 static bool InsertNewRelation(
 	int *rowMatrixB,
 	int *biT, int *biU, int *biR,
@@ -2838,17 +2802,19 @@ static bool InsertNewRelation(
 
 	/* Convert negative numbers to the range 0 <= n < biModulus */
 	if ((biModulus[0] & 1) == 0) { // Even modulus.
-		DivBigNbrByInt(biModulus, 2, biTestNbr2, NumberLengthMod);
+		DivBigNbrByInt(biModulus, 2, biTestNbr2, NumberLengthMod);  // divide modulus by 2
+
 		// If biR >= biModulus perform biR = biR - biModulus.
 		for (k = 0; k < NumberLengthMod; k++) {
-			biT[k] = 0;
+			biT[k] = 0;  // set T to 0
 		}
 		lenDivisor = NumberLengthMod;
 		if (biModulus[lenDivisor - 1] == 0) {
 			lenDivisor--;
 		}
 		AddBigNbrModN(biR, biT, biR, biTestNbr2, lenDivisor);
-		ModInvBigNbr(biR, biT, biTestNbr2, lenDivisor);
+
+		ModInvBigNbr(biR, biT, biTestNbr2, lenDivisor);   // biT = Mod Inv
 	}
 
 	else {             // Odd modulus
@@ -2856,17 +2822,17 @@ static bool InsertNewRelation(
 		if (biModulus[lenDivisor - 1] == 0) {
 			lenDivisor--;
 		}
-		ModInvBigNbr(biR, biT, biModulus, lenDivisor);
+		ModInvBigNbr(biR, biT, biModulus, lenDivisor);  // biT = Mod Inv 
 	}
 
 	if ((biU[NumberLengthMod - 1] & HALF_INT_RANGE) != 0) {
-		AddBigNbr(biU, biModulus, biU, NumberLengthMod);
+		AddBigNbr(biU, biModulus, biU, NumberLengthMod);  // biU += Modulus
 	}
 
 	biU[NumberLengthMod] = 0;
 	AdjustModN((limb *)biU, (limb *)biModulus, lenDivisor);
 	// Compute biU / biR  (mod biModulus)
-	MultBigNbrModN(biU, biT, biR, biModulus, lenDivisor);
+	MultBigNbrModN(biU, biT, biR, biModulus, lenDivisor);  // biR = biU * biT
 
 	// Add relation to matrix B.
 	memcpy(matrixB[congruencesFound], &rowMatrixB[0], nbrColumns * sizeof(int));
@@ -3525,10 +3491,9 @@ int CalcInverseA(const int NumberLengthA, int currentPrime,
 	PrimeTrialDivisionData *rowPrimeTrialDivisionData) {
 
 	double dRem, dCurrentPrime;
-	int Dividend[MAX_LIMBS_SIQS];
+	const int * const Dividend = biQuadrCoeff;
 
 	// Get A mod current prime.
-	memcpy(Dividend, biQuadrCoeff, sizeof(biQuadrCoeff)); 
 	dRem = 0;
 	for (int ix = 1; ix < NumberLengthA; ix++) {
 		dRem += (double)Dividend[ix] * (double)rowPrimeTrialDivisionData->exp[ix-1];
@@ -3573,7 +3538,7 @@ static void sieveThread(Znum &result) {
 	int i, PolynomialIndex, index, index2;
 	int currentPrime;
 	int RemB, D, Q;
-	int Dividend[MAX_LIMBS_SIQS];
+	int *PtrLinearDelta = nullptr;
 	int rowMatrixBbeforeMerge[200];
 	int rowMatrixB[200];
 	unsigned char positive;
@@ -3703,24 +3668,26 @@ static void sieveThread(Znum &result) {
 					rowPrimeSieveData->difsoln = (int)dRem;
 
 					for (index2 = nbrFactorsA - 1; index2 > 0; index2--) {
-						memcpy(Dividend, biLinearDelta[index2], sizeof(Dividend));
+						//memcpy(Dividend, biLinearDelta[index2], sizeof(Dividend));
+						PtrLinearDelta = biLinearDelta[index2];
 						dRem = 0.0;
 						for (int ix = 1; ix < NumberLengthA; ix++) {
-							dRem += (double)Dividend[ix] * (double)rowPrimeTrialDivisionData->exp[ix - 1];
+							dRem += (double)PtrLinearDelta[ix] * (double)rowPrimeTrialDivisionData->exp[ix - 1];
 						}
-						dRem += (double)Dividend[0];
+						dRem += (double)PtrLinearDelta[0];
 						dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 						dRem *= twiceInverseA;
 						dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 						rowPrimeSieveData->Bainv2[index2 - 1] = (int)dRem;
 					}
 
-					memcpy(Dividend, biLinearDelta[0], sizeof(Dividend));
+					//memcpy(Dividend, biLinearDelta[0], sizeof(Dividend));
+					PtrLinearDelta = biLinearDelta[0];
 					dRem = 0;
 					for (int ix = 1; ix < NumberLengthA; ix++) {
-						dRem += (double)Dividend[ix] * (double)rowPrimeTrialDivisionData->exp[ix - 1];
+						dRem += (double)PtrLinearDelta[ix] * (double)rowPrimeTrialDivisionData->exp[ix - 1];
 					}
-					dRem += (double)Dividend[0];
+					dRem += (double)PtrLinearDelta[0];
 					dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 
 					dRem *= twiceInverseA;

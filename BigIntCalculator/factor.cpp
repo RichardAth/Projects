@@ -529,20 +529,21 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 					Factors[j].upperBound = Factors[j+1].upperBound;
 
 				/* now move index entries higher than j+1 down 1, overwrite index entry j+1 */
-				for (ptrdiff_t k = j+1; k < lastfactor - 1; k++) {
+				Factors.erase(Factors.begin() + j + 1);
+				/*for (ptrdiff_t k = j+1; k < lastfactor - 1; k++) {
 					Factors[k].exponent = Factors[k + 1].exponent;
 					Factors[k].Factor = Factors[k + 1].Factor;
 					Factors[k].upperBound = Factors[k + 1].upperBound;
-				}
+				}*/
 				/* now adjust counters */
 				j--;
 				i--;
 				lastfactor--;
-				Factors.pop_back();  // remove last entry
+				//Factors.pop_back();  // remove last entry
 			}
 		}
 		if (!swap)
-			break;  // exit loop early if all factors are already in ascending order
+			break;  // exit loop early if we know all factors are already in ascending order
 	}
 #ifdef _DEBUG
 	std::cout << "result after sort" << '\n';
@@ -889,6 +890,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				continue;
 			}
 		}
+		ElipCurvNo = 1;  // start with 1st curve
 		auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
 		if (!rv)
 			return false;  // failed to factorise number
