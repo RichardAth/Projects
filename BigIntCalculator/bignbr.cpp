@@ -390,14 +390,14 @@ static void AdjustBigNbrModN(int *Nbr, const int *Mod, int nbrLen) {
 }
 
 /* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen) {
+void MultBigNbrModN(const int Nbr1[], const int Nbr2[], int Prod[], const int Mod[], int nbrLen) {
 	int i;
 	int arr[MAX_LIMBS_SIQS];
 
 	if (nbrLen >= 2 && Mod[nbrLen - 1] == 0) {
 		nbrLen--;
 	}
-	Nbr2[nbrLen] = 0;
+	(int)Nbr2[nbrLen] = 0;   // // 'value' of Nbr2 is not changed
 	memset(Prod, 0, nbrLen * sizeof(Prod[0]));
 	i = nbrLen;
 	do {
@@ -418,12 +418,12 @@ void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod) {
 }
 
 /* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen)
+void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen)
 {
 	if (nbrLen >= 2 && *(Mod + nbrLen - 1) == 0) {
 		nbrLen--;
 	}
-	Nbr1[nbrLen] = 0;
+	(int)Nbr1[nbrLen] = 0;  // ´value' of Nbr1 is not changed
 	modmultIntExtended((limb *)Nbr1, Nbr2, (limb *)Prod, (limb *)Mod, nbrLen);
 }
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod) {

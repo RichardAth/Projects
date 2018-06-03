@@ -20,10 +20,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //#include "expression.h"
 #include <math.h>
 
-extern limb approxInv[MAX_LEN];
-extern limb adjustedArgument[MAX_LEN];
-extern limb arrAux[MAX_LEN];
-extern int bitLengthCycle[20];
+static limb approxInv[MAX_LEN];
+static limb adjustedArgument[MAX_LEN];
+static limb arrAux[MAX_LEN];
+static int bitLengthCycle[20];
 
 // This routine uses Newton iteration: if x is an approximate inverse square root of N,
 // a better approximation is: x(3-Nxx)/2. After the inverse square root is computed,

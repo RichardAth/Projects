@@ -239,7 +239,7 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 	}
 }
 /* Sum = Nbr1 + Nbr2 (mod TestNbr) */
-void AddBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum)
+void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
 {
 	AddBigNbrModNB(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
 }
@@ -1171,7 +1171,7 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 /* Multiply big number in Montgomery notation by integer.
 result = FactorBig* factorInt (mod TestNbr)
 note: factorBig is modified */
-void modmultIntExtended(limb *factorBig, int factorInt, limb *result, 
+void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, 
 	const limb *pTestNbr, int nbrLen) {
 #ifdef _USING64BITS_
 	int64_t carry;
@@ -1182,14 +1182,14 @@ void modmultIntExtended(limb *factorBig, int factorInt, limb *result,
 #endif
 	int i;
 	int TrialQuotient;
-	limb *ptrFactorBig;
+	const limb *ptrFactorBig;
 	const limb *ptrTestNbr;
 	double dTestNbr, dFactorBig;
 	if (nbrLen == 1) {
 		smallmodmult(factorBig->x, factorInt, result, pTestNbr->x);
 		return;
 	}
-	(factorBig + nbrLen)->x = 0;   // note: factorBig is modifed, but value does not change
+	((limb *)factorBig + nbrLen)->x = 0;   // note: factorBig is modifed, but value does not change
 	dTestNbr = getMantissa(pTestNbr + nbrLen, nbrLen);
 	dFactorBig = getMantissa(factorBig + nbrLen, nbrLen);
 	TrialQuotient = (int)(unsigned int)floor(dFactorBig * (double)factorInt / dTestNbr + 0.5);
@@ -1237,21 +1237,21 @@ void modmultIntExtended(limb *factorBig, int factorInt, limb *result,
 	}
 #endif
 	while (((result + nbrLen)->x & MAX_VALUE_LIMB) != 0) {
-		ptrFactorBig = result;
+		auto ptrResult = result;
 		ptrTestNbr = pTestNbr;
 		unsigned int cy = 0;
 		for (i = 0; i <= nbrLen; i++) {
-			cy += (unsigned int)ptrTestNbr->x + (unsigned int)ptrFactorBig->x;
-			ptrFactorBig->x = (int)(cy & MAX_VALUE_LIMB);
+			cy += (unsigned int)ptrTestNbr->x + (unsigned int)ptrResult->x;
+			ptrResult->x = (int)(cy & MAX_VALUE_LIMB);
 			cy >>= BITS_PER_GROUP;
-			ptrFactorBig++;
+			ptrResult++;
 			ptrTestNbr++;
 		}
 	}
 }
 
 /* result = FactorBig* factorInt (mod TestNbr) */
-void modmultInt(limb *factorBig, int factorInt, limb *result) {
+void modmultInt(const limb *factorBig, int factorInt, limb *result) {
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
 }
 
@@ -1436,7 +1436,7 @@ static int modInv(int NbrMod, int currentPrime)
 /* U' <- aU - bV, V' <- -cU + dV                                       */
 /***********************************************************************/
 // note: both num and mod are modified (but the value is not changed)
-void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
+void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 {
 	int len;
 	int k, steps;
@@ -1459,8 +1459,8 @@ void ModInvBigNbr(limb *num, limb *inv, limb *mod, int nbrLen)
 	}
 	//  1. U <- M, V <- X, R <- 0, S <- 1, k <- 0
 	size = (nbrLen + 1) * sizeof(limb);
-	(mod + nbrLen)->x = 0;   // value of mod is not changed
-	(num + nbrLen)->x = 0;   // value of num is not changed
+	((limb *)mod + nbrLen)->x = 0;   // value of mod is not changed
+	((limb *)num + nbrLen)->x = 0;   // value of num is not changed
 	memcpy(U, mod, size);
 	memcpy(V, num, size);
 	// Maximum value of R and S can be up to 2*M, so one more limb is needed.

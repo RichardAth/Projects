@@ -29,7 +29,6 @@ typedef boost::multiprecision::mpz_int Znum;
 #define LIMB_RANGE (1U<<BITS_PER_GROUP)
 #define SMALL_NUMBER_BOUND 32768
 #define _USING64BITS_ 1
-#define Max_Factors 2500  // number of unique factors
 
 struct limb
 {
@@ -45,14 +44,14 @@ enum eSign
 
 extern long long lModularMult;
 bool BigNbrIsZero(const limb *value, int nbrLength);
-void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
+//void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
 
 class BigInteger {
-//public:                  // ideally, values should be private
+// private members
 	limb limbs[MAX_LEN];
 	int nbrLimbs = 1;
 	enum eSign sign = SIGN_POSITIVE;
@@ -76,12 +75,12 @@ public:
 	bool isEven() const {
 		return ((limbs[0].x & 1) == 0);
 	}
-	BigInteger sqRoot() const {
+	/*BigInteger sqRoot() const {
 		BigInteger sqrRoot;
 		squareRoot((*this).limbs, sqrRoot.limbs, (*this).nbrLimbs, &sqrRoot.nbrLimbs);
 		sqrRoot.sign = SIGN_POSITIVE;
 		return sqrRoot;
-	}
+	}*/
 	long long lldata() const { /* convert to long long */
 		int noOfLimbs; 
 		long long rv = 0;
@@ -316,13 +315,13 @@ void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *
 void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
 void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
-void modmultInt(limb *factorBig, int factorInt, limb *result);
-void modmultIntExtended(limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
-void AddBigNbrMod(limb *Nbr1, limb *Nbr2, limb *Sum);
+void modmultInt(const limb *factorBig, int factorInt, limb *result);
+void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
+void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
 void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
-void ModInvBigNbr(limb *num, limb *inv, limb *mod, int NumberLength);
+void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumberLength);
 void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
 void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 //double logLimbs(const limb *pBigNbr, int nbrLimbs);
@@ -347,9 +346,9 @@ int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
 void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
 void IntToBigNbr(int value, int bigNbr[], int nbrLength);
 void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
-void MultBigNbrModN(int Nbr1[], int Nbr2[], int Prod[], const int Mod[], int nbrLen);
+void MultBigNbrModN(const int Nbr1[], const int Nbr2[], int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod);
-void MultBigNbrByIntModN(int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
+void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
 void ZtoLimbs(limb *number, Znum numberZ, int NumberLength);

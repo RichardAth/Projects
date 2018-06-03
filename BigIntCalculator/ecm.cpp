@@ -15,7 +15,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 /* factorise numbers or numeric expressions using fast algorithms ECM and SIQS.
 ECM = Lenstra elliptic-curve factorization
-see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization */
+see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization 
+Profiling indicates that about 2/3 of the CPU time is used during Modular Multiplication. */
 
 #define  _CRT_SECURE_NO_DEPRECATE
 #include <iostream>
@@ -621,6 +622,7 @@ static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 		}
 		a++;
 	}
+
 	nextroot = a*a;
 	c = nextroot - sqr;  // c = a*a- 4kn    
 
