@@ -2047,9 +2047,10 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 	while (currentPrime < 10000) {
 		int halfCurrentPrime;
 
+		/* NbrMod = Modulus % currentPrime */
 		NbrMod = (int)RemDivBigNbrByInt(biModulus, currentPrime, NumberLength);
-		/* NbrMod = Modulus% currentPrime */
 		halfCurrentPrime = (currentPrime - 1) / 2;
+		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
 		int jacobi = intDoubleModPow(NbrMod, halfCurrentPrime, currentPrime);
 		double dp = (double)currentPrime;
 		double logp = log(dp) / dp;
@@ -2083,6 +2084,7 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 		}
 	} /* end while */
 
+	/* Modulus = TestNbr2 * multiplier (= N * Multiplier) */
 	MultBigNbrByInt(biTestNbr2, multiplier, biModulus, NumberLength);
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
@@ -2240,14 +2242,13 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
-	// find logarithm of number to factor.
-	//dlogNumberToFactor = logBigNbr(NbrToFactor);
-	dlogNumberToFactor = logBigNbr(zN);
+
+	dlogNumberToFactor = logBigNbr(zN); 	// find logarithm of number to factor.
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 #ifdef __EMSCRIPTEN__
-	getMultAndFactorBase(multiplier, FactorBase);
+	getMultAndFactorBase(multiplier, FactorBase);  // append Mult & Factor base to SIQS string
 	//databack(lowerText);
-	printf("%s", lowerText);
+	printf("%s", lowerText);  // print Mult and Factor Base
 #endif
 
 	firstLimit = 2;
@@ -2257,14 +2258,15 @@ void FactoringSIQSx(const Znum &zN, Znum &Factor) {
 			break;
 		}
 	}
+
 	dNumberToFactor *= multiplier;
 	smallPrimeUpperLimit = j + 1;
-	threshold =
-		(unsigned char)(log(
-			sqrt(dNumberToFactor) * SieveLimit /
-			(FactorBase * 64) /
-			primeSieveData[j + 1].value)
-			/ log(3) + 0x81);
+	threshold =	(unsigned char)
+		(log(sqrt(dNumberToFactor) * SieveLimit /
+					(FactorBase * 64) /
+					primeSieveData[j + 1].value
+		     ) / log(3) + 0x81
+		);
 	firstLimit = (int)(log(dNumberToFactor) / 3);
 	for (secondLimit = firstLimit; secondLimit < nbrFactorBasePrimes; secondLimit++) {
 		if (primeSieveData[secondLimit].value * 2 > SieveLimit) {
