@@ -54,6 +54,9 @@
     <ClCompile Include="ecm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="siqsnew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">

@@ -1689,6 +1689,7 @@ void doTests(void) {
 		"5 < (6 != 7) < 8",                -1,   // returns true
 	};
 
+	auto start = clock();	// used to measure execution time
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
@@ -1737,8 +1738,10 @@ void doTests(void) {
 	}
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
 	factortest(x3);
-	std::cout << "factorisation tests completed\n";
 
+	auto end = clock();   // measure amount of time used
+	double elapsed = (double)end - start;
+	std::cout << "Factorisation tests completed. Time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
 void doTests2(void) {

@@ -56,6 +56,9 @@ void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 		Sum[i] = (int)(carry & MAX_INT_NBR);
 	}
 }
+void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
+	Sum = Nbr1 + Nbr2;
+}
 
 /* Diff = Nbr1-Nbr2 */
 void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
@@ -67,6 +70,9 @@ void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 		borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
 		Diff[i] = borrow & MAX_INT_NBR;
 	}
+}
+void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
+	Sum = Nbr1 - Nbr2;
 }
 
 /* Sum = Nbr1+Nbr2  */
@@ -82,6 +88,9 @@ void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
 	carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
 	Sum[i] = (int)carry;   // last 'digit' is not masked with MAX_INT_NBR
 }
+void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
+	Sum = Nbr1 + Nbr2;
+}
 
 /* Diff = Nbr1-Nbr2 */
 void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
@@ -96,6 +105,9 @@ void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
 	borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
 	Diff[i] = borrow;  /* B version differs from SubtractBigNbr only in that the most significant
 					   word does not have the most significant bit masked off*/
+}
+void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
+	Sum = Nbr1 - Nbr2;
 }
 
 /* Sum = Nbr1+Nbr2 (mod Mod) */
@@ -130,6 +142,9 @@ void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[
 		}
 	}
 }
+void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
+	Diff = (Nbr1 + Nbr2) % Mod;
+}
 
 /* Diff = Nbr1-Nbr2 (mod Mod)*/
 void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen)
@@ -151,6 +166,9 @@ void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const in
 			Diff[i] = (int)(carry & MAX_INT_NBR);
 		}
 	}
+}
+void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
+	Diff = (Nbr1 - Nbr2) % Mod;
 }
 
 /* bigProd = bigFactor*factor */
@@ -188,6 +206,9 @@ void MultBigNbrByInt(const int bigFactor[], int factor, int bigProd[], int nbrLe
 	{         // If factor is negative, change sign of product.
 		ChSignBigNbr(bigProd, nbrLen);
 	}
+}
+void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd) {
+	bigProd = bigFactor * factor;
 }
 
 /* bigProd = bigFactor*factor */
@@ -237,6 +258,9 @@ void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProd[], int nbrL
 		ChSignBigNbrB(bigProd, nbrLen);
 	}
 }
+void MultBigNbrByIntB(const Znum &bigFactor, int factor, Znum &bigProd) {
+	bigProd = bigFactor*factor;
+}
 
 /* Quotient = Dividend/divisor */
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen)
@@ -261,6 +285,9 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 		}
 		Quotient[ctr] = quotient;
 	}
+}
+void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient) {
+	Quotient = Dividend / divisor;
 }
 
 /* calculate dividend%divisor */
@@ -288,6 +315,9 @@ int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen)
 		//pDividend--;
 	}
 	return remainder;
+}
+mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
+	return mpz_fdiv_ui(ZT(Dividend), divisor);
 }
 
 /* Prod = Fact1*Fact2 */
@@ -324,6 +354,9 @@ void MultBigNbr(const int Fact1[], const int Fact2[], int Prod[], int nbrLen)
 	}
 	Prod[i] = low;
 	Prod[i + 1] = (int)floor(dAccumulator / dRangeLimb);
+}
+void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod) {
+	Prod = Fact1*Fact2;
 }
 
 /* bigNbr = value */
@@ -412,7 +445,7 @@ void MultBigNbrModN(const int Nbr1[], const int Nbr2[], int Prod[], const int Mo
 		AddBigNbrModN(arr, Prod, Prod, Mod, nbrLen);
 	} while (i > 0);
 }
-void MultBigNbrModN(Znum Nbr1, Znum Nbr2, Znum Prod, const Znum Mod) {
+void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod) {
 	Prod = Nbr1*Nbr2;
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
 }
@@ -426,7 +459,7 @@ void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[]
 	(int)Nbr1[nbrLen] = 0;  // ´value' of Nbr1 is not changed
 	modmultIntExtended((limb *)Nbr1, Nbr2, (limb *)Prod, (limb *)Mod, nbrLen);
 }
-void MultBigNbrByIntModN(Znum Nbr1, int Nbr2, Znum Prod, const Znum Mod) {
+void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
 	Prod = Nbr1*Nbr2;
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
 }
@@ -478,4 +511,8 @@ void ModInvBigNbr(int *num, int *inv, int *mod, int nbrLenBigInt)
 		memset(inv + NumberLengthBigInt, 0, (NumberLength - NumberLengthBigInt) * sizeof(int));
 	}
 	return;
+}
+void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod) {
+	auto rv = mpz_invert(ZT(inv), ZT(num), ZT(mod));
+	assert(rv != 0);
 }

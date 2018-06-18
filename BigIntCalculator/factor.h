@@ -40,7 +40,7 @@ public:
 void showECMStatus(void);
 bool ecm(Znum &Nz, long long maxdivisor);
 extern int lang;
-extern Znum Zfactor;
+extern Znum Zfactor, Zfactor2;
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()

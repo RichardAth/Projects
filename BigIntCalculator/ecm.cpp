@@ -1297,6 +1297,12 @@ bool ecm(Znum &zN, long long maxdivisor) {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
 			FactoringSIQSx(zN, Zfactor); // factor found is returned in Zfactor
+//#ifdef _DEBUG
+			FactoringSIQS(zN, Zfactor2); // factor found is returned in Zfactor2
+			if (Zfactor != Zfactor2) {
+				std::cout << "expected factor = " << Zfactor << " actual " << Zfactor2 << '\n';
+			}
+//#endif
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {

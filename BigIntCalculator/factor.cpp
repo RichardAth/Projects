@@ -46,7 +46,7 @@ static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
-Znum Zfactor;
+Znum Zfactor, Zfactor2;
 
 static int Cos(int N) {
 	switch (N % 8) 	{

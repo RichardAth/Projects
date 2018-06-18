@@ -206,6 +206,9 @@ void AdjustModN(limb *Nbr, const limb *Modulus, int nbrLen)
 		Nbr[nbrLen].x = 0;
 	}
 }
+void AdjustModN(Znum &Nbr, const Znum &Modulus) {
+	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
+}
 
 /* Sum = Nbr1 + Nbr2 (mod m) */
 void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m, int nbrLen)
