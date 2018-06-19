@@ -1296,12 +1296,17 @@ bool ecm(Znum &zN, long long maxdivisor) {
 	do {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQSx(zN, Zfactor); // factor found is returned in Zfactor
+			//auto start = clock();	// used to measure execution time
+			//FactoringSIQSx(zN, Zfactor); // factor found is returned in Zfactor
 //#ifdef _DEBUG
-			FactoringSIQS(zN, Zfactor2); // factor found is returned in Zfactor2
-			if (Zfactor != Zfactor2) {
-				std::cout << "expected factor = " << Zfactor << " actual " << Zfactor2 << '\n';
-			}
+			//auto time2 = clock();	// used to measure execution time
+			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor2
+			//auto time3 = clock();	// used to measure execution time
+			//double ratio = 100.0 * (double)(time3 - time2) / (double(time2 - start));
+			//std::cout << "new version uses " << ratio << "% of CPU time of old version\n";
+			//if (Zfactor != Zfactor2) {
+			//	std::cout << "expected factor = " << Zfactor << " actual " << Zfactor2 << '\n';
+			//}
 //#endif
 			break;
 		}

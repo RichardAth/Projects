@@ -159,7 +159,6 @@
     <ClCompile Include="modmult.cpp" />
     <ClCompile Include="partition.cpp" />
     <ClCompile Include="showtime.cpp" />
-    <ClCompile Include="siqs.cpp" />
     <ClCompile Include="siqsnew.cpp" />
     <ClCompile Include="sqroot.cpp" />
   </ItemGroup>

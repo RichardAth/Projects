@@ -142,14 +142,14 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
 	}
 }
 
-void BigInteger2Dec(const BigInteger *pBigInt, char *decimal, int groupLength)
-{
-	if (pBigInt->sign == SIGN_NEGATIVE)
-	{
-		*decimal++ = '-';
-	}
-	Bin2Dec(pBigInt->limbs, decimal, pBigInt->nbrLimbs, groupLength);
-}
+//void BigInteger2Dec(const BigInteger *pBigInt, char *decimal, int groupLength)
+//{
+//	if (pBigInt->sign == SIGN_NEGATIVE)
+//	{
+//		*decimal++ = '-';
+//	}
+//	Bin2Dec(pBigInt->limbs, decimal, pBigInt->nbrLimbs, groupLength);
+//}
 
 /* equivalent to:
 _ui64toa((unsigned long long)nbr, *pOutput, 10));

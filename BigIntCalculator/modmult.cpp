@@ -242,10 +242,10 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 	}
 }
 /* Sum = Nbr1 + Nbr2 (mod TestNbr) */
-void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
-{
-	AddBigNbrModNB(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
-}
+//void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
+//{
+//	AddBigNbrModNB(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
+//}
 
 /* Diff = Nbr1-Nbr2 (mod m)*/
 void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *m, int nbrLen)
@@ -269,10 +269,10 @@ void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *
 	}
 }
 /* Sum = Nbr1-Nbr2 (mod Testnbr)*/
-void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
-{
-	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
-}
+//void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
+//{
+//	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
+//}
 
 /* product = factor1*factor2%mod */
 static void smallmodmult(const int factor1, const int factor2, limb *product, int mod)
@@ -1262,34 +1262,34 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result) {
 //        exp  = exponent.
 //        nbrGroupsExp = number of limbs of exponent.
 // Output: power = power in Montgomery notation (mod TestNbr).
-void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power) {
-	int mask, index;
-	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(*power));  // power <- 1
-	for (index = nbrGroupsExp - 1; index >= 0; index--) {
-		int groupExp = (int)(exp + index)->x;
-		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
-			modmult(power, power, power);
-			if ((groupExp & mask) != 0) {
-				modmult(power, base, power);
-			}
-		}
-	}
-}
+//void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power) {
+//	int mask, index;
+//	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(*power));  // power <- 1
+//	for (index = nbrGroupsExp - 1; index >= 0; index--) {
+//		int groupExp = (int)(exp + index)->x;
+//		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
+//			modmult(power, power, power);
+//			if ((groupExp & mask) != 0) {
+//				modmult(power, base, power);
+//			}
+//		}
+//	}
+//}
 
 // Output: power = power in Montgomery notation (mod TestNbr).
-void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power) {
-	int mask, index;
-	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));  // power <- 1
-	for (index = nbrGroupsExp - 1; index >= 0; index--) {
-		int groupExp = (int)(exp + index)->x;
-		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
-			modmult(power, power, power);
-			if ((groupExp & mask) != 0) {
-				modmultInt(power, base, power);
-			}
-		}
-	}
-}
+//void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power) {
+//	int mask, index;
+//	memcpy(power, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));  // power <- 1
+//	for (index = nbrGroupsExp - 1; index >= 0; index--) {
+//		int groupExp = (int)(exp + index)->x;
+//		for (mask = 1 << (BITS_PER_GROUP - 1); mask > 0; mask >>= 1) {
+//			modmult(power, power, power);
+//			if ((groupExp & mask) != 0) {
+//				modmultInt(power, base, power);
+//			}
+//		}
+//	}
+//}
 
 /* U' <- eU + fV, V' <- gU + hV                                        */
 /* U <- U', V <- V'                                                    */
@@ -1773,25 +1773,25 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 }
 
 // Compute modular division for odd moduli.
-void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
-	const BigInteger &mod, BigInteger &quotient)
-{
-	NumberLength = mod.nbrLimbs;
-	// Reduce Num modulo mod.
-	tmpNum = Num%mod; 
-	if (tmpNum < 0) {
-		tmpNum  += mod; 
-	}
-	// Reduce Den modulo mod.
-	tmpDen = Den%mod; 
-	if (tmpDen < 0) {
-		tmpDen += mod; 
-	}
-	BigIntegerToLimbs(aux3, tmpDen, NumberLength);  // aux3 = tmpDen
-	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
-	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
-	BigIntegerToLimbs(aux4, tmpNum, NumberLength);
-	modmult(aux3, aux4, aux3);              // aux3 <- Num / Den in standard notation.
-	LimbsToBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
-	return;
-}
+//void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
+//	const BigInteger &mod, BigInteger &quotient)
+//{
+//	NumberLength = mod.nbrLimbs;
+//	// Reduce Num modulo mod.
+//	tmpNum = Num%mod; 
+//	if (tmpNum < 0) {
+//		tmpNum  += mod; 
+//	}
+//	// Reduce Den modulo mod.
+//	tmpDen = Den%mod; 
+//	if (tmpDen < 0) {
+//		tmpDen += mod; 
+//	}
+//	BigIntegerToLimbs(aux3, tmpDen, NumberLength);  // aux3 = tmpDen
+//	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
+//	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
+//	BigIntegerToLimbs(aux4, tmpNum, NumberLength);
+//	modmult(aux3, aux4, aux3);              // aux3 <- Num / Den in standard notation.
+//	LimbsToBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
+//	return;
+//}

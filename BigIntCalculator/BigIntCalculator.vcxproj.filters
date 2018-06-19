@@ -42,9 +42,6 @@
     <ClCompile Include="baseconv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="siqs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="bignbr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

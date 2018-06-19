@@ -350,57 +350,57 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 }
 
 /* divide by 2, use right shift for speed */
-void BigIntDivide2(BigInteger &pArg) {
-	int nbrLimbs = pArg.nbrLimbs;
-	int ctr = nbrLimbs - 1;
-	unsigned int carry;
-	//limb *ptrLimb = &pArg->limbs[ctr];
-	limb *ptrLimb = pArg.limbs;
-	carry = 0;
-	for (; ctr >= 0; ctr--)
-	{
-		carry = (carry << BITS_PER_GROUP) + (unsigned int)ptrLimb[ctr].x;
-		ptrLimb[ctr].x = (int)(carry >> 1);
-		carry &= 1;
-	}
-	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1].x == 0)
-	{     // Most significant limb is zero, so reduce size by one limb.
-		pArg.nbrLimbs--;
-	}
-}
+//void BigIntDivide2(BigInteger &pArg) {
+//	int nbrLimbs = pArg.nbrLimbs;
+//	int ctr = nbrLimbs - 1;
+//	unsigned int carry;
+//	//limb *ptrLimb = &pArg->limbs[ctr];
+//	limb *ptrLimb = pArg.limbs;
+//	carry = 0;
+//	for (; ctr >= 0; ctr--)
+//	{
+//		carry = (carry << BITS_PER_GROUP) + (unsigned int)ptrLimb[ctr].x;
+//		ptrLimb[ctr].x = (int)(carry >> 1);
+//		carry &= 1;
+//	}
+//	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1].x == 0)
+//	{     // Most significant limb is zero, so reduce size by one limb.
+//		pArg.nbrLimbs--;
+//	}
+//}
 
 /* arg = arg*2^power. Throw exception if product is too large */
-static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
-{
-	int ctr;
-	int nbrLimbs = pArg.nbrLimbs;
-	limb *ptrLimbs = pArg.limbs;
-
-	for (; power2 > 0; power2--) {
-		/*each time round the loop multiplies arg by 2 */
-		unsigned int carry = 0;
-		for (ctr = 0; ctr < nbrLimbs; ctr++)
-		{
-			carry += (unsigned int)ptrLimbs[ctr].x << 1;
-			ptrLimbs[ctr].x = (int)(carry & MAX_VALUE_LIMB);
-			carry >>= BITS_PER_GROUP;
-		}
-		if (carry != 0)
-		{
-			ptrLimbs[ctr].x = (int)carry;
-			nbrLimbs++;
-			if (nbrLimbs > MAX_LEN) {
-				std::string line = std::to_string(__LINE__);
-				std::string mesg = "number too big : cannot do multiplication : ";
-				mesg += __func__;
-				mesg += " line ";  mesg += line;
-				mesg += " in file "; mesg += __FILE__;
-				throw std::range_error(mesg);
-			}
-		}
-	}
-	pArg.nbrLimbs = nbrLimbs;
-}
+//static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
+//{
+//	int ctr;
+//	int nbrLimbs = pArg.nbrLimbs;
+//	limb *ptrLimbs = pArg.limbs;
+//
+//	for (; power2 > 0; power2--) {
+//		/*each time round the loop multiplies arg by 2 */
+//		unsigned int carry = 0;
+//		for (ctr = 0; ctr < nbrLimbs; ctr++)
+//		{
+//			carry += (unsigned int)ptrLimbs[ctr].x << 1;
+//			ptrLimbs[ctr].x = (int)(carry & MAX_VALUE_LIMB);
+//			carry >>= BITS_PER_GROUP;
+//		}
+//		if (carry != 0)
+//		{
+//			ptrLimbs[ctr].x = (int)carry;
+//			nbrLimbs++;
+//			if (nbrLimbs > MAX_LEN) {
+//				std::string line = std::to_string(__LINE__);
+//				std::string mesg = "number too big : cannot do multiplication : ";
+//				mesg += __func__;
+//				mesg += " line ";  mesg += line;
+//				mesg += " in file "; mesg += __FILE__;
+//				throw std::range_error(mesg);
+//			}
+//		}
+//	}
+//	pArg.nbrLimbs = nbrLimbs;
+//}
 
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
@@ -486,59 +486,59 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 }
 
 /* calculate GCD of arg1 & arg2*/
-void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
-{
-	int nbrLimbs1 = Arg1.nbrLimbs;
-	int nbrLimbs2 = Arg2.nbrLimbs;
-	int power2;
-	static BigInteger Power;
-	if (Arg1 == 0)
-	{               // First argument is zero, so the GCD is second argument.
-		Result = Arg2;    //CopyBigInt(Result, pArg2);
-		return;
-	}
-	if (Arg2 == 0)
-	{               // Second argument is zero, so the GCD is first argument.
-		Result = Arg1;		//CopyBigInt(Result, pArg1);
-		return;
-	}
-	// Reuse Base and Power temporary variables.
-	Base = Arg1;     // CopyBigInt(Base, Arg1);   
-	Power = Arg2;   //  CopyBigInt(Power, Arg2); 
-	Base.sign = SIGN_POSITIVE;
-	Power.sign = SIGN_POSITIVE;
-	power2 = 0;
-	while (((Base.limbs[0].x | Power.limbs[0].x) & 1) == 0)
-	{  // Both values are even
-		BigIntDivide2(Base);
-		BigIntDivide2(Power);
-		power2++;
-	}
-
-	while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
-	{    // Main GCD loop.
-		if (Base.isEven()) {     // Number is even. Divide it by 2.
-			BigIntDivide2(Base);
-			continue;
-		}
-		if (Power.isEven())  {     // Number is even. Divide it by 2.
-			BigIntDivide2(Power);
-			continue;
-		}
-		Result = Base - Power; // BigIntSubt(Base, Power, Result);
-		if (Result >= 0) {
-			Base = Result; // CopyBigInt(Base, Result);
-			BigIntDivide2(Base);
-		}
-		else {
-			Power = Result; // CopyBigInt(Power, Result);
-			Power.sign = SIGN_POSITIVE;
-			BigIntDivide2(Power);
-		}
-	}
-	Result = Base; // CopyBigInt(Result, Base);
-	BigIntMutiplyPower2(Result, power2); /* Result *= 2^power     */
-}
+//void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
+//{
+//	int nbrLimbs1 = Arg1.nbrLimbs;
+//	int nbrLimbs2 = Arg2.nbrLimbs;
+//	int power2;
+//	static BigInteger Power;
+//	if (Arg1 == 0)
+//	{               // First argument is zero, so the GCD is second argument.
+//		Result = Arg2;    //CopyBigInt(Result, pArg2);
+//		return;
+//	}
+//	if (Arg2 == 0)
+//	{               // Second argument is zero, so the GCD is first argument.
+//		Result = Arg1;		//CopyBigInt(Result, pArg1);
+//		return;
+//	}
+//	// Reuse Base and Power temporary variables.
+//	Base = Arg1;     // CopyBigInt(Base, Arg1);   
+//	Power = Arg2;   //  CopyBigInt(Power, Arg2); 
+//	Base.sign = SIGN_POSITIVE;
+//	Power.sign = SIGN_POSITIVE;
+//	power2 = 0;
+//	while (((Base.limbs[0].x | Power.limbs[0].x) & 1) == 0)
+//	{  // Both values are even
+//		BigIntDivide2(Base);
+//		BigIntDivide2(Power);
+//		power2++;
+//	}
+//
+//	while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
+//	{    // Main GCD loop.
+//		if (Base.isEven()) {     // Number is even. Divide it by 2.
+//			BigIntDivide2(Base);
+//			continue;
+//		}
+//		if (Power.isEven())  {     // Number is even. Divide it by 2.
+//			BigIntDivide2(Power);
+//			continue;
+//		}
+//		Result = Base - Power; // BigIntSubt(Base, Power, Result);
+//		if (Result >= 0) {
+//			Base = Result; // CopyBigInt(Base, Result);
+//			BigIntDivide2(Base);
+//		}
+//		else {
+//			Power = Result; // CopyBigInt(Power, Result);
+//			Power.sign = SIGN_POSITIVE;
+//			BigIntDivide2(Power);
+//		}
+//	}
+//	Result = Base; // CopyBigInt(Result, Base);
+//	BigIntMutiplyPower2(Result, power2); /* Result *= 2^power     */
+//}
 
 /* add addend to big number */
 static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend) {
@@ -882,7 +882,8 @@ int ZtoBigNbr(int number[], Znum numberZ) {
 	int i = 0;
 	while (numberZ > 0) {
 		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-		number[i] = (int)MulPrToLong(remainder);
+		//number[i] = (int)MulPrToLong(remainder);
+		number[i] = (int)mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
 		numberZ = quot;
 		i++;
 	}
