@@ -22,12 +22,13 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 
 #include "bignbr.h"
-
-limb MontgomeryR1[MAX_LEN];
+/* values below are set up by calling GetMontgomeryParms*/
+//limb MontgomeryR1[MAX_LEN];  // not used
 limb TestNbr[MAX_LEN];      // used as modulus for modmult, modInvBigNbr etc 
-limb MontgomeryMultN[MAX_LEN];
-limb MontgomeryMultR1[MAX_LEN];
-limb MontgomeryMultR2[MAX_LEN];
+limb MontgomeryMultN[MAX_LEN];   // N = -M^(-1) mod R  (M = TestNbr)
+limb MontgomeryMultR1[MAX_LEN];  /* contains value of 1 in Mongomery notation 
+								 i.r. R mod M */
+limb MontgomeryMultR2[MAX_LEN];  // R^2 mod  M.
 static int powerOf2Exponent;
 static limb aux[MAX_LEN], aux2[MAX_LEN];
 static limb aux3[MAX_LEN], aux4[MAX_LEN];
@@ -66,96 +67,9 @@ static void ComputeInversePower2(const limb *value, limb *result, limb *tmp)
 	}
 }
 
-// Let R be a power of 2 of at least len limbs.
-// Compute R1 = MontgomeryR1 and N = MontgomeryN using the formulas:
-// R1 = R mod M
-// N = -M^(-1) mod R
-// also compute R2, powerOf2Exponent
-/* uses global variables TestNbr, NumberLength */
-void GetMontgomeryParms(int len) {
-	int j;
-	limb Cy;
-	int value;
-	TestNbr[len].x = 0;
-	NumberLength = len;
-	NumberLength2 = len + len;
-	if (NumberLength == 1) {
-		MontgomeryMultR1[0].x = 1;
-		MontgomeryMultR2[0].x = 1;
-		NumberLengthR1 = 1;
-		return;
-	}
-	// Check whether TestNbr is a power of 2.
-	powerOf2Exponent = 0;    // Indicate not power of 2 in advance.
-	for (j = 0; j < NumberLength - 1; j++) {
-		if (TestNbr[j].x != 0) {
-			break;
-		}
-	}
-	if (j == NumberLength - 1) {
-		value = TestNbr[NumberLength - 1].x;
-		for (j = 0; j < BITS_PER_GROUP; j++) {
-			if (value == 1) {
-				powerOf2Exponent = (NumberLength - 1)*BITS_PER_GROUP + j;
-				memset(MontgomeryMultR1, 0, NumberLength * sizeof(limb));
-				memset(MontgomeryMultR2, 0, NumberLength * sizeof(limb));
-				MontgomeryMultR1[0].x = 1;
-				MontgomeryMultR2[0].x = 1;
-				return;
-			}
-			value >>= 1;
-		}
-	}
-	// Compute MontgomeryMultN as -1/TestNbr (mod 2^k) using Newton method,
-	// which doubles the precision for each iteration.
-	// In the formula above: k = BITS_PER_GROUP * NumberLength.
-	if (NumberLength >= 8) {
-		limb *ptrResult;
-		ComputeInversePower2(TestNbr, MontgomeryMultN, aux);
-		ptrResult = &MontgomeryMultN[0];
-		Cy.x = 0;          // Change sign.
-		for (j = 0; j < NumberLength; j++) {
-			Cy.x = (Cy.x >> BITS_PER_GROUP) - ptrResult->x;
-			ptrResult->x = Cy.x & MAX_VALUE_LIMB;
-			ptrResult++;
-		}
-		ptrResult->x = 0;
-	}
-	else { // NumberLength < 8
-		int x, N;
-		x = N = (int)TestNbr[0].x;   // 2 least significant bits of inverse correct.
-		x = x * (2 - N * x);         // 4 least significant bits of inverse correct.
-		x = x * (2 - N * x);         // 8 least significant bits of inverse correct.
-		x = x * (2 - N * x);         // 16 least significant bits of inverse correct.
-		x = x * (2 - N * x);         // 32 least significant bits of inverse correct.
-		MontgomeryMultN[0].x = (-x) & MAX_VALUE_LIMB;    // Change sign
-	}
-	// Compute MontgomeryMultR1 as 1 in Montgomery notation,
-	// this is 2^(NumberLength*BITS_PER_GROUP) % TestNbr.
-	j = NumberLength;
-	MontgomeryMultR1[j].x = 1;
-	do {
-		MontgomeryMultR1[--j].x = 0;
-	} while (j > 0);
-	AdjustModN(MontgomeryMultR1, TestNbr, len);
-	MontgomeryMultR1[NumberLength].x = 0;
-	memcpy(MontgomeryMultR2, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
-	for (NumberLengthR1 = NumberLength; NumberLengthR1 > 0; NumberLengthR1--) {
-		if (MontgomeryMultR1[NumberLengthR1 - 1].x != 0) {
-			break;
-		}
-	}
-	// Compute MontgomeryMultR2 as 2^(2*NumberLength*BITS_PER_GROUP) % TestNbr.
-	for (j = NumberLength; j > 0; j--) {
-		memmove(&MontgomeryMultR2[1], &MontgomeryMultR2[0], NumberLength * sizeof(limb));
-		MontgomeryMultR2[0].x = 0;
-		AdjustModN(MontgomeryMultR2, TestNbr, len);
-	}
-}
-
 // Compute Nbr <- Nbr mod Modulus.
 // Modulus has NumberLength limbs.
-void AdjustModN(limb *Nbr, const limb *Modulus, int nbrLen)
+static void AdjustModN(limb *Nbr, const limb *Modulus, int nbrLen)
 {
 	int i, carry;
 	int TrialQuotient;
@@ -206,8 +120,105 @@ void AdjustModN(limb *Nbr, const limb *Modulus, int nbrLen)
 		Nbr[nbrLen].x = 0;
 	}
 }
-void AdjustModN(Znum &Nbr, const Znum &Modulus) {
-	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
+
+// Let R be a power of 2 of at least len limbs.
+// Compute R1 = MontgomeryMultR1 and N = MontgomeryN using the formulas:
+// R1 = R mod M 
+// N = -M^(-1) mod R
+// also compute R2 = R^2 mod  M.
+// powerOf2Exponent
+/* uses global variables TestNbr, NumberLength */
+void GetMontgomeryParms(int len) {
+	int j;
+	limb Cy;
+	int value;
+	TestNbr[len].x = 0;
+	NumberLength = len;
+	NumberLength2 = len + len;
+	if (NumberLength == 1) {
+		/* in reality, there can't be just 1 limb because numbers that fit into
+		1 limb will already be factored before we get to this point, therefore
+		code below is never executed. */
+		MontgomeryMultR1[0].x = 1;
+		MontgomeryMultR2[0].x = 1;
+		NumberLengthR1 = 1;
+		return;
+	}
+
+	/* Check whether TestNbr is a power of 2. 
+	In reality, it can't be, because TestNbr is the number to be factored and any
+	small factors will already have been removed. */
+	powerOf2Exponent = 0;    // Indicate not power of 2 in advance.
+	for (j = 0; j < NumberLength - 1; j++) {
+		if (TestNbr[j].x != 0) {
+			break;   /* j is index of least significant non-zero limb. the 
+			least significant limb can't be zero because TstNbr must be odd, 
+			therfore j is zero */
+		}
+	}
+	if (j == NumberLength - 1) {  // is there only 1 non-zero limb?
+		/* in reality, there can't be just 1 because numbers that fit into 
+		1 limb will already be factored before we get to this point, therefore
+		code below is never executed. */
+		value = TestNbr[NumberLength - 1].x;
+		for (j = 0; j < BITS_PER_GROUP; j++) {
+			if (value == 1) {
+				powerOf2Exponent = (NumberLength - 1)*BITS_PER_GROUP + j;
+				memset(MontgomeryMultR1, 0, NumberLength * sizeof(limb));
+				memset(MontgomeryMultR2, 0, NumberLength * sizeof(limb));
+				MontgomeryMultR1[0].x = 1;
+				MontgomeryMultR2[0].x = 1;
+				return;
+			}
+			value >>= 1;
+		}
+	}
+
+	// Compute MontgomeryMultN as -1/TestNbr (mod 2^k) using Newton method,
+	// which doubles the precision for each iteration.
+	// In the formula above: k = BITS_PER_GROUP * NumberLength.
+	if (NumberLength >= 8) {
+		limb *ptrResult;
+		ComputeInversePower2(TestNbr, MontgomeryMultN, aux);
+		ptrResult = &MontgomeryMultN[0];
+		Cy.x = 0;          // Change sign.
+		for (j = 0; j < NumberLength; j++) {
+			Cy.x = (Cy.x >> BITS_PER_GROUP) - ptrResult->x;
+			ptrResult->x = Cy.x & MAX_VALUE_LIMB;
+			ptrResult++;
+		}
+		ptrResult->x = 0;
+	}
+	else { // NumberLength < 8
+		int x, N;
+		x = N = (int)TestNbr[0].x;   // 2 least significant bits of inverse correct.
+		x = x * (2 - N * x);         // 4 least significant bits of inverse correct.
+		x = x * (2 - N * x);         // 8 least significant bits of inverse correct.
+		x = x * (2 - N * x);         // 16 least significant bits of inverse correct.
+		x = x * (2 - N * x);         // 32 least significant bits of inverse correct.
+		MontgomeryMultN[0].x = (-x) & MAX_VALUE_LIMB;    // Change sign
+	}
+	// Compute MontgomeryMultR1 as 1 in Montgomery notation,
+	// this is 2^(NumberLength*BITS_PER_GROUP) % TestNbr.
+	j = NumberLength;
+	MontgomeryMultR1[j].x = 1;
+	do {
+		MontgomeryMultR1[--j].x = 0;
+	} while (j > 0);
+	AdjustModN(MontgomeryMultR1, TestNbr, len);
+	MontgomeryMultR1[NumberLength].x = 0;
+	memcpy(MontgomeryMultR2, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
+	for (NumberLengthR1 = NumberLength; NumberLengthR1 > 0; NumberLengthR1--) {
+		if (MontgomeryMultR1[NumberLengthR1 - 1].x != 0) {
+			break;
+		}
+	}
+	// Compute MontgomeryMultR2 as 2^(2*NumberLength*BITS_PER_GROUP) % TestNbr.
+	for (j = NumberLength; j > 0; j--) {
+		memmove(&MontgomeryMultR2[1], &MontgomeryMultR2[0], NumberLength * sizeof(limb));
+		MontgomeryMultR2[0].x = 0;
+		AdjustModN(MontgomeryMultR2, TestNbr, len);
+	}
 }
 
 /* Sum = Nbr1 + Nbr2 (mod m) */
@@ -299,7 +310,7 @@ static void smallmodmult(const int factor1, const int factor2, limb *product, in
 }
 
 // Multiply two numbers in Montgomery notation.
-//
+// see https://en.wikipedia.org/wiki/Montgomery_modular_multiplication
 // For large numbers the REDC algorithm is:
 // m <- ((T mod R)N') mod R
 // t <- (T + mN) / R
@@ -977,7 +988,7 @@ static void MontgomeryMult11(const limb *pNbr1, const limb *pNbr2, limb *pProd)
 }
 #endif
 
-/* product = factor1*factor2 (mod TestNbr)
+/* product = factor1*factor2 (mod TestNbr) - values in Montgomery format
 uses global variables powerOf2Exponent, NumberLength, TestNbr */
 void modmult(const limb *factor1, const limb *factor2, limb *product)
 {
@@ -993,7 +1004,7 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 		lModularMult++;  // increase counter used to control status display
 	}
 //#endif
-	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
+	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2; cannot use Montgomery multiplication.
 		LimbsToBigInteger(factor1, tmpNum, NumberLength);  // tmpNum = factor1
 		LimbsToBigInteger(factor2, tmpDen, NumberLength);  // tmpDen = factor2
 		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
@@ -1171,10 +1182,10 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	return;
 }
 
-/* Multiply big number in Montgomery notation by integer.
+/* Multiply big number by integer.
 result = FactorBig* factorInt (mod TestNbr)
 note: factorBig is modified */
-void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, 
+static void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, 
 	const limb *pTestNbr, int nbrLen) {
 #ifdef _USING64BITS_
 	int64_t carry;
@@ -1416,7 +1427,7 @@ static int modInv(int NbrMod, int currentPrime)
 /* NAME: ModInvBigNbr                                                  */
 /*                                                                     */
 /* PURPOSE: Find the inverse multiplicative modulo M.                  */
-/* The algorithm terminates with inv = X^(-1) mod M.                   */
+/* The algorithm terminates with inv = num^(-1) mod M.                 */
 /*                                                                     */
 /* This routine uses Kaliski Montgomery inverse algorithm              */
 /* with changes by E. Savas and C. K. Koc.                             */

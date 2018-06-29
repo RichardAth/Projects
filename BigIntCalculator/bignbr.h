@@ -99,6 +99,7 @@ public:
 			rv = -rv;
 		return rv;  
 	}
+
 	/* overload assignment operator here. There are 5 overloads, 
 	for assignments from BigIntegers, Integers, long long,
 	double and Znum */
@@ -314,16 +315,19 @@ void FactoringSIQS(const Znum &NbrToFactor, Znum &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
+void GetMontgomeryParms(const Znum &Nval);
 void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
 void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
+void modmult(const Znum &a, const Znum &b, Znum &result);
+void REDC(Znum &t, const Znum &T);
 void modmultInt(const limb *factorBig, int factorInt, limb *result);
-void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
+//void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
 //void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
 //void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 //void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
-void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
+//void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumberLength);
 void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);

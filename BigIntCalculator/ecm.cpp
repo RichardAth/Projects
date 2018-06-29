@@ -371,9 +371,6 @@ void print(limb *w)
 #endif
 static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 {
-	//limb * const u = UZ;
-	//limb * const v = TX;
-	//limb * const w = TZ;
 	/* N.B. all arithmetic is mod TestNbr */
 	AddBigNbrModNB(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1+z1 (mod testNbr)
 	modmult(TZ, TZ, UZ);                                    // UZ = (x1+z1)^2 (mod testNbr)
@@ -664,8 +661,7 @@ static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
 }
 
-static 
-void upOneLine(void) {
+static void upOneLine(void) {
 	SetConsoleCursorPosition(hConsole, coordScreen);
 }
 
@@ -710,22 +706,21 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		//			printf ("%s\n", text);
 #endif
 		L2 = mpz_sizeinbase(ZT(zN),10);        // Get number of digits.
-		L1 = NumberLength * 9;        /* Get number of digits, rounded (usually 
-									  upwards) to a multiple of 9 */
+		L1 = NumberLength * 9;        /* Get number of digits, rounded (usually upwards)
+									   to a multiple of 9 */
 		if (L1 > 30 && L1 <= 90 && L2 >= 30 && L2 <= 90)    // If between 30 and 90 digits...
 		{                             // Switch to SIQS.
 			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
 			if (ElipCurvNo  >= limit) {                          
-				//ElipCurvNo += TYP_SIQS;        
-				return CHANGE_TO_SIQS;           // Switch to SIQS.
+   				return CHANGE_TO_SIQS;           // Switch to SIQS.
 			}
 		}
 
 		/* Try to factor N using Lehman algorithm. Result in Zfactor. 
 		This seldom achieves anything, but when it does it saves a lot of time */
 		int kx = ElipCurvNo;
-		const int mult = 5;  /* could change value of mult to use Lehman 
-							 more, or less, relative to ECM. Benchmark testing
+		const int mult = 5;  /* could change value of mult to use Lehman more, 
+							 or less, relative to ECM. Benchmark testing
 							 needed to estimate best value */
 		for (int k = (kx - 1)*mult + 1; k <= kx*mult; k++) {
 			/* for curve no 1, k = 1 to 5, curve no 2, k = 6 to 10, etc*/
@@ -846,9 +841,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		//  Compute A0 <- 2 * (ElipCurvNo+1)*modinv(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N
 		// Aux2 <- 1 in Montgomery notation.
 		memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
-		modmultInt(Aux2, ElipCurvNo + 1, Aux2);            // Aux2 <- ElipCurvNo + 1 (mod TestNbr)
+		modmultInt(Aux2, ElipCurvNo + 1, Aux2);    // Aux2 <- ElipCurvNo + 1 (mod TestNbr)
 		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(ElipCurvNo+1) (mod TestNbr)
-		modmultInt(Aux2, ElipCurvNo + 1, Aux3);            // Aux3 <- (ElipCurvNo + 1)^2 (mod TestNbr)
+		modmultInt(Aux2, ElipCurvNo + 1, Aux3);    // Aux3 <- (ElipCurvNo + 1)^2 (mod TestNbr)
 		modmultInt(Aux3, 3, Aux3);                 // Aux3 <- 3*(ElipCurvNo + 1)^2 (mod TestNbr)
 		// Aux2 <- 3*(ElipCurvNo + 1)^2 - 1 (mod TestNbr)
 		SubtBigNbrModN(Aux3, MontgomeryMultR1, Aux2, TestNbr, NumberLength);

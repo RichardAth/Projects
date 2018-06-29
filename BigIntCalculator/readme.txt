@@ -78,19 +78,22 @@ This step may return factors that are not prime factors.
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
 using a list of primes. If a factor is found that is: 
-    less than the cube of the largest prime used and 
-    has no factors in the list of primes, and 
-    the factor is not prime 
-(in this case the factor can only have two prime factors) 
-factorise it using Pollard's Rho algorithm. 
+    less than the cube of the largest prime in the list, 
+    and has no factors in the list of primes, 
+    and the factor is not prime 
+then the factor can only have two prime factors. In this case factorise it using 
+Pollard's Rho algorithm. 
 
 Step 3: For each factor that is not already known to be prime:
 A. If the factor is a perfect power replace it with the number which is the root 
-   (and adjust the the factor's exponent accordingly)
+   and adjust the the factor's exponent accordingly. Although such numbers are  
+   rare this is necessary because SIQS and ECM do not work for numbers which are
+   perfect powers.
 B. Test whether the number is prime: 
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
-   Otherwise factorise it using ECM, SIQS and Lehman algorithms
+   Otherwise factorise it using ECM, SIQS and Lehman algorithms. SIQS is only
+   used for numbers between 30 and 90 digits.
 
 The factoriser is essentially DAs program, with an interface function that converts 
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
@@ -103,7 +106,7 @@ without factorising the number. Realistically any number small enough to be
 factorised in a reasonable time will not cause an overflow.
 
 Profiling using Visual Studio suggests that changing from DAs BigIntegers to 
-GMP/MPIR would not improve performance much. This would be a huge task.
+GMP/MPIR would not improve performance. This would be a huge task.
 
 the time taken to factorise a large number is unpredictable e.g.
 

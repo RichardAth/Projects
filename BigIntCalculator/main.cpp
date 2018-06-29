@@ -8,6 +8,8 @@
 #include "bignbr.h"
 #include "factor.h"
 
+extern Znum zR, zR2, zNI, zN;
+
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
 static int stackIndex=0; 
@@ -1588,10 +1590,12 @@ void doFactors(const Znum &Result, bool test) {
 					result *= factorlist[i].Factor;
 			if (result != Result) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
+				Beep(750, 1000);
 			}
 			result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
 			if (result != Result) {
 				std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
+				Beep(750, 1000);
 			}
 		}
 	}
@@ -1614,10 +1618,12 @@ void factortest(const Znum x3) {
 			result *= factorlist[i].Factor;
 	if (result != x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
+		Beep(750, 1000);
 	}
 	result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
 	if (result != x3) {
 		std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
+		Beep(750, 1000);
 	}
 	for (auto f : factorlist) {
 		totalFactors += f.exponent;
@@ -1699,6 +1705,7 @@ void doTests(void) {
 			std::cout << "test " << i + 1 << " failed\n" <<
 				"expected " << testvalues[i].text << " = " << testvalues[i].expected_result << '\n';
 			std::cout << "got " << result << '\n';
+			Beep(750, 1000);
 		}
 	}
 	std::cout << i << " tests completed\n";
@@ -1744,16 +1751,24 @@ void doTests(void) {
 	std::cout << "Factorisation tests completed. Time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
+/* generate large random number, up to 128 bits */
+void largeRand(Znum &a) {
+	a = ((long long)rand() << 32) + rand();
+	a <<= 64;
+	a += ((long long)rand() << 32) + rand();
+}
+
 void doTests2(void) {
 	srand(756128234);
 	Znum x = (Znum)rand();
 	auto start = clock();	// used to measure execution time
 
-	for (int i = 1; i <= 44; i++) {
+	/* note: with current seed value test 44 would take about 50 minutes! */
+	for (int i = 1; i <= 43; i++) {
 		if (i <= 39)
 			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
 		x += rand();
-		auto numLen = (int)mpz_sizeinbase(ZT(x), 2) ;
+		//auto numLen = (int)mpz_sizeinbase(ZT(x), 2) ;
 		std::cout << "\nTest # " << i << '\n';
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
@@ -1762,6 +1777,63 @@ void doTests2(void) {
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+}
+
+/* test to compare modular multiplication using DA's code against GMP/MPIR
+BigIntegers. Both use Mongomery notation for the integers to avoid slow
+division operations. The conclusion is that GMP takes about twice as long
+as DA's code. */
+void doTests3(void) {
+	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
+	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
+	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
+	limb one[MAX_LEN];
+	int numLen = MAX_LEN;
+
+	auto start = clock();	// used to measure execution time
+
+	memset(one, 0, MAX_LEN * sizeof(limb));
+	one[0].x = 1;                   /* set value of one to 1 */
+
+	srand(421040034);               // seed random number generator 
+	
+	/* set up modulus and Mongomery parameters */
+	largeRand(mod);					// get large random number
+	GetMontgomeryParms(mod);
+	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+	while (modL[numLen - 1].x == 0)
+		numLen--;                    // adjust length i.e. remove leading zeros
+	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	GetMontgomeryParms(numLen);
+
+	largeRand(a);				     // get large random number a
+	modmult(a%mod, zR2, am);         // convert a to Montgomery (Znum)
+	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
+	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
+	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
+	LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
+	assert(a == a1);                 // check that all thes conversions work properly
+
+	largeRand(b);				     // get large random number  b
+	modmult(b%mod, zR2, bm);         // convert b to Montgomery (Znum)
+	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
+
+	for (int i = 1; i < 200000000; i++) {
+		modmult(alM, blM, plm);          // p = a*b mod modL (limbs)
+		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
+		modmult(am, bm, pm);             // p = a*b mod m (Znum)
+		am = pm;						 //a = p (Znum)
+	}
+
+	REDC(p, pm);					 // convert p from montgomery (Znum)
+	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
+	assert(p2 == p);
+
+	auto end = clock();              // measure amount of time used
+	double elapsed = (double)end - start;
+	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -1845,7 +1917,6 @@ int main(int argc, char *argv[]) {
 			Beep(750, 1000);
 			return EXIT_FAILURE;
 		}
-
 		setlocale(LC_ALL, "en-EN");  // allows non-ascii characters to print
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
 		printf("%s", banner);
@@ -1882,6 +1953,10 @@ int main(int argc, char *argv[]) {
 			}
 			if (expupper == "TEST2") {
 				doTests2();         // do basic tests 
+				continue;
+			}
+			if (expupper == "TEST3") {
+				doTests3();         // do basic tests 
 				continue;
 			}
 

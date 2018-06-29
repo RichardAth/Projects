@@ -30,9 +30,6 @@
     <ClCompile Include="modmult.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="division.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sqroot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -52,6 +49,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="siqsnew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="modmultz.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

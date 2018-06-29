@@ -151,12 +151,12 @@
     <ClCompile Include="baseconv.cpp" />
     <ClCompile Include="bignbr.cpp" />
     <ClCompile Include="bigint.cpp" />
-    <ClCompile Include="division.cpp" />
     <ClCompile Include="ecm.cpp" />
     <ClCompile Include="factor.cpp" />
     <ClCompile Include="karatsuba.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="modmult.cpp" />
+    <ClCompile Include="modmultz.cpp" />
     <ClCompile Include="partition.cpp" />
     <ClCompile Include="showtime.cpp" />
     <ClCompile Include="siqsnew.cpp" />

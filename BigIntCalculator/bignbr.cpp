@@ -307,7 +307,8 @@ void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient) {
 	//}
 }
 
-/* calculate dividend%divisor */
+/* calculate dividend%divisor. remainder has same type as divisor 
+eror occurs if divisor is zero!! */
 //int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen)
 //{
 //	int ctr;
@@ -335,6 +336,8 @@ void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient) {
 //}
 mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
 	return mpz_fdiv_ui(ZT(Dividend), divisor);
+	/* Note that using % operator with Znums returns a Znum, even though the 
+	divisor is an integer. This way is much more efficient */
 }
 
 /* Prod = Fact1*Fact2 */
@@ -484,7 +487,8 @@ void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
 }
 
-/* calculate NbrMod^Expon%currentPrime */
+/* calculate NbrMod^Expon%currentPrime.
+calculation uses doubles to avoid risk of overflow. */
 int intDoubleModPow (int NbrMod, int Expon, int currentPrime) {
 	double Power = 1;
 	double Square = NbrMod;
