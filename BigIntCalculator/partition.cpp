@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef __GNUC__
+#include "gmp.h"
+#else
 #include "mpir.h"
+#endif
 
 mpz_t bistoredp[60000];
 mpz_t bi1;

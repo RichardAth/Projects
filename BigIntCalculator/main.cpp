@@ -355,17 +355,20 @@ static long long NoOfBits(const Znum &n) {
 
 /* IsPrime(n): returns zero if n is definately composite,  -1 if it is a probable prime, */
 static int PrimalityTest(const Znum &Value) {
-	static gmp_randstate_t state;
-	static bool first = true;
 	int rv;
 	assert(Value >= 0);
 
+#ifdef __MPIR_VERSION
+	static gmp_randstate_t state;
+	static bool first = true;
 	if (first) {
 		gmp_randinit_default(state);
 		first = false;
 	}
-
-	rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);  
+		rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+#else
+		rv = mpz_probab_prime_p(ZT(Value), 16);
+#endif 
 	/* rv is 1 if n is probably prime, or 0 if n is definitely composite.*/
 	if (rv == 1)
 		return -1;  // number is probably prime (less than 1 in 2^16 chance it's not prime)
@@ -871,7 +874,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_plus: {
-		result = firstArg + secondArg; //BigIntAdd(firstArg, secondArg, result);
+		result = firstArg + secondArg; 
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_minus: {
@@ -879,7 +882,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_unary_minus: {
-		result = -secondArg; //BigIntNegate(secondArg, result);
+		result = -secondArg; 
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_divide: {
@@ -962,8 +965,9 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 		// invert sign of shift
 		return ShiftLeft(firstArg, -secondArg, result);
 	}
-	case opCode::oper_not: {   // Perform binary NOT as result <- -1 - argument.
-		result = -1 - secondArg;  // assumes 2s complement binary numbers
+	case opCode::oper_not: {   // Perform binary NOT 
+		//result = -1 - secondArg;  // assumes 2s complement binary numbers
+		mpz_com(ZT(result), ZT(secondArg));
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_and: {  // Perform binary AND.
@@ -1265,7 +1269,7 @@ static retCode ComputeExpr(const std::string &expr, Znum &ExpressionResult) {
 				leftNumberFlag = true;
 				continue; // contine procesing rest of expr
 			}
-			/* drop through to here only if retcode is +ve (no name found) */
+		/* drop through to here only if retcode is +ve (no name found) */
 		else if (charValue == '(')
 		{
 			if (leftNumberFlag == true)	{
@@ -1521,7 +1525,7 @@ void removeBlanks(std::string &msg) {
 /* factorise Result, calculate number of divisors etc and print results */
 void doFactors(const Znum &Result, bool test) {
 	std::vector <zFactors> factorlist;
-	//std::vector<int> exponentlist;
+
 	Znum Quad[4];
 
 	/* call DA´s magic function to factorise Result */
@@ -1542,6 +1546,7 @@ void doFactors(const Znum &Result, bool test) {
 		}
 		else
 			std::cout << " is prime";  //number has only 1 factor
+
 		if (abs(Result) != 1) {
 			auto divisors = NoOfDivisorsF(factorlist);
 			std::cout << "\nNumber of Divisors = ";
@@ -1568,7 +1573,7 @@ void doFactors(const Znum &Result, bool test) {
 		else
 			std::cout << "\n-n = ";
 		char c = 'a';
-		for (auto q : Quad) {
+		for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
 			if (q == 0)
 				break;
 			if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
@@ -1689,10 +1694,10 @@ void doTests(void) {
 		"(0x12345678) AND 0x018",        0x18,   // brackets round 1st number are needed so that A of AND is not considered part of number
 		"0x12345678 OR 0x1",       0x12345679,
 		"0x12345678 XOR 0x10",     0x12345668,
-		"NOT 0x1234567890abcdef", 0xedcba9876f543210,
+		"(NOT 0x0f23 4567 89ab cde1) * -1",  0x0f23456789abcde2,
 		"5 < 6 == 7 < 8",                  -1,   // returns true (== has lower priority)
 		"5 < 6 != 7 < 8",                   0,   // returns false (!= has lower priority)
-		"5 < (6 != 7) < 8",                -1,   // returns true
+		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
 	};
 
 	auto start = clock();	// used to measure execution time
@@ -1820,7 +1825,7 @@ void doTests3(void) {
 	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
 	for (int i = 1; i < 200000000; i++) {
-		modmult(alM, blM, plm);          // p = a*b mod modL (limbs)
+		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
 		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
 		modmult(am, bm, pm);             // p = a*b mod m (Znum)
 		am = pm;						 //a = p (Znum)
@@ -1885,7 +1890,7 @@ int main(int argc, char *argv[]) {
 		"- para resta\n"
 		"* para multiplicación\n"
 		"/ para división entera\n"
-		"% para el resto de la división entera\n"
+		"%% para el resto de la división entera\n"
 		"^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).\n"
 		"<, == , >; <= , >= , != para comparaciones.Los operadores devuelven cero si es falso y - 1 si es verdadero.\n"
 		"AND, OR, XOR, NOT para lógica binaria.\n"
@@ -1920,6 +1925,19 @@ int main(int argc, char *argv[]) {
 		setlocale(LC_ALL, "en-EN");  // allows non-ascii characters to print
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
 		printf("%s", banner);
+#ifdef __GNUC__
+		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#endif
+#ifdef _MSC_FULL_VER
+/* For example, if the version number of the Visual C++ compiler is 15.00.20706.01, 
+the _MSC_FULL_VER macro evaluates to 150020706 */
+		long long ver = _MSC_FULL_VER;
+		std::cout << "MSVC version: " << ver / 10000000 << '.';  // 1st 2 digits
+		ver %= 10000000;                      // remove 1st 2 digits
+		std::cout << ver / 100000 << '.' ;    // next 2 digits
+		ver %= 100000;                        // remove next 2 digits
+		std::cout << ver << '\n';             // last 5 digits
+#endif
 
 		while (true) {
 			if (lang == 0) {

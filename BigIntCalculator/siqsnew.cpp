@@ -162,7 +162,7 @@ static bool InsertNewRelation(
 	int *rowMatrixB,
 	Znum &biT, Znum &biU, Znum &biR);
 static void BlockLanczos(void);
-void ShowSIQSStatus(void);
+static void ShowSIQSStatus(void);
 static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
 static void sieveThread(Znum &result);
 
@@ -1227,10 +1227,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 	int expParity;
 	int nbrColumns = rowMatrixBbeforeMerge[0];
 	const PrimeSieveData *rowPrimeSieveData;
-	//const PrimeTrialDivisionData *rowPrimeTrialDivisionData;
 
-	//NumberLengthDividend = ZtoBigNbr(biR, biDividend); // memcpy(biR, biDividend, sizeof(biR));
-	assert(NumberLengthDividend <= 7);
 	expParity = 0;
 
 #if DEBUG_SIQS
@@ -1341,6 +1338,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 		bool testFactorA = true;
 		newFactorAIndex = aindex[0];
 		NumberLengthDividend = ZtoBigNbr(biR, biDividend); // convert Dividend to BigNum
+		assert(NumberLengthDividend <= 7);
 		for (index = 1; testFactorA; index++)
 		{
 			fullRemainder = false;

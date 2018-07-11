@@ -62,9 +62,6 @@
     <ClInclude Include="bignbr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="expression.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="factor.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -373,13 +373,13 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 {
 	/* N.B. all arithmetic is mod TestNbr */
 	AddBigNbrModNB(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1+z1 (mod testNbr)
-	modmult(TZ, TZ, UZ);                                    // UZ = (x1+z1)^2 (mod testNbr)
+	modmult(TZ, TZ, UZ);                                  //  UZ = (x1+z1)^2 (mod testNbr)
 	SubtBigNbrModN(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1-z1 (mod testNbr)
-	modmult(TZ, TZ,  TX);                                    //  TX = (x1-z1)^2 (mod testNbr)
-	modmult(UZ, TX, x2);                      // x2 = UZ* TX = (x1^2 - z1^2)^2 (mod testNbr)
-	SubtBigNbrModN(UZ, TX, TZ, TestNbr, NumberLength);      //  TZ = UZ- TX = 4*x1*z1 (mod testNbr)
-	modmult(AA, TZ, UZ);                                   // UZ =  TZ*AA (mod testNbr)
-	AddBigNbrModNB(UZ, TX, UZ, TestNbr, NumberLength);      // UZ = ( TX+b* TZ) (mod testNbr)
+	modmult(TZ, TZ,  TX);                                 //  TX = (x1-z1)^2 (mod testNbr)
+	modmult(UZ, TX, x2);                                  // x2 = UZ* TX (mod testNbr)
+	SubtBigNbrModN(UZ, TX, TZ, TestNbr, NumberLength);    //  TZ = UZ- TX = 4*x1*z1 (mod testNbr)
+	modmult(AA, TZ, UZ);                                  // UZ =  TZ*AA (mod testNbr)
+	AddBigNbrModNB(UZ, TX, UZ, TestNbr, NumberLength);    // UZ = ( TX+b* TZ) (mod testNbr)
 	modmult(TZ, UZ, z2);                                   // z2 = ( TZ*u) (mod testNbr)
 }
 /* End of code adapted from Paul Zimmermann's ECM4C */

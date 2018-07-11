@@ -27,7 +27,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
-
+#undef min                 // use std::min
 /* miscellaneous external declarations */
 extern int ElipCurvNo;            // Elliptic Curve Number
 
@@ -343,7 +343,7 @@ static bool ProcessExponent(std::vector<zFactors> &Factors, const Znum &nbrToFac
 	NFp1 = nbrToFactor + 1;  // NFp1 <- NumberToFactor + 1
 	NFm1 = nbrToFactor - 1;  // NFm1 <- NumberToFactor - 1
            
-	mpz_nthroot(ZT(nthRoot), ZT(NFp1), Exponent);  // Find nth root of number to factor.
+	mpz_root(ZT(nthRoot), ZT(NFp1), Exponent);  // Find nth root of number to factor.
 	rootbak = nthRoot;
 
 	for (;;) {
@@ -808,7 +808,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (upperBound == -1)
 				continue;  // factor is prime
 			/* trial division */
-			while (upperBound < min((int)prime_list_count, 33333)) {
+			while (upperBound < std::min((int)prime_list_count, 33333)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {
 					Factors[i].upperBound = -1; // show that residue is prime
@@ -1199,20 +1199,24 @@ to be used pretty much like normal integers.
 **********************************************************************************/
 
 /* factorise number. Returns false if unable to factorise it */
-bool factorise(const Znum numberZ, std::vector <zFactors> &vfactors,
+bool factorise(Znum numberZ, std::vector <zFactors> &vfactors,
 	 Znum quads[]) {
 
 	try {
+		bool pos = true;
 		if (numberZ == 0)
 			return false;  // function factor can't factorize zero
-
-			auto rv = factor(numberZ, vfactors);
-			if (!rv)
-				return false;  // failed to factorise number
-			if (quads != nullptr) {
-				ComputeFourSquaresNew(vfactors, quads); // get a, b, c, d such that sum of their squares = number
-			}
-			return true;
+		if (numberZ < 0) {
+			pos = false;
+			numberZ = -numberZ;
+		}
+		auto rv = factor(numberZ, vfactors);
+		if (!rv)
+			return false;  // failed to factorise number
+		if (quads != nullptr) {
+			ComputeFourSquaresNew(vfactors, quads); // get a, b, c, d such that sum of their squares = number
+		}
+		return true;
 	}
 
 	/* code below catches C++ 'throw' type exceptions */

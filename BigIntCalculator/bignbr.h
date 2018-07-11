@@ -14,12 +14,16 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <vector>
-#include "mpir.h"
+#ifdef __GNUC__
+#include <gmp.h>
+typedef unsigned long mpir_ui;  // for compatibility with MPIR
+#else
+#include <mpir.h>
+#endif
 #include "boost/multiprecision/gmp.hpp" 
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
-
 
 #define MAX_LEN 2500        // approximately 20000 digits
 #define BITS_PER_GROUP 31
@@ -331,7 +335,7 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumberLength);
 void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
-void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
+//static void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 //double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
 //void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);

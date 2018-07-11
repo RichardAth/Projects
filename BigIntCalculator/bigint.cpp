@@ -298,7 +298,11 @@ throw exception if result would be to large for a BigInteger */
 //}
 double logBigNbr(const Znum &BigInt) {
 	double BigId;
+#ifdef __MPIR_VERSION
 	long long BiExp;
+#else
+        long BiExp;
+#endif
 	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
 	double logval = log(BigId)  + BiExp *  log(2);
 	return logval;
@@ -933,7 +937,11 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 	smaller limit on maxExpon (max about 2000) */
 
 	double BigId;
+#ifdef __MPIR_VERSION
 	long long BiExp;
+#else
+	long BiExp;
+#endif
 	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
 	double maxExpd = (log(BigId) / log(2) +BiExp) / (log(upperBound) / log(2));
 	long long maxExpon = (long long) ceil(maxExpd);
@@ -1230,14 +1238,18 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 			return 2;         // Composite. Not 2-strong probable prime.
 		}
 	}
+#ifdef __MPIR_VERSION
 	static bool first = true;
-	gmp_randstate_t rstate;
+	static gmp_randstate_t rstate;
 	if (first) {
 		gmp_randinit_default(rstate);
 		first = false;
 	}
-	gmp_randinit_default(rstate);
+
 	auto rv = mpz_likely_prime_p(ZT(Value), rstate, upperBound);
+#else
+	auto rv = mpz_probab_prime_p(ZT(Value), 16);
+#endif
 	if (rv == 0)
 		return 3;			// composite - fails Miller-Rabin test
 	else
