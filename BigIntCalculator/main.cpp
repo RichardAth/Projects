@@ -3,6 +3,7 @@
 #include <vector>
 #include <cctype>
 #include <climits>
+#include <locale>
 #include <assert.h>
 #include <Windows.h>
 #include "bignbr.h"
@@ -1585,7 +1586,7 @@ void doFactors(const Znum &Result, bool test) {
 			if (q == 0)
 				break;
 			std::cout << "\n" << c << "= " << q;
-			c++;
+			c++;  // change a to b, b to c, etc
 		}
 		std::cout << '\n';
 		if (test) {
@@ -1922,11 +1923,12 @@ int main(int argc, char *argv[]) {
 			Beep(750, 1000);
 			return EXIT_FAILURE;
 		}
-		setlocale(LC_ALL, "en-EN");  // allows non-ascii characters to print
+
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
 		printf("%s", banner);
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
 #ifdef _MSC_FULL_VER
 /* For example, if the version number of the Visual C++ compiler is 15.00.20706.01, 
@@ -1937,6 +1939,16 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		std::cout << ver / 100000 << '.' ;    // next 2 digits
 		ver %= 100000;                        // remove next 2 digits
 		std::cout << ver << '\n';             // last 5 digits
+#endif
+
+		auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
+		printf("locale is now: %s\n", setlocale(LC_ALL, NULL));
+		std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
+			<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
+
+#ifdef __MPIR_VERSION
+		std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
+			<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
 #endif
 
 		while (true) {
@@ -1996,7 +2008,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 					std::cout << "Unprocessed text:  " << expr.substr(exprIndex) << '\n';
 				}
 				std::cout << " = ";
-				ShowLargeNumber(Result, 6, true, hex);
+				ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 				std::cout << '\n';				
 				if (factorFlag) {
 					doFactors(Result,false); /* factorise Result, calculate number of divisors etc */

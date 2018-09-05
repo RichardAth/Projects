@@ -20,7 +20,7 @@ typedef unsigned long mpir_ui;  // for compatibility with MPIR
 #else
 #include <mpir.h>
 #endif
-#include "boost/multiprecision/gmp.hpp" 
+#include "boost/multiprecision/gmp.hpp"
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
