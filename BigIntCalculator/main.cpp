@@ -481,6 +481,34 @@ static Znum  concatFact(Znum mode, Znum num) {
 	return 0;  // unable to factorise number
 }
 
+/* calculate the number of ways an integer n can be expressed as the sum of 2
+squares x^2 and y^2. The order of the squares and the sign of x and y is significant
+*/
+static Znum R2(Znum num) {
+	if (num == 0)
+		return 1;
+	if (num % 4 == 3)
+		return 0;   // at least 1 4k+3 factor has an odd exponent
+
+	std::vector <zFactors> factorlist;
+	Znum b = 1;
+
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, nullptr);
+	for (size_t i = 0; i < factorlist.size(); i++) {
+		if (factorlist[i].Factor <= 2)
+			continue; // ignore factor 1 or 2
+		if (factorlist[i].Factor % 4 == 3) { /* p = 4k+3? */
+			if (factorlist[i].exponent % 2 == 1) /* exponent is odd?*/
+				return 0;
+		}
+		else { 		/* p = 4k + 1 */
+				b *= (factorlist[i].exponent + 1);
+			}
+	}
+	return b * 4;
+}
+
 enum class fn_Code {
 	fn_gcd,
 	fn_modpow,
@@ -499,6 +527,7 @@ enum class fn_Code {
 	fn_part,
 	fn_np,
 	fn_pp,
+	fn_r2,
 	fn_invalid = -1,
 } ;
 
@@ -511,7 +540,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 17> functionList{
+const static std::array <struct functions, 18> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -529,6 +558,7 @@ const static std::array <struct functions, 17> functionList{
 	"P",         1,  fn_Code::fn_part,			// number of partitions
 	"N",         1,  fn_Code::fn_np,				// next prime
 	"B",         1,  fn_Code::fn_pp,				// previous prime
+	"R2",		 1,  fn_Code::fn_r2,
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -660,6 +690,10 @@ retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 			return retCode::EXPR_INVALID_PARAM;  // mode value invalid
 		}
 		result = concatFact(p1, p2);
+		break;
+	}
+	case fn_Code::fn_r2: {
+		result = R2(p1);
 		break;
 	}
 	
@@ -1881,6 +1915,7 @@ int main(int argc, char *argv[]) {
 		"SumDigits(n, r) : Sum of digits of n in base r.\n"
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
 		"ConcatFact(m,n) : Concatenates the prime factors of n according to the mode m\n"
+		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
 		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
 		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
 		"HELP (this message) and EXIT\n";
