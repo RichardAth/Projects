@@ -39,7 +39,7 @@ enum class opCode {
 	oper_not_equal   = 14,
 	oper_equal       = 15,
 	oper_not         = 16,      // C and Python put bitwise not with unary minus
-	oper_and         = 17,      // C and Python but AND before XOR before OR
+	oper_and         = 17,      // C and Python put AND before XOR before OR
 	oper_xor         = 18,
 	oper_or          = 19,
 	oper_leftb       = 20,
@@ -528,6 +528,9 @@ enum class fn_Code {
 	fn_np,
 	fn_pp,
 	fn_r2,
+	fn_legendre,
+	fn_jacobi,
+	fn_kronecker,
 	fn_invalid = -1,
 } ;
 
@@ -540,7 +543,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 18> functionList{
+const static std::array <struct functions, 21> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -553,12 +556,15 @@ const static std::array <struct functions, 18> functionList{
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
+	"le",		 2,  fn_Code::fn_legendre,
 	"L",         1,  fn_Code::fn_luc,			// Lucas Number
 	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
 	"P",         1,  fn_Code::fn_part,			// number of partitions
 	"N",         1,  fn_Code::fn_np,				// next prime
 	"B",         1,  fn_Code::fn_pp,				// previous prime
-	"R2",		 1,  fn_Code::fn_r2,
+	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 primes
+	"ja",		 2,  fn_Code:: fn_jacobi,
+	"kr",		 2,  fn_Code::fn_kronecker
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -694,6 +700,20 @@ retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	}
 	case fn_Code::fn_r2: {
 		result = R2(p1);
+		break;
+	}
+	case fn_Code::fn_legendre: {
+		/* p2 must be an odd positive prime */
+		result = mpz_legendre(ZT(p1), ZT(p2));
+		break;
+	}
+	case fn_Code::fn_jacobi: {
+		/*p2 must be odd */
+		result = mpz_jacobi(ZT(p1), ZT(p2));
+		break;
+	}
+	case fn_Code::fn_kronecker: {
+		result = mpz_kronecker(ZT(p1), ZT(p2));
 		break;
 	}
 	
@@ -1916,6 +1936,9 @@ int main(int argc, char *argv[]) {
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
 		"ConcatFact(m,n) : Concatenates the prime factors of n according to the mode m\n"
 		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
+		"LE(a,p) : Legendre value for (a/p) \n"
+		"JA(a,p) : Jacobi value for (a/p) \n"
+		"KR(a,p) : Kronecker value for (a/p) \n"
 		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
 		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
 		"HELP (this message) and EXIT\n";

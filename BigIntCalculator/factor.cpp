@@ -744,20 +744,22 @@ unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
 	return u << shift;
 }
 
-/* factorise number where we know that it only has 2 prime factors. */
-static void PollardFactor(const long long num, long long &factor) {
+/* factorise number where we know that it only has 2 prime factors. 
+see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm */
+static void PollardFactor(const unsigned long long num, long long &factor) {
 	long long x_fixed = 2, cycle_size = 2, x = 2; 
 	factor = 1;
 	while (factor == 1) {
 		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
 			/* even if x*x overflows, the function as a whole still works OK */
 			x = (x*x + 1) % num;
-			factor = gcd(x - x_fixed, num);
+			factor = gcd(abs(x - x_fixed), num);
 		}
 		if (factor == num) {
 			/* there is a small possibility that PollardFactor won't work,
 			even when factor is not prime */
-			std::cout << "Pollard factorisation failed for num = " << num << " !!\n";
+			std::cout << "Pollard factorisation failed for num = " << num 
+				<< " cycle_size = " << cycle_size << " x = " << x << " !!\n";
 			factor = 1;
 			return;   // factorisation failed!! 	
 		}
@@ -765,7 +767,8 @@ static void PollardFactor(const long long num, long long &factor) {
 		x_fixed = x;
 	}
 #ifdef _DEBUG
-	std::cout << "Pollard Factor. num = " << num << " factor = " << factor << '\n';
+	std::cout << "Pollard Factor. num = " << num << " factor = " << factor 
+		<< " cycle_size = " << cycle_size << " x = " << x <<  '\n';
 #endif
 	return;
 }
