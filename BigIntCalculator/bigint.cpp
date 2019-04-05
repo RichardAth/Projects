@@ -1130,6 +1130,9 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 //	}
 //	*pShRight = power2;
 //}
+
+// Find largest power of 2 that divides the number. Divide number
+// by that power and return value of power in ShRight.
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 	Znum two = 2;
 	auto shift = mpz_remove(ZT(number), ZT(number), ZT(two));

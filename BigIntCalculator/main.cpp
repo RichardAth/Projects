@@ -115,7 +115,7 @@ void biperm(int n, mpz_t &result);   // declaration for external function
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
 prefixing the output with '0' or 'f' when necessary. */
-char* getHex(Znum Bi_Nbr) {
+static char* getHex(Znum Bi_Nbr) {
 	static char *hexbuffer = NULL;  // IMPORTANT. This must be a static variable!
 	std::string obuff;
 	if (Bi_Nbr >= 0) {
@@ -262,7 +262,7 @@ static int mobius(const std::vector <zFactors> exponents) {
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1) 
 where p=prime factor and e=exponent.*/
-static Znum ComputeTotient(const Znum n) {
+static Znum ComputeTotient(const Znum &n) {
 	std::vector <zFactors> factorlist;
 
 	if (n == 1)
@@ -276,7 +276,7 @@ static Znum ComputeTotient(const Znum n) {
 }
 
 /* calculate number of divisors of n, from its list of prime factors. */
-static Znum ComputeNumDivs(const Znum n) {
+static Znum ComputeNumDivs(const Znum &n) {
 	std::vector <zFactors> factorlist;
 
 	if (n == 1)
@@ -291,7 +291,7 @@ static Znum ComputeNumDivs(const Znum n) {
 
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1) 
  where p=prime factor and e=exponent. */
-static Znum ComputeSumDivs(const Znum n) {
+static Znum ComputeSumDivs(const Znum &n) {
 	std::vector <zFactors> factorlist;
 
 	if (n == 1)
@@ -442,7 +442,7 @@ mode	Order of factors	Repeated factors
 2		Ascending			Yes
 3		Descending			Yes
 */
-static Znum  concatFact(Znum mode, Znum num) {
+static Znum  concatFact(const Znum &mode, const Znum &num) {
 	std::vector <zFactors> factorlist;
 	std::string result;
 	Znum rvalue = 0;
@@ -484,7 +484,9 @@ static Znum  concatFact(Znum mode, Znum num) {
 /* calculate the number of ways an integer n can be expressed as the sum of 2
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
 */
-static Znum R2(Znum num) {
+static Znum R2(const Znum &num) {
+	if (num < 0)
+		return 0;
 	if (num == 0)
 		return 1;
 	if (num % 4 == 3)
@@ -509,6 +511,88 @@ static Znum R2(Znum num) {
 	return b * 4;
 }
 
+/* return x^n */
+static Znum powerBi(const __int64 x, unsigned __int64 n) {
+	Znum result;
+	mpz_ui_pow_ui(ZT(result), x, n);
+	return result;
+}
+static Znum powerBi(const Znum &x, unsigned __int64 n) {
+	Znum result;
+	mpz_pow_ui(ZT(result), ZT(x), n);
+	return result;
+}
+
+/* Calculate maximum square divisor of num and divide num by this.
+return adjusted num, square divisor, and factor list of divisor.*/
+static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
+	std::vector <zFactors> factorlist;
+	zFactors temp;
+	auto rv = factorise(num, factorlist, nullptr);
+	sqf.clear();
+
+	for (size_t i = 0; i < factorlist.size(); i++) {
+		if (factorlist[i].exponent >= 2) {
+			/* copy exponent value, rounded down to multiple of 2*/
+			temp.exponent = factorlist[i].exponent - (factorlist[i].exponent & 1);
+			temp.Factor = factorlist[i].Factor;
+			sqf.push_back(temp);
+			factorlist[i].exponent -= temp.exponent;
+		}
+	}
+	
+
+	sq = 1;
+	Znum x;
+	for (size_t i = 0; i < sqf.size(); i++) {
+		mpz_pow_ui(ZT(x), ZT(sqf[i].Factor), sqf[i].exponent);
+		sq *= x;
+			/*for (int j = 1; j <= sqf[i].exponent; j++)
+				sq *= sqf[i].Factor;*/
+	}
+	num /= sq;
+}
+
+/* calculate the number of ways an integer n can be expressed as the sum of 3
+squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
+be +ve, 0 or -ve See https://oeis.org/A005875 */
+static Znum R3(Znum num) {
+	Znum sum = 0, sq, multiplier = 1;
+	std::vector <zFactors> sqf;
+
+	if (num < 0)
+		return 0;
+	if (num == 0)     // test here necessary to avoid infinite loop
+		return 1;
+	if (num % 8 == 7)
+		return 0;     // take short cut if possible
+	while ((num & 3) == 0)
+		num >>= 2;      // remove even factors. note that R3(4n) =R3(n)
+	squareFree(num, sq, sqf);
+
+	for (Znum k = 1; k*k <= num; k++) {
+		sum += 2* R2(num - k * k);
+	}
+	sum += R2(num);  // note: this time (for k=0) we DON'T multiply R2 by 2
+	/* we now have sum = R3(n) */
+
+	if (sq > 1) {
+		/* add back factors that were removed to make n squarefree, one prime at a time.
+		see web.maths.unsw.edu.au/~mikeh/webpapers/paper63.ps specifically equation (3) */
+		for (int i = 0; i < sqf.size(); i++) {
+			auto p = sqf[i].Factor;      // prime 
+			auto λ = sqf[i].exponent / 2;  // exponent/2 (original exponent must be even)
+			Znum mnum = -num;
+			multiplier *= (powerBi(p, λ + 1) - 1) / (p - 1)
+				- mpz_jacobi(ZT(mnum), ZT(p))*(powerBi(p, λ) - 1) / (p - 1);
+			num *= powerBi(p, λ * 2);
+		}
+		sum *= multiplier;
+	}
+
+	return sum;
+}
+
 enum class fn_Code {
 	fn_gcd,
 	fn_modpow,
@@ -528,6 +612,7 @@ enum class fn_Code {
 	fn_np,
 	fn_pp,
 	fn_r2,
+	fn_r3,
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
@@ -543,7 +628,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 21> functionList{
+const static std::array <struct functions, 22> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -556,20 +641,21 @@ const static std::array <struct functions, 21> functionList{
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
-	"le",		 2,  fn_Code::fn_legendre,
+	"LE",		 2,  fn_Code::fn_legendre,
 	"L",         1,  fn_Code::fn_luc,			// Lucas Number
 	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
 	"P",         1,  fn_Code::fn_part,			// number of partitions
 	"N",         1,  fn_Code::fn_np,				// next prime
 	"B",         1,  fn_Code::fn_pp,				// previous prime
 	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 primes
-	"ja",		 2,  fn_Code:: fn_jacobi,
-	"kr",		 2,  fn_Code::fn_kronecker
+	"R3",        1,  fn_Code::fn_r3,
+	"JA",		 2,  fn_Code:: fn_jacobi,
+	"KR",		 2,  fn_Code::fn_kronecker
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
 Only ModPow uses all 3 parameters. Some functions can generate error codes. */
-retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2, 
+static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2, 
 	const Znum &p3, Znum &result) {
 	int rv;
 	Znum temp;
@@ -700,6 +786,10 @@ retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	}
 	case fn_Code::fn_r2: {
 		result = R2(p1);
+		break;
+	}
+	case fn_Code::fn_r3: {
+		result = R3(p1);
 		break;
 	}
 	case fn_Code::fn_legendre: {
@@ -843,7 +933,7 @@ static bool getBit(const unsigned long long int x, bool array[])
 
 /* sets bit in 'array' corresponding to 'x' */
 /* assume 'num' is odd. no bits are stored for even numbers */
-void setBit(const unsigned long long int x, bool array[]) {
+static void setBit(const unsigned long long int x, bool array[]) {
 	array[x / 2] = true;
 	return;
 }
@@ -1578,7 +1668,7 @@ void removeBlanks(std::string &msg) {
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
-void doFactors(const Znum &Result, bool test) {
+static void doFactors(const Znum &Result, bool test) {
 	std::vector <zFactors> factorlist;
 
 	Znum Quad[4];
@@ -1664,7 +1754,7 @@ void doFactors(const Znum &Result, bool test) {
 }
 
 /* perform some simple tests */
-void factortest(const Znum x3) {
+static void factortest(const Znum x3) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -1692,8 +1782,8 @@ void factortest(const Znum x3) {
 		<< totalFactors << " factors\n";
 }
 
-void doTests(void) {
-	Znum x3, result;
+static void doTests(void) {
+	Znum x3, x4, result;
 	int i;
 
 	struct test {
@@ -1797,12 +1887,23 @@ void doTests(void) {
 	factortest(x3);
 	ComputeExpr("n(3*10^5+50)*n(3*10^5+500)", x3);  // test Lehman factorisation
 	factortest(x3);
+
 	/* test using carmichael numbers. note that 1st example has no small factors  */
 	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
 		60977817398996785 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
 		factortest(carmichael[i]);
 	}
+
+	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
+	ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
+		"5531276838753171770199594238596428121188033664754218345562493168782883", x3);
+	x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
+	/* in general numbers > about 110 digits cannot be factorised in a reasonable time 
+	but this one can, because a special algorithm just for Carmichael numbers is used. */
+	factortest(x4);   // 397-digit Carmichael number
+	std::cout << "factorised 397-digit Carmichael number \n";
+
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
 	factortest(x3);
 
@@ -1812,13 +1913,13 @@ void doTests(void) {
 }
 
 /* generate large random number, up to 128 bits */
-void largeRand(Znum &a) {
+static void largeRand(Znum &a) {
 	a = ((long long)rand() << 32) + rand();
 	a <<= 64;
 	a += ((long long)rand() << 32) + rand();
 }
 
-void doTests2(void) {
+static void doTests2(void) {
 	srand(756128234);
 	Znum x = (Znum)rand();
 	auto start = clock();	// used to measure execution time
@@ -1843,7 +1944,7 @@ void doTests2(void) {
 BigIntegers. Both use Mongomery notation for the integers to avoid slow
 division operations. The conclusion is that GMP takes about twice as long
 as DA's code. */
-void doTests3(void) {
+static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
 	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];

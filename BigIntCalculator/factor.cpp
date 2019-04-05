@@ -861,7 +861,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	ElipCurvNo = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
 	
-	for (size_t i = 0; i < Factors.size(); i++) {
+	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.size(); i++) {
 		if (Factors[i].upperBound == -1)
 			continue;         // skip if factor is known to be prime
 		Zprime = Factors[i].Factor;

@@ -196,6 +196,12 @@ NumDigits(n,r)                      Number of digits of n in base r.
 SumDigits(n,r)                      Sum of digits of n in base r.
 RevDigits(n,r)                      finds the value obtained by writing backwards 
                                     the digits of n in base r. 
+R2(n)                               The number of ways n can be formed as the sum of x^2 + y^2
+                                    where x and y are negative, zero, or positive. The order is 
+									siginficant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
+									(-1)^2 + 0)
+R3(n)                               The number of ways n can be formed as the sum of x^2 + y^2+z^2
+                                    where x, y and z are negative, zero, or positive.
 
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)                  0 <= exponent <= 2^31-1, also result is estimated 
