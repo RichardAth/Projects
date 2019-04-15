@@ -101,12 +101,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-2.7.1;C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_65_1\boost_1_65_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0;C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_65_1\boost_1_65_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-2.7.1\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>mpir.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -136,14 +136,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-2.7.1;C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_65_1\boost_1_65_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0;C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_65_1\boost_1_65_1;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-2.7.1\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>mpir.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -158,6 +158,7 @@
     <ClCompile Include="modmult.cpp" />
     <ClCompile Include="modmultz.cpp" />
     <ClCompile Include="partition.cpp" />
+    <ClCompile Include="R3.cpp" />
     <ClCompile Include="showtime.cpp" />
     <ClCompile Include="siqsnew.cpp" />
     <ClCompile Include="sqroot.cpp" />

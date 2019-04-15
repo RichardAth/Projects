@@ -51,6 +51,7 @@ bool BigNbrIsZero(const limb *value, int nbrLength);
 //void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
+bool isPerfectSquare(__int64 x);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
 
@@ -382,4 +383,4 @@ typedef void(*mmCback)(void);
 extern mmCback modmultCallback;
 
 //void BigInteger2Dec(const BigInteger *pBigInt, char *decimal, int groupLength);
-void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
+//void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);

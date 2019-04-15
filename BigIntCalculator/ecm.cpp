@@ -1217,7 +1217,8 @@ static void ecminit(Znum zN) {
 
 	// calculate number of limbs
 	NumberLength = (int)(mpz_sizeinbase(ZT(zN), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
-	ZtoLimbs(TestNbr, zN, NumberLength);  // copy zN to TestNbr
+	ZtoLimbs(TestNbr, zN, NumberLength);  /* copy zN to TestNbr. NB throw exception
+				             if zN is too large! (more than about 23,000 digits) */
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
 	first = true;
@@ -1291,18 +1292,7 @@ bool ecm(Znum &zN, long long maxdivisor) {
 	do {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			//auto start = clock();	// used to measure execution time
-			//FactoringSIQSx(zN, Zfactor); // factor found is returned in Zfactor
-//#ifdef _DEBUG
-			//auto time2 = clock();	// used to measure execution time
 			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor2
-			//auto time3 = clock();	// used to measure execution time
-			//double ratio = 100.0 * (double)(time3 - time2) / (double(time2 - start));
-			//std::cout << "new version uses " << ratio << "% of CPU time of old version\n";
-			//if (Zfactor != Zfactor2) {
-			//	std::cout << "expected factor = " << Zfactor << " actual " << Zfactor2 << '\n';
-			//}
-//#endif
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
@@ -1311,7 +1301,6 @@ bool ecm(Znum &zN, long long maxdivisor) {
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 
 		else if (ecmResp == ERROR)
 			return false;
-	//} while (!memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb))); // while BNgcd = TestNbr
 	} while (zN == BiGD);
 
 #if 0

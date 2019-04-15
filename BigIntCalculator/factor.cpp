@@ -32,9 +32,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 extern int ElipCurvNo;            // Elliptic Curve Number
 
 void int2dec(char **pOutput, long long nbr);
-extern bool *primeFlags;
+//extern bool *primeFlags;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
+extern unsigned long long int primeListMax;
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
@@ -392,81 +393,74 @@ static bool ProcessExponent(std::vector<zFactors> &Factors, const Znum &nbrToFac
 
 
 /* check whether the number +/- 1 is a perfect power*/
-static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFactor)
-{
+static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFactor,
+	long long MaxP) {
+
+	
 	bool plus1 = false;
 	bool minus1 = false;
 	int Exponent = 0;
-	int i, j;
-	int modulus;
+	unsigned long long j;
+	unsigned long long modulus;
 	int mod9 = (int)MulPrToLong(nbrToFactor % 9); // getRemainder(*nbrToFactor, 9);
-	int maxExpon = (int)mpz_sizeinbase(ZT(nbrToFactor), 2);
-	int numPrimes = 2 * maxExpon + 3;
-	/* if numPrimes >= 66472 i.e. maxExpon > 33233 */
-	if ((numPrimes >> 3) >= (2 * 33231 + 3 + 7) / 8) {
+	auto maxExpon = mpz_sizeinbase(ZT(nbrToFactor), 2);
+	auto MaxPrime = 2 * maxExpon + 3;
+	double logar = logBigNbr(nbrToFactor);
+	// 33219 = logarithm base 2 of max number supported = 10^10,000.
+	//unsigned char ProcessExpon[(33231 + 7) / 8];
+
+	std::vector<char>ProcessExpon(maxExpon);
+	Znum Temp1, Temp2;
+
+	if (MaxPrime > primeListMax) {
 		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: number exceeds 10,000 digits ";
+		std::string mesg = "cannot factorise: number too large ";
 		mesg += __func__;
 		mesg += " line ";  mesg += line;
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	double logar = logBigNbr(nbrToFactor);
-	// 33219 = logarithm base 2 of max number supported = 10^10,000.
-	unsigned char ProcessExpon[(33231 + 7) / 8];
-	unsigned char primes[(2 * 33231 + 3 + 7) / 8];
-	Znum Temp1, Temp2;
-
-	memset(ProcessExpon, 0xFF, sizeof(ProcessExpon));
-	memset(primes, 0xFF, sizeof(primes));
-
-	for (i = 2; i * i < numPrimes; i++) { // Generation of primes using sieve of Eratosthenes.
-		if (primes[i >> 3] & (1 << (i & 7))) {     // Number i is prime.
-			for (j = i * i; j < numPrimes; j += i)
-			{   // Mark multiple of i as composite.
-				primes[j >> 3] &= ~(1 << (j & 7));
-			}
-		}
-	}
+	/* fast initialisation */
+	memset(ProcessExpon.data(), 0xFF, maxExpon);
 
 	// If the number +/- 1 is multiple of a prime but not a multiple
 	// of its square then the number +/- 1 cannot be a perfect power.
-	for (i = 2; i < numPrimes; i++) {
-		if (primes[i >> 3] & (1 << (i & 7))) {      // i is prime according to sieve.
-			unsigned long long remainder;
-			int index;
-			Temp1 = (long long)i*(long long)i;
-			Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (i*i)
-			remainder = MulPrToLong(Temp2);
-			if (remainder % i == 1 && remainder != 1) {
-				plus1 = true; // NumberFactor cannot be a power + 1
+	for (unsigned long long ix=0, p = primeList[ix]; p < MaxPrime; ix++, p = primeList[ix]) {
+	    // p is prime according to sieve.
+		unsigned long long remainder;
+		ptrdiff_t index;
+		Temp1 = p*p;
+		Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (p*p)
+		remainder = MulPrToLong(Temp2);
+		if (remainder % p == 1 && remainder != 1) {
+			plus1 = true; // NumberFactor cannot be a power + 1
+		}
+		if (remainder % p == (unsigned int)p - 1 &&
+			remainder != (unsigned int)p*(unsigned int)p - 1)
+		{
+			minus1 = true; // NumberFactor cannot be a power - 1
+		}
+		if (minus1 && plus1) {
+			return;
+		}
+		index = p / 2;
+		if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
+			continue;
+		}
+		modulus = remainder % p;
+		if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? p - 1 : p - 2)) {
+			for (j = p / 2; j <= maxExpon; j += p / 2) {
+				ProcessExpon[j >> 3] &= ~(1 << (j & 7));
 			}
-			if (remainder % i == (unsigned int)i - 1 &&
-				remainder != (unsigned int)i*(unsigned int)i - 1)
-			{
-				minus1 = true; // NumberFactor cannot be a power - 1
-			}
-			if (minus1 && plus1) {
-				return;
-			}
-			index = i / 2;
-			if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
-				continue;
-			}
-			modulus = remainder % i;
-			if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? i - 1 : i - 2)) {
-				for (j = i / 2; j <= maxExpon; j += i / 2) {
+		}
+		else {
+			if (modulus == p - 2) {
+				for (j = p - 1; j <= maxExpon; j += p - 1) {
 					ProcessExpon[j >> 3] &= ~(1 << (j & 7));
 				}
 			}
-			else {
-				if (modulus == i - 2) {
-					for (j = i - 1; j <= maxExpon; j += i - 1) {
-						ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-					}
-				}
-			}
 		}
+
 	}
 
 	for (j = 2; j < 100; j++) {
@@ -490,10 +484,32 @@ static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFacto
 			continue;
 		}
 		if (ProcessExponent(Factors, nbrToFactor, Exponent)) {
-			return;   // number is  a perfect power
+			return;   // number is a perfect power +/- 1
 		}
 	}
-	return;
+
+	/* code below finds ALL cases where nbr+1 is a perfect power of a large number,
+	but only finds 1 factor */
+	long long exp;
+	Znum base;
+
+	/* PowerCheck will only find large factors which, if prime, would not be
+	found by trial division */
+	exp = PowerCheck(nbrToFactor + 1, base, MaxP);
+	if (exp != 1) {
+		/* we have base^exp = nbrToFactor + 1
+		i.e. nbrToFactor = base^exp -1 = (base-1) * (base^(exp-1) + .... +1)
+		i.e. base-1 is a factor */
+		while (exp >= 4 && exp % 2 == 0) {
+			exp /= 2;
+			base *= base;   // increase base if possible
+		}
+		base--;
+		insertBigFactor(Factors, base);
+		return;    // number is a perfect power - 1
+	}
+
+	return;  // number is not a perfect power +/- 1
 }
 
 
@@ -530,16 +546,11 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 
 				/* now move index entries higher than j+1 down 1, overwrite index entry j+1 */
 				Factors.erase(Factors.begin() + j + 1);
-				/*for (ptrdiff_t k = j+1; k < lastfactor - 1; k++) {
-					Factors[k].exponent = Factors[k + 1].exponent;
-					Factors[k].Factor = Factors[k + 1].Factor;
-					Factors[k].upperBound = Factors[k + 1].upperBound;
-				}*/
+
 				/* now adjust counters */
 				j--;
 				i--;
 				lastfactor--;
-				//Factors.pop_back();  // remove last entry
 			}
 		}
 		if (!swap)
@@ -607,12 +618,15 @@ static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 			break;  // factor already found
 		g = gcd(Factors[i].Factor, divisor);
 		if (g != 1 && g < Factors[i].Factor) {
+			Znum qnew;
 			Factors.resize(lastfactor + 1);  // increase size of factor list
 			/* we can replace Factor with 2 factors, Factor/g and g 
 			(if Factor is a multiple of divisor, g = divisor) */
-			Factors[i].Factor /= g;
+			//Factors[i].Factor /= g;
+			mp_bitcnt_t fexp = mpz_remove(ZT(qnew), ZT(Factors[i].Factor), ZT(g));
+			Factors[i].Factor = qnew;
 			Factors[ipoint].Factor = g;
-			Factors[ipoint].exponent = Factors[i].exponent;
+			Factors[ipoint].exponent = Factors[i].exponent*(int)fexp;
 			Factors[ipoint].upperBound = Factors[i].upperBound;
 			ipoint++;
 			lastfactor++;
@@ -776,7 +790,7 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;         
-	long long testP,  MaxP= 393203;  
+	long long testP,  MaxP= 393203;  // use 1st 33333 primes
 	// MaxP must never exceed 2,642,245 to avoid overflow of LehmanLimit
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
@@ -786,7 +800,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;  // assume it's not prime
-	if (primeFlags == NULL) {  // get first 33333 primes
+	if ((long long)primeListMax <MaxP) {  // get first 33333 primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
 	
@@ -795,7 +809,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
-		PowerPM1Check(Factors, toFactor);  // check if toFactor is a perfect power +/- 1
+		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
 #ifdef _DEBUG
 		if (Factors.size() > 1) {
 			std::cout << "PowerPM1Check result: ";
@@ -838,7 +852,8 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 					std::cout << "factors before Pollard factorisation: ";
 					printfactors(Factors);
 #endif
-					PollardFactor(MulPrToLong(Factors[i].Factor), f);
+					//PollardFactor(MulPrToLong(Factors[i].Factor), f);
+					f = PollardRho(MulPrToLong(Factors[i].Factor));
 					if (f != 1)
 						insertIntFactor(Factors, -1, f, i);
 					/* there is a small possibility that PollardFactor won't work,
@@ -846,13 +861,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				}
 			}
 		}
-	} while (restart);
+	} while (restart);  // keep looping until no more factors found.
 #ifdef _DEBUG
 	std::cout << "result after trial division " ;
 	printfactors(Factors);
 #endif
 
-	/* Any small factors (up to 300,000) have now been found by trial division */
+	/* Any small factors (up to 393,203) have now been found by trial division */
 	/* Check whether the residue is prime or prime power.
 	Given that the residue is less than about 10^10,000 the maximum exponent is 
 	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
@@ -885,7 +900,8 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		}
 		if (Zpower <= LehmanLimit) {
 			long long f;
-			PollardFactor(MulPrToLong(Zpower), f);
+			//PollardFactor(MulPrToLong(Zpower), f);
+			f = PollardRho(MulPrToLong(Zpower));
 			if (f != 1) {
 				insertIntFactor(Factors, -1, f, i);
 				/* there is a small possibility that PollardFactor won't work,
@@ -910,7 +926,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 
 /* compute 4 or less values the squares of which add up to prime p,  
 return values in Mult1, Mult2, Mult3 and Mult4 */
-static void ComputeFourSquaresNew(const Znum &p, Znum &Mult1, Znum &Mult2,
+static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 	Znum &Mult3, Znum &Mult4) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
 	Znum TestNbr;
@@ -1088,7 +1104,7 @@ https://www.alpertron.com.ar/4SQUARES.HTM */
 (a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
                                     + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
 This allows us to find the sum of squares for each factor separately then combine them */
-static void ComputeFourSquaresNew(std::vector <zFactors> &factorlist, 
+static void ComputeFourSquares(std::vector <zFactors> &factorlist, 
 	Znum quads[4]) {
 	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
 	Znum p;
@@ -1118,7 +1134,7 @@ static void ComputeFourSquaresNew(std::vector <zFactors> &factorlist,
 
 		/* compute 4 or less values the squares of which add up to prime p,
 		return values in Mult1, Mult2, Mult3 and Mult4 */
-		ComputeFourSquaresNew(p, Mult1, Mult2, Mult3, Mult4);
+		ComputeFourSquares(p, Mult1, Mult2, Mult3, Mult4);
 		assert(p == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
 
 		/* use the identity:
@@ -1217,7 +1233,7 @@ bool factorise(Znum numberZ, std::vector <zFactors> &vfactors,
 		if (!rv)
 			return false;  // failed to factorise number
 		if (quads != nullptr) {
-			ComputeFourSquaresNew(vfactors, quads); // get a, b, c, d such that sum of their squares = number
+			ComputeFourSquares(vfactors, quads); // get a, b, c, d such that sum of their squares = number
 		}
 		return true;
 	}

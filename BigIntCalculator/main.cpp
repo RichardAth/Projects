@@ -553,10 +553,17 @@ static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
 	num /= sq;
 }
 
+
+extern unsigned __int64 R3(__int64 n);
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
 be +ve, 0 or -ve See https://oeis.org/A005875 */
 static Znum R3(Znum num) {
+	
+	if (num < 200000000000000) {
+		__int64 llnum = MulPrToLong(num);
+		return R3(llnum);
+	}
 	Znum sum = 0, sq, multiplier = 1;
 	std::vector <zFactors> sqf;
 
@@ -1670,8 +1677,10 @@ void removeBlanks(std::string &msg) {
 /* factorise Result, calculate number of divisors etc and print results */
 static void doFactors(const Znum &Result, bool test) {
 	std::vector <zFactors> factorlist;
-
 	Znum Quad[4];
+	clock_t start;
+	if (test)
+		start = clock();	// used to measure execution time
 
 	/* call DA´s magic function to factorise Result */
 	bool rv = factorise(Result, factorlist, Quad);
@@ -1747,6 +1756,8 @@ static void doFactors(const Znum &Result, bool test) {
 				std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
 				Beep(750, 1000);
 			}
+			auto end = clock(); double elapsed = (double)end - start;
+			std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 		}
 	}
 	else
@@ -1871,12 +1882,23 @@ static void doTests(void) {
 		factortest(x3);
 	}
 
+	/* tests below show a problem with pollard-rho for certain numbers */
+	factortest(99999999973789); // = 6478429 * 15435841
+	factortest(183038861417);   // =  408229 *   448373
+	factortest(183475587821);   // =  409477 *   448073
+	factortest(181919916457);   // =  400307 *   454451
+	factortest(199996999457);   // =  441361 *   453137
+	factortest(204493418837);   // =  401209 *   509693
+
 	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
 	x3 -= 1;                        // x3 = 10^20-1
 	factortest(x3);
 	x3 += 2;
 	factortest(x3);
+	ComputeExpr("n(10^10)^2-1", x3);  // test power of large number-1
+	factortest(x3);
+
 	ComputeExpr("120#-1", x3);
 	factortest(x3);
 	ComputeExpr("n(10^15)^2", x3);  // test power of large number
@@ -1929,7 +1951,6 @@ static void doTests2(void) {
 		if (i <= 39)
 			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
 		x += rand();
-		//auto numLen = (int)mpz_sizeinbase(ZT(x), 2) ;
 		std::cout << "\nTest # " << i << '\n';
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
@@ -1996,6 +2017,21 @@ static void doTests3(void) {
 	double elapsed = (double)end - start;
 	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
+
+/* tests for r3 function */
+/* see http://oeis.org/A002102 */
+
+extern unsigned __int64 R2(const unsigned __int64 n);
+static void doTests4(void) {
+	generatePrimes(2000);
+	for (int i = 0; i <= 9992; i++) {
+		auto rv2 = R2(i);
+		auto rv = R3(i);
+		printf_s("%4d %4lld %4lld ", i, rv2, rv);
+		std::cout << '\n';
+	}
+}
+
 
 int main(int argc, char *argv[]) {
 	std::string expr, expupper;
@@ -2146,6 +2182,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			}
 			if (expupper == "TEST3") {
 				doTests3();         // do basic tests 
+				continue;
+			}
+			if (expupper == "TEST4") {
+				doTests4();         // do R3 tests 
 				continue;
 			}
 

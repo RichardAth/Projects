@@ -58,3 +58,5 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
 double logBigNbr(const Znum &BigInt);
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 int PrimalityTest(const Znum &Value, long long upperBound);
+unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+long long int PollardRho(long long int n);

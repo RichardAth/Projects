@@ -21,9 +21,11 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "bignbr.h"
 #include "factor.h"
 
-//static BigInteger Base;
-static char ProcessExpon[2003];
-static char primes[4007];
+extern bool *primeFlags;
+extern unsigned long long *primeList;
+extern unsigned int prime_list_count;
+extern unsigned long long int primeListMax;
+bool isPrime2(unsigned __int64 num);
 
 /*return addend1 + addend2 (used to overload + operator) */
 //BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
@@ -299,9 +301,9 @@ throw exception if result would be to large for a BigInteger */
 double logBigNbr(const Znum &BigInt) {
 	double BigId;
 #ifdef __MPIR_VERSION
-	long long BiExp;
+	long BiExp;   // changed for MPIR version 3.0.0
 #else
-        long BiExp;
+    long BiExp;
 #endif
 	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
 	double logval = log(BigId)  + BiExp *  log(2);
@@ -327,7 +329,7 @@ taken into account because floating point numbers have limited accuracy anyway. 
 //	return logar;
 //}
 
-/* calculate base^exponent. Throw exception if result is out of range */
+/* calculate base^exponent. */
 //void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
 //	int mask;
 //	if (pBase == 0) {     // Base = 0 -> power = 0
@@ -853,7 +855,7 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	}
 	int i = 0;
 	while (numberZ > 0) {
-		if (i >= MAX_LEN) {
+		if (i >= MAX_LEN || NumberLength > MAX_LEN) {
 			// number too big to convert.
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "number too big : cannot convert to limbs: ";
@@ -869,7 +871,7 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	}
 	if (i < NumberLength) {
 		/* set any extra limbs to zero */
-		memset(number + i, 0, (NumberLength - i) * sizeof(number[0]));
+		memset(number + i, 0, (NumberLength - i) * sizeof(limb));
 	}
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
@@ -928,37 +930,32 @@ void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
 //	*ptrValues = nbrLimbs;
 //}
 
-// This routine checks whether the number BigInt is a perfect power. 
+// This routine checks whether the number factor is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  
-// exponent and  the base such that base^exponent = BigInt.
-long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
+// exponent and  the base such that base^exponent = factor.
+long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 	/* upperbound is the largest number already tested as a factor by trial division
-	i.e. BigInt has no factors < upperBound. This can be used to put a much
+	i.e. factor has no factors < upperBound. This can be used to put a much
 	smaller limit on maxExpon (max about 2000) */
 
-	double BigId;
-#ifdef __MPIR_VERSION
-	long long BiExp;
-#else
-	long BiExp;
-#endif
-	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
-	double maxExpd = (log(BigId) / log(2) +BiExp) / (log(upperBound) / log(2));
-	long long maxExpon = (long long) ceil(maxExpd);
+	/* upperBound^maxExpon ≈ factor */
+	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
 										  
-	int h, j;
-	long long modulus;
-	long long primesLength, Exponent;
+	int h;
+	long long modulus, Exponent;
+	unsigned long long primesLength, j;
 	int prime2310x1[] =
 	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
 	// Primes of the form 2310x+1.
 	bool expon2 = true, expon3 = true, expon5 = true;
 	bool expon7 = true, expon11 = true;
 	Znum Zmod, Root;
+	std::vector<bool>ProcessExpon(maxExpon+1);
 
 	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
 		int testprime = prime2310x1[h];
-		auto mod = mpz_mod_ui(ZT(Zmod),ZT(BigInt), testprime); // getRemainder(BigInt, testprime);
+		// Zmod = mod = Bigint%testprime
+		auto mod = mpz_mod_ui(ZT(Zmod),ZT(factor), testprime); // getRemainder(factor, testprime);
 		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
 			expon2 = false;
 		}
@@ -977,9 +974,7 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 	}
 
 	primesLength = 2 * maxExpon + 3;
-	if (primesLength >= sizeof(primes) / sizeof(primes[0]) ||
-		maxExpon >= sizeof(ProcessExpon) / sizeof(ProcessExpon[0])-1) {
-
+	if (primesLength > primeListMax) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot generate prime list. function : ";
 		mesg += __func__;
@@ -991,33 +986,25 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 	for (h = 2; h <= maxExpon; h++) {
 		ProcessExpon[h] = true;
 	}
-	for (h = 2; h < primesLength; h++) {
-		primes[h] = true;
-	}
-	for (h = 2; h * h < primesLength; h++) { // Generation of primes
-		for (j = h * h; j < primesLength; j += h) { // using Eratosthenes sieve
-			primes[j] = false;
-		}
-	}
-	for (h = 13; h < primesLength; h++) {
-		if (primes[h]) {
-			int processed = 0;
-			for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
-				if (primes[j]) {
-					modulus = mpz_mod_ui(ZT(Zmod),ZT(BigInt), j); // getRemainder(BigInt, j);
-					if (intModPow(modulus, j / h, j) > 1) {
-						for (j = h; j <= maxExpon; j += h) {
-							ProcessExpon[j] = false;
-						}
-						break;
+
+	for (size_t ix=5, h = primeList[ix]; h < primesLength/2; ix++, h = primeList[ix]) {
+		int processed = 0;
+		for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
+			if (isPrime2(j)) {
+				modulus = mpz_mod_ui(ZT(Zmod),ZT(factor), j); // getRemainder(factor, j);
+				if (intModPow(modulus, j / h, j) > 1) {
+					for (j = h; j <= maxExpon; j += h) {
+						ProcessExpon[j] = false;
 					}
-				}
-				if (++processed > 10) {
 					break;
 				}
 			}
+			if (++processed > 10) {
+				break;
+			}
 		}
 	}
+
 	/* check possible exponent values */
 	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
 		if (Exponent % 2 == 0 && !expon2) {
@@ -1038,12 +1025,13 @@ long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound) {
 		if (!ProcessExpon[Exponent]) {
 			continue;
 		}
-		if (mpz_root(ZT(Root), ZT(BigInt), Exponent) != 0) {
-			Base = Root;   // BigInt is a perfect power
+		if (mpz_root(ZT(Root), ZT(factor), Exponent) != 0) {
+			Base = Root;   // factor is a perfect power
 			return Exponent;
 		}
 	}
-	Base = BigInt;   // not perfect power
+
+	Base = factor;   // not perfect power
 	return 1;
 }
 
