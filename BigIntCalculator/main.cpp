@@ -1965,57 +1965,77 @@ static void doTests2(void) {
 BigIntegers. Both use Mongomery notation for the integers to avoid slow
 division operations. The conclusion is that GMP takes about twice as long
 as DA's code. */
+//static void doTests3(void) {
+//	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
+//	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
+//	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
+//	limb one[MAX_LEN];
+//	int numLen = MAX_LEN;
+//
+//	auto start = clock();	// used to measure execution time
+//
+//	memset(one, 0, MAX_LEN * sizeof(limb));
+//	one[0].x = 1;                   /* set value of one to 1 */
+//
+//	srand(421040034);               // seed random number generator 
+//	
+//	/* set up modulus and Mongomery parameters */
+//	largeRand(mod);					// get large random number
+//	GetMontgomeryParms(mod);
+//	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+//	while (modL[numLen - 1].x == 0)
+//		numLen--;                    // adjust length i.e. remove leading zeros
+//	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+//	GetMontgomeryParms(numLen);
+//
+//	largeRand(a);				     // get large random number a
+//	modmult(a%mod, zR2, am);         // convert a to Montgomery (Znum)
+//	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
+//	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
+//	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
+//	LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
+//	assert(a == a1);                 // check that all thes conversions work properly
+//
+//	largeRand(b);				     // get large random number  b
+//	modmult(b%mod, zR2, bm);         // convert b to Montgomery (Znum)
+//	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+//	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
+//
+//	for (int i = 1; i < 200000000; i++) {
+//		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
+//		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
+//		modmult(am, bm, pm);             // p = a*b mod m (Znum)
+//		am = pm;						 //a = p (Znum)
+//	}
+//
+//	REDC(p, pm);					 // convert p from montgomery (Znum)
+//	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+//	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
+//	assert(p2 == p);
+//
+//	auto end = clock();              // measure amount of time used
+//	double elapsed = (double)end - start;
+//	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+//}
+
 static void doTests3(void) {
-	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
-	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
-	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
-	limb one[MAX_LEN];
-	int numLen = MAX_LEN;
+	Znum factor, base;
 
-	auto start = clock();	// used to measure execution time
+	generatePrimes(393'203);
 
-	memset(one, 0, MAX_LEN * sizeof(limb));
-	one[0].x = 1;                   /* set value of one to 1 */
+	mpz_ui_pow_ui(ZT(factor), 2, 64);
+	auto rv = PowerCheckNew(factor, base, 2);
+	gmp_printf("%Zd = %Zd^%lld \n", factor, base, rv);
 
-	srand(421040034);               // seed random number generator 
-	
-	/* set up modulus and Mongomery parameters */
-	largeRand(mod);					// get large random number
-	GetMontgomeryParms(mod);
-	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-	while (modL[numLen - 1].x == 0)
-		numLen--;                    // adjust length i.e. remove leading zeros
-	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-	GetMontgomeryParms(numLen);
+	mpz_ui_pow_ui(ZT(factor), 7, 17);
+	rv = PowerCheckNew(factor, base, 2);
+	gmp_printf("%Zd = %Zd^%lld \n", factor, base, rv);
 
-	largeRand(a);				     // get large random number a
-	modmult(a%mod, zR2, am);         // convert a to Montgomery (Znum)
-	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
-	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
-	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
-	LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
-	assert(a == a1);                 // check that all thes conversions work properly
+	mpz_ui_pow_ui(ZT(factor), 393209, 30);
+	rv = PowerCheckNew(factor, base, 393203);
+	gmp_printf("%Zd = %Zd^%lld \n", factor, base, rv);
 
-	largeRand(b);				     // get large random number  b
-	modmult(b%mod, zR2, bm);         // convert b to Montgomery (Znum)
-	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
-	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
-	for (int i = 1; i < 200000000; i++) {
-		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
-		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-		modmult(am, bm, pm);             // p = a*b mod m (Znum)
-		am = pm;						 //a = p (Znum)
-	}
-
-	REDC(p, pm);					 // convert p from montgomery (Znum)
-	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
-	assert(p2 == p);
-
-	auto end = clock();              // measure amount of time used
-	double elapsed = (double)end - start;
-	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
 /* tests for r3 function */

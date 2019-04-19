@@ -55,6 +55,8 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power);
 long long MulPrToLong(const Znum &x);
 long long JacobiSymbol(long long upper, long long lower);
 long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
+long long PowerCheckv2(const Znum &factor, Znum &Base, long long upperBound);
+long long PowerCheckNew(const Znum &factor, Znum &Base, long long upperBound);
 double logBigNbr(const Znum &BigInt);
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 int PrimalityTest(const Znum &Value, long long upperBound);

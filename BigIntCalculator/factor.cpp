@@ -266,7 +266,7 @@ static void InsertAurifFactors(std::vector<zFactors> &Factors, const Znum &BigBa
 	return;
 }
 
-
+/* see https://en.wikipedia.org/wiki/The_Cunningham_project */
 static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int Expon,
 	int increment, const Znum &BigOriginal) {
 	int Expon2, k;
@@ -276,8 +276,8 @@ static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int 
 
 	while (Expon2 % 2 == 0 && increment == -1) {
 		Expon2 /= 2;
-		BigIntPowerIntExp(BigBase, Expon2, Nbr1);
-		Nbr1 += increment; //addbigint(Nbr1, increment);
+		BigIntPowerIntExp(BigBase, Expon2, Nbr1);  // Nbr1 = BigBase^Expon2
+		Nbr1 += increment;
 		insertBigFactor(Factors, Nbr1);
 		InsertAurifFactors(Factors, BigBase, Expon2, 1);
 	}
@@ -286,23 +286,23 @@ static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int 
 	while (k * k <= Expon) {
 		if (Expon % k == 0) {
 			if (k % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, Expon / k, Nbr1);
-				Nbr1 += increment;      //addbigint(Nbr1, increment);
-				Nbr2 = gcd(Nbr1, BigOriginal);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
+				BigIntPowerIntExp(BigBase, Expon / k, Nbr1);  // Nbr1 = BigBase^(Expon/k)
+				Nbr1 += increment;      ;
+				Nbr2 = gcd(Nbr1, BigOriginal);   
 				insertBigFactor(Factors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+				Temp1 = BigOriginal; 
+				Nbr1 = Temp1 / Nbr2; 
 				insertBigFactor(Factors, Nbr1);
 				InsertAurifFactors(Factors, BigBase, Expon / k, increment);
 			}
 
 			if ((Expon / k) % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, k, Nbr1);
-				Nbr1 += increment; //addbigint(Nbr1, increment);
+				BigIntPowerIntExp(BigBase, k, Nbr1);  // Nbr1 = BigBase^k
+				Nbr1 += increment; 
 				Nbr2 = gcd(Nbr1, BigOriginal);   // Nbr2 <- gcd(Base^k+incre, original)
 				insertBigFactor(Factors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+				Temp1 = BigOriginal; 
+				Nbr1 = Temp1 / Nbr2; 
 				insertBigFactor(Factors, Nbr1);
 				InsertAurifFactors(Factors, BigBase, k, increment);
 			}
@@ -312,201 +312,83 @@ static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int 
 	return;
 }
 
-static bool ProcessExponent(std::vector<zFactors> &Factors, const Znum &nbrToFactor, int Exponent)
-{
-#ifdef __EMSCRIPTEN__
-	char status[200] = { 0 };
-	char *ptrStatus;
-#endif
-	Znum NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;   
-	Znum nextroot, dif;     
-	Znum Temp1;
-
-#ifdef __EMSCRIPTEN__
-	int elapsedTime = (int)(tenths() - originalTenthSecond);
-#ifndef _DEBUG
-	if (elapsedTime / 10 != oldTimeElapsed / 10)
-#endif
-	{
-		oldTimeElapsed = elapsedTime;
-		ptrStatus = status;
-		strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
-		ptrStatus += strlen(ptrStatus);
-		GetDHMS(&ptrStatus, elapsedTime / 10);
-		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
-			"Power +/- 1 exponent: ");
-		ptrStatus += strlen(ptrStatus);
-		int2dec(&ptrStatus, Exponent);
-		printf("%s\n", status);
-	}
-#endif
-
-	NFp1 = nbrToFactor + 1;  // NFp1 <- NumberToFactor + 1
-	NFm1 = nbrToFactor - 1;  // NFm1 <- NumberToFactor - 1
-           
-	mpz_root(ZT(nthRoot), ZT(NFp1), Exponent);  // Find nth root of number to factor.
-	rootbak = nthRoot;
-
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
-		dif = NFp1 - rootN;     // BigIntSubt(NFp1, rootN, dif);    
-		if (dif == 0) {         // Perfect power-1
-			Cunningham(Factors, nthRoot, Exponent, -1, nbrToFactor);
-			return true;
-		}
-		dif++;        // dif <- dif + 1
-		Temp1 = dif / rootN1;
-		Temp1 /= Exponent;        // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;         // 
-		nextroot--;                //   nextroot = nextroot - 1             
-		nthRoot = nextroot - nthRoot;
-		if (nthRoot >= 0) {
-			break;              // Not a perfect power
-		}
-		nthRoot = nextroot;
-	}
-
-	nthRoot = rootbak;
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
-		dif = NFm1 - rootN;
-		if (dif == 0)
-		{ // Perfect power+1
-			Cunningham(Factors, nthRoot, Exponent, 1, nbrToFactor);
-			return true;
-		}
-		dif++;                        // dif <- dif + 1
-		Temp1 = dif / rootN1;
-		Temp1 /= Exponent;   // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;
-		nextroot--;             // nextroot <- nextroot - 1
-		nthRoot = nextroot - nthRoot;
-		if (nthRoot >= 0) {
-			break;               // Not a perfect power
-		}
-		nthRoot = nextroot;      // CopyBigInt(nthRoot, nextroot);
-	}
-	return false;
-}
+/* check whether or not nbrToFactor is really = x^Exponent +/- 1.
+If so, call Cunningham to get factors. 
+NB. x must not be a perfect power; need to minimise x and maximise Exponent. */
+//static bool ProcessExponent(std::vector<zFactors> &Factors, const Znum &nbrToFactor, const int Exponent)
+//{
+//#ifdef __EMSCRIPTEN__
+//	char status[200] = { 0 };
+//	char *ptrStatus;
+//#endif
+//	Znum NFp1, NFm1, dif,  nthRoot;
+//	//Znum nextroot, rootN, rootbak, rootN1;     
+//	//Znum Temp1;
+//
+//#ifdef __EMSCRIPTEN__
+//	int elapsedTime = (int)(tenths() - originalTenthSecond);  // time in 0.1 second units
+//#ifndef _DEBUG
+//	if (elapsedTime / 10 != oldTimeElapsed / 10)
+//		/* if > 1 second since last message */
+//#endif
+//	{
+//		oldTimeElapsed = elapsedTime;
+//		ptrStatus = status;
+//		strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
+//		ptrStatus += strlen(ptrStatus);
+//		GetDHMS(&ptrStatus, elapsedTime / 10);
+//		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
+//			"Power +/- 1 exponent: ");
+//		ptrStatus += strlen(ptrStatus);
+//		int2dec(&ptrStatus, Exponent);
+//		printf("%s\n", status);
+//	}
+//#endif
+//
+//	NFp1 = nbrToFactor + 1;  // NFp1 <- NumberToFactor + 1
+//	NFm1 = nbrToFactor - 1;  // NFm1 <- NumberToFactor - 1
+//           
+//	mpz_rootrem(ZT(nthRoot), ZT(dif), ZT(NFp1), Exponent);  // Find nth root of number to factor+1.
+//	if (dif == 0) {         // Perfect power-1
+//		Cunningham(Factors, nthRoot, Exponent, -1, nbrToFactor);
+//		return true;
+//	}
+//	
+//	mpz_rootrem(ZT(nthRoot), ZT(dif), ZT(NFm1), Exponent);  // Find nth root of number to factor-1.
+//	if (dif == 0) { // Perfect power+1
+//		Cunningham(Factors, nthRoot, Exponent, 1, nbrToFactor);
+//		return true;
+//	}
+//
+//	return false;
+//}
 
 
 /* check whether the number +/- 1 is a perfect power*/
 static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFactor,
 	long long MaxP) {
-
 	
-	bool plus1 = false;
-	bool minus1 = false;
 	int Exponent = 0;
-	unsigned long long j;
-	unsigned long long modulus;
-	int mod9 = (int)MulPrToLong(nbrToFactor % 9); // getRemainder(*nbrToFactor, 9);
-	auto maxExpon = mpz_sizeinbase(ZT(nbrToFactor), 2);
-	auto MaxPrime = 2 * maxExpon + 3;
-	double logar = logBigNbr(nbrToFactor);
-	// 33219 = logarithm base 2 of max number supported = 10^10,000.
-	//unsigned char ProcessExpon[(33231 + 7) / 8];
-
-	std::vector<char>ProcessExpon(maxExpon);
-	Znum Temp1, Temp2;
-
-	if (MaxPrime > primeListMax) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: number too large ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-	/* fast initialisation */
-	memset(ProcessExpon.data(), 0xFF, maxExpon);
-
-	// If the number +/- 1 is multiple of a prime but not a multiple
-	// of its square then the number +/- 1 cannot be a perfect power.
-	for (unsigned long long ix=0, p = primeList[ix]; p < MaxPrime; ix++, p = primeList[ix]) {
-	    // p is prime according to sieve.
-		unsigned long long remainder;
-		ptrdiff_t index;
-		Temp1 = p*p;
-		Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (p*p)
-		remainder = MulPrToLong(Temp2);
-		if (remainder % p == 1 && remainder != 1) {
-			plus1 = true; // NumberFactor cannot be a power + 1
-		}
-		if (remainder % p == (unsigned int)p - 1 &&
-			remainder != (unsigned int)p*(unsigned int)p - 1)
-		{
-			minus1 = true; // NumberFactor cannot be a power - 1
-		}
-		if (minus1 && plus1) {
-			return;
-		}
-		index = p / 2;
-		if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
-			continue;
-		}
-		modulus = remainder % p;
-		if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? p - 1 : p - 2)) {
-			for (j = p / 2; j <= maxExpon; j += p / 2) {
-				ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-			}
-		}
-		else {
-			if (modulus == p - 2) {
-				for (j = p - 1; j <= maxExpon; j += p - 1) {
-					ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-				}
-			}
-		}
-
-	}
-
-	for (j = 2; j < 100; j++) {
-		double u = logar / log(j) + .000005;
-		Exponent = (int)floor(u);
-		if (u - Exponent > .00001)
-			continue;
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7)
-			continue;
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7))))
-			continue;
-		if (ProcessExponent(Factors, nbrToFactor, Exponent))
-			return;  // number is a perfect power +/- 1
-	}
-
-	for (; Exponent >= 2; Exponent--) {
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7) {
-			continue;
-		}
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7)))) {
-			continue;
-		}
-		if (ProcessExponent(Factors, nbrToFactor, Exponent)) {
-			return;   // number is a perfect power +/- 1
-		}
-	}
-
-	/* code below finds ALL cases where nbr+1 is a perfect power of a large number,
-	but only finds 1 factor */
-	long long exp;
 	Znum base;
 
-	/* PowerCheck will only find large factors which, if prime, would not be
-	found by trial division */
-	exp = PowerCheck(nbrToFactor + 1, base, MaxP);
-	if (exp != 1) {
+	/* code below finds cases where nbr +/- 1 is a perfect power.
+	If base < MaxP we may not find it here, but the factor will then
+	be found anyway by trial division. */
+
+	Exponent = (int)PowerCheck(nbrToFactor + 1, base, MaxP);
+	if (Exponent != 1) {
 		/* we have base^exp = nbrToFactor + 1
 		i.e. nbrToFactor = base^exp -1 = (base-1) * (base^(exp-1) + .... +1)
 		i.e. base-1 is a factor */
-		while (exp >= 4 && exp % 2 == 0) {
-			exp /= 2;
-			base *= base;   // increase base if possible
-		}
-		base--;
-		insertBigFactor(Factors, base);
+		Cunningham(Factors, base, Exponent, -1, nbrToFactor);
 		return;    // number is a perfect power - 1
+	}
+
+	Exponent = (int)PowerCheck(nbrToFactor - 1, base, MaxP);
+	if (Exponent != 1) {
+		/* we have base^exp = nbrToFactor - 1 */
+		Cunningham(Factors, base, Exponent, 1, nbrToFactor);
+		return;    // number is a perfect power + 1
 	}
 
 	return;  // number is not a perfect power +/- 1
@@ -790,9 +672,9 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;         
-	long long testP,  MaxP= 393203;  // use 1st 33333 primes
-	// MaxP must never exceed 2,642,245 to avoid overflow of LehmanLimit
-	long long LehmanLimit = MaxP*MaxP*MaxP;
+	long long testP,  MaxP= 393'203;  // use 1st 33333 primes
+	// MaxP must never exceed 2'097'152 to avoid overflow of PollardLimit
+	long long PollardLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
 
 	/* initialise factor list */
@@ -807,15 +689,15 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	oldTimeElapsed = 0;
 	originalTenthSecond = tenths();    // record start time
 
-	if (toFactor >= MaxP* MaxP) {
+	if (toFactor >= PollardLimit) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
-#ifdef _DEBUG
+//#ifdef _DEBUG
 		if (Factors.size() > 1) {
 			std::cout << "PowerPM1Check result: ";
 			printfactors(Factors);
 		}
-#endif
+//#endif
 	}
 
 	do {  /* use trial division */
@@ -840,7 +722,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				upperBound++;
 			}
 			if (!restart && (Factors[i].upperBound != -1) 
-				&& Factors[i].Factor <= LehmanLimit) {
+				&& Factors[i].Factor <= PollardLimit) {
 				long long f;
 				if (PrimalityTest(Factors[i].Factor, primeList[Factors[i].upperBound]) == 0)
 					/* if factor is prime calling PollardFactor would waste a LOT of time*/
@@ -867,7 +749,8 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	printfactors(Factors);
 #endif
 
-	/* Any small factors (up to 393,203) have now been found by trial division */
+	/* Any small factors (up to 393,203) have now been found by trial division. 
+	Larger factors may also have been found using Pollard-Rho. */
 	/* Check whether the residue is prime or prime power.
 	Given that the residue is less than about 10^10,000 the maximum exponent is 
 	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
@@ -894,11 +777,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		}
 		if (result > 1) {  /* number is a pseudo-prime */
 			if (factorCarmichael(Zpower, Factors)) {
-				i = -1;			// restart loop at beginning!!
+				// factorCarmichael can generate new smaller factors that are not prime.
+				// So reset index to restart loop at beginning!!
+				i = -1;			
 				continue;
 			}
 		}
-		if (Zpower <= LehmanLimit) {
+		if (Zpower <= PollardLimit) {
 			long long f;
 			//PollardFactor(MulPrToLong(Zpower), f);
 			f = PollardRho(MulPrToLong(Zpower));
@@ -909,6 +794,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				continue;
 			}
 		}
+
 		ElipCurvNo = 1;  // start with 1st curve
 		auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
 		if (!rv)
@@ -917,9 +803,12 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		if (Zfactor != 1) {
 			/* factor is not 1 */
 			insertBigFactor(Factors, Zfactor);
-			i = -1;			// restart loop at beginning!!
+			// insertBigFactor can generate new smaller factors that are not prime.
+			// So reset index to restart loop at beginning!!
+			i = -1;			
 		}
 	}
+
 	SortFactors(Factors);  // tidy up factor list 
 	return true;
 }

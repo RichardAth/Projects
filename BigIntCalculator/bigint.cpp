@@ -936,14 +936,14 @@ void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
 long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 	/* upperbound is the largest number already tested as a factor by trial division
 	i.e. factor has no factors < upperBound. This can be used to put a much
-	smaller limit on maxExpon (max about 2000) */
+	smaller limit on maxExpon (max about 3600 for a 20,000 digit number) */
 
 	/* upperBound^maxExpon ≈ factor */
 	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
 										  
 	int h;
 	long long modulus, Exponent;
-	unsigned long long primesLength, j;
+	unsigned long long MaxPrime, j;
 	int prime2310x1[] =
 	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
 	// Primes of the form 2310x+1.
@@ -973,8 +973,8 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		}
 	}
 
-	primesLength = 2 * maxExpon + 3;
-	if (primesLength > primeListMax) {
+	MaxPrime = 2 * maxExpon + 3;
+	if (MaxPrime > primeListMax) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot generate prime list. function : ";
 		mesg += __func__;
@@ -987,9 +987,9 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		ProcessExpon[h] = true;
 	}
 
-	for (size_t ix=5, h = primeList[ix]; h < primesLength/2; ix++, h = primeList[ix]) {
+	for (size_t ix=5, h = primeList[ix]; (2*h+1) < MaxPrime; ix++, h = primeList[ix]) {
 		int processed = 0;
-		for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
+		for (j = 2 * h + 1; j < MaxPrime; j += 2 * h) {
 			if (isPrime2(j)) {
 				modulus = mpz_mod_ui(ZT(Zmod),ZT(factor), j); // getRemainder(factor, j);
 				if (intModPow(modulus, j / h, j) > 1) {
@@ -1005,7 +1005,9 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		}
 	}
 
-	/* check possible exponent values */
+	/* check possible exponent values. Note that largest found exponent value
+	is returned although, unless this value is prime, any divisor of this
+	value is also a valid exponent. */
 	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
 		if (Exponent % 2 == 0 && !expon2) {
 			continue; // Not a square
@@ -1033,6 +1035,58 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 
 	Base = factor;   // not perfect power
 	return 1;
+}
+
+/* This routine checks whether the number factor is a perfect power. If it is 
+not, it returns one. If it is a perfect power, it returns the exponent and  the 
+base such that base^exponent = factor. The smallest exponent and largest base 
+are returned e.g. for 2^6 it would return exponent 2 and base 8, not exponent 6 
+and base 2 */
+long long PowerCheckv2(const Znum &factor, Znum &Base, long long upperBound) {
+	/* upperbound is the largest number already tested as a factor by trial division
+	i.e. factor has no factors < upperBound. This can be used to put a much
+	smaller limit on maxExpon (max about 3600 for a 20,000 digit number) */
+
+	/* upperBound^maxExpon ≈ factor */
+	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
+	Znum root;
+
+	for (size_t ix = 0, p = primeList[ix]; p <= maxExpon; p = primeList[++ix]) {
+		if (mpz_root(ZT(root), ZT(factor), p) != 0) {
+			Base = root;
+			return p;
+		}
+	}
+
+	Base = factor;   // not perfect power
+	return 1;
+}
+
+/* This routine checks whether the number factor is a perfect power. If it is
+not, it returns one. If it is a perfect power, it returns the exponent and  the
+base such that base^exponent = factor. The largest exponent and smallest base
+are returned e.g. for 2^6 it would return exponent 6 and base 2, not exponent 2
+and base 6 */
+long long PowerCheckNew(const Znum &factor, Znum &Base, long long upperBound) {
+	/* upperbound is the largest number already tested as a factor by trial division
+	i.e. factor has no factors < upperBound.  */
+	long long exponent = 1, tempexp;
+	Znum tempbase, tempfactor= factor;
+
+	/* each time round the loop a prime factor of the final exponent is found. 
+	the result of each loop is combined so that the exponent is maximised
+	and the base is minimised. This is optimised for the common case where a random 
+	number is not a perfect power (but it's still slightly slower than DA's original version) */
+	do {
+		tempexp = PowerCheckv2(tempfactor, tempbase, upperBound);
+		if (tempexp != 1) {
+			exponent *= tempexp;
+			tempfactor = tempbase;
+		}
+	} while (tempexp != 1);
+
+	Base = tempfactor;
+	return exponent;
 }
 
 /* return true if value is 1 (mod p)*/
