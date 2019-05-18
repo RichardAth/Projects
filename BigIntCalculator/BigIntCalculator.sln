@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BigIntCalculator", "BigIntCalculator.vcxproj", "{221FFA2E-52EA-4C92-9FF3-43C571902168}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Int128", "..\Int128\Int128.vcxproj", "{0F50B64C-454E-442E-BD25-7B50ED830D62}"
+EndProject
 Global
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
@@ -24,11 +26,22 @@ Global
 		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x64.Build.0 = Release|x64
 		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x86.ActiveCfg = Release|Win32
 		{221FFA2E-52EA-4C92-9FF3-43C571902168}.Release|x86.Build.0 = Release|Win32
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Debug|x64.ActiveCfg = Debug|x64
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Debug|x64.Build.0 = Debug|x64
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Debug|x86.ActiveCfg = Debug|Win32
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Debug|x86.Build.0 = Debug|Win32
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Release|x64.ActiveCfg = Release|x64
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Release|x64.Build.0 = Release|x64
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Release|x86.ActiveCfg = Release|Win32
+		{0F50B64C-454E-442E-BD25-7B50ED830D62}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6D614BE-920A-4EBA-A4CC-DDB6379A057B}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

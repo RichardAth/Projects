@@ -18,6 +18,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cassert>
 #include <cmath>
+#include <intrin.h>
 #include "bignbr.h"
 #include "factor.h"
 
@@ -26,121 +27,125 @@ extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 bool isPrime2(unsigned __int64 num);
+BigInteger Base;
 
 /*return addend1 + addend2 (used to overload + operator) */
-//BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
-//	int ctr, nbrLimbs;
-//	const limb *ptrBiggerAdd, *ptrSmallerAdd;
-//	limb *ptrSum;
-//	bool A1Smaller = false;
-//	BigInteger Sum;  // temporary variable 
-//
-//	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
-//		A1Smaller = true;
-//		/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//	}
-//
-//	else if (Addend1.nbrLimbs == Addend2.nbrLimbs) {
-//		for (ctr = Addend1.nbrLimbs - 1; ctr >= 0; ctr--) {
-//			if (Addend1.limbs[ctr].x != Addend2.limbs[ctr].x) {
-//				break;
-//			}
-//		}
-//		if (ctr >= 0 && Addend1.limbs[ctr].x < Addend2.limbs[ctr].x) {
-//			/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//			A1Smaller = true;
-//		}
-//	}
-//	if (A1Smaller) {
-//		nbrLimbs = Addend1.nbrLimbs;
-//		ptrBiggerAdd = Addend2.limbs;
-//		ptrSmallerAdd = Addend1.limbs;
-//	}
-//	else {
-//		// the absolute value of addend1 is >= the absolute value of addend2.
-//		nbrLimbs = Addend2.nbrLimbs;
-//		ptrBiggerAdd = Addend1.limbs;
-//		ptrSmallerAdd = Addend2.limbs;
-//	}
-//	ptrSum = Sum.limbs;
-//
-//	if (Addend1.sign == Addend2.sign)
-//	{             // Both addends have the same sign. Sum their absolute values.
-//		unsigned int carry = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x +
-//				(unsigned int)ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (carry >= LIMB_RANGE)
-//		{
-//			ptrSum[ctr].x = 1;
-//			nbrLimbs++;
-//		}
-//	}
-//	else {    // addends have different signs. Subtract their absolute values.
-//		int borrow = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x - ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//	}
-//
-//	while (nbrLimbs > 1 && Sum.limbs[nbrLimbs - 1].x == 0) {
-//		nbrLimbs--;  // delete leading zeros.
-//	}
-//
-//	Sum.nbrLimbs = nbrLimbs;
-//	if (A1Smaller)
-//		Sum.sign = Addend2.sign;  // use sign of addend with larger absolute value
-//	else
-//		Sum.sign = Addend1.sign;
-//
-//	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {
-//		Sum.sign = SIGN_POSITIVE; // Result is zero, so sign is +ve
-//	}
-//	return Sum;
-//}
+BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
+	int ctr, nbrLimbs;
+	const limb *ptrBiggerAdd, *ptrSmallerAdd;
+	limb *ptrSum;
+	bool A1Smaller = false;
+	BigInteger Sum;  // temporary variable 
+
+	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
+		A1Smaller = true;
+		/* the absolute value of addend1 is less than the absolute value of addend2.*/
+	}
+
+	else if (Addend1.nbrLimbs == Addend2.nbrLimbs) {
+		for (ctr = Addend1.nbrLimbs - 1; ctr >= 0; ctr--) {
+			if (Addend1.limbs[ctr].x != Addend2.limbs[ctr].x) {
+				break;
+			}
+		}
+		if (ctr >= 0 && Addend1.limbs[ctr].x < Addend2.limbs[ctr].x) {
+			/* the absolute value of addend1 is less than the absolute value of addend2.*/
+			A1Smaller = true;
+		}
+	}
+	if (A1Smaller) {
+		nbrLimbs = Addend1.nbrLimbs;
+		ptrBiggerAdd = Addend2.limbs;
+		ptrSmallerAdd = Addend1.limbs;
+	}
+	else {
+		// the absolute value of addend1 is >= the absolute value of addend2.
+		nbrLimbs = Addend2.nbrLimbs;
+		ptrBiggerAdd = Addend1.limbs;
+		ptrSmallerAdd = Addend2.limbs;
+	}
+	ptrSum = Sum.limbs;
+
+	if (Addend1.sign == Addend2.sign)
+	{             // Both addends have the same sign. Sum their absolute values.
+		unsigned long long carry = 0;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + 
+				(unsigned long long)ptrBiggerAdd[ctr].x +
+				(unsigned long long)ptrSmallerAdd[ctr].x;
+			ptrSum[ctr].x = (long long)(carry & MAX_INT_NBR);
+		}
+		if (A1Smaller)
+			nbrLimbs = Addend2.nbrLimbs;
+		else
+			nbrLimbs = Addend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + (unsigned long long)ptrBiggerAdd[ctr].x;
+			ptrSum[ctr].x = (long long)(carry & MAX_INT_NBR);
+		}
+		if (carry >= LIMB_RANGE)
+		{
+			ptrSum[ctr].x = 1;
+			nbrLimbs++;
+		}
+	}
+	else {    // addends have different signs. Subtract their absolute values.
+		long long borrow = 0;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x 
+				- ptrSmallerAdd[ctr].x;
+			ptrSum[ctr].x = borrow & MAX_INT_NBR;
+		}
+		if (A1Smaller)
+			nbrLimbs = Addend2.nbrLimbs;
+		else
+			nbrLimbs = Addend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
+			ptrSum[ctr].x = borrow & MAX_INT_NBR;
+		}
+	}
+
+	while (nbrLimbs > 1 && Sum.limbs[nbrLimbs - 1].x == 0) {
+		nbrLimbs--;  // delete leading zeros.
+	}
+
+	Sum.nbrLimbs = nbrLimbs;
+	if (A1Smaller)
+		Sum.sign = Addend2.sign;  // use sign of addend with larger absolute value
+	else
+		Sum.sign = Addend1.sign;
+
+	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {
+		Sum.sign = SIGN_POSITIVE; // Result is zero, so sign is +ve
+	}
+	return Sum;
+}
 
 /* Dest = -Dest */
-//static void BigIntNegate (BigInteger &pDest) {
-//	
-//	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
-//	{
-//		pDest.sign = SIGN_NEGATIVE;  // pDest > 0, now < 0
-//	}
-//	else
-//	{
-//		pDest.sign = SIGN_POSITIVE; // pDest <=0, now >= 0
-//	}
-//}
+static void BigIntNegate (BigInteger &pDest) {
+	
+	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
+	{
+		pDest.sign = SIGN_NEGATIVE;  // pDest > 0, now < 0
+	}
+	else
+	{
+		pDest.sign = SIGN_POSITIVE; // pDest <=0, now >= 0
+	}
+}
 
 
 /* return minuend - subtrahend (used to overload - operator) */
-//BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
-//	BigInteger Difference;
-//	static BigInteger temp;
-//	temp = Subtrahend;   // copy Subtrahend to temporary variable
-//	BigIntNegate(temp);
-//	Difference = Minuend + temp;
-//	return Difference;
-//}
+BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
+	BigInteger Difference;
+	static BigInteger temp;
+	temp = Subtrahend;   // copy Subtrahend to temporary variable
+	BigIntNegate(temp);
+	Difference = Minuend + temp;
+	return Difference;
+}
+
 
 /* returns Factor1 * Factor2 (used to overload * operator)
 Factor1 will be expanded to the length of Factor2 or vice versa 
@@ -149,17 +154,14 @@ codes need to be tested for after every call, passed up to the calling routine,
 tested for again and so on up to the top level. In practise this wasn't done consistently. */
 BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 {
-	BigInteger Product;    // temporary variable 
+	limb Prodl[MAX_LEN * 2] = { 0 };    // temporary variable 
+	BigInteger Product;
 	int nbrLimbsFactor1 = Factor1.nbrLimbs;
 	int nbrLimbsFactor2 = Factor2.nbrLimbs;
 	int nbrLimbs;
 
-	if ((Factor1.nbrLimbs == 1 && Factor1.limbs[0].x == 0) ||
-		(Factor2.nbrLimbs == 1 && Factor2.limbs[0].x == 0))
-	{    // one or both factors are zero.
-		Product.nbrLimbs = 1;      // Product is zero.
-		Product.limbs[0].x = 0;
-		Product.sign = SIGN_POSITIVE;
+	if (Factor1== 0 || Factor2 == 0) {    // one or both factors are zero.
+		Product = 0;     // Product is zero.
 		return Product;
 	}
 
@@ -177,16 +179,25 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	/* Factor1 will be expanded to the length of Factor2 or vice versa. It is necessary to
 	override the const-ness, but the value represented does not change */
 	if (nbrLimbsFactor1 < nbrLimbsFactor2) {
-		memset(&((BigInteger&)Factor1).limbs[nbrLimbsFactor1], 0, (nbrLimbsFactor2 - nbrLimbsFactor1) * sizeof(limb));
+		memset(&((BigInteger&)Factor1).limbs[nbrLimbsFactor1], 0, 
+			(nbrLimbsFactor2 - nbrLimbsFactor1) * sizeof(limb));
 		nbrLimbs = nbrLimbsFactor2;
 	}
 	else {
-		memset(&((BigInteger&)Factor2).limbs[nbrLimbsFactor2], 0, (nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
+		memset(&((BigInteger&)Factor2).limbs[nbrLimbsFactor2], 0, 
+			(nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
 		nbrLimbs = nbrLimbsFactor1;
 	}
 
-	multiply(&Factor1.limbs[0], &Factor2.limbs[0],
-		&Product.limbs[0], nbrLimbs, &nbrLimbs);
+	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, &nbrLimbs);
+
+	/* MultBigNbr below is the underlying function used by multiply. Since 
+	this always works the conclusion is that the problem is probably something 
+	to do with the karatsuba multiplication.*/
+	/*MultBigNbr((const long long *)Factor1.limbs, 
+		(const long long *)Factor2.limbs, 
+		(long long *)Prodl,
+		nbrLimbs);*/
 	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
 	if (nbrLimbs > MAX_LEN)  // limit applied earlier is probably lower, this is just insurance
 	{
@@ -197,6 +208,8 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
+
+	LimbsToBigInteger(Prodl, Product, nbrLimbs);
 	if (Product.limbs[nbrLimbs - 1].x == 0) {
 		nbrLimbs--;  // remove leading zeros
 	}
@@ -214,90 +227,156 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	}
 	return Product;
 }
+BigInteger BigIntMultiply(const BigInteger &Factor, const long long num) {
+	BigInteger Product;    // temporary variable 
+	unsigned long long plow, phigh = 0, carry = 0;
+	size_t ix = 0;
+	bool neg = false;
+	long long f2 = num;
 
-/* calculate Dividend mod Divisor (used for operator overloading) 
-uses global variable Base */
-//BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor) {
-//	BigInteger Remainder;  
-//	if (Divisor == 0) {   // If divisor = 0, then remainder is the dividend.
-//		Remainder = Dividend;
-//		return Remainder;
-//	}
-//	Base = Dividend / Divisor;    // Get quotient of division.
-//	Base = Base*Divisor;
-//	return Dividend - Base;
-//}
+	if (num < 0) {
+		neg = true;
+		f2 = -f2;
+	}
+	for (ix = 0; ix < Factor.nbrLimbs; ix++) {
+		addMult(plow, phigh, Factor.limbs[ix].x, f2, carry);
+		Product.limbs[ix].x = plow;
+		carry = phigh;
+	}
+
+	Product.nbrLimbs = Factor.nbrLimbs;
+
+	if (carry != 0) {
+		Product.nbrLimbs = Factor.nbrLimbs + 1;
+		Product.limbs[ix].x = carry;
+	}
+	Product.sign = Factor.sign;
+	if (neg)
+		BigIntNegate(Product);
+	return Product;
+}
+
+/* calculate m1*m2+c. return top 63 bits in phigh, bottom 63 bits in plow. 
+Top bit of m1, m2 and c must not be set, otherwise overflow may occur. */
+inline void addMult(unsigned long long &plow, unsigned long long &phigh, 
+	const unsigned long long m1, const unsigned long long m2, 
+	const unsigned long long c) {
+
+	plow = _umul128(m1, m2, &phigh);  // p(128 bits) = m1*m2
+	/* move top (carry) bit of plow to phigh */
+	phigh <<= 64 - BITS_PER_GROUP;  // assume that long long is 64 bits wide
+	phigh += (plow >> BITS_PER_GROUP);  
+	plow &= MAX_INT_NBR;        // clear top bit of plow
+
+	plow += c;
+	/* if carry bit is set by adding c, add carry to phigh then reset it */
+	phigh += (plow >> BITS_PER_GROUP);
+	plow &= MAX_INT_NBR;
+}
+
  
-/* BigInt = e^logar
+/* BigInt = e^log
 throw exception if result would be to large for a BigInteger */
-//void expBigInt(BigInteger &bigInt, double logar)
-//{
-//	int mostSignificantLimb;
-//	logar /= log(2);  // convert log to base 2
-//	/* calculate required value for most significnt limb, initially in floating point */
-//	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
-//	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)));
-//
-//	/* convert double to BigInteger */
-//	bigInt.sign = SIGN_POSITIVE;
-//	
-//	mostSignificantLimb = (int) value;
-//	if (mostSignificantLimb == LIMB_RANGE)
-//	{
-//		mostSignificantLimb = 1;
-//		bigInt.nbrLimbs++;
-//	}
-//	bigInt.nbrLimbs++;
-//	if (bigInt.nbrLimbs > MAX_LEN) {
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "number too big : cannot expand BigInteger: ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
-//	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
-//}
+void expBigInt(BigInteger &bigInt, double log)
+{
+	long long mostSignificantLimb;
+	double logar;
+	logar = log/std::log(2);  // convert log to base 2
+	/* calculate required value for most significant limb, initially in floating point */
+	
+	if (logar < 1023) {
+		/* if exp will not cause FP overflow, use direct method */
+		bigInt = std::exp(log);    /* actual conversion is done by DoubleToBigInt */
+		return;
+	}
+
+	memset(bigInt.limbs, 0, MAX_LEN * sizeof(limb));
+
+	/* method below is not very accurate, but does avoid overflow.  */
+	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
+	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * std::log(2)));
+	double value2 = round(exp((logar - BITS_PER_GROUP * (bigInt.nbrLimbs-1)) * std::log(2)));
+	value2 -= value * (double)LIMB_RANGE;
+	/* value2 is approximate. Make sure it's in legal range*/
+	if (value2 < 0)
+		value2 = 0;
+	if (value2 > MAX_INT_NBR)
+		value2 = (double)MAX_INT_NBR;
+
+	bigInt.sign = SIGN_POSITIVE;
+	bigInt.nbrLimbs++;
+	/* convert double to BigInteger */
+	mostSignificantLimb = (long long) value;
+	if (mostSignificantLimb >= LIMB_RANGE)
+	{
+		mostSignificantLimb = 1;
+		bigInt.nbrLimbs++;
+		bigInt.limbs[bigInt.nbrLimbs - 1].x = 1;
+		bigInt.limbs[bigInt.nbrLimbs - 2].x = 0;
+		bigInt.limbs[bigInt.nbrLimbs - 3].x = (long long)value2;
+	}
+	else {
+		bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
+		bigInt.limbs[bigInt.nbrLimbs - 2].x = (long long)value2;
+	}
+
+	if (bigInt.nbrLimbs > MAX_LEN) {
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "number too big : cannot expand BigInteger: ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+}
 
 
 /* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
-//void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
-//
-//	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
-//		long long vv = (long long)round(dvalue); // convert directly to long long if possible
-//		bigInt = vv;
-//		return;
-//	}
-//	Znum temp;
-//	mpz_set_d(ZT(temp), dvalue);  // convert double to Znum
-//	// this method has been tested to be at least as accurate as direct conversion,
-//	// and obviously it's easier to use standard library functions.
-//	ZtoBig(bigInt, temp);        // convert Znum to BigInt
-//	return;
-//}
+void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 
-/* estimate natural log of BigInt. */
-//double logBigNbr (const BigInteger &pBigInt) {
-//	int nbrLimbs;
-//	double logar;
-//	nbrLimbs = pBigInt.nbrLimbs;
-//	if (nbrLimbs == 1) {
-//		logar = log((double)(pBigInt.limbs[0].x));
-//	}
-//	else {
-//		double value = pBigInt.limbs[nbrLimbs - 2].x +
-//			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
-//		if (nbrLimbs == 2) {
-//			logar = log(value);
-//		}
-//		else {
-//			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
-//		}
-//		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
-//	}
-//	return logar;
-//}
+	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
+		long long vv = (long long)std::round(dvalue); // convert directly to long long if possible
+		bigInt = vv;
+		return;
+	}
+	Znum temp;
+	mpz_set_d(ZT(temp), dvalue);  // convert double to Znum
+	// this method has been tested to be at least as accurate as direct conversion,
+	// and obviously it's easier to use standard library functions.
+	bool ok = ZtoBig(bigInt, temp);        // convert Znum to BigInt
+	if (ok)
+		return;
+	else {
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "number too big : cannot convert to BigInteger: ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+}
+
+/* estimate natural log of BigInt. Sign of BigInt is ignored */
+double logBigNbr (const BigInteger &pBigInt) {
+	int nbrLimbs;
+	double logar;
+	nbrLimbs = pBigInt.nbrLimbs;
+	if (nbrLimbs == 1) {
+		logar = log((double)(pBigInt.limbs[0].x));
+	}
+	else {
+		double value = pBigInt.limbs[nbrLimbs - 2].x +
+			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
+		if (nbrLimbs == 2) {
+			logar = log(value);
+		}
+		else {
+			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
+		}
+		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
+	}
+	return logar;
+}
 double logBigNbr(const Znum &BigInt) {
 	double BigId;
 #ifdef __MPIR_VERSION
@@ -312,44 +391,37 @@ double logBigNbr(const Znum &BigInt) {
 
 /* estimate natural log of BigNbr. Only the most significant 62 bits are
 taken into account because floating point numbers have limited accuracy anyway. */
-//double logLimbs(const limb *pBigNbr, int nbrLimbs)
-//{
-//	double logar;
-//	if (nbrLimbs > 1)
-//	{
-//		logar = log( (double)pBigNbr[nbrLimbs - 2].x +
-//				(double)pBigNbr[nbrLimbs - 1].x * LIMB_RANGE) +
-//			(double)(nbrLimbs - 2)*log((double)LIMB_RANGE);
-//	}
-//	else
-//	{
-//		logar = log((double)pBigNbr[nbrLimbs - 1].x) +
-//			(double)(nbrLimbs - 1)*log((double)LIMB_RANGE);
-//	}
-//	return logar;
-//}
+double logLimbs(const limb *pBigNbr, int nbrLimbs)
+{
+	double logar;
+	
+	logar = log((double)pBigNbr[nbrLimbs - 1].x) +
+		(double)(nbrLimbs - 1)*log((double)LIMB_RANGE);
+	
+	return logar;
+}
 
 /* calculate base^exponent. */
-//void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
-//	int mask;
-//	if (pBase == 0) {     // Base = 0 -> power = 0
-//		Power = 0;
-//		return; // base = 0, so result is zero
-//	}
-//	Power = 1;
-//	for (mask = 1 << 30; mask != 0; mask >>= 1) {
-//		if ((exponent & mask) != 0) {
-//			for (; mask != 0; mask >>= 1) {
-//				Power *= Power;// BigIntMultiply(Power, Power, Power);
-//				if ((exponent & mask) != 0) {
-//					Power *= pBase; //BigIntMultiply(Power, Base, Power);
-//				}
-//			}
-//			break;
-//		}
-//	}
-//	return;
-//}
+void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
+	int mask;
+	if (pBase == 0) {     // Base = 0 -> power = 0
+		Power = 0;
+		return; // base = 0, so result is zero
+	}
+	Power = 1;
+	for (mask = 1 << 30; mask != 0; mask >>= 1) {
+		if ((exponent & mask) != 0) {
+			for (; mask != 0; mask >>= 1) {
+				Power *= Power;// BigIntMultiply(Power, Power, Power);
+				if ((exponent & mask) != 0) {
+					Power *= pBase; //BigIntMultiply(Power, Base, Power);
+				}
+			}
+			break;
+		}
+	}
+	return;
+}
 void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
@@ -358,14 +430,14 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 //void BigIntDivide2(BigInteger &pArg) {
 //	int nbrLimbs = pArg.nbrLimbs;
 //	int ctr = nbrLimbs - 1;
-//	unsigned int carry;
+//	unsigned long long carry;
 //	//limb *ptrLimb = &pArg->limbs[ctr];
 //	limb *ptrLimb = pArg.limbs;
 //	carry = 0;
 //	for (; ctr >= 0; ctr--)
 //	{
-//		carry = (carry << BITS_PER_GROUP) + (unsigned int)ptrLimb[ctr].x;
-//		ptrLimb[ctr].x = (int)(carry >> 1);
+//		carry = (carry << BITS_PER_GROUP) + (unsigned long long)ptrLimb[ctr].x;
+//		ptrLimb[ctr].x = (long long)(carry >> 1);
 //		carry &= 1;
 //	}
 //	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1].x == 0)
@@ -383,16 +455,16 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 //
 //	for (; power2 > 0; power2--) {
 //		/*each time round the loop multiplies arg by 2 */
-//		unsigned int carry = 0;
+//		unsigned long long carry = 0;
 //		for (ctr = 0; ctr < nbrLimbs; ctr++)
 //		{
-//			carry += (unsigned int)ptrLimbs[ctr].x << 1;
-//			ptrLimbs[ctr].x = (int)(carry & MAX_VALUE_LIMB);
+//			carry += (unsigned long long)ptrLimbs[ctr].x << 1;
+//			ptrLimbs[ctr].x = (long long)(carry & MAX_VALUE_LIMB);
 //			carry >>= BITS_PER_GROUP;
 //		}
 //		if (carry != 0)
 //		{
-//			ptrLimbs[ctr].x = (int)carry;
+//			ptrLimbs[ctr].x = (long long)carry;
 //			nbrLimbs++;
 //			if (nbrLimbs > MAX_LEN) {
 //				std::string line = std::to_string(__LINE__);
@@ -408,87 +480,87 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 //}
 
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
-//bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-//	int ctr;
-//	/*const limb *ptrLimbs1 = Nbr1.limbs;
-//	const limb *ptrLimbs2 = Nbr2.limbs;*/
-//	auto N1Limbs = Nbr1.nbrLimbs;
-//	auto N2Limbs = Nbr2.nbrLimbs;
-//	while (N1Limbs > 1)
-//		if (Nbr1.limbs[N1Limbs - 1].x == 0)
-//			N1Limbs--;
-//		else
-//			break;
-//	while (N2Limbs > 1)
-//		if (Nbr2.limbs[N2Limbs - 1].x == 0)
-//			N2Limbs--;
-//		else
-//			break;
-//
-//	if (N1Limbs != N2Limbs) {        
-//		return false;  // Sizes of numbers are different.
-//	}
-//	if (Nbr1.sign != Nbr2.sign) { 
-//	       // Sign of numbers are different.
-//		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {              
-//			return true; // Both numbers are zero.
-//		}
-//		return false; // differents signs, therefore cannot be equal
-//	}
-//
-//	// Check whether both numbers are equal.
-//	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
-//		if (Nbr1.limbs[ctr].x != Nbr2.limbs[ctr].x) {
-//			return false;  // Numbers are different.
-//		}
-//	}        
-//	return true;  // Numbers are equal.
-//}
+bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	int ctr;
+	/*const limb *ptrLimbs1 = Nbr1.limbs;
+	const limb *ptrLimbs2 = Nbr2.limbs;*/
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+	if (N1Limbs != N2Limbs) {        
+		return false;  // Sizes of numbers are different.
+	}
+	if (Nbr1.sign != Nbr2.sign) { 
+	       // Sign of numbers are different.
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {              
+			return true; // Both numbers are zero.
+		}
+		return false; // differents signs, therefore cannot be equal
+	}
+
+	// Check whether both numbers are equal.
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x != Nbr2.limbs[ctr].x) {
+			return false;  // Numbers are different.
+		}
+	}        
+	return true;  // Numbers are equal.
+}
 
 /* return true if Nbr1 < Nbr2 (used for operator overloading) */
-//bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-//	int ctr;
-//	auto N1Limbs = Nbr1.nbrLimbs;
-//	auto N2Limbs = Nbr2.nbrLimbs;
-//	while (N1Limbs > 1)
-//		if (Nbr1.limbs[N1Limbs - 1].x == 0)
-//			N1Limbs--;
-//		else
-//			break;
-//	while (N2Limbs > 1)
-//		if (Nbr2.limbs[N2Limbs - 1].x == 0)
-//			N2Limbs--;
-//		else
-//			break;
-//
-//	if (Nbr1.sign != Nbr2.sign) {
-//		// Sign of numbers are different.
-//		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {
-//			return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
-//		}
-//		else return (Nbr1.sign == SIGN_NEGATIVE);
-//	}
-//
-//	/* numbers have same sign */
-//	if (N1Limbs != N2Limbs) {
-//		/* length of numbers is different*/
-//		if (Nbr1.sign == SIGN_POSITIVE)
-//			return N1Limbs < N2Limbs;
-//		else
-//			return N1Limbs > N2Limbs;
-//	}
-//
-//	// numbers have same sign and length. Check whether both numbers are equal.
-//	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
-//		if (Nbr1.limbs[ctr].x < Nbr2.limbs[ctr].x) {
-//			return true;  // Nbr1 < Nbr2.
-//		}
-//		else if (Nbr1.limbs[ctr].x > Nbr2.limbs[ctr].x) {
-//			return false;  // Nbr1 > Nbr2.
-//		}
-//	}
-//	return false;  // Numbers are equal.
-//}
+bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	int ctr;
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+	if (Nbr1.sign != Nbr2.sign) {
+		// Sign of numbers are different.
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {
+			return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
+		}
+		else return (Nbr1.sign == SIGN_NEGATIVE);
+	}
+
+	/* numbers have same sign */
+	if (N1Limbs != N2Limbs) {
+		/* length of numbers is different*/
+		if (Nbr1.sign == SIGN_POSITIVE)
+			return N1Limbs < N2Limbs;
+		else
+			return N1Limbs > N2Limbs;
+	}
+
+	// numbers have same sign and length. Check whether both numbers are equal.
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x < Nbr2.limbs[ctr].x) {
+			return true;  // Nbr1 < Nbr2.
+		}
+		else if (Nbr1.limbs[ctr].x > Nbr2.limbs[ctr].x) {
+			return false;  // Nbr1 > Nbr2.
+		}
+	}
+	return false;  // Numbers are equal.
+}
 
 /* calculate GCD of arg1 & arg2*/
 //void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
@@ -546,11 +618,11 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 //}
 
 /* add addend to big number */
-static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend) {
+static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, long long addend) {
 	int ctr;
 	int nbrLimbs = *pNbrLimbs;
 	pLimbs[0].x += addend;
-	if ((unsigned int)pLimbs->x < LIMB_RANGE)
+	if ((unsigned long long)pLimbs->x < LIMB_RANGE)
 	{     // No overflow. Go out of routine.
 		return;
 	}
@@ -570,7 +642,7 @@ static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend) {
 }
 
 /* subtract from big number */
-static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
+static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, long long subt) {
 	int nbrLimbs = *pNbrLimbs;
 	pLimbs[0].x -= subt;
 	if (pLimbs[0].x < 0)
@@ -595,125 +667,98 @@ static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 /* i = (i-subt)/divisor. Assume (without checking) that divisor > 0.
 Does not appear to handle -ve divisor 
 used for operator overloading */
-//void subtractdivide(BigInteger &i, int subt, int divisor)
-//{
-//	int nbrLimbs = i.nbrLimbs;
-//	int remainder = 0;
-//	
-//#if 0
-//	char *ptrOutput = output;
-//	*ptrOutput++ = '2';
-//	*ptrOutput++ = '(';
-//	int2dec(&ptrOutput, i->sign);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->nbrLimbs);
-//	*ptrOutput++ = ';';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->limbs[0].x);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->limbs[1].x);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	*ptrOutput++ = ')';
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, subt);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, divisor);
-//	//  databack(output);
-//	if ((unsigned int)i->limbs[0].x >= LIMB_RANGE)
-//	{
-//		remainder = 1;
-//	}
-//#endif
-//	/* if subt is not zero subtract it from i*/
-//	if (subt > 0) {
-//		if (i >= 0) {       // Subtract subt from absolute value.
-//			subtFromAbsValue(i.limbs, &nbrLimbs, subt);
-//		}
-//		else {               // Add subt to absolute value.
-//			addToAbsValue(i.limbs, &nbrLimbs, subt);
-//		}
-//	}
-//	else if (subt < 0) {  // subt < 0
-//		if (i >= 0) {    // Subtract subt from absolute value.
-//			addToAbsValue(i.limbs, &nbrLimbs, -subt);
-//		}
-//		else {               // Add subt to absolute value.
-//			subtFromAbsValue(i.limbs, &nbrLimbs, -subt);
-//		}
-//	}
-//
-//	// Divide number by divisor.
-//	i = BigIntDivideInt(i, divisor);
-//}
+void subtractdivide(BigInteger &i, long long subt, long long divisor)
+{
+	int nbrLimbs = i.nbrLimbs;
+	long long remainder = 0;
+	
+#if 0
+	char *ptrOutput = output;
+	*ptrOutput++ = '2';
+	*ptrOutput++ = '(';
+	int2dec(&ptrOutput, i->sign);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->nbrLimbs);
+	*ptrOutput++ = ';';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->limbs[0].x);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->limbs[1].x);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	*ptrOutput++ = ')';
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, subt);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, divisor);
+	//  databack(output);
+	if ((unsigned int)i->limbs[0].x >= LIMB_RANGE)
+	{
+		remainder = 1;
+	}
+#endif
+	/* if subt is not zero subtract it from i*/
+	if (subt > 0) {
+		if (i >= 0) {       // Subtract subt from absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, subt);
+		}
+		else {               // Add subt to absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, subt);
+		}
+	}
+	else if (subt < 0) {  // subt < 0
+		if (i >= 0) {    // Subtract subt from absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, -subt);
+		}
+		else {               // Add subt to absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, -subt);
+		}
+	}
 
-/* calculate BigInt modulo divisor (used for operator overloading) */
-//int getRemainder(const BigInteger &pBigInt, int divisor) {
-//	int ctr;
-//	int remainder = 0;
-//	int nbrLimbs = pBigInt.nbrLimbs;
-//	double dDivisor = (double)divisor;
-//	double dLimb = 0x80000000;
-//	const limb *pLimb = pBigInt.limbs;    // point to first limb
-//	for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
-//	{
-//		int quotient, dividend;
-//		double dQuotient, dDividend;
-//		dividend = (remainder << BITS_PER_INT_GROUP) + pLimb[ctr].x;
-//		dDividend = (double)remainder * dLimb + pLimb[ctr].x;
-//		dQuotient = floor(dDividend / dDivisor + 0.5);
-//		quotient = (int)(unsigned int)dQuotient;   // quotient has correct value or 1 more.
-//		remainder = dividend - quotient * divisor;
-//		if ((unsigned int)remainder >= (unsigned int)divisor)
-//		{     // remainder not in range 0 <= remainder < divisor. Adjust.
-//			quotient--;
-//			remainder += divisor;
-//		}
-//	}
-//	if (pBigInt.sign == SIGN_NEGATIVE && remainder != 0) 	{
-//		remainder = divisor - remainder;
-//	}
-//	return remainder;
-//}
+	// Divide number by divisor.
+	i = BigIntDivideInt(i, divisor, remainder);
+}
+
 
 /* result += addend (used for operator overloading) */
-//void addbigint(BigInteger &Result, int addend) {
-//	int nbrLimbs = Result.nbrLimbs;
-//	limb *pResultLimbs = Result.limbs;
-//	auto sign = Result.sign;
-//
-//	if (addend < 0) {
-//		// reverse signs of addend and result
-//		addend = -addend;
-//		if (sign == SIGN_POSITIVE) 	{
-//			sign = SIGN_NEGATIVE;
-//		}
-//		else {
-//			sign = SIGN_POSITIVE;
-//		}
-//	}
-//
-//	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
-//		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
-//	}
-//	else {  // Subtract addend from absolute value of pResult.
-//		if (nbrLimbs == 1) 	{
-//			pResultLimbs[0].x -= addend;
-//			if (pResultLimbs[0].x < 0) 	{
-//				pResultLimbs[0].x = -pResultLimbs[0].x;  // reverse sign of result
-//				BigIntNegate(Result);
-//			}
-//		}
-//		else {     // More than one limb.
-//			subtFromAbsValue(pResultLimbs, &nbrLimbs, addend);
-//		}
-//	}
-//	Result.nbrLimbs = nbrLimbs;
-//}
+BigInteger BigIntAddInt(BigInteger &Result, long long addend) {
+	int nbrLimbs = Result.nbrLimbs;
+	limb *pResultLimbs = Result.limbs;
+	auto sign = Result.sign;
+
+	if (addend < 0) {
+		// reverse signs of addend and result
+		addend = -addend;
+		if (sign == SIGN_POSITIVE) 	{
+			sign = SIGN_NEGATIVE;
+		}
+		else {
+			sign = SIGN_POSITIVE;
+		}
+	}
+
+	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
+		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
+	}
+	else {  // Subtract addend from absolute value of pResult.
+		if (nbrLimbs == 1) 	{
+			pResultLimbs[0].x -= addend;
+			if (pResultLimbs[0].x < 0) 	{
+				pResultLimbs[0].x = -pResultLimbs[0].x;  // reverse sign of result
+				BigIntNegate(Result);
+			}
+		}
+		else {     // More than one limb.
+			subtFromAbsValue(pResultLimbs, &nbrLimbs, addend);
+		}
+	}
+	Result.nbrLimbs = nbrLimbs;
+	return Result;
+}
 
 /* returns nbrMod^Expon%currentPrime. 
 overflow could occur if currentPrime > 2^31 
@@ -737,64 +782,65 @@ static long long intModPow(long long NbrMod, long long Expon, long long currentP
 /* creates a BigInteger from a list of values.   
 uses global value NumberLength for number of ints. 1st entry in list is number of values
 that follow */
-//void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint)
-//{
-//	if (NumberLength > MAX_LEN || NumberLength < 0 || ptrValues[0] > MAX_LEN) {
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "number too big : cannot convert to BigInteger: ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//	limb *destLimb = bigint.limbs;
-//	bigint.sign = SIGN_POSITIVE;
-//	if (NumberLength == 1) {
-//		destLimb[0].x = ptrValues[1];
-//		bigint.nbrLimbs = 1;
-//	}
-//	else {
-//		memcpy(destLimb, ptrValues+1, ptrValues[0] * sizeof(ptrValues[0]));
-//		bigint.nbrLimbs = ptrValues[0];
-//		if (NumberLength > ptrValues[0])  // clear most significant limbs to zero if required
-//			memset(destLimb + ptrValues[0], 0, (NumberLength - ptrValues[0]) * sizeof(ptrValues[0]));
-//	}
-//}
+void IntsToBigInteger(/*@in@*/const long long *ptrValues, /*@out@*/BigInteger &bigint)
+{
+	if (NumberLength > MAX_LEN || NumberLength < 0 || ptrValues[0] > MAX_LEN) {
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "number too big : cannot convert to BigInteger: ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+	limb *destLimb = bigint.limbs;
+	bigint.sign = SIGN_POSITIVE;
+	if (NumberLength == 1) {
+		destLimb[0].x = ptrValues[1];
+		bigint.nbrLimbs = 1;
+	}
+	else {
+		memcpy(destLimb, ptrValues+1, ptrValues[0] * sizeof(ptrValues[0]));
+		bigint.nbrLimbs = (int)ptrValues[0];
+		if (NumberLength > ptrValues[0])  // clear most significant limbs to zero if required
+			memset(destLimb + ptrValues[0], 0, (NumberLength - ptrValues[0]) * sizeof(ptrValues[0]));
+	}
+}
 
 /* uses global value NumberLength for starting value for number of limbs. */
-//static int getNbrLimbs(const limb *bigNbr)
-//{
-//	//const limb *ptrLimb = bigNbr + NumberLength;
-//	auto ix = NumberLength;
-//	while (ix > 0)
-//	{
-//		if (bigNbr[ix-1].x != 0)
-//		{
-//			return (int)(ix);
-//		}
-//		ix--;   // reduce length because most significant limb is zero
-//	}
-//	return 1;  // BigNbr is zero
-//}
+static int getNbrLimbs(const limb *bigNbr) {
+	//const limb *ptrLimb = bigNbr + NumberLength;
+	auto ix = NumberLength;
+	while (ix > 0)
+	{
+		if (bigNbr[ix-1].x != 0)
+		{
+			return (int)(ix);
+		}
+		ix--;   // reduce length because most significant limb is zero
+	}
+	return 1;  // BigNbr is zero
+}
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
-values that follow. Also uses global value NumberLength for number of ints. */
-//void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint) {
-//	const limb *srcLimb = bigint.limbs;
-//	if (NumberLength == 1) {
-//		ptrValues[0] = 1;
-//		ptrValues[1] = srcLimb[0].x;
-//	}
-//	else {
-//		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
-//		assert(nbrLimbs == bigint.nbrLimbs);
-//		ptrValues[0] = nbrLimbs;
-//		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
-//	}
-//}
+values that follow. Also uses global value NumberLength for number of ints. 
+Assumes that bigint is positive. */
+void BigIntegerToInts(/*@out@*/long long *ptrValues, /*@in@*/const BigInteger &bigint) {
+	const limb *srcLimb = bigint.limbs;
+	if (NumberLength == 1) {
+		ptrValues[0] = 1;
+		ptrValues[1] = srcLimb[0].x;
+	}
+	else {
+		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
+		assert(nbrLimbs == bigint.nbrLimbs);
+		ptrValues[0] = nbrLimbs;
+		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
+	}
+}
 
-/* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
-void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
+/* convert limbs to BigInteger. uses global value NumberLength for number of limbs. 
+Assumes that Values contains a +ve number */
+void LimbsToBigInteger(/*@in@*/const limb Values[], 
 	/*@out@*/BigInteger &bigint, int NumberLength) {
 	if (NumberLength > MAX_LEN || NumberLength < 0 ) {
 		std::string line = std::to_string(__LINE__);
@@ -805,15 +851,15 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 		throw std::range_error(mesg);
 	}
 	if (NumberLength == 1) {
-		bigint.limbs[0].x = ptrValues[0].x;
+		bigint.limbs[0].x = Values[0].x;
 		bigint.nbrLimbs = 1;
 	}
 	else { 
-		memcpy(bigint.limbs, ptrValues, NumberLength * sizeof(limb));
+		memcpy(bigint.limbs, Values, NumberLength * sizeof(limb));
 
 		int nbrLimbs;   // remove any leading zeros
 		for (nbrLimbs = NumberLength-1; nbrLimbs > 1; nbrLimbs--) {
-			if (ptrValues[nbrLimbs].x != 0) {
+			if (Values[nbrLimbs].x != 0) {
 				break;
 			}
 		}
@@ -823,28 +869,32 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 }
 
 /* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
-void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
+void BigIntegerToLimbs(/*@out@*/limb Values[], 
 	/*@in@*/const BigInteger &bigint, int NumberLength)
 {
 	if (NumberLength == 1) {
-		ptrValues[0].x = bigint.limbs[0].x;
-		ptrValues[1].x = 0;
+		Values[0].x = bigint.limbs[0].x;
+		Values[1].x = 0;
 	}
 	else {
 		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumberLength
 		if (nbrLimbs >= NumberLength) {
-			memcpy(ptrValues, bigint.limbs, NumberLength * sizeof(limb));
-			ptrValues[NumberLength].x = 0;
+			memcpy(Values, bigint.limbs, NumberLength * sizeof(limb));
+			Values[NumberLength].x = 0;
 		}
 		else {
-			memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
+			memcpy(Values, bigint.limbs, nbrLimbs * sizeof(limb));
 			/* set any extra limbs to zero */
-			memset(ptrValues + nbrLimbs, 0, (NumberLength - nbrLimbs) * sizeof(limb));
+			memset(Values + nbrLimbs, 0, (NumberLength - nbrLimbs) * sizeof(limb));
 		}
 	}
+	if (bigint.sign == SIGN_NEGATIVE) {
+		ChSignBigNbrB((long long *)Values, std::max(NumberLength, bigint.nbrLimbs));
+	}
 }
-/* number = numberZ*/
-void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+
+/* number = numberZ. returns number of limbs */
+int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 // note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum quot, remainder;
@@ -865,7 +915,7 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 			throw std::range_error(mesg);
 		}
 		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-		number[i].x = (int)MulPrToLong(remainder);
+		number[i].x = MulPrToLong(remainder);
 		numberZ = quot;
 		i++;
 	}
@@ -874,10 +924,11 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 		memset(number + i, 0, (NumberLength - i) * sizeof(limb));
 	}
 	if (neg) {
-		ChSignBigNbr((int *)number, i + 1);
+		ChSignBigNbr((long long *)number, i + 1);
 	}
+	return i;
 }
-int ZtoBigNbr(int number[], Znum numberZ) {
+int ZtoBigNbr(long long number[], Znum numberZ) {
 	// note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum quot, remainder;
@@ -889,8 +940,8 @@ int ZtoBigNbr(int number[], Znum numberZ) {
 	int i = 0;
 	while (numberZ > 0) {
 		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-		//number[i] = (int)MulPrToLong(remainder);
-		number[i] = (int)mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
+		//number[i] = MulPrToLong(remainder);
+		number[i] = mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
 		numberZ = quot;
 		i++;
 	}
@@ -903,27 +954,26 @@ int ZtoBigNbr(int number[], Znum numberZ) {
 
 void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
 	numberZ = 0;
+	
 	for (int i = NumberLength - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i].x;      // add next limb
 	}
 }
-//void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
+//void UncompressIntLimbs(/*@in@*/const long long *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
 //{
-//	int nbrLimbs = *ptrValues;
+//	long long nbrLimbs = *ptrValues;
 //	memcpy(bigNbr, ptrValues + 1, nbrLimbs * sizeof(limb));
 //	/* if nbrLen > nbrLimbs set extra limbs to 0*/
 //	memset(bigNbr + nbrLimbs, 0, (nbrLen - nbrLimbs) * sizeof(limb));
 //}
 
-//void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen)
+//void CompressIntLimbs(/*@out@*/long long *ptrValues, /*@in@*/const limb *bigint, int nbrLen)
 //{
 //	int nbrLimbs;
 //	memcpy(ptrValues + 1, bigint, (nbrLen - 1) * sizeof(limb));
-//	for (nbrLimbs = nbrLen - 1; nbrLimbs > 1; nbrLimbs--)
-//	{
-//		if (ptrValues[nbrLimbs] != 0)
-//		{
+//	for (nbrLimbs = nbrLen - 1; nbrLimbs > 1; nbrLimbs--) {
+//		if (ptrValues[nbrLimbs] != 0) {
 //			break;
 //		}
 //	}
@@ -1317,7 +1367,7 @@ note that ptrLimb points AFTER last valid value in limbs.
 up to 3 most significant limbs are used. */
 double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 	double dN = (double)(ptrLimb - 1)->x;
-	double dInvLimb = 1 / (double)LIMB_RANGE;
+	double dInvLimb = 1.0 / (double)LIMB_RANGE;
 	if (nbrLimbs > 1) {
 		dN += (double)(ptrLimb - 2)->x * dInvLimb;
 	}
@@ -1327,57 +1377,215 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 	return dN;
 }
 
+
+/* convert num to long long. If num > max, truncate it (right shift)
+and exp is > 0 and represents the number of discarded bits. */
+long long BigToLL(const BigInteger &num, int &exp) {
+	if (num.nbrLimbs == 1) {
+		exp = 0;
+		if (num.sign == SIGN_POSITIVE)
+			return num.limbs[0].x ;
+		else 
+			return -num.limbs[0].x;
+	}
+	exp = num.bitLength() - 63;                // number of bits to truncate
+	int shift = exp % BITS_PER_INT_GROUP;      // number of bits to shift
+	if (shift == 0) {
+		if (num.sign == SIGN_POSITIVE)
+			return num.limbs[num.nbrLimbs - 1].x;
+		else
+			return -num.limbs[num.nbrLimbs - 1].x;
+	}
+	long long result = num.limbs[num.nbrLimbs - 1].x << (BITS_PER_INT_GROUP - shift);
+	result += num.limbs[num.nbrLimbs - 2].x >> (shift);
+	if (num.sign == SIGN_POSITIVE)
+		return result;
+	else
+		return -result;
+}
+
+
+/* inverse of BigToLL. set num = long *2^exp */
+void LLToBig(BigInteger &num, long long LL, int exp) {
+	if (exp == 0) {
+		num = LL;
+		return;
+	}
+	assert(exp > 0);
+	num = 0;
+	num.nbrLimbs = (exp + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
+	assert(num.nbrLimbs <= MAX_LEN);
+	int shift = exp % BITS_PER_GROUP;             // get shift
+	num.limbs[num.nbrLimbs - 1].x = (LL >> shift);
+	if (shift > 0) {
+		int s2 = BITS_PER_GROUP - shift;  // get left shift for next limb
+		num.limbs[num.nbrLimbs - 2].x = (LL << s2) & MAX_INT_NBR;
+ 	}
+}
+
 /* convert Znum to BigInteger. Returns false if number is too big to convert.
 this function is also used to overload the assignment operator */
-//bool ZtoBig(BigInteger &number, Znum numberZ) {
-//	number.nbrLimbs = 0;
-//	bool neg = false;
-//	Znum quot, remainder;
-//
-//	if (numberZ < 0) {
-//		neg = true;
-//		numberZ = -numberZ;  // make numberZ +ve
-//	}
-//	int i = 0;
-//	while (numberZ > 0) {
-//		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-//		number.limbs[i].x = (int)MulPrToLong(remainder);
-//		numberZ = quot;
-//		i++;
-//		if (i >= MAX_LEN) {
-//			return false;   // number too big to convert.
-//		}
-//	}
-//	number.nbrLimbs = i;
-//	if (neg) {
-//		number.sign = SIGN_NEGATIVE;
-//		numberZ = -numberZ;  // put back original value in numberZ
-//	}
-//	else
-//		number.sign = SIGN_POSITIVE;
-//
-//	return true;
-//}
+bool ZtoBig(BigInteger &number, Znum numberZ) {
+	number.nbrLimbs = 0;
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		number.limbs[i].x = MulPrToLong(remainder);
+		numberZ = quot;
+		i++;
+		if (i >= MAX_LEN) {
+			return false;   // number too big to convert.
+		}
+	}
+	number.nbrLimbs = i;
+	if (neg) {
+		number.sign = SIGN_NEGATIVE;
+		numberZ = -numberZ;  // put back original value in numberZ
+	}
+	else
+		number.sign = SIGN_POSITIVE;
+
+	return true;
+}
 
 /* convert BigInteger to Znum */
-//void BigtoZ(Znum &numberZ, const BigInteger &number) {
-//
-//	numberZ = 0;
-//	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
-//		//numberZ *= LIMB_RANGE;
-//		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-//		numberZ += number.limbs[i].x;      // add next limb
-//	}
-//	if (number.sign == SIGN_NEGATIVE)
-//		numberZ = -numberZ;
-//}
+void BigtoZ(Znum &numberZ, const BigInteger &number) {
+
+	numberZ = 0;
+	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
+		//numberZ *= LIMB_RANGE;
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number.limbs[i].x;      // add next limb
+	}
+	if (number.sign == SIGN_NEGATIVE)
+		numberZ = -numberZ;
+}
 
 /* convert integer list to Znum. */
-void ValuestoZ(Znum &numberZ, const int number[], int NumberLength) {
+void ValuestoZ(Znum &numberZ, const long long number[], int NumberLength) {
 	numberZ = 0;
 	for (int i = NumberLength-1; i >= 0; i--) {
 		//numberZ *= LIMB_RANGE;
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i];
 	}
+}
+
+BigInteger abs(const BigInteger &Num) {
+	if (Num.sign == SIGN_POSITIVE)
+		return Num;
+	else {
+		BigInteger rv = Num;
+		rv.sign = SIGN_POSITIVE;
+		return rv;
+	}
+}
+
+/* shift first left by the number of bits specified in shiftCtr. A -ve value 
+in shiftCtr causes a right shift. 
+Right Shifts simulate 2s complement arithmetic right shift.
+Mathematically, the shift result is equivalent to result = first * 2^shiftCtr,
+whether ShiftCtr is +ve or -ve. */
+void shiftBI(const BigInteger &first, const int shiftCtr,  BigInteger &result)
+{
+	int delta, rem, ctr;
+	long long prevLimb, curLimb;
+	int ptrDest, ptrSrc;
+	bool shiftleft = true;
+	if (shiftCtr > 0) {
+		delta = shiftCtr / BITS_PER_GROUP;
+		rem = shiftCtr % BITS_PER_GROUP;
+	}
+	else {
+		delta = (-shiftCtr) / BITS_PER_GROUP;
+		rem = (-shiftCtr) % BITS_PER_GROUP;
+		shiftleft = false;
+	}
+	int nbrLimbs = first.nbrLimbs;
+
+	if (shiftleft) {     // Perform shift left.
+		
+		if ((first.nbrLimbs  + delta) >= MAX_LEN) {   
+			// Shift too much to the left; would cause overflow
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "cannot shift left: result out of range ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
+
+
+		result.nbrLimbs = first.nbrLimbs+delta;
+		result.sign = first.sign;
+		prevLimb = 0;
+		ptrSrc = nbrLimbs - 1;
+		ptrDest = nbrLimbs + delta;
+
+		for (ctr = nbrLimbs-1; ctr >= 0; ctr--)
+		{  // Process starting from most significant limb.
+			curLimb = first.limbs[ctr].x;
+			result.limbs[ptrDest].x = ((curLimb >> (BITS_PER_GROUP - rem)) 
+				| (prevLimb << rem)) & MAX_INT_NBR;
+			ptrDest--;
+			prevLimb = curLimb;
+		}
+
+		result.limbs[ptrDest].x = (prevLimb << rem) & MAX_INT_NBR;
+		if (delta > 0) {
+			memset(result.limbs, 0, delta * sizeof(limb));
+		}
+		//result.nbrLimbs += delta;
+		if (result.limbs[result.nbrLimbs].x != 0) {
+			result.nbrLimbs++;
+		}
+	}
+
+	else {     // Perform shift right.
+		int isNegative = 0;
+		if ( shiftCtr > first.nbrLimbs * BITS_PER_GROUP)
+		{   // Shift too much to the right. Result is zero or -1.
+			if (first.sign == SIGN_POSITIVE) 
+				result = 0;
+			else 
+				result = -1;
+
+			return;
+		}
+
+		result = first;
+		if (first.sign == SIGN_NEGATIVE)
+		{   // If it is negative, add 1, perform shift right, and finally subtract 1 from result.
+			isNegative = 1;
+			result++;     //addbigint(result, 1);
+		}
+		// Shift right the absolute value.
+		result.limbs[nbrLimbs].x = 0;
+		curLimb = result.limbs[delta].x;
+		ptrDest = 0;
+
+		for (ctr = delta; ctr <= nbrLimbs; ctr++)
+		{  // Process starting from least significant limb.
+			prevLimb = curLimb;
+			curLimb = result.limbs[ctr + 1].x;
+			result.limbs[ptrDest++].x = ((prevLimb >> rem) 
+				| (curLimb << (BITS_PER_GROUP - rem))) & MAX_INT_NBR;
+		}
+		
+		result.nbrLimbs -= delta;
+		if (result.nbrLimbs == 0 || result.limbs[result.nbrLimbs].x != 0) {
+			result.nbrLimbs++;
+		}
+		if (isNegative) {    // Adjust negative number.
+			result--;        // addbigint(result, -1);
+		}
+	}
+	return;
 }

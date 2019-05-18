@@ -152,7 +152,7 @@ static int newColumns[MAX_PRIMES] = { 0 };
 static int matrixCalc3[MAX_PRIMES] = { 0 };
 static int matrixTemp2[MAX_PRIMES] = { 0 };
 static int nbrPrimes2;
-//static BigInteger factorSiqs;
+
 const static unsigned char onlyFactoring = FALSE;
 static int matrixRows, matrixCols;
 static PrimeSieveData *firstPrimeSieveData;
@@ -268,6 +268,51 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 }
 
 #endif
+
+#undef BITS_PER_INT_GROUP    // avoid warning message
+#undef BITS_PER_GROUP
+#undef MAX_INT_NBR
+#undef LIMB_RANGE
+#define BITS_PER_INT_GROUP 31
+#define MAX_INT_NBR ((long long)((1ULL << BITS_PER_INT_GROUP)-1))
+
+/* nbr = - nbr */
+static void ChSignBigNbr(int nbr[], int length)
+{
+	long long carry = 0;
+	int ctr;
+	for (ctr = 0; ctr < length; ctr++)
+	{
+		carry -= nbr[ctr];
+		nbr[ctr] = carry & MAX_INT_NBR;
+		carry >>= 31;
+	}
+}
+
+
+static int ZtoBigNbr(int number[], Znum numberZ) {
+	// note: numberZ is a copy of the original. Its value is changed
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), BITS_PER_INT_GROUP);
+		//number[i] = MulPrToLong(remainder);
+		number[i] = (int)mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
+		numberZ = quot;
+		i++;
+	}
+
+	if (neg) {
+		ChSignBigNbr(number, i);
+	}
+	return i;
+}
 
 /* profiling indicates that about 70% of CPU time during SIQS factoring is used within
 this function, so any attempts to improve performance should probably focus on this
@@ -1082,7 +1127,7 @@ static void TrialDivisionSub(int Divisor, const int NumberLengthDividend,
 
 	int Dividend;
 	double dRem = 0;
-	double dLimbMult = (double)(1U << BITS_PER_INT_GROUP);
+	double dLimbMult = (double)(1ULL << BITS_PER_INT_GROUP);
 	double dCurrentPrime = (double)Divisor;
 	double dDivid, dQuot;
 
@@ -1132,7 +1177,7 @@ static void TrialDivisionSub(int Divisor, const int NumberLengthDividend,
 		mostSignificantLimbZero = (biR[NumberLengthDividend - 1] == 0);
 	else {
 		// Criteria is to fit in a double (52 bits).
-		mostSignificantLimbZero = (biR[1] < (1 << (52 - BITS_PER_INT_GROUP)));
+		mostSignificantLimbZero = (biR[1] < (1 << (52 - 31)));
 	}
 }
 

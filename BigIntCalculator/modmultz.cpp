@@ -9,7 +9,12 @@ void AdjustModN(Znum &Nbr, const Znum &Modulus) {
 	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
 }
 
-Znum zR, zR2, zNI, zN;
+Znum zN,     // (copy of Nval)
+zR,      // R is a power of 2 such that R > N
+zR2,     // = R ^ 2(mod N)
+zNI,     // = -N^(-1) mod R i.e. NI*N ≡ −1 mod R;
+zNI2;
+
 long long zRexp;
 Znum zR1;
 Znum zR_1;  // = zR-1
@@ -17,24 +22,50 @@ Znum zR_1;  // = zR-1
 // given the modulus N (which must be odd)
 // Let R be a power of 2 such that R > N
 // Compute R1  and NI using the formulas:
-// R1 = modular inverse of R mod N i.e. R1.R ≡ 1 mod N
+// R1 = R mod N
 // NI = -N^(-1) mod R i.e. NI*N ≡ −1 mod R;
+// NB. if N < 8 limbs only calculate NI2 as - N ^ (-1) mod 2 ^ 63
 // also compute R2 = R^2(mod N), Rexp (2^Rexp = R)
+// REDC Uses external global variables zR_1, zNI, zN (copy of Nval)
 void GetMontgomeryParms(const Znum &Nval) {
-	zN = Nval;
+	zN = Nval;        // save value for use in REDC and ModMultInt
 	assert((zN & 1) != 0);		// N must be odd
 
 	auto index = mpz_sizeinbase(ZT(zN), 2);
 	if (index > 1) {
-		zRexp = index + 5;	// (2^Rexp = R). The +5 is an arbitrary increment to make
-							// Montgomery Multiplication faster. 
+		// (2^Rexp = R).
+		zRexp = (index +BITS_PER_GROUP-1)/BITS_PER_GROUP;	 
+		zRexp *= BITS_PER_GROUP;   // exp is rounded up to a multiple of 63
+		               // to match what is used with limbs
+		zRexp--;
 		zR = 1;
 		mpz_mul_2exp(ZT(zR), ZT(zR), zRexp);   // zR is a power of 2 such that zR > zN
 		zR_1 = zR - 1;              // used as a bit mask, assumes that R is a power of 2
-		mpz_invert(ZT(zR1), ZT(zR), ZT(zN));  //zR1*zR ≡ 1 mod zN
-		mpz_invert(ZT(zNI), ZT(zN), ZT(zR));  // zNI*zN ≡ 1 mod zR;
-		zNI = zR - zNI;				// zNI*zN ≡ -1 mod zR ≡ (zR-1) mod zR;
+		
+		// R1 = R mod N
+		zR1 = zR % Nval;
+				
+		mpz_invert(ZT(zNI), ZT(Nval), ZT(zR));  // zNI*Nval ≡ 1 mod zR;
+		zNI = zR - zNI;				// zNI*Nval ≡ -1 mod zR ≡ (zR-1) mod zR;
+		
+		if (zRexp >= 8 * BITS_PER_GROUP) {
+			zNI2 = zNI;
+		}
+		else {
+			Znum temp = 1LL << 31;
+			mpz_invert(ZT(zNI2), ZT(Nval), ZT(temp));
+			zNI2 = temp - zNI2;
+		}
+
 		mpz_powm_ui(ZT(zR2), ZT(zR), 2, ZT(zN)); // zR2 = zR^2(mod zN)
+#ifdef _DEBUG
+		std::cout << "N     = " << zN
+			    << "\nNI    = " << zNI
+			    << "\nNI2   = " << zNI2
+			    << "\nR1    = " << zR1
+			    << "\nR2    = " << zR2 
+			    << "\nzRexp = " << zRexp << '\n';
+#endif
 	}
 	else {
 		std::cout << "Modulus must not be zero\n";
