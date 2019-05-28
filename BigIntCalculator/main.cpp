@@ -196,7 +196,12 @@ long long MulPrToLong(const Znum &x) {
 	long long rv;
 	// note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
 	if (x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
-		rv = mpz_get_si(ZT(x)); // convert to normal integer
+		//rv = mpz_get_si(ZT(x)); // convert to normal integer
+		rv = ZT(x)->_mp_d[0];     // accessing the limb directly seems to be a lot faster
+		if (ZT(x)->_mp_size < 0)  // than calling mpz_get_si
+			rv = -rv;
+		if (ZT(x)->_mp_size == 0)
+			rv = 0;
 		return rv;
 	}
 	else
@@ -1970,7 +1975,9 @@ static void doTests3(void) {
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
 	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
 	limb one[MAX_LEN];
-	int numLen = MAX_LEN;
+	int numLen = MAX_LEN-2, l2;
+
+	BigInteger aBI, a1BI, bBI, amBI, pBI;
 
 	auto start = clock();	// used to measure execution time
 
@@ -1979,8 +1986,242 @@ static void doTests3(void) {
 
 	srand(421040034);               // seed random number generator 
 	
+	/* check basic arithmetic operators */
+	a = 1291;
+	b = 131;
+	for (int ctr = 1; ctr <= 1700; ctr++) {
+		/* with the values currently used for a and b, ctr cannot go much beyond 1700
+		or overflow would occur. */
+		aBI = a;                      // copy value of a to aBI (BigInteger)
+		bBI = b;
+		BigtoZ(a1, aBI);              // copy value to a1 (Znum)
+		assert(a1 == a);              // verify conversion to & from Biginteger
+
+		pBI = aBI + bBI;
+		BigtoZ(p, pBI);
+		assert(p == (a + b));         // verify addition        
+
+		pBI = aBI;
+		pBI += bBI;
+		assert(p == (a + b));         // verify addition
+
+		pBI = aBI - bBI;
+		BigtoZ(p, pBI);
+		assert(p == (a - b));         // verify subtraction
+
+		pBI = aBI;
+		pBI -= bBI;
+		assert(p == (a - b));         // verify subtraction
+
+		pBI = aBI * bBI;
+		BigtoZ(p, pBI);
+		Znum prod;
+		Znum diff;
+		prod = a * b;
+		diff = p ^ prod;   // p XOR prod (0 if they are equal)
+		if (diff != 0) {              // verify multiplication
+			std::cout << "a = " << a << " b = " << b << '\n';
+			gmp_printf("p     = %Zx \na * b = %Zx \n", p, prod);
+			gmp_printf("diffference = %Zx \n", diff);
+		}
+
+		pBI = aBI;
+		pBI *= bBI;
+		assert(p == (a * b));         // verify multiplication
+
+		pBI = aBI / bBI;
+		BigtoZ(p, pBI);
+		if (p != (a / b)) {              // verify division
+			std::cout << "a = " << a << "\nb = " << b << '\n';
+			std::cout << "p = " << p << "\na/b = " << a / b << '\n';
+		}
+
+		pBI = aBI;
+		pBI /= bBI;
+		if (p != (a / b)) {              // verify division
+			std::cout << "a = " << a << " b = " << b << '\n';
+			std::cout << "p = " << p << "\na/b = " << a / b << '\n';
+		}
+
+		pBI = aBI % bBI;
+		BigtoZ(p, pBI);
+		if (p != (a%b))               // verify modulus
+			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+
+		pBI = aBI;
+		pBI %= bBI;
+		BigtoZ(p, pBI);
+		if (p != (a%b))               // verify modulus
+			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+
+		/* check BigtoLL function */
+		//int exp;
+		//a1 = BigToLL(aBI, exp);  // a1 * 2^exp = aBI
+		//mpz_div_2exp(ZT(b1), ZT(a), exp);   // b1 a/(2^exp)
+		//if (b1 != a1)
+		//	gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", a, a1, exp);
+		//assert(b1 == a1);
+
+		//pBI = aBI << 4;      // check left shift
+		//BigtoZ(p, pBI);
+		//p2 = a << 4;
+		//if (p != p2) {
+		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		//}
+
+
+		//pBI = aBI << 56;    // check left shift
+		//BigtoZ(p, pBI);
+		//p2 = a << 56;
+		//if (p != p2) {
+		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		//}
+
+		//pBI = aBI << 567;      // check left shift
+		//BigtoZ(p, pBI);
+		//p2 = a << 567;
+		//if (p != p2) {
+		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		//}
+
+		a *= 1237953;
+		b *= 129218;
+	}
+
+	auto end = clock();              // measure amount of time used
+	double elapsed = (double)end - start;
+	std::cout << "test stage 1 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	
+	/* test multiplication with larger numbers */
+	aBI = 0x7fffffffffffffff;
+	a = 0x7fffffffffffffff;
+	for (bBI = 1; bBI <= 256; bBI++) {
+		aBI = aBI * 0x7fffffffffffffffLL;
+		a = a * 0x7fffffffffffffffLL;
+		BigtoZ(a1, aBI);
+
+		if (a1 != a) {
+			gmp_printf("aBI = %Zx \n", ZT(a1));
+			gmp_printf("  a = %Zx \n", ZT(a));
+		}
+	}
+
+	/* check multiplication of large numbers */
+	aBI = 17341;
+	a = 17341;
+	for (int i = 1; i < 13; i++) {
+		if (aBI.nbrLimbs > MAX_LEN / 2)
+			break;  // exit loop if a is too large to square it
+		aBI = aBI * aBI;
+		a = a * a;
+		BigtoZ(a1, aBI);
+
+		/*gmp_printf("aBI = %Zx \n", ZT(a1));
+		gmp_printf("  a = %Zx \n", ZT(a));*/
+		assert(a1 == a);
+	}
+
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 2 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
+	largeRand(a);
+	largeRand(b);
+	// check that a^2 - b^2 = (a-b)*(a+b)
+	am = a * a - b * b;
+	p = (a - b)*(a + b);
+	assert(am == p);               // calculate using Znums
+
+	l2 = ZtoLimbs(aL, a, numLen);	// copy value of a to aL (limbs)
+	LimbstoZ(aL, a1, l2);           // copy value to a1 (Znum)
+	assert(a == a1);                // check that conversions work properly
+	ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
+									// al2 = aL + bL
+	AddBigNbr((int *)aL, (int *)bL, (int *)al2, numLen);
+	LimbstoZ(al2, a1, numLen);     // a1 = al2
+	assert(a1 == (a + b));
+
+	// alM = aL - bL
+	SubtractBigNbrB((int *)aL, (int *)bL, (int *)alM, numLen);
+	LimbstoZ(alM, pm, numLen);
+	if (pm != (a - b)) {
+		std::cout << "subtract " << a << " - " << b << " Expected " << a - b
+			<< " got " << pm << '\n';
+	}
+
+	int length = BigNbrLen((long long *)alM, numLen);
+	int length2 = BigNbrLen((long long *)al2, numLen);
+	length2 = max(length, length2);
+
+	if (pm < 0) {
+		ChSignBigNbr((int *)alM, length);  // make alM +ve
+		MultBigNbr((int *)al2, (int *)alM, (int *)pl, length2);
+		ChSignBigNbrB((int *)pl, numLen);
+	}
+	else {// pl = al2 * alM 
+		MultBigNbr((int *)al2, (int *)alM, (int *)pl, length2);
+	}
+	LimbstoZ(pl, a1, numLen);       // a1 = pl
+	/* check: a1 = pl = (aL +bL)*(al-bL)
+					  = (a+b)*(a-b)
+			  am =   a*a - b*b   */
+	assert(am == a1);
+
+	/* check conversion to & from floating point */
+	//p = 10;
+	//double errorv;
+	//Znum error, relerror;
+	//for (int i = 1; i < 55;  i++, p *= 1000000 ) {
+	//	if (!ZtoBig(pBI, p))
+	//		break;            // p too large to convert so stop
+	//	double pdb = pBI.log();
+	//	//BigNbrExp(amBI, pdb);
+	//	expBigInt(amBI, pdb);
+	//	BigtoZ(am, amBI);
+	//	error = p - am;
+	//	errorv = (double)(error) / (double)p ;
+	//	relerror = (10000000000000000LL * error)/p;
+	//	std::cout << " pdb = " << pdb/std::log(10) 
+	//		<< " error = " << errorv << " relerror = " << relerror <<'\n';
+	//}
+
+	/* check division with large numbers */
+	p = 12345678901;
+	p2 = 11;
+	for (int i = 1; i < 4560; i++) {
+		if (!ZtoBig(pBI, p))
+			break;                 // exit loop if p is too big to fit BigInteger (approximately 20000 digits)
+		if (!ZtoBig(amBI, p2))
+			break;
+		bBI = pBI / amBI;         // calculçate p/p2 using Bigintegers
+		BigtoZ(b1, bBI);          // convert quotient back to Znum in b1
+		if (b1 != p / p2) {
+			std::cout << "p      = " << p
+				<< "\np2     = " << p2
+				<< "\nexpected " << p / p2
+				<< "\ngot      " << b1;
+			break;
+		}
+		bBI = pBI % amBI;
+		BigtoZ(b1, bBI);
+		if (b1 != p % p2) {
+			std::cout << "p      = " << p
+				<< "\np2     = " << p2
+				<< "\nexpected " << p % p2
+				<< "\ngot      " << b1;
+			break;
+		}
+		p *= (long long)rand() * 2 + 3;
+		p2 *= rand();
+	}
+
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 3 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
 	/* set up modulus and Mongomery parameters */
 	largeRand(mod);					// get large random number
+	mod |= 1;                       // set lowest bit (make sure mod is odd)
 	GetMontgomeryParms(mod);
 	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
 	while (modL[numLen - 1].x == 0)
@@ -2013,8 +2254,8 @@ static void doTests3(void) {
 	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
 	assert(p2 == p);
 
-	auto end = clock();              // measure amount of time used
-	double elapsed = (double)end - start;
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
 	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 

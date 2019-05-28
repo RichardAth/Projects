@@ -32,64 +32,71 @@ void ChSignBigNbr(int nbr[], int length)
 }
 
 /* nbr = - nbr */
-//static void ChSignBigNbrB(int nbr[], int length)
-//{
-//	int carry = 0;
-//	int ctr;
-//	for (ctr = 0; ctr < length - 1; ctr++)
-//	{
-//		carry -= nbr[ctr];
-//		nbr[ctr] = carry & MAX_INT_NBR;
-//		carry >>= BITS_PER_INT_GROUP;
-//	}
-//	nbr[ctr] = carry - nbr[ctr];  /* last word does not have most significant bit masked off */
-//}
-
+void ChSignBigNbrB(int nbr[], int length)
+{
+	int carry = 0;
+	int ctr;
+	for (ctr = 0; ctr < length - 1; ctr++)
+	{
+		carry -= nbr[ctr];
+		nbr[ctr] = carry & MAX_INT_NBR;
+		carry >>= BITS_PER_INT_GROUP;
+	}
+	nbr[ctr] = carry - nbr[ctr];  /* last word does not have most significant bit masked off */
+}
+int BigNbrLen(const long long Nbr[], int nbrLen) {
+	int ix;
+	for (ix = nbrLen; ix > 0; ix--) {
+		if (Nbr[ix - 1] != 0)
+			break;
+	}
+	return ix;
+}
 /* Sum = Nbr1+Nbr2  */
-//void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
-//{
-//	unsigned int carry = 0;
-//	int i;
-//	for (i = 0; i < nbrLen; i++)
-//	{
-//		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
-//		Sum[i] = (int)(carry & MAX_INT_NBR);
-//	}
-//}
+void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
+{
+	unsigned int carry = 0;
+	int i;
+	for (i = 0; i < nbrLen; i++)
+	{
+		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
+		Sum[i] = (int)(carry & MAX_INT_NBR);
+	}
+}
 void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
 	//Sum = Nbr1 + Nbr2;
 	mpz_add(ZT(Sum), ZT(Nbr1), ZT(Nbr2));
 }
 
 /* Diff = Nbr1-Nbr2 */
-//void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
-//{
-//	int borrow = 0;
-//	int i;
-//	for (i = 0; i < nbrLen; i++)
-//	{
-//		borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
-//		Diff[i] = borrow & MAX_INT_NBR;
-//	}
-//}
+void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen)
+{
+	int borrow = 0;
+	int i;
+	for (i = 0; i < nbrLen; i++)
+	{
+		borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
+		Diff[i] = borrow & MAX_INT_NBR;
+	}
+}
 void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff) {
 	//Diff = Nbr1 - Nbr2;
 	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));
 }
 
 /* Sum = Nbr1+Nbr2  */
-//void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
-//{
-//	unsigned int carry = 0;
-//	int i;
-//	for (i = 0; i < nbrLen - 1; i++)
-//	{
-//		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
-//		Sum[i] = (int)(carry & MAX_INT_NBR);
-//	}
-//	carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
-//	Sum[i] = (int)carry;   // last 'digit' is not masked with MAX_INT_NBR
-//}
+void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen)
+{
+	unsigned int carry = 0;
+	int i;
+	for (i = 0; i < nbrLen - 1; i++)
+	{
+		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
+		Sum[i] = (int)(carry & MAX_INT_NBR);
+	}
+	carry = (carry >> BITS_PER_INT_GROUP) + (unsigned int)Nbr1[i] + (unsigned int)Nbr2[i];
+	Sum[i] = (int)carry;   // last 'digit' is not masked with MAX_INT_NBR
+}
 void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum) {
 	//Sum = Nbr1 + Nbr2;
 	mpz_add(ZT(Sum), ZT(Nbr1), ZT(Nbr2));
@@ -180,41 +187,41 @@ void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Zn
 }
 
 /* bigProd = bigFactor*factor */
-//void MultBigNbrByInt(const int bigFactor[], int factor, int bigProd[], int nbrLen)
-//{
-//	int *bigProduct = bigProd;
-//	double dFactor;
-//	double dVal = 1 / (double)(1U << BITS_PER_INT_GROUP);
-//	bool factorPositive = true;
-//	int ctr, carry;
-//	if (factor < 0)
-//	{     // If factor is negative, indicate it and compute its absolute value.
-//		factorPositive = false;
-//		factor = -factor;
-//	}
-//	dFactor = (double)factor;
-//	carry = 0;
-//	for (ctr = 0; ctr < nbrLen; ctr++)
-//	{
-//		int low = (bigFactor[ctr] * factor + carry) & MAX_INT_NBR;
-//		// Subtract or add 0x20000000 so the multiplication by dVal is not nearly an integer.
-//		// In that case, there would be an error of +/- 1.
-//		if (low < HALF_INT_RANGE)
-//		{
-//			carry = (int)floor(((double)bigFactor[ctr] * dFactor + (double)carry + HALF_INT_RANGE / 2)*dVal);
-//		}
-//		else
-//		{
-//			carry = (int)floor(((double)bigFactor[ctr] * dFactor + (double)carry - HALF_INT_RANGE / 2)*dVal);
-//		}
-//		bigProduct[ctr] = low;
-//		//bigFactor++;
-//	}
-//	if (!factorPositive)
-//	{         // If factor is negative, change sign of product.
-//		ChSignBigNbr(bigProd, nbrLen);
-//	}
-//}
+void MultBigNbrByInt(const int bigFactor[], int factor, int bigProd[], int nbrLen)
+{
+	int *bigProduct = bigProd;
+	double dFactor;
+	double dVal = 1 / (double)(1U << BITS_PER_INT_GROUP);
+	bool factorPositive = true;
+	int ctr, carry;
+	if (factor < 0)
+	{     // If factor is negative, indicate it and compute its absolute value.
+		factorPositive = false;
+		factor = -factor;
+	}
+	dFactor = (double)factor;
+	carry = 0;
+	for (ctr = 0; ctr < nbrLen; ctr++)
+	{
+		int low = (bigFactor[ctr] * factor + carry) & MAX_INT_NBR;
+		// Subtract or add 0x20000000 so the multiplication by dVal is not nearly an integer.
+		// In that case, there would be an error of +/- 1.
+		if (low < HALF_INT_RANGE)
+		{
+			carry = (int)floor(((double)bigFactor[ctr] * dFactor + (double)carry + HALF_INT_RANGE / 2)*dVal);
+		}
+		else
+		{
+			carry = (int)floor(((double)bigFactor[ctr] * dFactor + (double)carry - HALF_INT_RANGE / 2)*dVal);
+		}
+		bigProduct[ctr] = low;
+		//bigFactor++;
+	}
+	if (!factorPositive)
+	{         // If factor is negative, change sign of product.
+		ChSignBigNbr(bigProd, nbrLen);
+	}
+}
 void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd) {
 	//bigProd = bigFactor * factor;
 	mpz_mul_si(ZT(bigProd), ZT(bigFactor), factor);
@@ -298,13 +305,6 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 }
 void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient) {
 	Quotient = Dividend / divisor;
-	//if (divisor > 0) {
-	//	mpz_tdiv_q_ui(ZT(Quotient), ZT(Dividend), divisor);
-	//}
-	//else {  // workaround because there is no div_si function
-	//	mpz_tdiv_q_ui(ZT(Quotient), ZT(Dividend), -divisor);
-	//	mpz_neg(ZT(Quotient), ZT(Quotient));
-	//}
 }
 
 /* calculate dividend%divisor. remainder has same type as divisor 
@@ -341,40 +341,40 @@ mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
 }
 
 /* Prod = Fact1*Fact2 */
-//void MultBigNbr(const int Fact1[], const int Fact2[], int Prod[], int nbrLen)
-//{
-//	double dRangeLimb = (double)(1U << BITS_PER_INT_GROUP);
-//	double dInvRangeLimb = 1 / dRangeLimb;
-//	int low = 0;
-//	int i, j,k=0 ;
-//	int factor1, factor2;
-//	double dAccumulator = 0;
-//	for (i = 0; i < nbrLen; i++)
-//	{
-//		for (j = 0; j <= i; j++)
-//		{
-//			factor1 = Fact1[j];
-//			factor2 = Fact2[i - j];
-//			low += factor1*factor2;
-//			dAccumulator += (double)factor1 * (double)factor2;
-//		}
-//		low &= MAX_INT_NBR;    // Trim extra bits.
-//		Prod[i] = low;
-//		// Subtract or add 0x20000000 so the multiplication by dVal is not nearly an integer.
-//		// In that case, there would be an error of +/- 1.
-//		if (low < HALF_INT_RANGE)
-//		{
-//			dAccumulator = floor((dAccumulator + HALF_INT_RANGE / 2)*dInvRangeLimb);
-//		}
-//		else
-//		{
-//			dAccumulator = floor((dAccumulator - HALF_INT_RANGE / 2)*dInvRangeLimb);
-//		}
-//		low = (int)(dAccumulator - floor(dAccumulator * dInvRangeLimb) * dRangeLimb);
-//	}
-//	Prod[i] = low;
-//	Prod[i + 1] = (int)floor(dAccumulator / dRangeLimb);
-//}
+void MultBigNbr(const int Fact1[], const int Fact2[], int Prod[], int nbrLen)
+{
+	double dRangeLimb = (double)(1U << BITS_PER_INT_GROUP);
+	double dInvRangeLimb = 1 / dRangeLimb;
+	int low = 0;
+	int i, j,k=0 ;
+	int factor1, factor2;
+	double dAccumulator = 0;
+	for (i = 0; i < nbrLen; i++)
+	{
+		for (j = 0; j <= i; j++)
+		{
+			factor1 = Fact1[j];
+			factor2 = Fact2[i - j];
+			low += factor1*factor2;
+			dAccumulator += (double)factor1 * (double)factor2;
+		}
+		low &= MAX_INT_NBR;    // Trim extra bits.
+		Prod[i] = low;
+		// Subtract or add 0x20000000 so the multiplication by dVal is not nearly an integer.
+		// In that case, there would be an error of +/- 1.
+		if (low < HALF_INT_RANGE)
+		{
+			dAccumulator = floor((dAccumulator + HALF_INT_RANGE / 2)*dInvRangeLimb);
+		}
+		else
+		{
+			dAccumulator = floor((dAccumulator - HALF_INT_RANGE / 2)*dInvRangeLimb);
+		}
+		low = (int)(dAccumulator - floor(dAccumulator * dInvRangeLimb) * dRangeLimb);
+	}
+	Prod[i] = low;
+	Prod[i + 1] = (int)floor(dAccumulator / dRangeLimb);
+}
 void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod) {
 	//Prod = Fact1*Fact2;
 	mpz_mul(ZT(Prod), ZT(Fact1), ZT(Fact2));

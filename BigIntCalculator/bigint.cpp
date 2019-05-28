@@ -26,121 +26,122 @@ extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 bool isPrime2(unsigned __int64 num);
+BigInteger Base;
 
 /*return addend1 + addend2 (used to overload + operator) */
-//BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
-//	int ctr, nbrLimbs;
-//	const limb *ptrBiggerAdd, *ptrSmallerAdd;
-//	limb *ptrSum;
-//	bool A1Smaller = false;
-//	BigInteger Sum;  // temporary variable 
-//
-//	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
-//		A1Smaller = true;
-//		/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//	}
-//
-//	else if (Addend1.nbrLimbs == Addend2.nbrLimbs) {
-//		for (ctr = Addend1.nbrLimbs - 1; ctr >= 0; ctr--) {
-//			if (Addend1.limbs[ctr].x != Addend2.limbs[ctr].x) {
-//				break;
-//			}
-//		}
-//		if (ctr >= 0 && Addend1.limbs[ctr].x < Addend2.limbs[ctr].x) {
-//			/* the absolute value of addend1 is less than the absolute value of addend2.*/
-//			A1Smaller = true;
-//		}
-//	}
-//	if (A1Smaller) {
-//		nbrLimbs = Addend1.nbrLimbs;
-//		ptrBiggerAdd = Addend2.limbs;
-//		ptrSmallerAdd = Addend1.limbs;
-//	}
-//	else {
-//		// the absolute value of addend1 is >= the absolute value of addend2.
-//		nbrLimbs = Addend2.nbrLimbs;
-//		ptrBiggerAdd = Addend1.limbs;
-//		ptrSmallerAdd = Addend2.limbs;
-//	}
-//	ptrSum = Sum.limbs;
-//
-//	if (Addend1.sign == Addend2.sign)
-//	{             // Both addends have the same sign. Sum their absolute values.
-//		unsigned int carry = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x +
-//				(unsigned int)ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
-//		}
-//		if (carry >= LIMB_RANGE)
-//		{
-//			ptrSum[ctr].x = 1;
-//			nbrLimbs++;
-//		}
-//	}
-//	else {    // addends have different signs. Subtract their absolute values.
-//		int borrow = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x - ptrSmallerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//		if (A1Smaller)
-//			nbrLimbs = Addend2.nbrLimbs;
-//		else
-//			nbrLimbs = Addend1.nbrLimbs;
-//		for (; ctr < nbrLimbs; ctr++) {
-//			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
-//			ptrSum[ctr].x = borrow & MAX_INT_NBR;
-//		}
-//	}
-//
-//	while (nbrLimbs > 1 && Sum.limbs[nbrLimbs - 1].x == 0) {
-//		nbrLimbs--;  // delete leading zeros.
-//	}
-//
-//	Sum.nbrLimbs = nbrLimbs;
-//	if (A1Smaller)
-//		Sum.sign = Addend2.sign;  // use sign of addend with larger absolute value
-//	else
-//		Sum.sign = Addend1.sign;
-//
-//	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {
-//		Sum.sign = SIGN_POSITIVE; // Result is zero, so sign is +ve
-//	}
-//	return Sum;
-//}
+BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
+	int ctr, nbrLimbs;
+	const limb *ptrBiggerAdd, *ptrSmallerAdd;
+	limb *ptrSum;
+	bool A1Smaller = false;
+	BigInteger Sum;  // temporary variable 
+
+	if (Addend1.nbrLimbs < Addend2.nbrLimbs) {
+		A1Smaller = true;
+		/* the absolute value of addend1 is less than the absolute value of addend2.*/
+	}
+
+	else if (Addend1.nbrLimbs == Addend2.nbrLimbs) {
+		for (ctr = Addend1.nbrLimbs - 1; ctr >= 0; ctr--) {
+			if (Addend1.limbs[ctr].x != Addend2.limbs[ctr].x) {
+				break;
+			}
+		}
+		if (ctr >= 0 && Addend1.limbs[ctr].x < Addend2.limbs[ctr].x) {
+			/* the absolute value of addend1 is less than the absolute value of addend2.*/
+			A1Smaller = true;
+		}
+	}
+	if (A1Smaller) {
+		nbrLimbs = Addend1.nbrLimbs;
+		ptrBiggerAdd = Addend2.limbs;
+		ptrSmallerAdd = Addend1.limbs;
+	}
+	else {
+		// the absolute value of addend1 is >= the absolute value of addend2.
+		nbrLimbs = Addend2.nbrLimbs;
+		ptrBiggerAdd = Addend1.limbs;
+		ptrSmallerAdd = Addend2.limbs;
+	}
+	ptrSum = Sum.limbs;
+
+	if (Addend1.sign == Addend2.sign)
+	{             // Both addends have the same sign. Sum their absolute values.
+		unsigned int carry = 0;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x +
+				(unsigned int)ptrSmallerAdd[ctr].x;
+			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
+		}
+		if (A1Smaller)
+			nbrLimbs = Addend2.nbrLimbs;
+		else
+			nbrLimbs = Addend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			carry = (carry >> BITS_PER_GROUP) + (unsigned int)ptrBiggerAdd[ctr].x;
+			ptrSum[ctr].x = (int)(carry & MAX_INT_NBR);
+		}
+		if (carry >= LIMB_RANGE)
+		{
+			ptrSum[ctr].x = 1;
+			nbrLimbs++;
+		}
+	}
+	else {    // addends have different signs. Subtract their absolute values.
+		int borrow = 0;
+		for (ctr = 0; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x - ptrSmallerAdd[ctr].x;
+			ptrSum[ctr].x = borrow & MAX_INT_NBR;
+		}
+		if (A1Smaller)
+			nbrLimbs = Addend2.nbrLimbs;
+		else
+			nbrLimbs = Addend1.nbrLimbs;
+		for (; ctr < nbrLimbs; ctr++) {
+			borrow = (borrow >> BITS_PER_INT_GROUP) + ptrBiggerAdd[ctr].x;
+			ptrSum[ctr].x = borrow & MAX_INT_NBR;
+		}
+	}
+
+	while (nbrLimbs > 1 && Sum.limbs[nbrLimbs - 1].x == 0) {
+		nbrLimbs--;  // delete leading zeros.
+	}
+
+	Sum.nbrLimbs = nbrLimbs;
+	if (A1Smaller)
+		Sum.sign = Addend2.sign;  // use sign of addend with larger absolute value
+	else
+		Sum.sign = Addend1.sign;
+
+	if (Sum.nbrLimbs == 1 && Sum.limbs[0].x == 0) {
+		Sum.sign = SIGN_POSITIVE; // Result is zero, so sign is +ve
+	}
+	return Sum;
+}
 
 /* Dest = -Dest */
-//static void BigIntNegate (BigInteger &pDest) {
-//	
-//	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
-//	{
-//		pDest.sign = SIGN_NEGATIVE;  // pDest > 0, now < 0
-//	}
-//	else
-//	{
-//		pDest.sign = SIGN_POSITIVE; // pDest <=0, now >= 0
-//	}
-//}
+static void BigIntNegate (BigInteger &pDest) {
+	
+	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0].x != 0))
+	{
+		pDest.sign = SIGN_NEGATIVE;  // pDest > 0, now < 0
+	}
+	else
+	{
+		pDest.sign = SIGN_POSITIVE; // pDest <=0, now >= 0
+	}
+}
 
 
 /* return minuend - subtrahend (used to overload - operator) */
-//BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
-//	BigInteger Difference;
-//	static BigInteger temp;
-//	temp = Subtrahend;   // copy Subtrahend to temporary variable
-//	BigIntNegate(temp);
-//	Difference = Minuend + temp;
-//	return Difference;
-//}
+BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend) {
+	BigInteger Difference;
+	static BigInteger temp;
+	temp = Subtrahend;   // copy Subtrahend to temporary variable
+	BigIntNegate(temp);
+	Difference = Minuend + temp;
+	return Difference;
+}
 
 /* returns Factor1 * Factor2 (used to overload * operator)
 Factor1 will be expanded to the length of Factor2 or vice versa 
@@ -149,17 +150,14 @@ codes need to be tested for after every call, passed up to the calling routine,
 tested for again and so on up to the top level. In practise this wasn't done consistently. */
 BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 {
-	BigInteger Product;    // temporary variable 
 	int nbrLimbsFactor1 = Factor1.nbrLimbs;
 	int nbrLimbsFactor2 = Factor2.nbrLimbs;
 	int nbrLimbs;
+	BigInteger Product;    // temporary variable 
+	limb Prodl[MAX_LEN * 2] = { 0 };    // temporary variable 
 
-	if ((Factor1.nbrLimbs == 1 && Factor1.limbs[0].x == 0) ||
-		(Factor2.nbrLimbs == 1 && Factor2.limbs[0].x == 0))
-	{    // one or both factors are zero.
-		Product.nbrLimbs = 1;      // Product is zero.
-		Product.limbs[0].x = 0;
-		Product.sign = SIGN_POSITIVE;
+	if (Factor1 == 0 || Factor2 == 0) {    // one or both factors are zero.
+		Product = 0;                       // Product is zero.
 		return Product;
 	}
 
@@ -185,8 +183,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		nbrLimbs = nbrLimbsFactor1;
 	}
 
-	multiply(&Factor1.limbs[0], &Factor2.limbs[0],
-		&Product.limbs[0], nbrLimbs, &nbrLimbs);
+	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, &nbrLimbs);
 	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
 	if (nbrLimbs > MAX_LEN)  // limit applied earlier is probably lower, this is just insurance
 	{
@@ -197,6 +194,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
+	LimbsToBigInteger(Prodl, Product, nbrLimbs);
 	if (Product.limbs[nbrLimbs - 1].x == 0) {
 		nbrLimbs--;  // remove leading zeros
 	}
@@ -217,16 +215,16 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 
 /* calculate Dividend mod Divisor (used for operator overloading) 
 uses global variable Base */
-//BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor) {
-//	BigInteger Remainder;  
-//	if (Divisor == 0) {   // If divisor = 0, then remainder is the dividend.
-//		Remainder = Dividend;
-//		return Remainder;
-//	}
-//	Base = Dividend / Divisor;    // Get quotient of division.
-//	Base = Base*Divisor;
-//	return Dividend - Base;
-//}
+BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor) {
+	BigInteger Remainder;  
+	if (Divisor == 0) {   // If divisor = 0, then remainder is the dividend.
+		Remainder = Dividend;
+		return Remainder;
+	}
+	Base = Dividend / Divisor;    // Get quotient of division.
+	Base = Base*Divisor;
+	return Dividend - Base;
+}
  
 /* BigInt = e^logar
 throw exception if result would be to large for a BigInteger */
@@ -262,20 +260,20 @@ throw exception if result would be to large for a BigInteger */
 
 
 /* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
-//void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
-//
-//	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
-//		long long vv = (long long)round(dvalue); // convert directly to long long if possible
-//		bigInt = vv;
-//		return;
-//	}
-//	Znum temp;
-//	mpz_set_d(ZT(temp), dvalue);  // convert double to Znum
-//	// this method has been tested to be at least as accurate as direct conversion,
-//	// and obviously it's easier to use standard library functions.
-//	ZtoBig(bigInt, temp);        // convert Znum to BigInt
-//	return;
-//}
+void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
+
+	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
+		long long vv = (long long)round(dvalue); // convert directly to long long if possible
+		bigInt = vv;
+		return;
+	}
+	Znum temp;
+	mpz_set_d(ZT(temp), dvalue);  // convert double to Znum
+	// this method has been tested to be at least as accurate as direct conversion,
+	// and obviously it's easier to use standard library functions.
+	ZtoBig(bigInt, temp);        // convert Znum to BigInt
+	return;
+}
 
 /* estimate natural log of BigInt. */
 //double logBigNbr (const BigInteger &pBigInt) {
@@ -408,87 +406,87 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 //}
 
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
-//bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-//	int ctr;
-//	/*const limb *ptrLimbs1 = Nbr1.limbs;
-//	const limb *ptrLimbs2 = Nbr2.limbs;*/
-//	auto N1Limbs = Nbr1.nbrLimbs;
-//	auto N2Limbs = Nbr2.nbrLimbs;
-//	while (N1Limbs > 1)
-//		if (Nbr1.limbs[N1Limbs - 1].x == 0)
-//			N1Limbs--;
-//		else
-//			break;
-//	while (N2Limbs > 1)
-//		if (Nbr2.limbs[N2Limbs - 1].x == 0)
-//			N2Limbs--;
-//		else
-//			break;
-//
-//	if (N1Limbs != N2Limbs) {        
-//		return false;  // Sizes of numbers are different.
-//	}
-//	if (Nbr1.sign != Nbr2.sign) { 
-//	       // Sign of numbers are different.
-//		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {              
-//			return true; // Both numbers are zero.
-//		}
-//		return false; // differents signs, therefore cannot be equal
-//	}
-//
-//	// Check whether both numbers are equal.
-//	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
-//		if (Nbr1.limbs[ctr].x != Nbr2.limbs[ctr].x) {
-//			return false;  // Numbers are different.
-//		}
-//	}        
-//	return true;  // Numbers are equal.
-//}
+bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	int ctr;
+	/*const limb *ptrLimbs1 = Nbr1.limbs;
+	const limb *ptrLimbs2 = Nbr2.limbs;*/
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+	if (N1Limbs != N2Limbs) {        
+		return false;  // Sizes of numbers are different.
+	}
+	if (Nbr1.sign != Nbr2.sign) { 
+	       // Sign of numbers are different.
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {              
+			return true; // Both numbers are zero.
+		}
+		return false; // differents signs, therefore cannot be equal
+	}
+
+	// Check whether both numbers are equal.
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x != Nbr2.limbs[ctr].x) {
+			return false;  // Numbers are different.
+		}
+	}        
+	return true;  // Numbers are equal.
+}
 
 /* return true if Nbr1 < Nbr2 (used for operator overloading) */
-//bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
-//	int ctr;
-//	auto N1Limbs = Nbr1.nbrLimbs;
-//	auto N2Limbs = Nbr2.nbrLimbs;
-//	while (N1Limbs > 1)
-//		if (Nbr1.limbs[N1Limbs - 1].x == 0)
-//			N1Limbs--;
-//		else
-//			break;
-//	while (N2Limbs > 1)
-//		if (Nbr2.limbs[N2Limbs - 1].x == 0)
-//			N2Limbs--;
-//		else
-//			break;
-//
-//	if (Nbr1.sign != Nbr2.sign) {
-//		// Sign of numbers are different.
-//		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {
-//			return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
-//		}
-//		else return (Nbr1.sign == SIGN_NEGATIVE);
-//	}
-//
-//	/* numbers have same sign */
-//	if (N1Limbs != N2Limbs) {
-//		/* length of numbers is different*/
-//		if (Nbr1.sign == SIGN_POSITIVE)
-//			return N1Limbs < N2Limbs;
-//		else
-//			return N1Limbs > N2Limbs;
-//	}
-//
-//	// numbers have same sign and length. Check whether both numbers are equal.
-//	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
-//		if (Nbr1.limbs[ctr].x < Nbr2.limbs[ctr].x) {
-//			return true;  // Nbr1 < Nbr2.
-//		}
-//		else if (Nbr1.limbs[ctr].x > Nbr2.limbs[ctr].x) {
-//			return false;  // Nbr1 > Nbr2.
-//		}
-//	}
-//	return false;  // Numbers are equal.
-//}
+bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+	int ctr;
+	auto N1Limbs = Nbr1.nbrLimbs;
+	auto N2Limbs = Nbr2.nbrLimbs;
+	while (N1Limbs > 1)
+		if (Nbr1.limbs[N1Limbs - 1].x == 0)
+			N1Limbs--;
+		else
+			break;
+	while (N2Limbs > 1)
+		if (Nbr2.limbs[N2Limbs - 1].x == 0)
+			N2Limbs--;
+		else
+			break;
+
+	if (Nbr1.sign != Nbr2.sign) {
+		// Sign of numbers are different.
+		if (N1Limbs == 1 && Nbr1.limbs[0].x == 0 && Nbr2.limbs[0].x == 0) {
+			return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
+		}
+		else return (Nbr1.sign == SIGN_NEGATIVE);
+	}
+
+	/* numbers have same sign */
+	if (N1Limbs != N2Limbs) {
+		/* length of numbers is different*/
+		if (Nbr1.sign == SIGN_POSITIVE)
+			return N1Limbs < N2Limbs;
+		else
+			return N1Limbs > N2Limbs;
+	}
+
+	// numbers have same sign and length. Check whether both numbers are equal.
+	for (ctr = N1Limbs - 1; ctr >= 0; ctr--) {
+		if (Nbr1.limbs[ctr].x < Nbr2.limbs[ctr].x) {
+			return true;  // Nbr1 < Nbr2.
+		}
+		else if (Nbr1.limbs[ctr].x > Nbr2.limbs[ctr].x) {
+			return false;  // Nbr1 > Nbr2.
+		}
+	}
+	return false;  // Numbers are equal.
+}
 
 /* calculate GCD of arg1 & arg2*/
 //void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
@@ -595,125 +593,125 @@ static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 /* i = (i-subt)/divisor. Assume (without checking) that divisor > 0.
 Does not appear to handle -ve divisor 
 used for operator overloading */
-//void subtractdivide(BigInteger &i, int subt, int divisor)
-//{
-//	int nbrLimbs = i.nbrLimbs;
-//	int remainder = 0;
-//	
-//#if 0
-//	char *ptrOutput = output;
-//	*ptrOutput++ = '2';
-//	*ptrOutput++ = '(';
-//	int2dec(&ptrOutput, i->sign);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->nbrLimbs);
-//	*ptrOutput++ = ';';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->limbs[0].x);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, i->limbs[1].x);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	*ptrOutput++ = ')';
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, subt);
-//	*ptrOutput++ = ',';
-//	*ptrOutput++ = ' ';
-//	int2dec(&ptrOutput, divisor);
-//	//  databack(output);
-//	if ((unsigned int)i->limbs[0].x >= LIMB_RANGE)
-//	{
-//		remainder = 1;
-//	}
-//#endif
-//	/* if subt is not zero subtract it from i*/
-//	if (subt > 0) {
-//		if (i >= 0) {       // Subtract subt from absolute value.
-//			subtFromAbsValue(i.limbs, &nbrLimbs, subt);
-//		}
-//		else {               // Add subt to absolute value.
-//			addToAbsValue(i.limbs, &nbrLimbs, subt);
-//		}
-//	}
-//	else if (subt < 0) {  // subt < 0
-//		if (i >= 0) {    // Subtract subt from absolute value.
-//			addToAbsValue(i.limbs, &nbrLimbs, -subt);
-//		}
-//		else {               // Add subt to absolute value.
-//			subtFromAbsValue(i.limbs, &nbrLimbs, -subt);
-//		}
-//	}
-//
-//	// Divide number by divisor.
-//	i = BigIntDivideInt(i, divisor);
-//}
+void subtractdivide(BigInteger &i, int subt, int divisor)
+{
+	int nbrLimbs = i.nbrLimbs;
+	int remainder = 0;
+	
+#if 0
+	char *ptrOutput = output;
+	*ptrOutput++ = '2';
+	*ptrOutput++ = '(';
+	int2dec(&ptrOutput, i->sign);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->nbrLimbs);
+	*ptrOutput++ = ';';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->limbs[0].x);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, i->limbs[1].x);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	*ptrOutput++ = ')';
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, subt);
+	*ptrOutput++ = ',';
+	*ptrOutput++ = ' ';
+	int2dec(&ptrOutput, divisor);
+	//  databack(output);
+	if ((unsigned int)i->limbs[0].x >= LIMB_RANGE)
+	{
+		remainder = 1;
+	}
+#endif
+	/* if subt is not zero subtract it from i*/
+	if (subt > 0) {
+		if (i >= 0) {       // Subtract subt from absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, subt);
+		}
+		else {               // Add subt to absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, subt);
+		}
+	}
+	else if (subt < 0) {  // subt < 0
+		if (i >= 0) {    // Subtract subt from absolute value.
+			addToAbsValue(i.limbs, &nbrLimbs, -subt);
+		}
+		else {               // Add subt to absolute value.
+			subtFromAbsValue(i.limbs, &nbrLimbs, -subt);
+		}
+	}
+
+	// Divide number by divisor.
+	i = BigIntDivideInt(i, divisor);
+}
 
 /* calculate BigInt modulo divisor (used for operator overloading) */
-//int getRemainder(const BigInteger &pBigInt, int divisor) {
-//	int ctr;
-//	int remainder = 0;
-//	int nbrLimbs = pBigInt.nbrLimbs;
-//	double dDivisor = (double)divisor;
-//	double dLimb = 0x80000000;
-//	const limb *pLimb = pBigInt.limbs;    // point to first limb
-//	for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
-//	{
-//		int quotient, dividend;
-//		double dQuotient, dDividend;
-//		dividend = (remainder << BITS_PER_INT_GROUP) + pLimb[ctr].x;
-//		dDividend = (double)remainder * dLimb + pLimb[ctr].x;
-//		dQuotient = floor(dDividend / dDivisor + 0.5);
-//		quotient = (int)(unsigned int)dQuotient;   // quotient has correct value or 1 more.
-//		remainder = dividend - quotient * divisor;
-//		if ((unsigned int)remainder >= (unsigned int)divisor)
-//		{     // remainder not in range 0 <= remainder < divisor. Adjust.
-//			quotient--;
-//			remainder += divisor;
-//		}
-//	}
-//	if (pBigInt.sign == SIGN_NEGATIVE && remainder != 0) 	{
-//		remainder = divisor - remainder;
-//	}
-//	return remainder;
-//}
+int getRemainder(const BigInteger &pBigInt, int divisor) {
+	int ctr;
+	int remainder = 0;
+	int nbrLimbs = pBigInt.nbrLimbs;
+	double dDivisor = (double)divisor;
+	double dLimb = 0x80000000;
+	const limb *pLimb = pBigInt.limbs;    // point to first limb
+	for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
+	{
+		int quotient, dividend;
+		double dQuotient, dDividend;
+		dividend = (remainder << BITS_PER_INT_GROUP) + pLimb[ctr].x;
+		dDividend = (double)remainder * dLimb + pLimb[ctr].x;
+		dQuotient = floor(dDividend / dDivisor + 0.5);
+		quotient = (int)(unsigned int)dQuotient;   // quotient has correct value or 1 more.
+		remainder = dividend - quotient * divisor;
+		if ((unsigned int)remainder >= (unsigned int)divisor)
+		{     // remainder not in range 0 <= remainder < divisor. Adjust.
+			quotient--;
+			remainder += divisor;
+		}
+	}
+	if (pBigInt.sign == SIGN_NEGATIVE && remainder != 0) 	{
+		remainder = divisor - remainder;
+	}
+	return remainder;
+}
 
 /* result += addend (used for operator overloading) */
-//void addbigint(BigInteger &Result, int addend) {
-//	int nbrLimbs = Result.nbrLimbs;
-//	limb *pResultLimbs = Result.limbs;
-//	auto sign = Result.sign;
-//
-//	if (addend < 0) {
-//		// reverse signs of addend and result
-//		addend = -addend;
-//		if (sign == SIGN_POSITIVE) 	{
-//			sign = SIGN_NEGATIVE;
-//		}
-//		else {
-//			sign = SIGN_POSITIVE;
-//		}
-//	}
-//
-//	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
-//		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
-//	}
-//	else {  // Subtract addend from absolute value of pResult.
-//		if (nbrLimbs == 1) 	{
-//			pResultLimbs[0].x -= addend;
-//			if (pResultLimbs[0].x < 0) 	{
-//				pResultLimbs[0].x = -pResultLimbs[0].x;  // reverse sign of result
-//				BigIntNegate(Result);
-//			}
-//		}
-//		else {     // More than one limb.
-//			subtFromAbsValue(pResultLimbs, &nbrLimbs, addend);
-//		}
-//	}
-//	Result.nbrLimbs = nbrLimbs;
-//}
+void addbigint(BigInteger &Result, int addend) {
+	int nbrLimbs = Result.nbrLimbs;
+	limb *pResultLimbs = Result.limbs;
+	auto sign = Result.sign;
+
+	if (addend < 0) {
+		// reverse signs of addend and result
+		addend = -addend;
+		if (sign == SIGN_POSITIVE) 	{
+			sign = SIGN_NEGATIVE;
+		}
+		else {
+			sign = SIGN_POSITIVE;
+		}
+	}
+
+	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
+		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
+	}
+	else {  // Subtract addend from absolute value of pResult.
+		if (nbrLimbs == 1) 	{
+			pResultLimbs[0].x -= addend;
+			if (pResultLimbs[0].x < 0) 	{
+				pResultLimbs[0].x = -pResultLimbs[0].x;  // reverse sign of result
+				BigIntNegate(Result);
+			}
+		}
+		else {     // More than one limb.
+			subtFromAbsValue(pResultLimbs, &nbrLimbs, addend);
+		}
+	}
+	Result.nbrLimbs = nbrLimbs;
+}
 
 /* returns nbrMod^Expon%currentPrime. 
 overflow could occur if currentPrime > 2^31 
@@ -844,7 +842,7 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 	}
 }
 /* number = numberZ*/
-void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 // note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum quot, remainder;
@@ -864,9 +862,13 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 			mesg += " in file "; mesg += __FILE__;
 			throw std::range_error(mesg);
 		}
-		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		/* calculating quotient and remainder separately turns
+		out to be faster */
+		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number[i].x = (int)MulPrToLong(remainder);
-		numberZ = quot;
+		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
+		//numberZ = quot;
 		i++;
 	}
 	if (i < NumberLength) {
@@ -876,6 +878,7 @@ void ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
 	}
+	return i;
 }
 int ZtoBigNbr(int number[], Znum numberZ) {
 	// note: numberZ is a copy of the original. Its value is changed
@@ -1275,48 +1278,52 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 
 /* convert Znum to BigInteger. Returns false if number is too big to convert.
 this function is also used to overload the assignment operator */
-//bool ZtoBig(BigInteger &number, Znum numberZ) {
-//	number.nbrLimbs = 0;
-//	bool neg = false;
-//	Znum quot, remainder;
-//
-//	if (numberZ < 0) {
-//		neg = true;
-//		numberZ = -numberZ;  // make numberZ +ve
-//	}
-//	int i = 0;
-//	while (numberZ > 0) {
-//		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-//		number.limbs[i].x = (int)MulPrToLong(remainder);
-//		numberZ = quot;
-//		i++;
-//		if (i >= MAX_LEN) {
-//			return false;   // number too big to convert.
-//		}
-//	}
-//	number.nbrLimbs = i;
-//	if (neg) {
-//		number.sign = SIGN_NEGATIVE;
-//		numberZ = -numberZ;  // put back original value in numberZ
-//	}
-//	else
-//		number.sign = SIGN_POSITIVE;
-//
-//	return true;
-//}
+bool ZtoBig(BigInteger &number, Znum numberZ) {
+	number.nbrLimbs = 0;
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		/* calculating quotient and remainder separately turns
+		out to be faster */
+		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
+		number.limbs[i].x = (int)MulPrToLong(remainder);
+		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
+		//numberZ = quot;
+		i++;
+		if (i >= MAX_LEN) {
+			return false;   // number too big to convert.
+		}
+	}
+	number.nbrLimbs = i;
+	if (neg) {
+		number.sign = SIGN_NEGATIVE;
+		numberZ = -numberZ;  // put back original value in numberZ
+	}
+	else
+		number.sign = SIGN_POSITIVE;
+
+	return true;
+}
 
 /* convert BigInteger to Znum */
-//void BigtoZ(Znum &numberZ, const BigInteger &number) {
-//
-//	numberZ = 0;
-//	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
-//		//numberZ *= LIMB_RANGE;
-//		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-//		numberZ += number.limbs[i].x;      // add next limb
-//	}
-//	if (number.sign == SIGN_NEGATIVE)
-//		numberZ = -numberZ;
-//}
+void BigtoZ(Znum &numberZ, const BigInteger &number) {
+
+	numberZ = 0;
+	for (int i = number.nbrLimbs - 1; i >= 0; i--) {
+		//numberZ *= LIMB_RANGE;
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number.limbs[i].x;      // add next limb
+	}
+	if (number.sign == SIGN_NEGATIVE)
+		numberZ = -numberZ;
+}
 
 /* convert integer list to Znum. */
 void ValuestoZ(Znum &numberZ, const int number[], int NumberLength) {

@@ -77,8 +77,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	int nbrLimbs, nbrLimbsDividend, nbrLimbsDivisor;
 
 	// Check whether the divisor is zero.
-	if (Divisor.limbs[0].x == 0 && Divisor.nbrLimbs == 1)
-	{  // Indicate overflow if divisor is zero.
+	if (Divisor == 0) {  // Indicate error if divisor is zero.
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot divide by zero: ";
 		mesg += __func__;

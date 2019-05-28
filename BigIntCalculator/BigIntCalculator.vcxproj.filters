@@ -57,6 +57,9 @@
     <ClCompile Include="R3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="division.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">

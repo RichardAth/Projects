@@ -54,7 +54,6 @@ bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
 bool isPerfectSquare(__int64 x);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
-
 class BigInteger {
 // should be private members
 public:
@@ -64,19 +63,25 @@ public:
 
 public:
 	int bitLength() const {
-		unsigned int mask;
-		int bitCount;
+		/*unsigned int mask;
+		int bitCount;*/
 		const int lastLimb = nbrLimbs - 1;
 		int bitLen = lastLimb*BITS_PER_GROUP;
 		unsigned int limb = (unsigned int)(limbs[lastLimb].x);
-		mask = 1;
+		/*mask = 1;
 		for (bitCount = 0; bitCount < BITS_PER_GROUP; bitCount++) {
 			if (limb < mask) {
 				break;
 			}
 			mask *= 2;
+		}*/
+		if (limb != 0) {
+			/* use _BitScanReverse instead of loop because it's faster */
+			unsigned long bitCount;
+			_BitScanReverse(&bitCount, limb);
+			bitLen += (bitCount + 1);
 		}
-		return bitLen + bitCount;
+		return bitLen;
 	}
 	bool isEven() const {
 		return ((limbs[0].x & 1) == 0);
@@ -98,10 +103,22 @@ public:
 			rv = -rv;
 		return rv;  // no check for overflow; just return last 64 bits
 	}
-	double fdata() const { /* convert to double */
+	double fpoint() const { /* convert to double */
 		double rv = getMantissa(limbs+nbrLimbs, nbrLimbs);
 		if (sign == SIGN_NEGATIVE)
 			rv = -rv;
+		if (nbrLimbs > 1) {
+			rv *= pow(LIMB_RANGE, nbrLimbs - 1);
+		}
+		auto c = fpclassify(rv);
+		if (c == FP_INFINITE) {
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "floating point overflow ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
 		return rv;  
 	}
 
@@ -156,7 +173,9 @@ public:
 		return *this;
 	}
 	/* other operators are overloaded later */
-	BigInteger(long long i=0) {   // constructor
+
+	 // constructor
+	BigInteger(long long i=0) {  
 		*this = i;
 	}
 	friend BigInteger BigIntAdd      (const BigInteger &Addend1, const BigInteger &Addend2);
@@ -225,6 +244,9 @@ public:
 	BigInteger  operator %  (const BigInteger &Divisor) const {
 		return BigIntRemainder(*this, Divisor);
 	}
+	BigInteger &operator %= (const BigInteger &b) {
+		return *this = BigIntRemainder(*this, b);
+	}
 
 	/* note that only a few operators are oveloaded for BigInt <op> int */
 	int         operator %  (int divisor) const {
@@ -234,7 +256,7 @@ public:
 		return BigIntDivideInt(*this, divisor);
 	}
 	BigInteger &operator /= (int divisor) {
-		subtractdivide(*this, 0, divisor);
+		*this = BigIntDivideInt(*this, divisor);
 		return *this;
 	}
 	BigInteger &operator += (const int b) {
@@ -345,12 +367,13 @@ void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
 //void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
 
 void ChSignBigNbr(int nbr[], int length);
-//void ChSignBigNbrB(int nbr[], int length);
-//void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
+void ChSignBigNbrB(int nbr[], int length);
+int BigNbrLen(const long long Nbr[], int nbrLen);
+void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
 void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
+void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
 void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
+void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
 void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
 void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
 void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
@@ -358,15 +381,15 @@ void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 //void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen);
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-//void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
+void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
 void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd);
 //void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
 void MultBigNbrByIntB(const Znum &bigFactor, int factor, Znum &bigProd);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
 void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient);
-//int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
+int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
 mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor);
-//void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
+void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
 void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod);
 //void IntToBigNbr(int value, int bigNbr[], int nbrLength);
 //void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
@@ -375,7 +398,7 @@ void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &
 //void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
-void ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
+int ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);
 
