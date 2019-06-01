@@ -298,13 +298,16 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 	polyadd = (F1 & 2) != 0;
 	if (polyadd)   // Adjust value of B as appropriate
 	{              // according to the Gray code.
-		AddBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
-		AddBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
+		zLinearCoeff += biLinearDelta[indexFactorA];
+		zLinearCoeff += biLinearDelta[indexFactorA];
+		/*AddBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
+		  AddBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);*/
 	}
-	else
-	{
-		SubtractBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
-		SubtractBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
+	else {
+		zLinearCoeff -= biLinearDelta[indexFactorA];
+		zLinearCoeff -= biLinearDelta[indexFactorA];
+		/*SubtractBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);
+		  SubtractBigNbrB(zLinearCoeff, biLinearDelta[indexFactorA], zLinearCoeff);*/
 	}
 	indexFactorA--;
 	X1 = SieveLimit << 1;
@@ -387,7 +390,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 		F1 = polyadd ? -rowPrimeSieveData->Bainv2[indexFactorA] :
 			rowPrimeSieveData->Bainv2[indexFactorA];
 		index2 = (rowPrimeSieveData->soln1 + F1) % currentPrime;
-		rowPrimeSieveData->soln1 = index2 += currentPrime & (index2 >> 31);   // soln1 is modified
+		rowPrimeSieveData->soln1 = index2 += currentPrime & (index2 >> BITS_PER_INT_GROUP);   // soln1 is modified
 
 		for (; index2 < F3; index2 += currentPrime)
 		{
@@ -458,7 +461,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			F4 = F3 + currentPrime;
 			S1 = rowPrimeSieveData->soln1 -
 				rowPrimeSieveData->Bainv2[indexFactorA];
-			rowPrimeSieveData->soln1 = S1 += (S1 >> 31) & currentPrime;
+			rowPrimeSieveData->soln1 = S1 += (S1 >> BITS_PER_INT_GROUP) & currentPrime;
 			index2 = X1 / F4 * F4 + S1;
 			G0 = -rowPrimeSieveData->difsoln;
 			if (S1 + G0 < 0) {
@@ -517,7 +520,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			if (rowPrimeSieveData->difsoln >= 0) {
 				F1 = rowPrimeSieveData->soln1 -
 					rowPrimeSieveData->Bainv2[indexFactorA];
-				F1 += (F1 >> 31) & currentPrime;
+				F1 += (F1 >> BITS_PER_INT_GROUP) & currentPrime;
 				index2 = (rowPrimeSieveData->soln1 = F1);
 				do {
 					*(SieveArray + index2) += logPrimeEvenPoly;
@@ -530,7 +533,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 					*(SieveArray + index2) += logPrimeEvenPoly;
 				}
 				index2 = F1 - rowPrimeSieveData->Bainv2_0;
-				index2 += (index2 >> 31) & currentPrime;
+				index2 += (index2 >> BITS_PER_INT_GROUP) & currentPrime;
 
 				do 	{
 					*(SieveArray + index2) += logPrimeOddPoly;
@@ -544,7 +547,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 				}
 
 				F1 -= rowPrimeSieveData->difsoln;
-				F1 += (F1 >> 31) & currentPrime;
+				F1 += (F1 >> BITS_PER_INT_GROUP) & currentPrime;
 				index2 = F1;
 
 				do {
@@ -559,7 +562,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 				}
 
 				index2 = F1 - rowPrimeSieveData->Bainv2_0;
-				index2 += (index2 >> 31) & currentPrime;
+				index2 += (index2 >> BITS_PER_INT_GROUP) & currentPrime;
 
 				do {
 					*(SieveArray + index2) += logPrimeOddPoly;
@@ -583,7 +586,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 				logPrimeOddPoly += 0x100;
 			}
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
-			F2 += currentPrime & (F2 >> 31);
+			F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP);
 			index2 = (rowPrimeSieveData->soln1 = F2);
 
 			do {
@@ -591,20 +594,20 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			} while ((index2 += currentPrime) <= X1);
 
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			F1 += currentPrime & (F1 >> 31);
+			F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP);
 
 			do {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			} while ((F1 += currentPrime) <= X1);
 
 			F2 -= rowPrimeSieveData->difsoln;
-			index2 = F2 += currentPrime & (F2 >> 31);
+			index2 = F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP);
 
 			do {
 				*(SieveArray + index2) += logPrimeEvenPoly;
 			} while ((index2 += currentPrime) <= X1);
 
-			F2 += (currentPrime & ((F2 - F3) >> 31)) - F3;
+			F2 += (currentPrime & ((F2 - F3) >> BITS_PER_INT_GROUP)) - F3;
 
 			do {
 				*(SieveArray + F2) += logPrimeOddPoly;
@@ -620,22 +623,23 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 				logPrimeOddPoly += 0x100;
 			}
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1) {
+			if ((rowPrimeSieveData->soln1 = 
+				(F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
 
-			if ((F1 += currentPrime & (F1 >> 31)) < X1) {
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
-			if ((F2 += (currentPrime & ((F2 - F3) >> 31)) - F3) < X1) {
+			if ((F2 += (currentPrime & ((F2 - F3) >> BITS_PER_INT_GROUP)) - F3) < X1) {
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
 
@@ -643,23 +647,23 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
 
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1) {
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
 
-			if ((F1 += currentPrime & (F1 >> 31)) < X1) {
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 
 			F2 -= rowPrimeSieveData->difsoln;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
-			if ((F2 += (currentPrime & ((F2 - F3) >> 31)) - F3) < X1) {
+			if ((F2 += (currentPrime & ((F2 - F3) >> BITS_PER_INT_GROUP)) - F3) < X1) {
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
 
@@ -667,26 +671,26 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
 
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1) {
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
 
-			if ((F1 += currentPrime & (F1 >> 31)) < X1) {
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 
 			F2 -= rowPrimeSieveData->difsoln;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F2 -= F3; 
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
 
@@ -694,25 +698,25 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
 
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1) {
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
 
-			if ((F1 += currentPrime & (F1 >> 31)) < X1) {
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 
 			F2 -= rowPrimeSieveData->difsoln;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 
 			F2 -= F3;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
 		}
@@ -728,22 +732,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 
 			F2 = rowPrimeSieveData->soln1 - rowPrimeSieveData->Bainv2[indexFactorA];
 
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1) {
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
 
-			if ((F1 += currentPrime & (F1 >> 31)) < X1) {
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
 
-			if ((F2 += currentPrime & (F2 >> 31)) < X1) {
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1) {
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
 		}
@@ -756,7 +760,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			S1 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			S1 += currentPrime & (S1 >> 31);
+			S1 += currentPrime & (S1 >> BITS_PER_INT_GROUP);
 			rowPrimeSieveData->soln1 = S1;
 		}
 
@@ -774,7 +778,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			F4 = F3 + currentPrime;
 			S1 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			rowPrimeSieveData->soln1 = S1 += (S1 >> 31) & currentPrime;
+			rowPrimeSieveData->soln1 = S1 += (S1 >> BITS_PER_INT_GROUP) & currentPrime;
 			index2 = X1 / F4 * F4 + S1;
 			G0 = -rowPrimeSieveData->difsoln;
 
@@ -838,7 +842,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			{
 				F1 = rowPrimeSieveData->soln1 +
 					rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-				F1 += currentPrime & (F1 >> 31);
+				F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP);
 				index2 = (rowPrimeSieveData->soln1 = F1);
 				do
 				{
@@ -852,7 +856,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 					*(SieveArray + index2) += logPrimeEvenPoly;
 				}
 				index2 = F1 - rowPrimeSieveData->Bainv2_0;
-				index2 += (index2 >> 31) & currentPrime;
+				index2 += (index2 >> BITS_PER_INT_GROUP) & currentPrime;
 				do
 				{
 					*(SieveArray + index2) += logPrimeOddPoly;
@@ -865,7 +869,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 					*(SieveArray + index2) += logPrimeOddPoly;
 				}
 				F1 -= rowPrimeSieveData->difsoln;
-				F1 += (F1 >> 31) & currentPrime;
+				F1 += (F1 >> BITS_PER_INT_GROUP) & currentPrime;
 				index2 = F1;
 				do
 				{
@@ -879,7 +883,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 					*(SieveArray + index2) += logPrimeEvenPoly;
 				}
 				index2 = F1 - rowPrimeSieveData->Bainv2_0;
-				index2 += (index2 >> 31) & currentPrime;
+				index2 += (index2 >> BITS_PER_INT_GROUP) & currentPrime;
 				do
 				{
 					*(SieveArray + index2) += logPrimeOddPoly;
@@ -905,25 +909,25 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			}
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			index2 = (rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31)));
+			index2 = (rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)));
 			do
 			{
 				*(SieveArray + index2) += logPrimeEvenPoly;
 			} while ((index2 += currentPrime) <= X1);
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			F1 += currentPrime & (F1 >> 31);
+			F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP);
 			do
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			} while ((F1 += currentPrime) <= X1);
 			F2 -= rowPrimeSieveData->difsoln;
-			F1 = F2 += currentPrime & (F2 >> 31);
+			F1 = F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP);
 			do
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			} while ((F2 += currentPrime) <= X1);
 			F1 -= F3;
-			F1 += currentPrime & (F1 >> 31);
+			F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP);
 			do
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
@@ -941,22 +945,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			}
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1)
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			if ((F1 += currentPrime & (F1 >> 31)) < X1)
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
@@ -964,22 +968,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1)
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			if ((F1 += currentPrime & (F1 >> 31)) < X1)
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
@@ -987,22 +991,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1)
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			if ((F1 += currentPrime & (F1 >> 31)) < X1)
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
@@ -1010,22 +1014,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			currentPrime = rowPrimeSieveData->value;
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1)
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			if ((F1 += currentPrime & (F1 >> 31)) < X1)
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
@@ -1042,22 +1046,22 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			}
 			F2 = rowPrimeSieveData->soln1 +
 				rowPrimeSieveData->Bainv2[indexFactorA] - currentPrime;
-			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> 31))) < X1)
+			if ((rowPrimeSieveData->soln1 = (F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP))) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F1 = F2 - (F3 = rowPrimeSieveData->Bainv2_0);
-			if ((F1 += currentPrime & (F1 >> 31)) < X1)
+			if ((F1 += currentPrime & (F1 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F1) += logPrimeOddPoly;
 			}
 			F2 -= rowPrimeSieveData->difsoln;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeEvenPoly;
 			}
 			F2 -= F3;
-			if ((F2 += currentPrime & (F2 >> 31)) < X1)
+			if ((F2 += currentPrime & (F2 >> BITS_PER_INT_GROUP)) < X1)
 			{
 				*(SieveArray + F2) += logPrimeOddPoly;
 			}
@@ -1173,7 +1177,7 @@ static bool TrialDivisionSubA(const int index,
 			}
 		}
 		else {
-			iRem += (iRem >> 31) & Divisor;  // if iRem is -ve add value of Divisor
+			iRem += (iRem >> BITS_PER_INT_GROUP) & Divisor;  // if iRem is -ve add value of Divisor
 		}
 
 		if (iRem != 0 && iRem != Divisor - rowPrimeSieveData->difsoln) {
@@ -1413,7 +1417,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 										}
 									}
 									else {
-										iRem += (iRem >> 31) & Divisor;
+										iRem += (iRem >> BITS_PER_INT_GROUP) & Divisor;
 									}
 
 									if (iRem != 0 && iRem != Divisor - rowPrimeSieveData->difsoln)
@@ -1542,7 +1546,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 										}
 									}
 									else {
-										iRem += (iRem >> 31) & Divisor;
+										iRem += (iRem >> BITS_PER_INT_GROUP) & Divisor;
 									}
 
 									if (iRem != 0 && iRem != Divisor - rowPrimeSieveData->difsoln)
@@ -1689,26 +1693,28 @@ static bool SmoothRelationFound(
 	nbrSquares = rowSquares[0];
 	biR = 1; 
 	biT = positive ? 1 : -1;
-	MultBigNbrByInt(biQuadrCoeff, index2 - SieveLimit, biU);                                           // Ax
-	AddBigNbrB(biU, biLinearCoeff, biU);          // Ax+B
+	biU = biQuadrCoeff * (index2 - SieveLimit);
+	                 // MultBigNbrByInt(biQuadrCoeff, index2 - SieveLimit, biU);                                           // Ax
+	biU += biLinearCoeff; // AddBigNbrB(biU, biLinearCoeff, biU);          // Ax+B
 	if (oddPolynomial)
 	{
-		SubtractBigNbrB(biU, biLinearDelta[0], biU);// Ax+B (odd)
-		SubtractBigNbrB(biU, biLinearDelta[0], biU);// Ax+B (odd)
+		biU -= biLinearDelta[0];    // Ax+B (odd)
+		biU -= biLinearDelta[0];    // Ax+B (odd)
+		//SubtractBigNbrB(biU, biLinearDelta[0], biU);// Ax+B (odd)
+		//SubtractBigNbrB(biU, biLinearDelta[0], biU);// Ax+B (odd)
 	}
 	
 	biU = abs(biU);   // If number is negative make it positive.
+
 	for (index = 1; index < nbrSquares; index++)
 	{
 		int D = rowSquares[index];
-		if (D == multiplier)
-		{
-			AddBigNbr(biU, zModulus, biU);
-			DivBigNbrByInt(biU, D, biU);
+		if (D == multiplier) 	{
+			biU += zModulus; //AddBigNbr(biU, zModulus, biU);
+			biU /= D; // DivBigNbrByInt(biU, D, biU);
 		}
-		else
-		{
-			MultBigNbrByInt(biR, D, biR);
+		else {
+			biR *= D; // MultBigNbrByInt(biR, D, biR);
 		}
 	}
 	if (InsertNewRelation(rowMatrixB, biT, biU, biR))
@@ -1772,19 +1778,20 @@ static bool PartialRelationFound(
 			biR = newDivid;
 			nbrFactorsPartial = 0;
 			// biT = old (Ax+B)^2.
-			MultBigNbr(biV, biV, biT);
+			biT = biV * biV; // MultBigNbr(biV, biV, biT);
 			// biT = old (Ax+B)^2 - N.
-			SubtractBigNbrB(biT, zModulus, biT);
+			biT -= zModulus; // SubtractBigNbrB(biT, zModulus, biT);
 			if (oldDivid < 0) {
 				rowPartials[nbrFactorsPartial++] = 0; // Insert -1 as a factor.
 			}
 			biT = abs(biT);   // Make it positive
 
 			// The number is multiple of the big prime, so divide by it.
-			DivBigNbrByInt(biT, newDivid, biT);
+			biT /= newDivid; // DivBigNbrByInt(biT, newDivid, biT);
 			for (index = 0; index < nbrFactorsA; index++) {
-				DivBigNbrByInt(biT,
-					primeTrialDivisionData[indexFactorsA[index]].value, biT);
+				biT /= primeTrialDivisionData[indexFactorsA[index]].value;
+				/*DivBigNbrByInt(biT,
+					primeTrialDivisionData[indexFactorsA[index]].value, biT);*/
 			}
 
 			for (index = 1; index < nbrFactorBasePrimes; index++) {
@@ -1805,29 +1812,28 @@ static bool PartialRelationFound(
 						break;
 					}
 					expParity = 1 - expParity;
-					DivBigNbrByInt(biT, Divisor, biT);
+					biT /= Divisor; // DivBigNbrByInt(biT, Divisor, biT);
 
 					if (expParity == 0) {
 						rowSquares[rowSquares[0]++] = (int)Divisor;
 					}
-					//if (NumberLength <= 2) {
-						if (biT == 1)  	{    
-							break; // biT = 1, so division has ended.
-						}
-					//}
-
+					if (biT == 1)  	{    
+						break; // biT = 1, so division has ended.
+					}
 				}
 				if (expParity != 0)
 				{
 					rowPartials[nbrFactorsPartial++] = index;
 				}
 			}
-			MultBigNbrByIntB(biQuadrCoeff, index2 - SieveLimit, biT);
-			AddBigNbrB(biT, biLinearCoeff, biT); // biT = Ax+B
-			if (oddPolynomial)
-			{                                                     // Ax+B (odd)
-				SubtractBigNbrB(biT, biLinearDelta[0], biT);
-				SubtractBigNbrB(biT, biLinearDelta[0], biT);
+			biT = biQuadrCoeff * (index2 - SieveLimit);
+			         // MultBigNbrByIntB(biQuadrCoeff, index2 - SieveLimit, biT);
+			biT += biLinearCoeff; // AddBigNbrB(biT, biLinearCoeff, biT); // biT = Ax+B
+			if (oddPolynomial) {         // Ax+B (odd)
+				biT -= biLinearDelta[0];
+				biT -= biLinearDelta[0];
+				/*SubtractBigNbrB(biT, biLinearDelta[0], biT);
+				  SubtractBigNbrB(biT, biLinearDelta[0], biT);*/
 			}
 			
 			biT = abs(biT); // If number is negative make it positive.
@@ -1845,12 +1851,11 @@ static bool PartialRelationFound(
 				D = rowSquares[index];
 				if (D != multiplier)
 				{
-					MultBigNbrByInt(biR, D, biR);
+					biR *= D; // MultBigNbrByInt(biR, D, biR);
 				}
-				else
-				{
-					AddBigNbr(biU, zModulus, biU);
-					DivBigNbrByInt(biU, multiplier, biU);
+				else	{
+					biU += zModulus;   // AddBigNbr(biU, zModulus, biU);
+					biU /= multiplier; // DivBigNbrByInt(biU, multiplier, biU);
 				}
 			}
 			if (rowMatrixB[0] > 1 &&
@@ -1892,20 +1897,22 @@ static bool PartialRelationFound(
 			{
 				D = rowSquares[index];
 				MultBigNbrByIntModN(biR, D, biR, zModulus);
-				if (D == multiplier)
-				{
-					DivBigNbrByInt(biU, D, biU);
+				if (D == multiplier)	{
+					biU /= D;
+					// DivBigNbrByInt(biU, D, biU);
 				}
 			}
 			rowPartial->Divid = (positive ? newDivid : -newDivid);
 			// Indicate last index with this hash.
 			rowPartial->hashindex = -1;
-			MultBigNbrByIntB(biQuadrCoeff, index2 - SieveLimit, biT);
-			AddBigNbrB(biT, biLinearCoeff, biT); // biT = Ax+B
-			if (oddPolynomial)
-			{                                                     // Ax+B (odd)
-				SubtractBigNbrB(biT, biLinearDelta[0], biT);
-				SubtractBigNbrB(biT, biLinearDelta[0], biT);
+			biT = biQuadrCoeff * (index2 - SieveLimit);
+			           //MultBigNbrByIntB(biQuadrCoeff, index2 - SieveLimit, biT);
+			biT += biLinearCoeff; // AddBigNbrB(biT, biLinearCoeff, biT); // biT = Ax+B
+			if (oddPolynomial)	{      // Ax+B (odd)
+				biT -= biLinearDelta[0];
+				biT -= biLinearDelta[0];
+				/*SubtractBigNbrB(biT, biLinearDelta[0], biT);
+				  SubtractBigNbrB(biT, biLinearDelta[0], biT);*/
 			}
 			
 			biT = abs(biT);
@@ -1936,12 +1943,16 @@ static void SieveLocationHit(int rowMatrixB[], int rowMatrixBbeforeMerge[],
 	if (trialDivisions >= 496) 	{
 		trialDivisions = 496;
 	}
-	MultBigNbrByInt(biQuadrCoeff, index2 - SieveLimit, biT);           // Ax
-	AddBigNbrB(biT, biLinearCoeff, biT);    // Ax+B
+	// calculate Ax
+	biT = biQuadrCoeff * (index2 - SieveLimit);
+	            // MultBigNbrByInt(biQuadrCoeff, index2 - SieveLimit, biT);           
+	biT += biLinearCoeff; // AddBigNbrB(biT, biLinearCoeff, biT);    // Ax+B
 
 	if (oddPolynomial) {                // Ax+B (odd)
-		SubtractBigNbr(biT, biLinearDelta[0], biT);
-		SubtractBigNbr(biT, biLinearDelta[0], biT);
+		biT -= biLinearDelta[0];
+		biT -= biLinearDelta[0];
+		/*SubtractBigNbr(biT, biLinearDelta[0], biT);
+		 SubtractBigNbr(biT, biLinearDelta[0], biT);*/
 	}
 #if DEBUG_SIQS
 	if (debug_ctr < debugLimit) {
@@ -1949,9 +1960,9 @@ static void SieveLocationHit(int rowMatrixB[], int rowMatrixBbeforeMerge[],
 		debug_ctr++;
 	}
 #endif
-	MultBigNbr(biT, biT, biDividend);       // (Ax+B)^2
+	biDividend = biT * biT; // MultBigNbr(biT, biT, biDividend);       // (Ax+B)^2
 											// To factor: (Ax+B)^2-N
-	SubtractBigNbrB(biDividend, zModulus, biDividend);
+	biDividend -= zModulus; //SubtractBigNbrB(biDividend, zModulus, biDividend);
 	/* factor biDividend */
 
 	positive = true;
@@ -1968,7 +1979,7 @@ static void SieveLocationHit(int rowMatrixB[], int rowMatrixBbeforeMerge[],
 
 	rowSquares[0] = 1;
 	for (index = 0; index < nbrFactorsA; index++) {
-		DivBigNbrByInt(biDividend, afact[index], biDividend);
+		biDividend /= afact[index]; // DivBigNbrByInt(biDividend, afact[index], biDividend);
 	}
 	nbrColumns = 1;
 	if (!positive)
@@ -2123,7 +2134,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	rowPrimeTrialDivisionData = &primeTrialDivisionData[1];
 	rowPrimeSieveData->value = 2;
 	rowPrimeTrialDivisionData->value = 2;
-	// (2^31)^(j+1) mod 2
+	// (2^BITS_PER_INT_GROUP)^(j+1) mod 2
 	rowPrimeTrialDivisionData->exp[0] = rowPrimeTrialDivisionData->exp[1] =
 		rowPrimeTrialDivisionData->exp[2] = rowPrimeTrialDivisionData->exp[3] =
 		rowPrimeTrialDivisionData->exp[4] = rowPrimeTrialDivisionData->exp[5] = 0;
@@ -2148,7 +2159,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
 		halfCurrentPrime = (currentPrime - 1) / 2;
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
-		int jacobi = intDoubleModPow(NbrMod, halfCurrentPrime, currentPrime);
+		int jacobi = modPower(NbrMod, halfCurrentPrime, currentPrime);
 		double dp = (double)currentPrime;
 		double logp = log(dp) / dp;
 
@@ -2156,7 +2167,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			if (arrmult[j] == currentPrime) {
 				adjustment[j] += logp;
 			}
-			else if (jacobi * intDoubleModPow(arrmult[j], halfCurrentPrime,
+			else if (jacobi * modPower(arrmult[j], halfCurrentPrime,
 				currentPrime) % currentPrime == 1) {
 				adjustment[j] += 2 * logp;
 			}
@@ -2182,7 +2193,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	} /* end for */
 
 	  /* Modulus = TestNbr2 * multiplier (= N * Multiplier) */
-	MultBigNbrByInt(zTestNbr2, multiplier, zModulus);
+	zModulus = zTestNbr2 * multiplier; //MultBigNbrByInt(zTestNbr2, multiplier, zModulus);
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
 	rowPrimeSieveData->modsqrt = (ZisEven(zN)) ? 0 : 1;
@@ -2207,17 +2218,17 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		rowPrimeSieveData->modsqrt = 0;
 		// The following works because multiplier has less than 16 significant bits.
 		E = (int)((1U << BITS_PER_INT_GROUP) % multiplier);
-		rowPrimeTrialDivisionData->exp[0] = E;  // (2^31) mod multiplier
+		rowPrimeTrialDivisionData->exp[0] = E;  // (2^BITS_PER_INT_GROUP) mod multiplier
 		D = E * E % multiplier;
-		rowPrimeTrialDivisionData->exp[1] = D;  // (2^31)^2 mod multiplier
+		rowPrimeTrialDivisionData->exp[1] = D;  // (2^BITS_PER_INT_GROUP)^2 mod multiplier
 		D = D * E % multiplier;
-		rowPrimeTrialDivisionData->exp[2] = D;  // (2^31)^3 mod multiplier
+		rowPrimeTrialDivisionData->exp[2] = D;  // (2^BITS_PER_INT_GROUP)^3 mod multiplier
 		D = D * E % multiplier;
-		rowPrimeTrialDivisionData->exp[3] = D;  // (2^31)^4 mod multiplier
+		rowPrimeTrialDivisionData->exp[3] = D;  // (2^BITS_PER_INT_GROUP)^4 mod multiplier
 		D = D * E % multiplier;
-		rowPrimeTrialDivisionData->exp[4] = D;  // (2^31)^5 mod multiplier
+		rowPrimeTrialDivisionData->exp[4] = D;  // (2^BITS_PER_INT_GROUP)^5 mod multiplier
 		D = D * E % multiplier;
-		rowPrimeTrialDivisionData->exp[5] = D;  // (2^31)^6 mod multiplier
+		rowPrimeTrialDivisionData->exp[5] = D;  // (2^BITS_PER_INT_GROUP)^6 mod multiplier
 		j = 3;
 	}
 	else {
@@ -2229,7 +2240,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
 
 		if (currentPrime != multiplier &&
-			intDoubleModPow(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
+			modPower(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
 		{
 			double dBase, dPower, dCurrentPrime, dRem;
 			/* use only if Jacobi symbol = 0 or 1 */
@@ -2239,30 +2250,30 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			rowPrimeTrialDivisionData->value = (int)currentPrime;
 			// The following works because multiplier has less than 26 significant bits.
 			dBase = (double)((1U << BITS_PER_INT_GROUP) % currentPrime);
-			rowPrimeTrialDivisionData->exp[0] = (int)dBase;  // (2^31) mod currentPrime
+			rowPrimeTrialDivisionData->exp[0] = (int)dBase;  // (2^BITS_PER_INT_GROUP) mod currentPrime
 			dCurrentPrime = (double)currentPrime;
 			dPower = dBase * dBase;
 			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
-			rowPrimeTrialDivisionData->exp[1] = (int)dPower; // (2^31)^2 mod currentPrime
+			rowPrimeTrialDivisionData->exp[1] = (int)dPower; // (2^BITS_PER_INT_GROUP)^2 mod currentPrime
 			dPower *= dBase;
 			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
-			rowPrimeTrialDivisionData->exp[2] = (int)dPower; // (2^31)^3 mod currentPrime
+			rowPrimeTrialDivisionData->exp[2] = (int)dPower; // (2^BITS_PER_INT_GROUP)^3 mod currentPrime
 			dPower *= dBase;
 			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
-			rowPrimeTrialDivisionData->exp[3] = (int)dPower; // (2^31)^4 mod currentPrime
+			rowPrimeTrialDivisionData->exp[3] = (int)dPower; // (2^BITS_PER_INT_GROUP)^4 mod currentPrime
 			dPower *= dBase;
 			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
-			rowPrimeTrialDivisionData->exp[4] = (int)dPower; // (2^31)^5 mod currentPrime
+			rowPrimeTrialDivisionData->exp[4] = (int)dPower; // (2^BITS_PER_INT_GROUP)^5 mod currentPrime
 			dPower *= dBase;
 			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
-			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^31)^6 mod currentPrime
+			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^BITS_PER_INT_GROUP)^6 mod currentPrime
 
 			if ((currentPrime & 3) == 3) {
-				SqrRootMod = intDoubleModPow(NbrMod, (currentPrime + 1) / 4, currentPrime);
+				SqrRootMod = modPower(NbrMod, (currentPrime + 1) / 4, currentPrime);
 			}
 			else if ((currentPrime & 7) == 5) {   // currentPrime = 5 (mod 8)
 				SqrRootMod =
-					intDoubleModPow(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
+					modPower(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
 				dRem = (double)2 * NbrMod * (double)SqrRootMod;
 				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod - 1;
@@ -2289,11 +2300,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 				do {
 					X++;
-					Z = intDoubleModPow(X, Q, currentPrime);
-				} while (intDoubleModPow(Z, Power2, currentPrime) == 1);
+					Z = modPower(X, Q, currentPrime);
+				} while (modPower(Z, Power2, currentPrime) == 1);
 
 				Y = Z;
-				X = intDoubleModPow(NbrMod, (Q - 1) / 2, currentPrime);
+				X = modPower(NbrMod, (Q - 1) / 2, currentPrime);
 				dBase = (double)NbrMod * (double)X;
 				V = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 				dBase = (double)V * (double)X;
@@ -2307,7 +2318,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 						D = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 						T1++;
 					}
-					D = intDoubleModPow(Y, 1 << (E - T1 - 1), currentPrime);
+					D = modPower(Y, 1 << (E - T1 - 1), currentPrime);
 					dBase = (double)D * (double)D;
 					Y1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 					E = T1;
@@ -2576,7 +2587,7 @@ static bool LinearAlgebraPhase(
 	// The rows of matrixV indicate which rows must be multiplied so no
 	// primes are multiplied an odd number of times.
 	mask = 1;
-	for (col = 31; col >= 0; col--) {
+	for (col = BITS_PER_INT_GROUP; col >= 0; col--) {
 
 		biT = 1; 
 		biR = 1; 
@@ -2592,7 +2603,7 @@ static bool LinearAlgebraPhase(
 					vectExpParity[primeIndex] ^= 1;
 					if (vectExpParity[primeIndex] == 0) {
 						if (primeIndex == 0) {
-							SubtractBigNbr(zModulus, biT, biT); // Multiply biT by -1.
+							biT = zModulus - biT; //SubtractBigNbr(zModulus, biT, biT); // Multiply biT by -1.
 						}
 						else {
 							MultBigNbrByIntModN(biT, primeTrialDivisionData[primeIndex].value,
@@ -2684,7 +2695,8 @@ static bool InsertNewRelation(
 
 	/* Convert negative numbers to the range 0 <= n < biModulus */
 	if (ZisEven(zModulus)) { // Even modulus.
-		DivBigNbrByInt(zModulus, 2, zTestNbr2);  // divide modulus by 2
+		zTestNbr2 = zModulus / 2;
+		//DivBigNbrByInt(zModulus, 2, zTestNbr2);  // divide modulus by 2
 
 		// If biR >= biModulus perform biR = biR - biModulus.
 		biT = 0;
@@ -2698,7 +2710,7 @@ static bool InsertNewRelation(
 	}
 
 	if (biU < 0) {
-		AddBigNbr(biU, zModulus, biU);  // biU += Modulus
+		biU += zModulus; //AddBigNbr(biU, zModulus, biU);  
 	}
 
 	AdjustModN(biU, zModulus);
@@ -2738,7 +2750,7 @@ static int intModInv(int NbrMod, int currentPrime) {
 		V1 = T1;
 		V3 = T3;
 	}
-	return U1 + (currentPrime & (U1 >> 31));
+	return U1 + (currentPrime & (U1 >> BITS_PER_INT_GROUP));
 }
 
 /* Multiply binary matrices of length m x 32 by 32 x 32 */
@@ -2986,8 +2998,7 @@ static void BlockLanczos(void)
 		printf("%s\n", output);
 	}
 #endif
-	for (;;)
-	{
+	for (;;) {
 		int indexC;
 #ifdef __EMSCRIPTEN__
 		int elapsedTime = (int)(tenths() - originalTenthSecond);
@@ -3468,8 +3479,8 @@ static void sieveThread(Znum &result) {
 				biQuadrCoeff = afact[0];
 
 				for (index = 1; index < nbrFactorsA; index++) {
-					// BiQuadrCoeff *= afact[index]
-					MultBigNbrByInt(biQuadrCoeff, afact[index], biQuadrCoeff);
+					biQuadrCoeff *= afact[index];
+					//MultBigNbrByInt(biQuadrCoeff, afact[index], biQuadrCoeff);
 				}
 
 #if DEBUG_SIQS
@@ -3491,8 +3502,9 @@ static void sieveThread(Znum &result) {
 					if (Q + Q > currentPrime) {
 						Q = currentPrime - Q;
 					}
-					DivBigNbrByInt(biQuadrCoeff, currentPrime, biDividend);  // biDividend = biQuadrCoeff/currentPrime
-					MultBigNbrByInt(biDividend, Q, biLinearDelta[index]);  // biLinearDelta[index] = biDividend * Q
+					 biDividend = biQuadrCoeff/currentPrime; // DivBigNbrByInt(biQuadrCoeff, currentPrime, biDividend); 
+					biLinearDelta[index] = biDividend * Q;
+					// MultBigNbrByInt(biDividend, Q, biLinearDelta[index]);  // biLinearDelta[index] = biDividend * Q
 #if 0 // DEBUG_SIQS
 					std::cout << "index = " << index << " Delta = " << biLinearDelta[index] << '\n';
 #endif
@@ -3575,10 +3587,8 @@ static void sieveThread(Znum &result) {
 			}
 		}
 #endif
-		if (/*factorSiqs != null ||*/ congruencesFound >= matrixBLength)
-		{
-			if (nbrThreadFinishedPolySet > numberThreads*polySet)
-			{
+		if (/*factorSiqs != null ||*/ congruencesFound >= matrixBLength) {
+			if (nbrThreadFinishedPolySet > numberThreads*polySet) {
 				continue;
 			}
 			//synchronized(amodq)
@@ -3594,12 +3604,12 @@ static void sieveThread(Znum &result) {
 
 		for (i = 1; i<nbrFactorsA; i++) {
 			if ((grayCode & (1 << i)) == 0) {
-				// biLenearCoeff += biLinearDelta[i];
-				AddBigNbrB(biLinearCoeff, biLinearDelta[i], biLinearCoeff);
+				 biLinearCoeff += biLinearDelta[i];
+				//AddBigNbrB(biLinearCoeff, biLinearDelta[i], biLinearCoeff);
 			}
 			else {
-				// biLenearCoeff -= biLinearDelta[i];
-				SubtractBigNbrB(biLinearCoeff, biLinearDelta[i], biLinearCoeff);
+				 biLinearCoeff -= biLinearDelta[i];
+				//SubtractBigNbrB(biLinearCoeff, biLinearDelta[i], biLinearCoeff);
 			}
 		}
 
@@ -3620,8 +3630,7 @@ static void sieveThread(Znum &result) {
 			debug_ctr++;
 		}
 #endif
-		for (i = nbrFactorBasePrimes - 1; i>0; i--)
-		{
+		for (i = nbrFactorBasePrimes - 1; i>0; i--) {
 			double dRem, dCurrentPrime;
 			rowPrimeSieveData = &primeSieveData[i];
 			rowPrimeSieveData0 = firstPrimeSieveData + i;

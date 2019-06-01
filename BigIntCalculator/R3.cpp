@@ -3,6 +3,9 @@
 #include <mpir.h>
 #include <time.h>
 #include<assert.h>
+#include <random>
+#include <stdlib.h>
+
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
 #ifdef _M_AMD64
 #ifndef _AMD64_
@@ -367,7 +370,9 @@ https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ */
 long long int PollardRho(long long int n)
 {
 	/* initialize random seed */
-	srand((unsigned int)time(NULL));
+	std::random_device rd;   // non-deterministic generator
+	std::mt19937_64 gen(rd());  // to seed mersenne twister.
+	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
 
 	/* no prime divisor for 1 */
 	if (n == 1) return n;
@@ -376,13 +381,18 @@ long long int PollardRho(long long int n)
 	if (n % 2 == 0) return 2;
 
 	/* we will pick from the range [2, N) */
-	long long int x = (rand() % (n - 2)) + 2;
-	long long int y = x;
+	
+	long long int x, y;
+	x = dist(gen);  // x is in range 1 to max
+	x = x % (n - 2) + 2;  // x is in range 2 to n-1
+	y = x; 
+	
 
 	/* the constant in f(x).
 	 * Algorithm can be re-run with a different c
 	 * if it throws failure for a composite. */
-	long long int c = (rand() % (n - 1)) + 1;
+	long long int c = dist(gen);  // c is in range 1 to max
+		c = c% (n - 1) + 1;  // c is in range 1 to n-1
 
 	/* Initialize candidate divisor (or result) */
 	long long int d = 1;

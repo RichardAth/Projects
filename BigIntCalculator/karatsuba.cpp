@@ -698,7 +698,7 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
 }
 
 // Recursive Karatsuba function.
-static void Karatsuba(int idxFactor1, int nbrLen, int diffIndex)
+static void Karatsuba(int idxFactor1, const int nbrLen, int diffIndex)
 {
 	/* check that array index is within bounds */
 	assert(idxFactor1 + nbrLen * 2 <= sizeof(arr) / sizeof(arr[0]));

@@ -295,7 +295,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	return Quotient;
 }
 
-/* used for operator overloading */
+/* Return Dividend/Divisor. Used for operator overloading */
 BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
 	BigInteger Quotient;
 	int len = Dividend.nbrLimbs;

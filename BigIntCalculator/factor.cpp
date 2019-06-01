@@ -759,7 +759,8 @@ unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
 }
 
 /* factorise number where we know that it only has 2 prime factors. 
-see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm */
+see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm 
+Note: there is another (probably better) version called PollardRho. */
 static void PollardFactor(const unsigned long long num, long long &factor) {
 	long long x_fixed = 2, cycle_size = 2, x = 2; 
 	factor = 1;

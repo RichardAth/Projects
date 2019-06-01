@@ -183,7 +183,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		nbrLimbs = nbrLimbsFactor1;
 	}
 
-	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, &nbrLimbs);
+	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, NULL);
 	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
 	if (nbrLimbs > MAX_LEN)  // limit applied earlier is probably lower, this is just insurance
 	{
@@ -211,6 +211,37 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		}
 	}
 	return Product;
+}
+
+// m *= n (used for operator overloading)
+void MultBigNbrByInt(BigInteger &m, int n) {
+	long long prod, carry = 0;
+	int i;
+	bool pos = true;
+
+	if (n < 0) {
+		pos = false;
+		n = -n;   // get abs value of n
+	}
+	if (n == 0 || m == 0) {
+		m = 0;
+		return;
+	}
+	for (i = 0; i < m.nbrLimbs; i++) {
+		prod = carry + (long long)m.limbs[i].x * n;
+		carry = prod >> BITS_PER_GROUP;
+		m.limbs[i].x = prod & MAX_VALUE_LIMB;
+	}
+	if (carry != 0) {
+		m.limbs[i].x = (int)carry;
+		m.nbrLimbs++;
+	}
+	if (!pos) {  // if n is -ve flip sign of product 
+		if (m.sign = SIGN_POSITIVE)
+			m.sign = SIGN_NEGATIVE;
+		else
+			m.sign = SIGN_POSITIVE;
+	}
 }
 
 /* calculate Dividend mod Divisor (used for operator overloading) 
@@ -688,17 +719,17 @@ void addbigint(BigInteger &Result, int addend) {
 		// reverse signs of addend and result
 		addend = -addend;
 		if (sign == SIGN_POSITIVE) 	{
-			sign = SIGN_NEGATIVE;
+			sign = SIGN_NEGATIVE;  // addend and result have opposite signs
 		}
 		else {
-			sign = SIGN_POSITIVE;
+			sign = SIGN_POSITIVE;   // addend and result have same sign
 		}
 	}
 
-	if (sign == SIGN_POSITIVE) {   // Add addend to absolute value of pResult.
+	if (sign == SIGN_POSITIVE) {   // Add abs(addend) to absolute value of pResult.
 		addToAbsValue(pResultLimbs, &nbrLimbs, addend);
 	}
-	else {  // Subtract addend from absolute value of pResult.
+	else {  // Subtract abs(addend) from absolute value of pResult.
 		if (nbrLimbs == 1) 	{
 			pResultLimbs[0].x -= addend;
 			if (pResultLimbs[0].x < 0) 	{
@@ -715,7 +746,7 @@ void addbigint(BigInteger &Result, int addend) {
 
 /* returns nbrMod^Expon%currentPrime. 
 overflow could occur if currentPrime > 2^31 
-the alternative is to use intDoubleModPow */
+the alternative is to use modPower */
 static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
 {
 	unsigned long long power = 1;
@@ -845,7 +876,7 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 // note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
-	Znum quot, remainder;
+	Znum remainder;
 
 	if (numberZ < 0) {
 		neg = true;
@@ -868,7 +899,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number[i].x = (int)MulPrToLong(remainder);
 		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
-		//numberZ = quot;
+
 		i++;
 	}
 	if (i < NumberLength) {
@@ -1251,9 +1282,9 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 }
 
 /* returns true iff value is zero*/
-bool BigNbrIsZero(const limb *value, int NumberLength) {
+bool BigNbrIsZero(const limb *value, int NumLen) {
 	int ctr;
-	for (ctr = 0; ctr < NumberLength; ctr++) {
+	for (ctr = 0; ctr < NumLen; ctr++) {
 		if (value[ctr].x != 0) {
 			return false;  // Number is not zero.
 		}
@@ -1281,7 +1312,7 @@ this function is also used to overload the assignment operator */
 bool ZtoBig(BigInteger &number, Znum numberZ) {
 	number.nbrLimbs = 0;
 	bool neg = false;
-	Znum quot, remainder;
+	Znum remainder;
 
 	if (numberZ < 0) {
 		neg = true;
@@ -1295,7 +1326,6 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
 		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number.limbs[i].x = (int)MulPrToLong(remainder);
 		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
-		//numberZ = quot;
 		i++;
 		if (i >= MAX_LEN) {
 			return false;   // number too big to convert.
@@ -1333,4 +1363,106 @@ void ValuestoZ(Znum &numberZ, const int number[], int NumberLength) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i];
 	}
+}
+
+/* shift first left by the number of bits specified in shiftCtr. A -ve value
+in shiftCtr causes a right shift.
+Right Shifts simulate 2s complement arithmetic right shift.
+Mathematically, the shift result is equivalent to result = first * 2^shiftCtr,
+whether ShiftCtr is +ve or -ve. */
+void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
+{
+	int delta, rem, ctr;
+	long long prevLimb, curLimb;
+	int ptrDest, ptrSrc;
+	bool shiftleft = true;
+	if (shiftCtr > 0) {
+		delta = shiftCtr / BITS_PER_GROUP;
+		rem = shiftCtr % BITS_PER_GROUP;
+	}
+	else {
+		delta = (-shiftCtr) / BITS_PER_GROUP;
+		rem = (-shiftCtr) % BITS_PER_GROUP;
+		shiftleft = false;
+	}
+	int nbrLimbs = first.nbrLimbs;
+
+	if (shiftleft) {     // Perform shift left.
+
+		if ((first.nbrLimbs + delta) >= MAX_LEN) {
+			// Shift too much to the left; would cause overflow
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "cannot shift left: result out of range ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
+
+
+		result.nbrLimbs = first.nbrLimbs + delta;
+		result.sign = first.sign;
+		prevLimb = 0;
+		ptrSrc = nbrLimbs - 1;
+		ptrDest = nbrLimbs + delta;
+
+		for (ctr = nbrLimbs - 1; ctr >= 0; ctr--)
+		{  // Process starting from most significant limb.
+			curLimb = first.limbs[ctr].x;
+			result.limbs[ptrDest].x = ((curLimb >> (BITS_PER_GROUP - rem))
+				| (prevLimb << rem)) & MAX_INT_NBR;
+			ptrDest--;
+			prevLimb = curLimb;
+		}
+
+		result.limbs[ptrDest].x = (prevLimb << rem) & MAX_INT_NBR;
+		if (delta > 0) {
+			memset(result.limbs, 0, delta * sizeof(limb));
+		}
+		//result.nbrLimbs += delta;
+		if (result.limbs[result.nbrLimbs].x != 0) {
+			result.nbrLimbs++;
+		}
+	}
+
+	else {     // Perform shift right.
+		int isNegative = 0;
+		if (shiftCtr > first.nbrLimbs * BITS_PER_GROUP)
+		{   // Shift too much to the right. Result is zero or -1.
+			if (first.sign == SIGN_POSITIVE)
+				result = 0;
+			else
+				result = -1;
+
+			return;
+		}
+
+		result = first;
+		if (first.sign == SIGN_NEGATIVE)
+		{   // If it is negative, add 1, perform shift right, and finally subtract 1 from result.
+			isNegative = 1;
+			result++;     //addbigint(result, 1);
+		}
+		// Shift right the absolute value.
+		result.limbs[nbrLimbs].x = 0;
+		curLimb = result.limbs[delta].x;
+		ptrDest = 0;
+
+		for (ctr = delta; ctr <= nbrLimbs; ctr++)
+		{  // Process starting from least significant limb.
+			prevLimb = curLimb;
+			curLimb = result.limbs[ctr + 1].x;
+			result.limbs[ptrDest++].x = ((prevLimb >> rem)
+				| (curLimb << (BITS_PER_GROUP - rem))) & MAX_INT_NBR;
+		}
+
+		result.nbrLimbs -= delta;
+		if (result.nbrLimbs == 0 || result.limbs[result.nbrLimbs].x != 0) {
+			result.nbrLimbs++;
+		}
+		if (isNegative) {    // Adjust negative number.
+			result--;        // addbigint(result, -1);
+		}
+	}
+	return;
 }

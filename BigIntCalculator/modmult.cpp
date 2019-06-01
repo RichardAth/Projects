@@ -34,13 +34,13 @@ static limb aux[MAX_LEN], aux2[MAX_LEN];
 static limb aux3[MAX_LEN], aux4[MAX_LEN];
 static limb aux5[MAX_LEN], aux6[MAX_LEN];
 static limb resultModOdd[MAX_LEN], resultModPower2[MAX_LEN];
-static int NumberLength2;
+//static int NumberLength2;
 int NumberLength, NumberLengthR1;
 long long lModularMult;
 mmCback modmultCallback = nullptr;     // function pointer
 static limb U[MAX_LEN], V[MAX_LEN], R[MAX_LEN], S[MAX_LEN];
 static limb Ubak[MAX_LEN], Vbak[MAX_LEN];
-static BigInteger tmpDen, tmpNum, oddValue;
+static BigInteger tmpDen, tmpNum;
 
 
 // Find the inverse of value m 2^(NumberLength*BITS_PER_GROUP)
@@ -134,7 +134,7 @@ void GetMontgomeryParms(int len) {
 	int value;
 	TestNbr[len].x = 0;
 	NumberLength = len;
-	NumberLength2 = len + len;
+	//NumberLength2 = len + len;
 	if (NumberLength == 1) {
 		/* in reality, there can't be just 1 limb because numbers that fit into
 		1 limb will already be factored before we get to this point, therefore
@@ -1005,11 +1005,13 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	}
 //#endif
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2; cannot use Montgomery multiplication.
-		LimbsToBigInteger(factor1, tmpNum, NumberLength);  // tmpNum = factor1
-		LimbsToBigInteger(factor2, tmpDen, NumberLength);  // tmpDen = factor2
-		tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
-		BigIntegerToLimbs(product, tmpNum, NumberLength);  // product = tmpNum = factor1*factor2
-		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
+		//LimbsToBigInteger(factor1, tmpNum, NumberLength);  // tmpNum = factor1
+		//LimbsToBigInteger(factor2, tmpDen, NumberLength);  // tmpDen = factor2
+		//tmpNum = tmpNum*tmpDen; //BigIntMultiply(tmpNum, tmpDen, tmpNum);
+		multiply(factor1, factor2, product, NumberLength, NULL);
+		//BigIntegerToLimbs(product, tmpNum, NumberLength);  // product = tmpNum = factor1*factor2
+		(product + powerOf2Exponent / BITS_PER_GROUP)->x &= 
+			(1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
 		return;
 	}
 

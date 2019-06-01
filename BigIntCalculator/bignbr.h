@@ -55,26 +55,17 @@ bool isPerfectSquare(__int64 x);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
 class BigInteger {
-// should be private members
-public:
+
+//public:				// should be private members
 	limb limbs[MAX_LEN];
 	int nbrLimbs = 1;
 	enum eSign sign = SIGN_POSITIVE;
 
 public:
 	int bitLength() const {
-		/*unsigned int mask;
-		int bitCount;*/
 		const int lastLimb = nbrLimbs - 1;
 		int bitLen = lastLimb*BITS_PER_GROUP;
 		unsigned int limb = (unsigned int)(limbs[lastLimb].x);
-		/*mask = 1;
-		for (bitCount = 0; bitCount < BITS_PER_GROUP; bitCount++) {
-			if (limb < mask) {
-				break;
-			}
-			mask *= 2;
-		}*/
 		if (limb != 0) {
 			/* use _BitScanReverse instead of loop because it's faster */
 			unsigned long bitCount;
@@ -169,7 +160,15 @@ public:
 		return *this;
 	}
 	BigInteger & operator = (Znum x) {
-		ZtoBig(*this, x);
+		auto rv = ZtoBig(*this, x);
+		if (!rv) {
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "Number too big to convert ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
 		return *this;
 	}
 	/* other operators are overloaded later */
@@ -184,6 +183,7 @@ public:
 	friend BigInteger BigIntDivide   (const BigInteger &Dividend, const BigInteger &Divisor);
 	friend BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor);
 	friend BigInteger BigIntMultiply (const BigInteger &Factor1, const BigInteger &Factor2);
+	friend void MultBigNbrByInt(BigInteger &m, int n); // m *= n
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
 	//friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
@@ -214,22 +214,23 @@ public:
 	//friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumberLength);
+	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
 
-	BigInteger operator +  (const BigInteger &b) const {
+	BigInteger  operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);
 	}
 	BigInteger &operator += (const BigInteger &b) {
 		*this = BigIntAdd(*this, b);
 		return *this;
 	}
-	BigInteger operator -  (const BigInteger &b) const {
+	BigInteger  operator -  (const BigInteger &b) const {
 		return BigIntSubt(*this, b);
 	}
 	BigInteger &operator -= (const BigInteger &b) {
 		*this = BigIntSubt(*this, b);
 		return *this;
 	}
-	BigInteger operator /  (const BigInteger &b) const {
+	BigInteger  operator /  (const BigInteger &b) const {
 		return BigIntDivide(*this, b);
 	}
 	BigInteger &operator /= (const BigInteger &b) {
@@ -248,7 +249,6 @@ public:
 		return *this = BigIntRemainder(*this, b);
 	}
 
-	/* note that only a few operators are oveloaded for BigInt <op> int */
 	int         operator %  (int divisor) const {
 		return getRemainder(*this, divisor);
 	}
@@ -259,9 +259,24 @@ public:
 		*this = BigIntDivideInt(*this, divisor);
 		return *this;
 	}
+	BigInteger operator * (int m) const {
+		BigInteger prod =*this;
+		MultBigNbrByInt(prod, m);
+		return prod;
+	}
+	BigInteger &operator *= (int b) {
+		MultBigNbrByInt(*this, b);
+		return *this;
+	}
+
 	BigInteger &operator += (const int b) {
 		addbigint(*this, b);
 		return *this;
+	}
+	BigInteger operator + (const int b) const {
+		BigInteger sum = *this;
+		sum += b;
+		return sum;
 	}
 	BigInteger &operator ++ (int x) {
 		addbigint(*this, 1);
@@ -274,6 +289,32 @@ public:
 	BigInteger &operator -= (const int b) {
 		addbigint(*this, -b);
 		return *this;
+	}
+	BigInteger operator - (const int b) const {
+		BigInteger sum = *this;
+		sum -= b;
+		return sum;
+	}
+
+	BigInteger operator << (const int b) const {
+		BigInteger temp;
+		shiftBI(*this, b, temp);
+		return temp;
+	}
+	BigInteger &operator <<= (const int b) {
+		BigInteger temp;
+		shiftBI(*this, b, temp);
+		*this = temp;
+	}
+	BigInteger operator >>= (const int b) {
+		BigInteger temp;
+		shiftBI(*this, -b, temp);
+		*this = temp;
+	}
+	BigInteger &operator >> (const int b) const {
+		BigInteger temp;
+		shiftBI(*this, -b, temp);
+		return temp;
 	}
 
 	/* overload comparison operators here */
@@ -337,7 +378,7 @@ extern int NumberLength, NumberLengthR1;
 extern int groupLen;
 
 void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod);
-void FactoringSIQSx(const Znum &NbrToFactor, Znum &Factor);
+//void FactoringSIQSx(const Znum &NbrToFactor, Znum &Factor);
 void FactoringSIQS(const Znum &NbrToFactor, Znum &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
@@ -369,35 +410,38 @@ void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
 int BigNbrLen(const long long Nbr[], int nbrLen);
-void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
-void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
-void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
-void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
-void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
+//void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
+//void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
+//void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
+//void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
+//void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
+//void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
+//void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
+//void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
 //void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen);
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 //void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen);
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
-void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd);
+//void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
+//void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd);
 //void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
-void MultBigNbrByIntB(const Znum &bigFactor, int factor, Znum &bigProd);
+//void MultBigNbrByIntB(const Znum &bigFactor, int factor, Znum &bigProd);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
-void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient);
-int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
+//void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient);
+//int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
 mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor);
-void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
-void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod);
+//void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
+//void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod);
 //void IntToBigNbr(int value, int bigNbr[], int nbrLength);
 //void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
 //void MultBigNbrModN(const int Nbr1[], const int Nbr2[], int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod);
 //void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
-int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
+int modPower(int NbrMod, int Expon, int currentPrime);
+// calculate a^n%mod using 'bigints'   
+unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
+	unsigned __int64 mod);
 int ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);

@@ -1476,7 +1476,7 @@ static retCode ComputeExpr(const std::string &expr, Znum &ExpressionResult) {
 			continue;         // process more of expr
 		}
 		else if (charValue >= '0' && charValue <= '9') 	{
-			/* convert number from ascii to BigInteger */
+			/* convert number from ascii to Znum */
 			exprIndexAux = exprIndex;
 			if (charValue == '0' && exprIndexAux < exprLength - 2 &&
 				toupper(expr[exprIndexAux + 1]) == 'X')
@@ -1966,10 +1966,7 @@ static void doTests2(void) {
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
-/* test to compare modular multiplication using DA's code against GMP/MPIR
-BigIntegers. Both use Mongomery notation for the integers to avoid slow
-division operations. The conclusion is that GMP takes about twice as long
-as DA's code. */
+
 static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
@@ -2027,30 +2024,37 @@ static void doTests3(void) {
 
 		pBI = aBI;
 		pBI *= bBI;
+		BigtoZ(p, pBI);               // p = pBI = aBI * bBI
 		assert(p == (a * b));         // verify multiplication
 
+		pBI = aBI;
+		pBI *= INT_MAX;
+		BigtoZ(p, pBI);               // p = pBI = aBI * bBI
+		assert(p == a * INT_MAX);
+
 		pBI = aBI / bBI;
-		BigtoZ(p, pBI);
+		BigtoZ(p, pBI);                // p = pBI = aBI / bBI
 		if (p != (a / b)) {              // verify division
 			std::cout << "a = " << a << "\nb = " << b << '\n';
 			std::cout << "p = " << p << "\na/b = " << a / b << '\n';
 		}
 
 		pBI = aBI;
-		pBI /= bBI;
+		pBI /= bBI;            
+		BigtoZ(p, pBI);                  // p = pBI = aBI / bBI
 		if (p != (a / b)) {              // verify division
 			std::cout << "a = " << a << " b = " << b << '\n';
 			std::cout << "p = " << p << "\na/b = " << a / b << '\n';
 		}
 
 		pBI = aBI % bBI;
-		BigtoZ(p, pBI);
+		BigtoZ(p, pBI);               // p = pBI = aBI % bBI
 		if (p != (a%b))               // verify modulus
 			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
 		pBI = aBI;
 		pBI %= bBI;
-		BigtoZ(p, pBI);
+		BigtoZ(p, pBI);                 // p = pBI = aBI % bBI
 		if (p != (a%b))               // verify modulus
 			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
@@ -2062,27 +2066,35 @@ static void doTests3(void) {
 		//	gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", a, a1, exp);
 		//assert(b1 == a1);
 
-		//pBI = aBI << 4;      // check left shift
-		//BigtoZ(p, pBI);
-		//p2 = a << 4;
-		//if (p != p2) {
-		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
-		//}
+		pBI = aBI << 4;      // check left shift
+		BigtoZ(p, pBI);      // p = pBI = aBI << 4
+		p2 = a << 4;
+		if (p != p2) {
+			gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		}
 
 
-		//pBI = aBI << 56;    // check left shift
-		//BigtoZ(p, pBI);
-		//p2 = a << 56;
-		//if (p != p2) {
-		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
-		//}
+		pBI = aBI << 56;    // check left shift
+		BigtoZ(p, pBI);     // p = pBI = aBI << 56
+		p2 = a << 56;
+		if (p != p2) {
+			gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		}
 
-		//pBI = aBI << 567;      // check left shift
-		//BigtoZ(p, pBI);
-		//p2 = a << 567;
-		//if (p != p2) {
-		//	gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
-		//}
+		pBI = aBI << 567;      // check left shift
+		BigtoZ(p, pBI);        // p = pBI = aBI << 567
+		p2 = a << 567;
+		if (p != p2) {
+			gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+		}
+
+		pBI = aBI + INT_MAX;
+		BigtoZ(p, pBI);        // p = pBI = aBI + max;
+		assert(p == a + INT_MAX);
+
+		pBI = aBI - INT_MAX;
+		BigtoZ(p, pBI);        // p = pBI = aBI + max;
+		assert(p == a - INT_MAX);
 
 		a *= 1237953;
 		b *= 129218;
@@ -2094,9 +2106,10 @@ static void doTests3(void) {
 	
 	/* test multiplication with larger numbers */
 	aBI = 0x7fffffffffffffff;
+	a1BI = aBI;
 	a = 0x7fffffffffffffff;
 	for (bBI = 1; bBI <= 256; bBI++) {
-		aBI = aBI * 0x7fffffffffffffffLL;
+		aBI = aBI * a1BI;
 		a = a * 0x7fffffffffffffffLL;
 		BigtoZ(a1, aBI);
 
@@ -2110,7 +2123,7 @@ static void doTests3(void) {
 	aBI = 17341;
 	a = 17341;
 	for (int i = 1; i < 13; i++) {
-		if (aBI.nbrLimbs > MAX_LEN / 2)
+		if (aBI.bitLength() > MAX_LEN*BITS_PER_GROUP / 2)
 			break;  // exit loop if a is too large to square it
 		aBI = aBI * aBI;
 		a = a * a;
@@ -2125,48 +2138,7 @@ static void doTests3(void) {
 	elapsed = (double)end - start;
 	std::cout << "test stage 2 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
-	largeRand(a);
-	largeRand(b);
-	// check that a^2 - b^2 = (a-b)*(a+b)
-	am = a * a - b * b;
-	p = (a - b)*(a + b);
-	assert(am == p);               // calculate using Znums
-
-	l2 = ZtoLimbs(aL, a, numLen);	// copy value of a to aL (limbs)
-	LimbstoZ(aL, a1, l2);           // copy value to a1 (Znum)
-	assert(a == a1);                // check that conversions work properly
-	ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
-									// al2 = aL + bL
-	AddBigNbr((int *)aL, (int *)bL, (int *)al2, numLen);
-	LimbstoZ(al2, a1, numLen);     // a1 = al2
-	assert(a1 == (a + b));
-
-	// alM = aL - bL
-	SubtractBigNbrB((int *)aL, (int *)bL, (int *)alM, numLen);
-	LimbstoZ(alM, pm, numLen);
-	if (pm != (a - b)) {
-		std::cout << "subtract " << a << " - " << b << " Expected " << a - b
-			<< " got " << pm << '\n';
-	}
-
-	int length = BigNbrLen((long long *)alM, numLen);
-	int length2 = BigNbrLen((long long *)al2, numLen);
-	length2 = max(length, length2);
-
-	if (pm < 0) {
-		ChSignBigNbr((int *)alM, length);  // make alM +ve
-		MultBigNbr((int *)al2, (int *)alM, (int *)pl, length2);
-		ChSignBigNbrB((int *)pl, numLen);
-	}
-	else {// pl = al2 * alM 
-		MultBigNbr((int *)al2, (int *)alM, (int *)pl, length2);
-	}
-	LimbstoZ(pl, a1, numLen);       // a1 = pl
-	/* check: a1 = pl = (aL +bL)*(al-bL)
-					  = (a+b)*(a-b)
-			  am =   a*a - b*b   */
-	assert(am == a1);
-
+	
 	/* check conversion to & from floating point */
 	//p = 10;
 	//double errorv;
@@ -2188,7 +2160,7 @@ static void doTests3(void) {
 	/* check division with large numbers */
 	p = 12345678901;
 	p2 = 11;
-	for (int i = 1; i < 4560; i++) {
+	for (l2 = 1; l2 < 4560; l2++) {
 		if (!ZtoBig(pBI, p))
 			break;                 // exit loop if p is too big to fit BigInteger (approximately 20000 digits)
 		if (!ZtoBig(amBI, p2))
@@ -2214,10 +2186,15 @@ static void doTests3(void) {
 		p *= (long long)rand() * 2 + 3;
 		p2 *= rand();
 	}
-
+	std::cout << "division test " << l2 << " cycles\n";
 	end = clock();              // measure amount of time used
 	elapsed = (double)end - start;
 	std::cout << "test stage 3 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
+	/* test to compare modular multiplication using DA's code against GMP/MPIR
+	BigIntegers. Both use Mongomery notation for the integers to avoid slow
+	division operations. The conclusion is that GMP takes about twice as long
+	as DA's code. */
 
 	/* set up modulus and Mongomery parameters */
 	largeRand(mod);					// get large random number
@@ -2361,7 +2338,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		printf("%s", banner);
+		printf("Version 2.0 %s", banner);
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
