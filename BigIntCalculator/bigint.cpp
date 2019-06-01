@@ -942,27 +942,6 @@ void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
 		numberZ += number[i].x;      // add next limb
 	}
 }
-//void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigNbr, int nbrLen)
-//{
-//	int nbrLimbs = *ptrValues;
-//	memcpy(bigNbr, ptrValues + 1, nbrLimbs * sizeof(limb));
-//	/* if nbrLen > nbrLimbs set extra limbs to 0*/
-//	memset(bigNbr + nbrLimbs, 0, (nbrLen - nbrLimbs) * sizeof(limb));
-//}
-
-//void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen)
-//{
-//	int nbrLimbs;
-//	memcpy(ptrValues + 1, bigint, (nbrLen - 1) * sizeof(limb));
-//	for (nbrLimbs = nbrLen - 1; nbrLimbs > 1; nbrLimbs--)
-//	{
-//		if (ptrValues[nbrLimbs] != 0)
-//		{
-//			break;
-//		}
-//	}
-//	*ptrValues = nbrLimbs;
-//}
 
 // This routine checks whether the number factor is a perfect power. 
 // If it is not, it returns one. If it is a perfect power, it returns the  
@@ -977,7 +956,7 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 										  
 	int h;
 	long long modulus, Exponent;
-	unsigned long long primesLength, j;
+	unsigned long long maxPrime, j;
 	int prime2310x1[] =
 	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
 	// Primes of the form 2310x+1.
@@ -1007,8 +986,8 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		}
 	}
 
-	primesLength = 2 * maxExpon + 3;
-	if (primesLength > primeListMax) {
+	maxPrime = 2 * maxExpon + 3;
+	if (maxPrime > primeListMax) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot generate prime list. function : ";
 		mesg += __func__;
@@ -1021,9 +1000,9 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		ProcessExpon[h] = true;
 	}
 
-	for (size_t ix=5, h = primeList[ix]; h < primesLength/2; ix++, h = primeList[ix]) {
+	for (size_t ix=5, h = primeList[ix]; h < maxPrime/2; ix++, h = primeList[ix]) {
 		int processed = 0;
-		for (j = 2 * h + 1; j < primesLength; j += 2 * h) {
+		for (j = 2 * h + 1; j < maxPrime; j += 2 * h) {
 			if (isPrime2(j)) {
 				modulus = mpz_mod_ui(ZT(Zmod),ZT(factor), j); // getRemainder(factor, j);
 				if (intModPow(modulus, j / h, j) > 1) {
@@ -1039,7 +1018,9 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		}
 	}
 
-	/* check possible exponent values */
+	/* check possible exponent values. Note that largest found exponent value
+	is returned although, unless this value is prime, any divisor of this
+	value is also a valid exponent. */
 	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
 		if (Exponent % 2 == 0 && !expon2) {
 			continue; // Not a square

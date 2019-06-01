@@ -32,7 +32,7 @@ static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 static int yieldFreq;
 int ElipCurvNo;            // Elliptic Curve Number
-static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250 };
+static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250, 260 };
 
 
 #define __EMSCRIPTEN__   // turn on status messages
@@ -689,7 +689,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 	//char text[20];
 #endif
 
-	for (;;) {
+	for (;;) {  // only exit from this loop is by a return statement
 #ifdef __EMSCRIPTEN__
 		char *ptrText;
 #endif
@@ -705,12 +705,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		//			int2dec(&ptrText, ElipCurvNo);
 		//			printf ("%s\n", text);
 #endif
-		L2 = mpz_sizeinbase(ZT(zN),10);        // Get number of digits.
-		L1 = NumberLength * 9;        /* Get number of digits, rounded (usually upwards)
-									   to a multiple of 9 */
-		if (L1 > 30 && L1 <= 90 && L2 >= 30 && L2 <= 90)    // If between 30 and 90 digits...
-		{                             // Switch to SIQS.
-			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
+		L2 = mpz_sizeinbase(ZT(zN),10);   // Get number of digits.
+		if (L2 > 30 && L2 <= 90)          // If between 30 and 90 digits...
+		{                                 // switch to SIQS when curve No reaches limit
+			int limit = limits[((int)L2 - 26) / 5];  // e.g if L2<=50, limit=10
 			if (ElipCurvNo  >= limit) {                          
    				return CHANGE_TO_SIQS;           // Switch to SIQS.
 			}
@@ -994,7 +992,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				}
 				break;  // exit for loop
 			}
-		} /* end for Pass */
+		} /* end for (Pass = 0; Pass < 2; Pass++) */
 
 		  /******************************************************/
 		  /* Second step (using improved standard continuation) */

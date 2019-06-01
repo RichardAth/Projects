@@ -312,201 +312,32 @@ static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int 
 	return;
 }
 
-static bool ProcessExponent(std::vector<zFactors> &Factors, const Znum &nbrToFactor, int Exponent)
-{
-#ifdef __EMSCRIPTEN__
-	char status[200] = { 0 };
-	char *ptrStatus;
-#endif
-	Znum NFp1, NFm1, nthRoot, rootN1, rootN, rootbak;   
-	Znum nextroot, dif;     
-	Znum Temp1;
-
-#ifdef __EMSCRIPTEN__
-	int elapsedTime = (int)(tenths() - originalTenthSecond);
-#ifndef _DEBUG
-	if (elapsedTime / 10 != oldTimeElapsed / 10)
-#endif
-	{
-		oldTimeElapsed = elapsedTime;
-		ptrStatus = status;
-		strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
-		ptrStatus += strlen(ptrStatus);
-		GetDHMS(&ptrStatus, elapsedTime / 10);
-		strcpy(ptrStatus, lang ? "Exponente potencia +/- 1: " :
-			"Power +/- 1 exponent: ");
-		ptrStatus += strlen(ptrStatus);
-		int2dec(&ptrStatus, Exponent);
-		printf("%s\n", status);
-	}
-#endif
-
-	NFp1 = nbrToFactor + 1;  // NFp1 <- NumberToFactor + 1
-	NFm1 = nbrToFactor - 1;  // NFm1 <- NumberToFactor - 1
-           
-	mpz_root(ZT(nthRoot), ZT(NFp1), Exponent);  // Find nth root of number to factor.
-	rootbak = nthRoot;
-
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
-		dif = NFp1 - rootN;     // BigIntSubt(NFp1, rootN, dif);    
-		if (dif == 0) {         // Perfect power-1
-			Cunningham(Factors, nthRoot, Exponent, -1, nbrToFactor);
-			return true;
-		}
-		dif++;        // dif <- dif + 1
-		Temp1 = dif / rootN1;
-		Temp1 /= Exponent;        // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;         // 
-		nextroot--;                //   nextroot = nextroot - 1             
-		nthRoot = nextroot - nthRoot;
-		if (nthRoot >= 0) {
-			break;              // Not a perfect power
-		}
-		nthRoot = nextroot;
-	}
-
-	nthRoot = rootbak;
-	for (;;) {
-		BigIntPowerIntExp(nthRoot, Exponent - 1, rootN1); // rootN1 <- nthRoot ^ (Exponent-1)
-		rootN = nthRoot*rootN1;      // rootN <- nthRoot ^ Exponent
-		dif = NFm1 - rootN;
-		if (dif == 0)
-		{ // Perfect power+1
-			Cunningham(Factors, nthRoot, Exponent, 1, nbrToFactor);
-			return true;
-		}
-		dif++;                        // dif <- dif + 1
-		Temp1 = dif / rootN1;
-		Temp1 /= Exponent;   // Temp1 <- Temp1 / Exponent
-		nextroot = Temp1 + nthRoot;
-		nextroot--;             // nextroot <- nextroot - 1
-		nthRoot = nextroot - nthRoot;
-		if (nthRoot >= 0) {
-			break;               // Not a perfect power
-		}
-		nthRoot = nextroot;      // CopyBigInt(nthRoot, nextroot);
-	}
-	return false;
-}
-
 
 /* check whether the number +/- 1 is a perfect power*/
 static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFactor,
 	long long MaxP) {
 
-	
-	bool plus1 = false;
-	bool minus1 = false;
 	int Exponent = 0;
-	unsigned long long j;
-	unsigned long long modulus;
-	int mod9 = (int)MulPrToLong(nbrToFactor % 9); // getRemainder(*nbrToFactor, 9);
-	auto maxExpon = mpz_sizeinbase(ZT(nbrToFactor), 2);
-	auto MaxPrime = 2 * maxExpon + 3;
-	double logar = logBigNbr(nbrToFactor);
-	// 33219 = logarithm base 2 of max number supported = 10^10,000.
-	//unsigned char ProcessExpon[(33231 + 7) / 8];
-
-	std::vector<char>ProcessExpon(maxExpon);
-	Znum Temp1, Temp2;
-
-	if (MaxPrime > primeListMax) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot factorise: number too large ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-	/* fast initialisation */
-	memset(ProcessExpon.data(), 0xFF, maxExpon);
-
-	// If the number +/- 1 is multiple of a prime but not a multiple
-	// of its square then the number +/- 1 cannot be a perfect power.
-	for (unsigned long long ix=0, p = primeList[ix]; p < MaxPrime; ix++, p = primeList[ix]) {
-	    // p is prime according to sieve.
-		unsigned long long remainder;
-		ptrdiff_t index;
-		Temp1 = p*p;
-		Temp2 = nbrToFactor % Temp1;     // Temp2 <- nbrToFactor % (p*p)
-		remainder = MulPrToLong(Temp2);
-		if (remainder % p == 1 && remainder != 1) {
-			plus1 = true; // NumberFactor cannot be a power + 1
-		}
-		if (remainder % p == (unsigned int)p - 1 &&
-			remainder != (unsigned int)p*(unsigned int)p - 1)
-		{
-			minus1 = true; // NumberFactor cannot be a power - 1
-		}
-		if (minus1 && plus1) {
-			return;
-		}
-		index = p / 2;
-		if (!(ProcessExpon[index >> 3] & (1 << (index & 7)))) {
-			continue;
-		}
-		modulus = remainder % p;
-		if (modulus > (plus1 ? 1 : 2) && modulus < (minus1 ? p - 1 : p - 2)) {
-			for (j = p / 2; j <= maxExpon; j += p / 2) {
-				ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-			}
-		}
-		else {
-			if (modulus == p - 2) {
-				for (j = p - 1; j <= maxExpon; j += p - 1) {
-					ProcessExpon[j >> 3] &= ~(1 << (j & 7));
-				}
-			}
-		}
-
-	}
-
-	for (j = 2; j < 100; j++) {
-		double u = logar / log(j) + .000005;
-		Exponent = (int)floor(u);
-		if (u - Exponent > .00001)
-			continue;
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7)
-			continue;
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7))))
-			continue;
-		if (ProcessExponent(Factors, nbrToFactor, Exponent))
-			return;  // number is a perfect power +/- 1
-	}
-
-	for (; Exponent >= 2; Exponent--) {
-		if (Exponent % 3 == 0 && mod9 > 2 && mod9 < 7) {
-			continue;
-		}
-		if (!(ProcessExpon[Exponent >> 3] & (1 << (Exponent & 7)))) {
-			continue;
-		}
-		if (ProcessExponent(Factors, nbrToFactor, Exponent)) {
-			return;   // number is a perfect power +/- 1
-		}
-	}
-
-	/* code below finds ALL cases where nbr+1 is a perfect power of a large number,
-	but only finds 1 factor */
-	long long exp;
 	Znum base;
 
-	/* PowerCheck will only find large factors which, if prime, would not be
-	found by trial division */
-	exp = PowerCheck(nbrToFactor + 1, base, MaxP);
-	if (exp != 1) {
+	/* code below finds cases where nbr +/- 1 is a perfect power.
+	If base < MaxP we may not find it here, but the factor will then
+	be found anyway by trial division. */
+
+	Exponent = (int)PowerCheck(nbrToFactor + 1, base, MaxP);
+	if (Exponent != 1) {
 		/* we have base^exp = nbrToFactor + 1
 		i.e. nbrToFactor = base^exp -1 = (base-1) * (base^(exp-1) + .... +1)
 		i.e. base-1 is a factor */
-		while (exp >= 4 && exp % 2 == 0) {
-			exp /= 2;
-			base *= base;   // increase base if possible
-		}
-		base--;
-		insertBigFactor(Factors, base);
+		Cunningham(Factors, base, Exponent, -1, nbrToFactor);
 		return;    // number is a perfect power - 1
+	}
+
+	Exponent = (int)PowerCheck(nbrToFactor - 1, base, MaxP);
+	if (Exponent != 1) {
+		/* we have base^exp = nbrToFactor - 1 */
+		Cunningham(Factors, base, Exponent, 1, nbrToFactor);
+		return;    // number is a perfect power + 1
 	}
 
 	return;  // number is not a perfect power +/- 1
