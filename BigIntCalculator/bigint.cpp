@@ -822,10 +822,10 @@ values that follow. Also uses global value NumberLength for number of ints. */
 //	}
 //}
 
-/* convert limbs to BigInteger. uses global value NumberLength for number of limbs. */
+/* convert limbs to BigInteger. */
 void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
-	/*@out@*/BigInteger &bigint, int NumberLength) {
-	if (NumberLength > MAX_LEN || NumberLength < 0 ) {
+	/*@out@*/BigInteger &bigint, int NumLen) {
+	if (NumLen > MAX_LEN || NumLen < 0 ) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot convert to BigInteger: ";
 		mesg += __func__;
@@ -833,15 +833,15 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	if (NumberLength == 1) {
+	if (NumLen == 1) {
 		bigint.limbs[0].x = ptrValues[0].x;
 		bigint.nbrLimbs = 1;
 	}
 	else { 
-		memcpy(bigint.limbs, ptrValues, NumberLength * sizeof(limb));
+		memcpy(bigint.limbs, ptrValues, NumLen * sizeof(limb));
 
 		int nbrLimbs;   // remove any leading zeros
-		for (nbrLimbs = NumberLength-1; nbrLimbs > 1; nbrLimbs--) {
+		for (nbrLimbs = NumLen-1; nbrLimbs > 1; nbrLimbs--) {
 			if (ptrValues[nbrLimbs].x != 0) {
 				break;
 			}
@@ -853,27 +853,27 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 
 /* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
 void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
-	/*@in@*/const BigInteger &bigint, int NumberLength)
+	/*@in@*/const BigInteger &bigint, int NumLen)
 {
-	if (NumberLength == 1) {
+	if (NumLen == 1) {
 		ptrValues[0].x = bigint.limbs[0].x;
 		ptrValues[1].x = 0;
 	}
 	else {
-		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumberLength
-		if (nbrLimbs >= NumberLength) {
-			memcpy(ptrValues, bigint.limbs, NumberLength * sizeof(limb));
-			ptrValues[NumberLength].x = 0;
+		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumLen
+		if (nbrLimbs >= NumLen) {
+			memcpy(ptrValues, bigint.limbs, NumLen * sizeof(limb));
+			ptrValues[NumLen].x = 0;
 		}
 		else {
 			memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
 			/* set any extra limbs to zero */
-			memset(ptrValues + nbrLimbs, 0, (NumberLength - nbrLimbs) * sizeof(limb));
+			memset(ptrValues + nbrLimbs, 0, (NumLen - nbrLimbs) * sizeof(limb));
 		}
 	}
 }
 /* number = numberZ*/
-int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
 // note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum remainder;
@@ -884,7 +884,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	}
 	int i = 0;
 	while (numberZ > 0) {
-		if (i >= MAX_LEN || NumberLength > MAX_LEN) {
+		if (i >= MAX_LEN || NumLen > MAX_LEN) {
 			// number too big to convert.
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "number too big : cannot convert to limbs: ";
@@ -902,9 +902,9 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 
 		i++;
 	}
-	if (i < NumberLength) {
+	if (i < NumLen) {
 		/* set any extra limbs to zero */
-		memset(number + i, 0, (NumberLength - i) * sizeof(limb));
+		memset(number + i, 0, (NumLen - i) * sizeof(limb));
 	}
 	if (neg) {
 		ChSignBigNbr((int *)number, i + 1);
@@ -935,9 +935,9 @@ int ZtoBigNbr(int number[], Znum numberZ) {
 	return i;
 }
 
-void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
+void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
 	numberZ = 0;
-	for (int i = NumberLength - 1; i >= 0; i--) {
+	for (int i = NumLen - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i].x;      // add next limb
 	}
@@ -1337,9 +1337,9 @@ void BigtoZ(Znum &numberZ, const BigInteger &number) {
 }
 
 /* convert integer list to Znum. */
-void ValuestoZ(Znum &numberZ, const int number[], int NumberLength) {
+void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
 	numberZ = 0;
-	for (int i = NumberLength-1; i >= 0; i--) {
+	for (int i = NumLen-1; i >= 0; i--) {
 		//numberZ *= LIMB_RANGE;
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i];

@@ -2205,6 +2205,7 @@ static void doTests3(void) {
 		numLen--;                    // adjust length i.e. remove leading zeros
 	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
 	GetMontgomeryParms(numLen);
+	modmultCallback = nullptr;      // turn off status messages from modmult
 
 	largeRand(a);				     // get large random number a
 	modmult(a%mod, zR2, am);         // convert a to Montgomery (Znum)

@@ -94,10 +94,10 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1);
 #define ADD 6  /* number of multiplications in an addition */
 #define DUP 5  /* number of multiplications in a duplicate */
 
-/* uses global var NumberLength, returns value in YieldFrequency */
-static void GetYieldFrequency(void)
+/* returns value in YieldFreq */
+static void GetYieldFrequency(int NumLen)
 {
-	yieldFreq = 1000000 / (NumberLength * NumberLength) + 1;
+	yieldFreq = 1000000 / (NumLen * NumLen) + 1;
 	if (yieldFreq > 100000) {
 		yieldFreq = yieldFreq / 100000 * 100000;
 	}
@@ -1213,11 +1213,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 static void ecminit(Znum zN) {
 	int P, Q;
 
-	// calculate number of limbs
-	NumberLength = (int)(mpz_sizeinbase(ZT(zN), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
-	ZtoLimbs(TestNbr, zN, NumberLength);  /* copy zN to TestNbr. NB throw exception
+	ZtoBig(TestNbrBI, zN);   /* copy zN to TestNbr. NB throw exception
 				             if zN is too large! (more than about 23,000 digits) */
-	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
+	GetYieldFrequency(NumberLength);      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
 	first = true;
 

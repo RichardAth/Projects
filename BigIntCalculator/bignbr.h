@@ -56,7 +56,7 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
 class BigInteger {
 
-//public:				// should be private members
+public:				// should be private members
 	limb limbs[MAX_LEN];
 	int nbrLimbs = 1;
 	enum eSign sign = SIGN_POSITIVE;
@@ -204,16 +204,16 @@ public:
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
-		/*@out@*/BigInteger &bigint, int NumberLength);
+		/*@out@*/BigInteger &bigint, int NumLen);
 	friend void BigIntegerToLimbs(/*@out@*/limb *ptrValues, 
-		/*@in@*/const BigInteger &bigint, int NumberLength);
+		/*@in@*/const BigInteger &bigint, int NumLen);
 	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
 	//friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
-	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumberLength);
+	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumLen);
 	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
 
 	BigInteger  operator +  (const BigInteger &b) const {
@@ -371,11 +371,12 @@ public:
 	}
 } ;
 
-extern limb TestNbr[MAX_LEN];
-extern limb MontgomeryMultR2[MAX_LEN];
-extern limb MontgomeryMultR1[MAX_LEN];
-extern int NumberLength, NumberLengthR1;
-extern int groupLen;
+extern BigInteger TestNbrBI;
+extern limb * const TestNbr;
+extern limb *const MontgomeryMultR2;
+extern limb *const MontgomeryMultR1;
+#define NumberLength TestNbrBI.nbrLimbs
+//extern int groupLen;
 
 void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod);
 //void FactoringSIQSx(const Znum &NbrToFactor, Znum &Factor);
@@ -384,8 +385,8 @@ void multiply(const limb *factor1, const limb *factor2, limb *result, int len, i
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
-void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
+void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
+void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 void modmult(const Znum &a, const Znum &b, Znum &result);
@@ -395,10 +396,10 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result);
 //void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
 //void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 //void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
-//void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
+//void AdjustModN(limb *Nbr, const limb *TestNbr, int NumLen);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
-void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumberLength);
-void ValuestoZ(Znum &numberZ, const int number[], int NumberLength);
+void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
+void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
 //static void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 //double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
@@ -442,9 +443,9 @@ int modPower(int NbrMod, int Expon, int currentPrime);
 // calculate a^n%mod using 'bigints'   
 unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod);
-int ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
+int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
-void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);
+void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;
