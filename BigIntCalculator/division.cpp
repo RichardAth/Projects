@@ -110,21 +110,18 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor,
 		}
 	}
 
-	if (nbrLimbsDividend == 1) {   /* If dividend is small (and divisor is smaller), 
+	if (nbrLimbsDividend == 1) {   /* If dividend and divisor are small, 
 								   perform the division directly. */
 		Quotient.limbs[0].x = Dividend.limbs[0].x / Divisor.limbs[0].x;
 		Quotient.nbrLimbs = 1;
 	}
 
-	else if (nbrLimbsDivisor == 1)
-	{   // Divisor is small: use divide by int.
+	else if (nbrLimbsDivisor == 1) {   // Divisor is small: use divide by int.
 		// Sign of quotient is determined later.
 		Quotient = BigIntDivideInt(Dividend, Divisor.limbs[0].x, rem);
 		Remainder = rem;   
 	}
 	else {
-		/* code below becomes inaccurate at about Quotient size = 63 limbs 
-		(about 1200 digits) */
 		int index;
 		int bitLength;
 		int bitLengthNbrCycles;

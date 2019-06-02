@@ -196,7 +196,12 @@ long long MulPrToLong(const Znum &x) {
 	long long rv;
 	// note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
 	if (x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
-		rv = mpz_get_si(ZT(x)); // convert to normal integer
+		//rv = mpz_get_si(ZT(x)); // convert to normal integer
+		rv = ZT(x)->_mp_d[0];     // accessing the limb directly seems to be a lot faster
+		if (ZT(x)->_mp_size < 0)  // than calling mpz_get_si
+			rv = -rv;
+		if (ZT(x)->_mp_size == 0)
+			rv = 0;
 		return rv;
 	}
 	else
@@ -1970,7 +1975,7 @@ static void doTests3(void) {
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
 	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
 	limb one[MAX_LEN];
-	int numLen = MAX_LEN, l2;
+	int numLen = MAX_LEN-2, l2;
 
 	BigInteger aBI, a1BI, bBI, amBI, pBI;
 
@@ -2006,7 +2011,9 @@ static void doTests3(void) {
 	/* check basic arithmetic operators */
 	a = 1291;
 	b = 131;
-	for (int ctr = 1; ctr <=1000; ctr++){
+	for (int ctr = 1; ctr <=1700; ctr++){
+		/* with the values currently used for a and b, ctr cannot go much beyond 1700
+		or overflow would occur. */
 		aBI = a;                      // copy value of a to aBI (BigInteger)
 		bBI = b;
 		BigtoZ(a1, aBI);              // copy value to a1 (Znum)
@@ -2036,9 +2043,6 @@ static void doTests3(void) {
 		diff = p ^ prod;   // p XOR prod (0 if they are equal)
 		if (diff != 0) {              // verify multiplication
 			std::cout << "a = " << a << " b = " << b << '\n';
-			/*std::cout << "p = " << p << " a*b = " << a * b << '\n';
-			std::cout << "difference = " << p - a * b << '\n';*/
-			
 			gmp_printf("p     = %Zx \na * b = %Zx \n", p, prod);
 			gmp_printf("diffference = %Zx \n", diff);
 		}
@@ -2066,11 +2070,11 @@ static void doTests3(void) {
 		if (p != (a%b))               // verify modulus
 			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
-		//pBI = aBI;
-		//pBI %= bBI;
-		//BigtoZ(p, pBI);
-		//if (p != (a%b))               // verify modulus
-		//	std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+		pBI = aBI;
+		pBI %= bBI;
+		BigtoZ(p, pBI);
+		if (p != (a%b))               // verify modulus
+			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
 		/* check BigtoLL function */
 		//int exp;
@@ -2105,7 +2109,10 @@ static void doTests3(void) {
 		a *= 1237953;
 		b *= 129218;
 	}
-	
+
+	auto end = clock();              // measure amount of time used
+	double elapsed = (double)end - start;
+	std::cout << "test stage 1 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
 	/* test multiplication with larger numbers */
 	aBI = 0x7fffffffffffffff;
@@ -2124,7 +2131,7 @@ static void doTests3(void) {
 	/* check multiplication of large numbers */
 	aBI = 17341;
 	a = 17341;
-	for (int i = 1; i <=13; i++) {
+	for (int i = 1; i <13; i++) {
 		if (aBI.nbrLimbs > MAX_LEN / 2)
 			break;  // exit loop if a is too large to square it
 		aBI = aBI * aBI;  
@@ -2136,15 +2143,18 @@ static void doTests3(void) {
 		assert(a1 == a);
 	}
 
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 2 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 	
 	largeRand(a);
 	largeRand(b);
-	// a^2 - b^2 = (a-b)*(a+b)
+	// check that a^2 - b^2 = (a-b)*(a+b)
 	am = a * a - b * b;
 	p = (a - b)*(a + b);
-	assert(am == p);
+	assert(am == p);               // calculate using Znums
 
-	l2 = ZtoLimbs(aL, a, numLen);		// copy value of a to aL (limbs)
+	l2 = ZtoLimbs(aL, a, numLen);	// copy value of a to aL (limbs)
 	LimbstoZ(aL, a1, l2);           // copy value to a1 (Znum)
 	assert(a == a1);                // check that conversions work properly
 	ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
@@ -2160,13 +2170,18 @@ static void doTests3(void) {
 		std::cout << "subtract " << a << " - " << b << " Expected " << a - b
 			<< " got " << pm << '\n';
 	}
+
+	int length = BigNbrLen((long long *)alM, numLen);
+	int length2 = BigNbrLen((long long *)al2, numLen);
+	length2 = max(length, length2);
+
 	if (pm < 0) {
-		ChSignBigNbr((long long *)alM, numLen);  // make alM +ve
-		MultBigNbr((long long *)al2, (long long *)alM, (long long *)pl, numLen);
+		ChSignBigNbr((long long *)alM, length);  // make alM +ve
+		MultBigNbr((long long *)al2, (long long *)alM, (long long *)pl, length2);
 		ChSignBigNbrB((long long *)pl, numLen);
 	}
 	else {// pl = al2 * alM 
-		MultBigNbr((long long *)al2, (long long *)alM, (long long *)pl, numLen);
+		MultBigNbr((long long *)al2, (long long *)alM, (long long *)pl, length2);
 	}
 	LimbstoZ(pl, a1, numLen);       // a1 = pl
 	/* check: a1 = pl = (aL +bL)*(al-bL) 
@@ -2195,7 +2210,7 @@ static void doTests3(void) {
 	/* check division with large numbers */
 	p = 12345678901;
 	p2 = 11;
-	for (int i = 1; i <= 5000; i++) {
+	for (int i = 1; i < 4560; i++) {
 		if (!ZtoBig(pBI, p))
 			break;                 // exit loop if p is too big to fit BigInteger (approximately 20000 digits)
 		if (!ZtoBig(amBI, p2))
@@ -2222,46 +2237,50 @@ static void doTests3(void) {
 		p2 *= rand();
 	}
 
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 3 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
 	/* check AdjustModN function */
-	a += b+1;   // ensure a > b;
-	ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
-	l2 = ZtoLimbs(aL, a, numLen);	   // copy value of a to aL (limbs)
-	AdjustModN(aL, bL, l2);            // a %= b
-	LimbstoZ(aL, am, numLen);          // copy value of aL to am
-	std::cout << "a = " << a << "\nb = " << b << "\na%b = " << a % b << "\nam  = " << am << '\n';
-	assert(am == a % b);
+	//a += b+1;   // ensure a > b;
+	//ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
+	//l2 = ZtoLimbs(aL, a, numLen);	   // copy value of a to aL (limbs)
+	//AdjustModN(aL, bL, l2);            // a %= b
+	//LimbstoZ(aL, am, numLen);          // copy value of aL to am
+	//std::cout << "a = " << a << "\nb = " << b << "\na%b = " << a % b << "\nam  = " << am << '\n';
+	//assert(am == a % b);
 
-	for (int ctr = 1; ctr < 100; ctr++) {
-		auto l2 = ZtoLimbs(aL, a, numLen);		// copy value of a to aL (limbs)
-		ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
-		AdjustModN(aL, bL, l2);  // a %= b
+	//for (int ctr = 1; ctr < 100; ctr++) {
+	//	auto l2 = ZtoLimbs(aL, a, numLen);		// copy value of a to aL (limbs)
+	//	ZtoLimbs(bL, b, numLen);		// copy value of b to bL (limbs)
+	//	AdjustModN(aL, bL, l2);  // a %= b
 
-		LimbstoZ(aL, am, l2);     // copy value of aL to am
-		//assert(am == a % b);
-		if (am != a % b) {
-			std::cout << "a = " << a << "\vb = " << b << "\na%b = " << a % b << '\n';
-			std::cout << "AdjustModN returns  " << am << '\n';
-		}
-		a += rand();
-		b += rand();
-		while (a < b)
-			a += rand();
-	}
+	//	LimbstoZ(aL, am, l2);     // copy value of aL to am
+	//	//assert(am == a % b);
+	//	if (am != a % b) {
+	//		std::cout << "a = " << a << "\vb = " << b << "\na%b = " << a % b << '\n';
+	//		std::cout << "AdjustModN returns  " << am << '\n';
+	//	}
+	//	a += rand();
+	//	b += rand();
+	//	while (a < b)
+	//		a += rand();
+	//}
 
-	auto end = clock();              // measure amount of time used
-	double elapsed = (double)end - start;
-	std::cout << "test stage 1 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	
 
-	l2 = numLen;
-	while (bL[l2 - 1].x == 0) {
-		l2--;
-	}         // get real limb size for b
+	//l2 = numLen;
+	//while (bL[l2 - 1].x == 0) {
+	//	l2--;
+	//}         // get real limb size for b
 	//p = 1;
-	//mpz_mul_2exp(ZT(p), ZT(p), l2 * 63);    // p = 2^(l2*63)
-	//ZtoLimbs(pl, p, l2+2);                  // pl = p
-	//ZtoLimbs(bL, b, l2+2);	            	// copy value of b to bL (limbs)
-	//AdjustModN(pl, bL, l2+2);               // pl %= b
-	//LimbstoZ(pl, pm, l2+2);                 // pm = pl = p%b
+	//mpz_mul_2exp(ZT(p), ZT(p), l2 * 60);    // p = 2^(l2*60)
+	//p--;
+	//memset(pl, 0, sizeof(pl));
+	//ZtoLimbs(pl, p, l2);                  // pl = p
+	//ZtoLimbs(bL, b, l2);	            	// copy value of b to bL (limbs)
+	//AdjustModN(pl, bL, l2);               // pl %= b
+	//LimbstoZ(pl, pm, l2);                 // pm = pl = p%b
 	//std::cout << "l2 = " << l2
 	//	<< "\np   = " << p
 	//	<< "\nb   = " << b
@@ -2278,40 +2297,64 @@ static void doTests3(void) {
 	pBI = (aBI - bBI)*(aBI + bBI);
 	assert(amBI == pBI);
 
-	
-
+	/* test modmult, & GetMontgomeryParms for numbers up to 100 limbs */
+	srand(421040034);               // seed random number generator 
 		
 	/* set up modulus and Mongomery parameters to check Montgomery Multiplication */
 	largeRand(mod);					// get large random number
+	largeRand(a);				     // get large random number a
+	do {
+		mod |= 1;                       // set lowest bit (make sure mod is odd)
+		GetMontgomeryParms(mod);
+
+		ZtoBig(TestNbrBI, mod);
+		numLen = TestNbrBI.nbrLimbs;
+		GetMontgomeryParms(numLen);
+
+		a %= mod;                        // need a < mod
+		modmult(a, zR2, am);             // convert a to Montgomery in am (Znum)
+		REDC(a1, am);
+		if (a1 != a) {
+			std::cout << "a = " << a << " a1 = " << a1 << '\n';
+		}
+
+		ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
+		modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery in alM (limbs)
+		modmult(alM, one, al2);          // convert a from Mongomery to normal in al2 (limbs) 
+		LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
+		assert(a == a1);                 // check that all these conversions work properly
+
+		long long r = rand()*rand();
+		a *= r;
+		mod *= r;
+		mod++;      // avoid too many common factors between a and mod
+	} while (TestNbrBI.bitLength() <= 3100);  // equivalent of 100 limbs in old format
+
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 6 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
+	srand(421040034);               // seed random number generator 
+	largeRand(mod);					// get large random number
 	mod |= 1;                       // set lowest bit (make sure mod is odd)
 	GetMontgomeryParms(mod);
-	ZtoLimbs(modL, mod, numLen);    // copy value of mod to modL
-	while (modL[numLen - 1].x == 0)
-		numLen--;                    // adjust length i.e. remove leading zeros
-	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	ZtoBig(TestNbrBI, mod);
+	numLen = TestNbrBI.nbrLimbs;
 	GetMontgomeryParms(numLen);
 
 	largeRand(a);				     // get large random number a
 	a %= mod;                        // need a < mod
 	modmult(a, zR2, am);             // convert a to Montgomery in am (Znum)
-	REDC(a1, am);                    // convert am to normal in a1
-	if (a1 != a) {
-		std::cout << "a = " << a << " a1 = " << a1 << '\n';
-	}
-
-	ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
-	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
-	modmult(alM, one, al2);              // convert a from Mongomery (limbs) 
-	LimbstoZ(al2, a1, numLen);           // copy value to a1 (Znum)
-	assert(a == a1);                     // check that all thes conversions work properly
+	int l1 = ZtoLimbs(aL, a, numLen);    // copy value of a to aL (limbs)
+	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery in alM (limbs)
 
 	largeRand(b);				         // get large random number  b
-	b %= mod;
+	b %= mod;                            // need b < mod
 	modmult(b, zR2, bm);                 // convert b to Montgomery (Znum)
-	ZtoLimbs(bL, b, numLen);		     // copy value of b to bL
-	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
+	ZtoLimbs(bL, b, numLen);             // copy value of b to bL
+	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery in blM (limbs)
 
-	for (int i = 1; i < 2000000; i++) {
+	for (int i = 1; i < 200'000'000; i++) {
 		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
 		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
 		modmult(am, bm, pm);             // p = a*b mod m (Znum)
@@ -2450,7 +2493,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		printf("%s", banner);
+		printf("Version 3.0 (63 bit limbs) %s", banner);
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print

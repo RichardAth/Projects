@@ -447,7 +447,7 @@ blank (' ') 	Use a blank to prefix the output    No blank appears.
 	   to prefix any nonzero output value. 
 */
 /* to be completed. Invalid format string may cause abort
-Process format of form "%[flags][width][.precision]type" 
+Process format string of form "%[flags][width][.precision]type" 
  */
 static void getFormat(const char FormatStr[], fc &flags, int &precision, int &width, int &radix) {
 	int ix = 0;
@@ -742,7 +742,7 @@ _int128 doubleTo128(const double x) {
 	mantissa = floatd.dd.mantissa + (1LL << 52);
 
 	rv = mantissa;
-	/* shift rv so that it contains just the integer value */
+	/* shift rv so that it contains just the integer part */
 	if (exponent > 52)
 		rv <<= exponent - 52;
 	else
@@ -804,11 +804,6 @@ _int128 nthroot(const _int128 &aa, int n) {
 				return 1;
 			else return -1;
 	}
-
-	//auto rshift = a.msb() - a.msb() / n;
-	//if (rshift == a.msb())
-	//	rshift--;
-	//a >>= rshift;  /* get starting value for loop */
 
 	/* using floating point should give a much more accurate starting value */
 	double adouble = root;  // convert aa to double 
@@ -963,14 +958,6 @@ _int128 modMultInv(_int128 a, _int128 m) {
 	assert(t == 1);    // check for bugs
 #endif
 	return x;
-}
-
-/* get absolute value of x */
-_int128 abs(const _int128 &x) {
-	if (x.isNegative())
-		return -x;
-	else
-		return x;
 }
 
 /* based on standard C div() function */

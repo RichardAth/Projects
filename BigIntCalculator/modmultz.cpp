@@ -29,7 +29,7 @@ Znum zR_1;  // = zR-1
 // REDC Uses external global variables zR_1, zNI, zN (copy of Nval)
 void GetMontgomeryParms(const Znum &Nval) {
 	zN = Nval;        // save value for use in REDC and ModMultInt
-	assert((zN & 1) != 0);		// N must be odd
+	assert(mpz_odd_p(ZT(Nval)) != 0);		// N must be odd
 
 	auto index = mpz_sizeinbase(ZT(zN), 2);
 	if (index > 1) {
@@ -37,7 +37,7 @@ void GetMontgomeryParms(const Znum &Nval) {
 		zRexp = (index +BITS_PER_GROUP-1)/BITS_PER_GROUP;	 
 		zRexp *= BITS_PER_GROUP;   // exp is rounded up to a multiple of 63
 		               // to match what is used with limbs
-		zRexp--;
+		//zRexp--;
 		zR = 1;
 		mpz_mul_2exp(ZT(zR), ZT(zR), zRexp);   // zR is a power of 2 such that zR > zN
 		zR_1 = zR - 1;              // used as a bit mask, assumes that R is a power of 2
@@ -52,16 +52,16 @@ void GetMontgomeryParms(const Znum &Nval) {
 			zNI2 = zNI;
 		}
 		else {
-			Znum temp = 1LL << 31;
-			mpz_invert(ZT(zNI2), ZT(Nval), ZT(temp));
+			Znum temp = 1ULL << BITS_PER_GROUP;
+			auto rv = mpz_invert(ZT(zNI2), ZT(Nval), ZT(temp));
 			zNI2 = temp - zNI2;
 		}
 
 		mpz_powm_ui(ZT(zR2), ZT(zR), 2, ZT(zN)); // zR2 = zR^2(mod zN)
 #ifdef _DEBUG
-		std::cout << "N     = " << zN
+		std::cout << "N     = " << zN << " (compare to TestNbr)"
 			    << "\nNI    = " << zNI
-			    << "\nNI2   = " << zNI2
+			    << "\nNI2   = " << zNI2 << " (compare to MontgomeryMultN)"
 			    << "\nR1    = " << zR1
 			    << "\nR2    = " << zR2 
 			    << "\nzRexp = " << zRexp << '\n';

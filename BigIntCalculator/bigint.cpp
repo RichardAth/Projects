@@ -191,9 +191,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 
 	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, &nbrLimbs);
 
-	/* MultBigNbr below is the underlying function used by multiply. Since 
-	this always works the conclusion is that the problem is probably something 
-	to do with the karatsuba multiplication.*/
+	/* MultBigNbr below is the underlying function used by multiply. */
 	/*MultBigNbr((const long long *)Factor1.limbs, 
 		(const long long *)Factor2.limbs, 
 		(long long *)Prodl,
@@ -482,8 +480,6 @@ void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 	int ctr;
-	/*const limb *ptrLimbs1 = Nbr1.limbs;
-	const limb *ptrLimbs2 = Nbr2.limbs;*/
 	auto N1Limbs = Nbr1.nbrLimbs;
 	auto N2Limbs = Nbr2.nbrLimbs;
 	while (N1Limbs > 1)
@@ -838,11 +834,11 @@ void BigIntegerToInts(/*@out@*/long long *ptrValues, /*@in@*/const BigInteger &b
 	}
 }
 
-/* convert limbs to BigInteger. uses global value NumberLength for number of limbs. 
+/* convert limbs to BigInteger.  
 Assumes that Values contains a +ve number */
 void LimbsToBigInteger(/*@in@*/const limb Values[], 
-	/*@out@*/BigInteger &bigint, int NumberLength) {
-	if (NumberLength > MAX_LEN || NumberLength < 0 ) {
+	/*@out@*/BigInteger &bigint, int NumLen) {
+	if (NumLen > MAX_LEN || NumLen < 0 ) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot convert to BigInteger: ";
 		mesg += __func__;
@@ -850,15 +846,15 @@ void LimbsToBigInteger(/*@in@*/const limb Values[],
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
-	if (NumberLength == 1) {
+	if (NumLen == 1) {
 		bigint.limbs[0].x = Values[0].x;
 		bigint.nbrLimbs = 1;
 	}
 	else { 
-		memcpy(bigint.limbs, Values, NumberLength * sizeof(limb));
+		memcpy(bigint.limbs, Values, NumLen * sizeof(limb));
 
 		int nbrLimbs;   // remove any leading zeros
-		for (nbrLimbs = NumberLength-1; nbrLimbs > 1; nbrLimbs--) {
+		for (nbrLimbs = NumLen-1; nbrLimbs > 1; nbrLimbs--) {
 			if (Values[nbrLimbs].x != 0) {
 				break;
 			}
@@ -868,33 +864,34 @@ void LimbsToBigInteger(/*@in@*/const limb Values[],
 	bigint.sign = SIGN_POSITIVE;
 }
 
-/* Convert BigInteger to limbs. uses global value NumberLength for number of limbs. */
+/* Convert BigInteger to limbs. */
 void BigIntegerToLimbs(/*@out@*/limb Values[], 
-	/*@in@*/const BigInteger &bigint, int NumberLength)
+	/*@in@*/const BigInteger &bigint, int NumLen)
 {
-	if (NumberLength == 1) {
+	if (NumLen == 1) {
 		Values[0].x = bigint.limbs[0].x;
 		Values[1].x = 0;
 	}
 	else {
-		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumberLength
-		if (nbrLimbs >= NumberLength) {
-			memcpy(Values, bigint.limbs, NumberLength * sizeof(limb));
-			Values[NumberLength].x = 0;
+		int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumLen
+		if (nbrLimbs >= NumLen) {
+			memcpy(Values, bigint.limbs, NumLen * sizeof(limb));
+			Values[NumLen].x = 0;
 		}
 		else {
 			memcpy(Values, bigint.limbs, nbrLimbs * sizeof(limb));
 			/* set any extra limbs to zero */
-			memset(Values + nbrLimbs, 0, (NumberLength - nbrLimbs) * sizeof(limb));
+			memset(Values + nbrLimbs, 0, (NumLen - nbrLimbs) * sizeof(limb));
 		}
 	}
 	if (bigint.sign == SIGN_NEGATIVE) {
-		ChSignBigNbrB((long long *)Values, std::max(NumberLength, bigint.nbrLimbs));
+		ChSignBigNbrB((long long *)Values, std::max(NumLen, bigint.nbrLimbs));
 	}
 }
 
-/* number = numberZ. returns number of limbs */
-int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
+/* number = numberZ. returns number of limbs. 
+limb after most significant is set to zero */
+int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
 // note: numberZ is a copy of the original. Its value is changed
 	bool neg = false;
 	Znum quot, remainder;
@@ -905,7 +902,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 	}
 	int i = 0;
 	while (numberZ > 0) {
-		if (i >= MAX_LEN || NumberLength > MAX_LEN) {
+		if (i >= MAX_LEN || NumLen > MAX_LEN) {
 			// number too big to convert.
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "number too big : cannot convert to limbs: ";
@@ -914,15 +911,21 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumberLength) {
 			mesg += " in file "; mesg += __FILE__;
 			throw std::range_error(mesg);
 		}
-		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		/* calculating quotient and remainder separately turns
+		out to be faster */
+		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number[i].x = MulPrToLong(remainder);
-		numberZ = quot;
+		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
+		//numberZ = quot;
 		i++;
 	}
-	if (i < NumberLength) {
+	if (i < NumLen) {
 		/* set any extra limbs to zero */
-		memset(number + i, 0, (NumberLength - i) * sizeof(limb));
+		memset(number + i, 0, (NumLen - i+1) * sizeof(limb));
 	}
+	else
+		number[i].x = 0;    
 	if (neg) {
 		ChSignBigNbr((long long *)number, i + 1);
 	}
@@ -952,10 +955,11 @@ int ZtoBigNbr(long long number[], Znum numberZ) {
 	return i;
 }
 
-void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength) {
+/* convert limbs to Znum. assumes number is +ve */
+void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
 	numberZ = 0;
 	
-	for (int i = NumberLength - 1; i >= 0; i--) {
+	for (int i = NumLen - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i].x;      // add next limb
 	}
@@ -1352,9 +1356,9 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 }
 
 /* returns true iff value is zero*/
-bool BigNbrIsZero(const limb *value, int NumberLength) {
+bool BigNbrIsZero(const limb *value, int NumLen) {
 	int ctr;
-	for (ctr = 0; ctr < NumberLength; ctr++) {
+	for (ctr = 0; ctr < NumLen; ctr++) {
 		if (value[ctr].x != 0) {
 			return false;  // Number is not zero.
 		}
@@ -1436,9 +1440,13 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
 	}
 	int i = 0;
 	while (numberZ > 0) {
-		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		/* calculating quotient and remainder separately turns
+		out to be faster */
+		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number.limbs[i].x = MulPrToLong(remainder);
-		numberZ = quot;
+		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
+		//numberZ = quot;
 		i++;
 		if (i >= MAX_LEN) {
 			return false;   // number too big to convert.
@@ -1447,7 +1455,7 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
 	number.nbrLimbs = i;
 	if (neg) {
 		number.sign = SIGN_NEGATIVE;
-		numberZ = -numberZ;  // put back original value in numberZ
+		//numberZ = -numberZ;  // put back original value in numberZ
 	}
 	else
 		number.sign = SIGN_POSITIVE;
@@ -1469,9 +1477,9 @@ void BigtoZ(Znum &numberZ, const BigInteger &number) {
 }
 
 /* convert integer list to Znum. */
-void ValuestoZ(Znum &numberZ, const long long number[], int NumberLength) {
+void ValuestoZ(Znum &numberZ, const long long number[], int NumLen) {
 	numberZ = 0;
-	for (int i = NumberLength-1; i >= 0; i--) {
+	for (int i = NumLen-1; i >= 0; i--) {
 		//numberZ *= LIMB_RANGE;
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
 		numberZ += number[i];

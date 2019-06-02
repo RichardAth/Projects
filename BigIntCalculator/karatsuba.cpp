@@ -23,7 +23,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 
-#define KARATSUBA_CUTOFF 16
+#define KARATSUBA_CUTOFF 32
 //#define KARATSUBA_CUTOFF 2000    // turn of Karatsuba temporarily
 
 static limb arr[4 * MAX_LEN];      /*    3 * changed to 4 * on 16/5/2019, because

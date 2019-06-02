@@ -130,38 +130,38 @@ void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff) {
 }
 
 /* Sum = Nbr1+Nbr2 (mod Mod) */
-void AddBigNbrModN(const long long Nbr1[], const long long Nbr2[], long long Sum[], const long long Mod[], int nbrLen)
-{
-	long long borrow = 0;
-	unsigned long long carry = 0;
-	int i;
-	for (i = 0; i < nbrLen; i++)
-	{
-		carry = (carry >> BITS_PER_INT_GROUP) + 
-			(unsigned long long)Nbr1[i] + (unsigned long long)Nbr2[i];
-		Sum[i] = (int)(carry & MAX_INT_NBR);
-	}
-	carry >>= BITS_PER_INT_GROUP;
-	//pSum -= nbrLen;
-	for (i = 0; i < nbrLen; i++)
-	{
-		borrow = (borrow >> BITS_PER_INT_GROUP) + Sum[i] - Mod[i];
-		Sum[i] = borrow & MAX_INT_NBR;
-	}
-	borrow >>= BITS_PER_INT_GROUP;
-	if (borrow + (long long)carry != 0)
-	{    // Sum is less than zero. Add Mod again.
-		//pSum -= nbrLen;
-		//pMod -= nbrLen;
-		carry = 0;
-		for (i = 0; i < nbrLen; i++)
-		{
-			carry = (carry >> BITS_PER_INT_GROUP) + 
-				(unsigned long long)Sum[i] + (unsigned long long)Mod[i];
-			Sum[i] = (long long)(carry & MAX_INT_NBR);
-		}
-	}
-}
+//void AddBigNbrModN(const long long Nbr1[], const long long Nbr2[], 
+//  long long Sum[], const long long Mod[], int nbrLen){
+//	long long borrow = 0;
+//	unsigned long long carry = 0;
+//	int i;
+//	for (i = 0; i < nbrLen; i++)
+//	{
+//		carry = (carry >> BITS_PER_INT_GROUP) + 
+//			(unsigned long long)Nbr1[i] + (unsigned long long)Nbr2[i];
+//		Sum[i] = (int)(carry & MAX_INT_NBR);
+//	}
+//	carry >>= BITS_PER_INT_GROUP;
+//	//pSum -= nbrLen;
+//	for (i = 0; i < nbrLen; i++)
+//	{
+//		borrow = (borrow >> BITS_PER_INT_GROUP) + Sum[i] - Mod[i];
+//		Sum[i] = borrow & MAX_INT_NBR;
+//	}
+//	borrow >>= BITS_PER_INT_GROUP;
+//	if (borrow + (long long)carry != 0)
+//	{    // Sum is less than zero. Add Mod again.
+//		//pSum -= nbrLen;
+//		//pMod -= nbrLen;
+//		carry = 0;
+//		for (i = 0; i < nbrLen; i++)
+//		{
+//			carry = (carry >> BITS_PER_INT_GROUP) + 
+//				(unsigned long long)Sum[i] + (unsigned long long)Mod[i];
+//			Sum[i] = (long long)(carry & MAX_INT_NBR);
+//		}
+//	}
+//}
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
 	//Diff = (Nbr1 + Nbr2) % Mod;
 	mpz_add(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 + Nbr2
@@ -169,28 +169,28 @@ void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &M
 }
 
 /* Diff = Nbr1-Nbr2 (mod Mod)*/
-void SubtractBigNbrModN(const long long Nbr1[], const long long Nbr2[], 
-	long long Diff[], const long long Mod[], int nbrLen)
-{
-	long long borrow = 0;
-	int i;
-	for (i = 0; i < nbrLen; i++)
-	{
-		borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
-		Diff[i] = borrow & MAX_INT_NBR;
-	}
-	if (borrow != 0)
-	{
-		unsigned long long carry = 0;
-		//pDiff -= nbrLen;
-		for (i = 0; i < nbrLen; i++)
-		{
-			carry = (carry >> BITS_PER_INT_GROUP) 
-				+ (unsigned long long)Diff[i] + (unsigned long long)Mod[i];
-			Diff[i] = (long long)(carry & MAX_INT_NBR);
-		}
-	}
-}
+//void SubtractBigNbrModN(const long long Nbr1[], const long long Nbr2[], 
+//	long long Diff[], const long long Mod[], int nbrLen)
+//{
+//	long long borrow = 0;
+//	int i;
+//	for (i = 0; i < nbrLen; i++)
+//	{
+//		borrow = (borrow >> BITS_PER_INT_GROUP) + Nbr1[i] - Nbr2[i];
+//		Diff[i] = borrow & MAX_INT_NBR;
+//	}
+//	if (borrow != 0)
+//	{
+//		unsigned long long carry = 0;
+//		//pDiff -= nbrLen;
+//		for (i = 0; i < nbrLen; i++)
+//		{
+//			carry = (carry >> BITS_PER_INT_GROUP) 
+//				+ (unsigned long long)Diff[i] + (unsigned long long)Mod[i];
+//			Diff[i] = (long long)(carry & MAX_INT_NBR);
+//		}
+//	}
+//}
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
 	//Diff = (Nbr1 - Nbr2) % Mod;
 	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 - Nbr2
@@ -205,8 +205,7 @@ void MultBigNbrByInt(const long long Factor[], long long f2,
 	size_t ix = 0;
 	bool factorPositive = true;
 
-	if (f2 < 0)
-	{     // If factor is negative, indicate it and compute its absolute value.
+	if (f2 < 0) {     // If factor is negative, indicate it and compute its absolute value.
 		factorPositive = false;
 		f2 = -f2;
 	}
@@ -222,8 +221,7 @@ void MultBigNbrByInt(const long long Factor[], long long f2,
 		nbrLen++;
 	}
 
-	if (!factorPositive)
-	{         // If factor is negative, change sign of product.
+	if (!factorPositive) {   // If factor is negative, change sign of product.
 		ChSignBigNbr(bigProd, nbrLen);
 	}
 }
@@ -248,34 +246,29 @@ void MultBigNbrByIntB(const long long bigFactor[], int factor, long long bigProd
 	}
 	dFactor = (double)factor;
 	carry = 0;
-	for (ctr = 0; ctr < nbrLen - 1; ctr++)
-	{
+	for (ctr = 0; ctr < nbrLen - 1; ctr++) {
 		low = (bigFactor[ctr] * factor + carry) & MAX_INT_NBR;
 		// Subtract or add 0x20000000 so the multiplication by dVal is not nearly an integer.
 		// In that case, there would be an error of +/- 1.
-		if (low < HALF_INT_RANGE)
-		{
+		if (low < HALF_INT_RANGE) {
 			carry = (long long)floor(((double)bigFactor[ctr] * dFactor + (double)carry + HALF_INT_RANGE / 2)*dVal);
 		}
-		else
-		{
+		else {
 			carry = (long long)floor(((double)bigFactor[ctr] * dFactor + (double)carry - HALF_INT_RANGE / 2)*dVal);
 		}
 		bigProduct[ctr] = low;
 		//bigFactor++;
 	}
+
 	low = bigFactor[ctr] * factor + carry;
-	if ((low & MAX_INT_NBR) < HALF_INT_RANGE)
-	{
+	if ((low & MAX_INT_NBR) < HALF_INT_RANGE) {
 		carry = (long long)floor(((double)bigFactor[ctr] * dFactor + (double)carry + HALF_INT_RANGE / 2)*dVal);
 	}
-	else
-	{
+	else {
 		carry = (long long)floor(((double)bigFactor[ctr] * dFactor + (double)carry - HALF_INT_RANGE / 2)*dVal);
 	}
 	bigProduct[ctr] = low;
-	if (!factorPositive)
-	{         // If factor is negative, change sign of product.
+	if (!factorPositive) {       // If factor is negative, change sign of product.
 		ChSignBigNbrB(bigProd, nbrLen);
 	}
 }
@@ -304,13 +297,6 @@ void DivBigNbrByInt(const long long Dividend[], long long divisor,
 }
 void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient) {
 	Quotient = Dividend / divisor;
-	//if (divisor > 0) {
-	//	mpz_tdiv_q_ui(ZT(Quotient), ZT(Dividend), divisor);
-	//}
-	//else {  // workaround because there is no div_si function
-	//	mpz_tdiv_q_ui(ZT(Quotient), ZT(Dividend), -divisor);
-	//	mpz_neg(ZT(Quotient), ZT(Quotient));
-	//}
 }
 
 /* calculate dividend%divisor. remainder has same type as divisor 
@@ -353,7 +339,7 @@ long long aux[MAX_LEN+1];
 void MultBigNbr(const long long Fact1[], const long long Fact2[], 
 	long long Prod[], int nbrLen) {
 	int prodlen = nbrLen*2;   // length of product is twice length of Fact1 & Fact2
-	
+
 	/* important!! Prod must not overlap with Fact1 or Fact2 !! */
 	memset(Prod, 0, prodlen * sizeof(long long));  // clear out any previous stuff 
 

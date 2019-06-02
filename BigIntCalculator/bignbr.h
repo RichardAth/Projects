@@ -226,9 +226,9 @@ public:
 	friend void IntsToBigInteger(/*@in@*/const long long *ptrValues, /*@out@*/BigInteger &bigint);
 	friend void BigIntegerToInts(/*@out@*/long long *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb Values[], 
-		/*@out@*/BigInteger &bigint, int NumberLength);
+		/*@out@*/BigInteger &bigint, int NumLen);
 	friend void BigIntegerToLimbs(/*@out@*/limb Values[], 
-		/*@in@*/const BigInteger &bigint, int NumberLength);
+		/*@in@*/const BigInteger &bigint, int NumLen);
 	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	
 	friend BigInteger abs(const BigInteger &Num);
@@ -236,7 +236,7 @@ public:
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
 	friend int BigIntToBigNbr(const BigInteger &pBigInt, long long BigNbr[]);
 	friend void BigNbrToBigInt(BigInteger &pBigInt, const long long BigNbr[], int nbrLenBigInt);
-	//friend void ModInvBigNbr(long long *num, long long *inv, int *mod, int NumberLength);
+	//friend void ModInvBigNbr(long long *num, long long *inv, int *mod, int NumLen);
 	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
 	
 	BigInteger operator +  (const BigInteger &b) const {
@@ -383,11 +383,12 @@ public:
 	}
 } ;
 
-extern limb TestNbr[MAX_LEN];
-extern limb MontgomeryMultR2[MAX_LEN];
-extern limb MontgomeryMultR1[MAX_LEN];
-extern int NumberLength, NumberLengthR1;
-extern int groupLen;
+extern BigInteger TestNbrBI;
+extern limb * const TestNbr;
+extern limb *const MontgomeryMultR2;
+extern limb *const MontgomeryMultR1;
+#define NumberLength TestNbrBI.nbrLimbs
+//extern int groupLen;
 
 /* convert num to long long. If num > max, truncate it (right shift)
 and exp is > 0 and represents the number of discarded bits. */
@@ -408,8 +409,8 @@ inline void addMult(unsigned long long &plow, unsigned long long &phigh,
 void int2dec(char **pOutput, long long nbr);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
-void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumberLength);
+void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
+void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 void modmult(const Znum &a, const Znum &b, Znum &result);
@@ -419,10 +420,10 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result);
 //void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
 //void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
 //void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
-void AdjustModN(limb *Nbr, const limb *TestNbr, int NumberLength);
+//void AdjustModN(limb *Nbr, const limb *TestNbr, int NumLen);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
-void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumberLength);
-void ValuestoZ(Znum &numberZ, const long long number[], int NumberLength);
+void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
+void ValuestoZ(Znum &numberZ, const long long number[], int NumLen);
 //static void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 //double logLimbs(const limb *pBigNbr, int nbrLimbs);
 //void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
@@ -433,6 +434,7 @@ void ValuestoZ(Znum &numberZ, const long long number[], int NumberLength);
 
 void ChSignBigNbr(long long nbr[], int length);
 void ChSignBigNbrB(long long nbr[], int length);
+int BigNbrLen(const long long Nbr[], int nbrLen);
 void AddBigNbr(const long long Nbr1[], const long long Nbr2[], long long Sum[], int nbrLen);
 void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
 void SubtractBigNbr(const long long Nbr1[], const long long Nbr2[], long long Diff[], int nbrLen);
@@ -441,9 +443,9 @@ void AddBigNbrB(const long long Nbr1[], const long long Nbr2[], long long Sum[],
 void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
 void SubtractBigNbrB(const long long Nbr1[], const long long Nbr2[], long long Diff[], int nbrLen);
 void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-void AddBigNbrModN(const long long Nbr1[], const long long Nbr2[], long long Sum[], const long long Mod[], int nbrLen);
+//void AddBigNbrModN(const long long Nbr1[], const long long Nbr2[], long long Sum[], const long long Mod[], int nbrLen);
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-void SubtractBigNbrModN(const long long Nbr1[], const long long Nbr2[], long long Diff[], const long long Mod[], int nbrLen);
+//void SubtractBigNbrModN(const long long Nbr1[], const long long Nbr2[], long long Diff[], const long long Mod[], int nbrLen);
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 void MultBigNbrByInt(const long long bigFactor[], long long factor, long long bigProduct[], int &nbrLen);
 void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd);
@@ -464,9 +466,9 @@ void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &
 	//const long long Mod[], int nbrLen);
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
 int intDoubleModPow(int NbrMod, int Expon, int currentPrime);
-int ZtoLimbs(limb *number, Znum numberZ, int NumberLength);
+int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(long long number[], Znum numberZ);
-void LimbstoZ(const limb *number, Znum &numberZ, int NumberLength);
+void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;

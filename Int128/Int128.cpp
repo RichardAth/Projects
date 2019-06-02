@@ -111,10 +111,14 @@ template<class _itype> void loopItype(_itype(*inputItype)(const TCHAR *)) {
 
 		_tprintf(L"x<y:%hs, x<=y:%hs, x>y:%hs, x>=y:%hs\n\n",
 			boolToStr(lt), boolToStr(le), boolToStr(gt), boolToStr(ge));
+		s = x + 10ULL;
+		d = x;
+		d += 10ULL;
+		assert(d == s);
 	}
 }
 
-void dobenchmark(void) {
+long long dobenchmark(void) {
 	std::string oper;
 	int operval = -1;
 #ifdef _DEBUG
@@ -122,8 +126,8 @@ void dobenchmark(void) {
 #else
 	const int tries = 90'000'000;
 #endif
-	_int128 x, y, a, b;
-	long long xll, yll, all, bll;
+	_uint128 x, y, a, b;
+	unsigned long long xll, yll, zll, all, bll;
 	double ratio;
 	clock_t starttime, midtime, endtime;
 	long long ctr = 0;
@@ -168,21 +172,21 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x * y;         // use _int128
+				a = x * y;         // use _uint128
 				b = a * x;
 				a = b * y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
-			for (ctr = 1; ctr <=tries*10; ctr++) {
+			std::cout << "_uint128 part completed \n";
+			for (ctr = 1; ctr <=tries*100; ctr++) {
 				all = xll * yll;   // use long long do 10x number of operations
 				bll = all * xll;
 				all = bll * yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
-			ratio = double(midtime - starttime)*10 / double(endtime - midtime);
+			/* multiply time for _uint128 by 100 to compensate for fewer cycles*/
+			ratio = double(midtime - starttime)*100 / double(endtime - midtime);
 			std::cout << "multiply ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC << 
 				" seconds \n";
@@ -197,20 +201,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x / y;         // use _int128
+				a = x / y;         // use _uint128
 				b = a / y;
 				a = b / y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll / yll;   // use long long do 10x number of operations
 				bll = all / xll;
 				all = bll / yll;
-				x += all;
+				zll += all;
 			} 
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "divide ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -226,20 +230,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x % y;         // use _int128
+				a = x % y;         // use _uint128
 				b = a % y;
 				a = b % y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll % yll;   // use long long do 10x number of operations
 				bll = all % xll;
 				all = bll % yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "modulus ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -255,20 +259,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x + y;         // use _int128
+				a = x + y;         // use _uint128
 				b = a + x;
 				a = b + y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll + yll;   // use long long do 10x number of operations
 				bll = all + xll;
 				all = bll + yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "add ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -284,20 +288,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x - y;         // use _int128
+				a = x - y;         // use _uint128
 				b = a - x;
 				a = b - y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll - yll;   // use long long do 10x number of operations
 				bll = all - xll;
 				all = bll - yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "subtract ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -311,20 +315,20 @@ void dobenchmark(void) {
 			x = xll;
 			starttime = clock();
 			for (ctr = 1; ctr <=tries; ctr++) {
-				a = x << 4;         // use _int128
+				a = x << 4;         // use _uint128
 				b = a << 5;
 				a = b << 6;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll << 4;   // use long long do 10x number of operations
 				bll = all << 5;
 				all = bll << 6;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "left shift ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -338,20 +342,20 @@ void dobenchmark(void) {
 			x = xll;
 			starttime = clock();
 			for (ctr = 1; ctr <= tries; ctr++) {
-				a = x >> 4;         // use _int128
+				a = x >> 4;         // use _uint128
 				b = a >> 5;
 				a = b >> 6;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <= tries * 10; ctr++) {
 				all = xll >> 4;   // use long long do 10x number of operations
 				bll = all >> 5;
 				all = bll >> 6;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "right shift ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -366,20 +370,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <= tries; ctr++) {
-				a = x < y;         // use _int128
+				a = x < y;         // use _uint128
 				b = a < x;
 				a = b < y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <= tries * 10; ctr++) {
 				all = xll < yll;   // use long long do 10x number of operations
 				bll = all < xll;
 				all = bll < yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "'less than' ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -395,20 +399,20 @@ void dobenchmark(void) {
 			y = yll;
 			starttime = clock();
 			for (ctr = 1; ctr <= tries; ctr++) {
-				a = x > y;         // use _int128
+				a = x > y;         // use _uint128
 				b = a > x;
 				a = b > y;
 			}
 			midtime = clock();
-			std::cout << "_int128 part completed \n";
+			std::cout << "_uint128 part completed \n";
 			for (ctr = 1; ctr <= tries * 10; ctr++) {
 				all = xll > yll;   // use long long do 10x number of operations
 				bll = all > xll;
 				all = bll > yll;
-				x += all;
+				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _int128 by 10 to compensate for fewer cycles*/
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "'greater than' ratio = " << ratio;
 			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
@@ -421,6 +425,8 @@ void dobenchmark(void) {
 			std::cout << "invalid operator \n";
 		}
 	} while (oper != "e" && oper != "E");
+
+	return zll;
 }
 
 int main(int argc, TCHAR **argv) {
@@ -457,6 +463,23 @@ int main(int argc, TCHAR **argv) {
 		printf_s("%s \n", buffer);
 		sPrintf128(buffer, sizeof(buffer), "+d", x128);
 		printf_s("%s \n", buffer);
+
+		long long a = 12345678901, b = 45678901234;
+		ui128mult(x128, a, b);   // multiply 64 bit x 64 bit to get 128 bits.
+		//assert(x128 == 5639370470903950470ULL);
+		assert(LO64(x128) == 10534724974170115354ULL);
+		assert(HI64(x128) == 30);
+
+		x128 = 0;
+		i128mult(x128, a, b);   // multiply 64 bit x 64 bit to get 128 bits.
+		assert(LO64(x128) == 10534724974170115354ULL);
+		assert(HI64(x128) == 30);
+
+		x128 = 0;
+		b = -1;
+		i128mult(x128, a, b);   // multiply 64 bit x 64 bit to get 128 bits.
+		assert(x128 == -12345678901);
+
 
 		loopItype<_uint128>(inputUint128);  /* test unsigned 128 bit integers */
 	}

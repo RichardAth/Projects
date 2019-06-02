@@ -96,8 +96,9 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1);
 
 /* uses global var NumberLength, returns value in YieldFrequency */
 static void GetYieldFrequency(void)
-{
-	yieldFreq = 1000000 / (NumberLength * NumberLength) + 1;
+{  // changed constants to allow for change in NumberLength
+	yieldFreq =250000 / (NumberLength * NumberLength) + 1;  
+	/* round yieldFreq down to a power of 10 */
 	if (yieldFreq > 100000) {
 		yieldFreq = yieldFreq / 100000 * 100000;
 	}
@@ -176,7 +177,7 @@ static int lucas_cost(int n, double v)
 /* computes nP from P=(x:z) and puts the result in (x:z). Assumes n>2. */
 static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *zT2)
 {
-	int d, e, r, i;
+	int d, e, r, LucCostI;
 	limb *t;
 	limb *xA = x, *zA = z;
 	limb *xB = Aux1, *zB = Aux2;
@@ -196,17 +197,17 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 
 	/* chooses the best value of v */
 	r = lucas_cost(n, v[0]);
-	i = 0;
+	LucCostI = 0;
 
 	for (d = 1; d < 10; d++) {
 		e = lucas_cost(n, v[d]);
 		if (e < r) {
 			r = e;
-			i = d;
+			LucCostI = d;
 		}
 	}
 	d = n;
-	r = (int)((double)d / v[i] + 0.5);
+	r = (int)((double)d / v[LucCostI] + 0.5);
 	/* first iteration always begins by Condition 3, then a swap */
 	d = n - r;
 	e = 2 * r - n;
@@ -217,15 +218,9 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 	duplicate(xA, zA, xA, zA); /* A=2*A */
 	while (d != e) {
 		if (d < e) {
-			r = d;
-			d = e;
-			e = r;
-			t = xA;
-			xA = xB;
-			xB = t;
-			t = zA;
-			zA = zB;
-			zB = t;
+			r = d; 	d = e; 	e = r;     // rotate r, d and e values
+			t = xA;  xA = xB; xB = t;  // swap Xa and Xb (pointers)
+			t = zA; zA = zB; zB = t;   // swap Za and Zb (pointers)
 		}
 		/* do the first line of Table 4 whose condition qualifies */
 		if (4 * d <= 5 * e && ((d + e) % 3) == 0) { /* condition 1 */
@@ -235,12 +230,8 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T = f(A,B,C) */
 			add3(xT2, zT2, xT, zT, xA, zA, xB, zB); /* T2 = f(T,A,B) */
 			add3(xB, zB, xB, zB, xT, zT, xA, zA); /* B = f(B,T,A) */
-			t = xA;
-			xA = xT2;
-			xT2 = t;
-			t = zA;
-			zA = zT2;
-			zT2 = t; /* swap A and T2 */
+			t = xA; xA = xT2; xT2 = t;  // swap xA and xT2 (pointers)
+			t = zA; zA = zT2; 	zT2 = t; /* swap A and T2 */
 		}
 		else if (4 * d <= 5 * e && (d - e) % 6 == 0) { /* condition 2 */
 			d = (d - e) / 2;
@@ -250,64 +241,48 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 		else if (d <= (4 * e)) { /* condition 3 */
 			d -= e;
 			add3(xT, zT, xB, zB, xA, zA, xC, zC); /* T = f(B,A,C) */
-			t = xB;
-			xB = xT;
-			xT = xC;
-			xC = t;
-			t = zB;
-			zB = zT;
-			zT = zC;
-			zC = t; /* circular permutation (B,T,C) */
+			t = xB; xB = xT;  xT = xC; xC = t;  // rotate B, T & C (pointers)
+			t = zB; zB = zT; zT = zC; zC = t; /* circular permutation (B,T,C) */
 		}
 		else if ((d + e) % 2 == 0) { /* condition 4 */
 			d = (d - e) / 2;
-			add3(xB, zB, xB, zB, xA, zA, xC, zC); /* B = f(B,A,C) */
-			duplicate(xA, zA, xA, zA); /* A = 2*A */
+			add3(xB, zB, xB, zB, xA, zA, xC, zC);   /* B = f(B,A,C) */
+			duplicate(xA, zA, xA, zA);              /* A = 2*A */
 		}
 		else if (d % 2 == 0) { /* condition 5 */
 			d /= 2;
-			add3(xC, zC, xC, zC, xA, zA, xB, zB); /* C = f(C,A,B) */
-			duplicate(xA, zA, xA, zA); /* A = 2*A */
+			add3(xC, zC, xC, zC, xA, zA, xB, zB);   /* C = f(C,A,B) */
+			duplicate(xA, zA, xA, zA);              /* A = 2*A */
 		}
 		else if (d % 3 == 0) { /* condition 6 */
 			d = d / 3 - e;
 			duplicate(xT, zT, xA, zA); /* T1 = 2*A */
 			add3(xT2, zT2, xA, zA, xB, zB, xC, zC); /* T2 = f(A,B,C) */
-			add3(xA, zA, xT, zT, xA, zA, xA, zA); /* A = f(T1,A,A) */
+			add3(xA, zA, xT, zT, xA, zA, xA, zA);   /* A = f(T1,A,A) */
 			add3(xT, zT, xT, zT, xT2, zT2, xC, zC); /* T1 = f(T1,T2,C) */
-			t = xC;
-			xC = xB;
-			xB = xT;
-			xT = t;
-			t = zC;
-			zC = zB;
-			zB = zT;
-			zT = t; /* circular permutation (C,B,T) */
+			t = xC; xC = xB; xB = xT; xT = t;     // rotate C, B & T
+			t = zC; zC = zB; zB = zT; zT = t;   /* circular permutation (C,B,T) */
 		}
 		else if ((d + e) % 3 == 0) { /* condition 7 */
 			d = (d - 2 * e) / 3;
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T1 = f(A,B,C) */
 			add3(xB, zB, xT, zT, xA, zA, xB, zB); /* B = f(T1,A,B) */
 			duplicate(xT, zT, xA, zA);
-			add3(xA, zA, xA, zA, xT, zT, xA, zA); /* A = 3*A */
+			add3(xA, zA, xA, zA, xT, zT, xA, zA);   /* A = 3*A */
 		}
 		else if ((d - e) % 3 == 0) { /* condition 8 */
 			d = (d - e) / 3;
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T1 = f(A,B,C) */
 			add3(xC, zC, xC, zC, xA, zA, xB, zB); /* C = f(A,C,B) */
-			t = xB;
-			xB = xT;
-			xT = t;
-			t = zB;
-			zB = zT;
-			zT = t; /* swap B and T */
+			t = xB; xB = xT; xT = t;   
+			t = zB; zB = zT; zT = t; /* swap B and T */
 			duplicate(xT, zT, xA, zA);
 			add3(xA, zA, xA, zA, xT, zT, xA, zA); /* A = 3*A */
 		}
 		else if (e % 2 == 0) { /* condition 9 */
 			e /= 2;
 			add3(xC, zC, xC, zC, xB, zB, xA, zA); /* C = f(C,B,A) */
-			duplicate(xB, zB, xB, zB); /* B = 2*B */
+			duplicate(xB, zB, xB, zB);           /* B = 2*B */
 		}
 	}
 	add3(x, z, xA, zA, xB, zB, xC, zC);
@@ -337,11 +312,11 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	SubtBigNbrModN(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x2*z1-x1*z2)
 	modmult(TX, TX, UX);                                 // UX = 4*(x2*z1-x1*z2)^2
 	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x == x3
-		memcpy(TZ, x, NumberLength * sizeof(int));       // TZ = x
-		memcpy(TX,  UZ, NumberLength * sizeof(int));     // TX = UZ = 4*(x1*x2-z1*z2)^2
+		memcpy(TZ, x, NumberLength * sizeof(limb));       // TZ = x
+		memcpy(TX,  UZ, NumberLength * sizeof(limb));     // TX = UZ = 4*(x1*x2-z1*z2)^2
 		modmult(z, TX,  UZ);                             // UZ = z*TX
 		modmult(UX, TZ, z3);                             // z3 = UX*TZ
-		memcpy(x3,  UZ, NumberLength * sizeof(int));     // x3 = UZ
+		memcpy(x3,  UZ, NumberLength * sizeof(limb));     // x3 = UZ
 	}
 	else {
 		modmult( UZ, z, x3);            // x3 = 4*z*(x1*x2-z1*z2)^2
@@ -456,61 +431,6 @@ static void GenerateSieve(int initial) {
 #endif
 }
 
-/* see https://en.wikipedia.org/wiki/Fermat%27s_factorization_method */
-/* use Lehman's algorithm to factorise n, knowing that there are no factors
- less than n^1/3 and that n is not prime. It follows that n has exactly two 
- prime factors. This algorithm works faster when both factors are close to
- sqrt(n). */
-//static void LehmanNew(const Znum &n, Znum &factor) {
-//	const double logn = logBigNbr(n);  // get log(n)
-//	const double endLog = (logn / 6);     // log(n^(1/6))
-//	
-//	/* calculate n^(1/3). note that using a 64-bit integer restricts the maximum 
-//	value of n to about 2^189 (7.84e56), but this algorithm is too slow anyway for very 
-//	large numbers. This is used as the maximum value for k*/
-//	const long long Kmax = (long long)std::ceil(std::exp(logn / 3.0));  
-//	Znum a, b, start, end, temp;
-//
-//	/* We need to find integers k, a and b such that 4kn = a^2 – b^2. 
-//	It can be shown that 1 <= k <= n^(1/3) and
-//	sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k))*/
-//
-//	for (long long k = 1; k <= Kmax; k++) {
-//		/* calculate lowest value for a */
-//		start = (Znum)4 * k*n;
-//		if (!isPerfectSquare(start, start))
-//			start++;  // start = (ceil)sqrt(4kn)
-//
-//		/* calculate highest value for a */
-//		double endd = std::exp(endLog) / (4 * sqrt(k));  // endd = (n^(1/6)/(4.sqrt(k))
-//		end = start + (long long)ceil(endd);
-//		// end = sqrt(4kn)+ (n^(1/6))/(4k^(1/2))
-//
-//		for (Znum a = start; a <= end; a++) {
-//			temp = a*a - 4 * k*n;
-//			if (temp < 0)
-//				continue;  // due to rounding error start might be too small 
-//			if (isPerfectSquare(temp, b)) { // b = sqrt(a^2 -4kn)
-//#ifdef _DEBUG
-//				std::cout << "Lehman n = " << n << " start= " << start
-//					<< " a= " << a << " b= " << b
-//					<< " k= " << k << '\n';
-//#endif
-//				factor = gcd(a + b, n);  // one factor of n
-//#ifdef _DEBUG
-//				temp = gcd(a - b, n);    // other factor of n
-//				std::cout << "factors are: " << factor << " & " << temp << '\n';
-//#endif
-//				return;
-//			}
-//		}
-//	}
-//
-//	/* logic failure; did't find factor */
-//	std::cerr << "Lehman failed to factorise " << n << '\n';
-//	factor = 1;     // no factor found (should not happen)
-//	return;
-//}
 
 #ifdef __EMSCRIPTEN__
 void showECMStatus(void) {
@@ -705,12 +625,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		//			int2dec(&ptrText, ElipCurvNo);
 		//			printf ("%s\n", text);
 #endif
-		L2 = mpz_sizeinbase(ZT(zN),10);        // Get number of digits.
-		L1 = NumberLength * 9;        /* Get number of digits, rounded (usually upwards)
-									   to a multiple of 9 */
-		if (L1 > 30 && L1 <= 90 && L2 >= 30 && L2 <= 90)    // If between 30 and 90 digits...
-		{                             // Switch to SIQS.
-			int limit = limits[((int)L1 - 31) / 5];  // e.g if L1<=55, limit=10
+		L2 = mpz_sizeinbase(ZT(zN), 10);   // Get number of digits.
+		if (L2 > 30 && L2 <= 90)          // If between 30 and 90 digits...
+		{                                 // switch to SIQS when curve No reaches limit
+			int limit = limits[((int)L2 - 26) / 5];  // e.g if L2<=50, limit=10
 			if (ElipCurvNo  >= limit) {                          
    				return CHANGE_TO_SIQS;           // Switch to SIQS.
 			}
@@ -838,7 +756,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 #endif
 #endif
 
-		//  Compute A0 <- 2 * (ElipCurvNo+1)*modinv(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N
+		//  Compute A0 <- 2 * (ElipCurvNo+1)/(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N
 		// Aux2 <- 1 in Montgomery notation.
 		memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
 		modmultInt(Aux2, ElipCurvNo + 1, Aux2);    // Aux2 <- ElipCurvNo + 1 (mod TestNbr)
@@ -849,6 +767,15 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		SubtBigNbrModN(Aux3, MontgomeryMultR1, Aux2, TestNbr, NumberLength);
 		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);
 		modmult(Aux1, Aux2, A0);       // A0 <- 2*(ElipCurvNo+1)/(3*(ElipCurvNo+1)^2 - 1) (mod TestNbr)
+#ifdef _DEBUG
+		{
+			Znum temp;
+			LimbstoZ(A0, temp, NumberLength);
+			REDC(temp, temp);
+			std::cout << "curve no = " << ElipCurvNo << " length = " << NumberLength << " A0 = "
+				<< temp << '\n';
+		}
+#endif
 
 		//  if A0*(A0 ^ 2 - 1)*(9 * A0 ^ 2 - 1) mod N=0 then select another curve.
 		modmult(A0, A0, A02);          // A02 <- A0^2
@@ -901,7 +828,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			}
 
 			if (Pass == 0) {
-				modmult(GcdAccumulated, Z, Aux1);
+				modmult(GcdAccumulated, Z, Aux1);    // GcdAccumulated *= Z
 				memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 			}
 			else {
@@ -922,7 +849,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				}
 				indexM++;
 				if (Pass == 0) {
-					modmult(GcdAccumulated, Z, Aux1);
+					modmult(GcdAccumulated, Z, Aux1);     // GcdAccumulated *= Z
 					memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 				}
 				else {
@@ -966,7 +893,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					indexPrimes++;
 					prac((int)(P + 2 * i), X, Z, W1, W2, W3, W4);
 					if (Pass == 0) {
-						modmult(GcdAccumulated, Z, Aux1);
+						modmult(GcdAccumulated, Z, Aux1);    // GcdAccumulated *= Z
 						memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 					}
 					else {
@@ -1046,20 +973,20 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			modmult(Aux2, UZ, X);
 			SubtBigNbrModN(W1, W2, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, Aux1, Aux2);
-			modmult(Aux2, UX, Z); // (X:Z) -> 3Q
+			modmult(Aux2, UX, Z);       // (X:Z) -> 3Q
 			for (I = 5; I < SIEVE_SIZE; I += 2) {
-				memcpy(WX, X, NumberLength * sizeof(limb));
-				memcpy(WZ, Z, NumberLength * sizeof(limb));
-				SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);
-				AddBigNbrModNB(TX, TZ, Aux2, TestNbr, NumberLength);
-				modmult(Aux1, Aux2, W1);
-				AddBigNbrModNB(X, Z, Aux1, TestNbr, NumberLength);
-				SubtBigNbrModN(TX, TZ, Aux2, TestNbr, NumberLength);
-				modmult(Aux1, Aux2, W2);
+				memcpy(WX, X, NumberLength * sizeof(limb));            // WX = X
+				memcpy(WZ, Z, NumberLength * sizeof(limb));            // WZ = Z
+				SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);     // Aux1 = X - Z
+				AddBigNbrModNB(TX, TZ, Aux2, TestNbr, NumberLength);   // Aux2 = TX - TZ
+				modmult(Aux1, Aux2, W1);                               // W1   = Aux1 * Aux2
+				AddBigNbrModNB(X, Z, Aux1, TestNbr, NumberLength);     // Aux1 = X + Z
+				SubtBigNbrModN(TX, TZ, Aux2, TestNbr, NumberLength);   // Aux2 = TX - TZ
+				modmult(Aux1, Aux2, W2);                               // W2   = Aux1 * Aux2
 				AddBigNbrModNB(W1, W2, Aux1, TestNbr, NumberLength);
-				modmult(Aux1, Aux1, Aux2);
-				modmult(Aux2, UZ, X);
-				SubtBigNbrModN(W1, W2, Aux1, TestNbr, NumberLength);
+				modmult(Aux1, Aux1, Aux2);                             // Aux2 = Aux1 * Aux1
+				modmult(Aux2, UZ, X);                                  // X    = Aux2 * UZ
+				SubtBigNbrModN(W1, W2, Aux1, TestNbr, NumberLength);   // Aux1 = W1-W2
 				modmult(Aux1, Aux1, Aux2);
 				modmult(Aux2, UX, Z); // (X:Z) -> 5Q, 7Q, ...
 				if (Pass == 0) {
@@ -1216,11 +1143,14 @@ static void ecminit(Znum zN) {
 	int P, Q;
 
 	// calculate number of limbs
-	NumberLength = (int)(mpz_sizeinbase(ZT(zN), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
-	ZtoLimbs(TestNbr, zN, NumberLength);  /* copy zN to TestNbr. NB throw exception
+	//NumberLength = (int)(mpz_sizeinbase(ZT(zN), 2) + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
+	ZtoBig(TestNbrBI, zN);   /* copy zN to TestNbr. NB throw exception
 				             if zN is too large! (more than about 23,000 digits) */
 	GetYieldFrequency();      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
+#ifdef _DEBUG
+	GetMontgomeryParms(zN);
+#endif
 	first = true;
 
 	/* set variables to zero */

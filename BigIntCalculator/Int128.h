@@ -65,14 +65,14 @@ public:
 	};
 
 
-	// constructors
+	// constructors. 
 	inline _int128() {}
 	inline _int128(const unsigned __int64 &n) {
 		HI64(*this) = 0;
 		LO64(*this) = n;
 	}
 	inline _int128(const __int64 &n) {
-		HI64(*this) = n < 0 ? -1 : 0;
+		HI64(*this) = n < 0 ? -1 : 0;  // extend sign bit if required
 		LO64(*this) = n;
 	}
 	inline _int128(unsigned long n) {
@@ -80,7 +80,7 @@ public:
 		LO64(*this) = n;
 	}
 	inline _int128(long n) {
-		HI64(*this) = n < 0 ? -1 : 0;
+		HI64(*this) = n < 0 ? -1 : 0;   // extend sign bit if required
 		LO64(*this) = n;
 	}
 	inline _int128(unsigned int n) {
@@ -88,7 +88,7 @@ public:
 		LO64(*this) = n;
 	}
 	inline _int128(int n) {
-		HI64(*this) = n < 0 ? -1 : 0;
+		HI64(*this) = n < 0 ? -1 : 0;   // extend sign bit if required
 		LO64(*this) = n;
 	}
 	inline _int128(unsigned short n) {
@@ -96,7 +96,7 @@ public:
 		LO64(*this) = n;
 	}
 	inline _int128(short n) {
-		HI64(*this) = n < 0 ? -1 : 0;
+		HI64(*this) = n < 0 ? -1 : 0;   // extend sign bit if required
 		LO64(*this) = n;
 	}
 	explicit inline _int128(const unsigned __int64 &hi, const unsigned __int64 &lo) {
@@ -890,9 +890,13 @@ inline _uint128 &operator<<=(_uint128 &lft, int shft) {
 	return lft;
 }
 
-// Now all combinations of binary operators for lft = 128-bit and rhs is -in 
-// integral type
-// operator+ for built in integral types as second argument
+/* Now all combinations of binary operators for lft = 128-bit and rhs is -in 
+ integral type
+ operator + for built in integral types as second argument
+ Maybe, for unsigned, using intrinsic _addcarry_u64 for the lower half then 
+ adding the resulting carry to the upper half would be faster. For signed 
+ the sign bit would need to be extended and added to the carry.
+*/
 inline _int128  operator+(const _int128  &lft, __int64 rhs) {
 	return lft + (_int128)rhs;
 }
@@ -922,7 +926,11 @@ inline _uint128 operator+(const _uint128 &lft, __int64 rhs) {
 	return lft + (_int128)rhs;
 }
 inline _uint128 operator+(const _uint128 &lft, unsigned __int64 rhs) {
-	return lft + (_uint128)rhs;
+	//return lft + (_uint128)rhs;
+	_int128 sum;
+	auto c = _addcarry_u64(0, LO64(lft), rhs, &LO64(sum));
+	HI64(sum) = HI64(lft) + c;
+	return sum;
 }
 inline _uint128 operator+(const _uint128 &lft, long rhs) {
 	return lft + (_int128)rhs;
@@ -944,7 +952,7 @@ inline _uint128 operator+(const _uint128 &lft, unsigned short rhs) {
 }
 
 
-// operator- for built in integral types as second argument
+// operator - for built in integral types as second argument
 inline _int128  operator-(const _int128  &lft, __int64 rhs) {
 	return lft - (_int128)rhs;
 }
@@ -1178,29 +1186,29 @@ inline _int128  operator&(const _int128  &lft, unsigned short rhs) {
 	return lft & (_int128)rhs;
 }
 
-inline _uint128 operator&(const _uint128 &lft, __int64 rhs) {
-	return lft & (_int128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, __int64 rhs) {
+	return LO64(lft) & rhs;;
 }
-inline _uint128 operator&(const _uint128 &lft, unsigned __int64 rhs) {
-	return lft & (_uint128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, unsigned __int64 rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, long rhs) {
-	return lft & (_int128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, long rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, unsigned long rhs) {
-	return lft & (_uint128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, unsigned long rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, int rhs) {
-	return lft & (_int128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, int rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, unsigned int rhs) {
-	return lft & (_uint128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, unsigned int rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, short rhs) {
-	return lft & (_int128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, short rhs) {
+	return LO64(lft) & rhs;
 }
-inline _uint128 operator&(const _uint128 &lft, unsigned short rhs) {
-	return lft & (_uint128)rhs;
+inline unsigned __int64 operator&(const _uint128 &lft, unsigned short rhs) {
+	return LO64(lft) & rhs;
 }
 
 
@@ -1650,7 +1658,10 @@ inline _uint128 &operator+=(_uint128 &lft, __int64 rhs) {
 	return lft += (_int128)rhs;
 }
 inline _uint128 &operator+=(_uint128 &lft, unsigned __int64 rhs) {
-	return lft += (_uint128)rhs;
+	//return lft += (_uint128)rhs;
+	auto c = _addcarry_u64(0, LO64(lft), rhs, &LO64(lft));
+	HI64(lft) += c;
+	return lft;
 }
 inline _uint128 &operator+=(_uint128 &lft, long rhs) {
 	return lft += (_int128)rhs;
@@ -2120,3 +2131,14 @@ static _int128 abs(const _int128 &x) {
 /* convert double x to _int128. Number is truncated i.e. fractional part
 is discarded, like casting to int. */
 _int128 doubleTo128(const double x);
+
+/* multiply 64 bit x 64 bit to get 128 bits. This is a more efficient alternative
+to casting each of the 64 bit values to 128 bits before multiplication, while
+still ensuring that overflow will not occur. */
+
+/* this version is for unsigned integers. */
+#define ui128mult(p128, a64, b64)     \
+	LO64(p128) =_umul128(a64, b64, &HI64(p128))
+/* this version is for signed integers. */
+#define i128mult(p128, a64, b64)     \
+	LO64(p128) =_mul128(a64, b64, (long long*)&HI64(p128))
