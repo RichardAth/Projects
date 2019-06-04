@@ -76,7 +76,8 @@ static const _uint128 powRadix[] = {
  ,0x81bf1000 //  2176782336 = 36^6
 };
 
-/* there would be a buffer overflow problem here if str were too small */
+/* convert integer v to a text string using radix.
+there would be a buffer overflow problem here if str were too small */
 #define ULTOSTR(v, str, radix)        \
 { if(sizeof(Ctype) == sizeof(char))   \
     _ultoa(v, (char*)str, radix);     \
@@ -88,7 +89,8 @@ static const _uint128 powRadix[] = {
 #define STRCPY(dst, src) ((sizeof(Ctype)==sizeof(char))?(Ctype*)strcpy((char*)dst, (char*)src):(Ctype*)wcscpy((wchar_t*)dst, (wchar_t*)src))
 #define STRREV(str)      ((sizeof(Ctype)==sizeof(char))?(Ctype*)_strrev((char*)str):(Ctype*)_wcsrev((wchar_t*)str))
 
-/* there would be a buffer overflow problem here if str were too small */
+/* Function template for conversion of 128 bit integer to an ascii string
+there would be a buffer overflow problem here if str were too small */
 template<class Int128Type, class Ctype>
 Ctype *int128toStr(Int128Type value, Ctype *str, unsigned int radix) {
 	if ((radix < 2) || (radix > 36)) {
@@ -223,10 +225,21 @@ static inline bool isRadixDigit(wchar_t ch, unsigned int radix, unsigned int &va
 }
 
 /* template function to convert ascii to 128 byte integer.
-s = the string to convert.
-on return end is set to point after the last character processed
 max signed integer is 340 282366 920938 463463 374607 431768 211455
-radix is the base e.g. 8 for octal, 10 for decimal, 16 for hex */
+On return errno may be set to EINVAL or ERANGE.
+
+The function is called by "strtoint128 <itype, Ctype, withsign>(str, end, radix)
+where: itype = _int128 or _uint128    (output either signed or unsigned 128 bit integer)
+       ctype = char or wchar_t        (input is 8 bit or wide characters)
+	   withsign = true or false       (true for signed, false for unsigned)
+	   str   = pointer to char or wchar_t string to be converted
+	   end   = pointer to pointer to char or wchar_t. 
+	           On return is set to character after last digit processed.
+	   radix = zero or positive number between 2 and 36.
+	   if radix = 0 input can be octal, decimal or hex 
+	                (0X or 0x prefix for hex, 
+                     0 prefix for octal, 
+		             no prefix for decimal) */
 template<class Int128Type, class Ctype, bool withSign>
 Int128Type strtoint128(const Ctype *s, Ctype **end, unsigned int radix) {
 
@@ -237,16 +250,20 @@ Int128Type strtoint128(const Ctype *s, Ctype **end, unsigned int radix) {
 	errno = 0;
 	bool negative = false;
 	bool gotDigit = false;
-	while (iswspace(*s)) s++; // skip whitespace
-	if (*s == '-') { // read optional sign
+
+	while (iswspace(*s)) 
+		s++; // skip whitespace
+
+	if (*s == '-') {   // read optional sign
 		s++;
 		negative = true;
 	}
 	else if (*s == '+') {
 		s++;
 	}
+
 	unsigned int digit;
-	if (radix == 0) { // first determine if radix is 8,10 or 16
+	if (radix == 0) { // first determine if radix is 8, 10 or 16
 		if (*s == '0') {
 			gotDigit = true;
 			s++;
@@ -269,13 +286,16 @@ Int128Type strtoint128(const Ctype *s, Ctype **end, unsigned int radix) {
 			return 0; // nothing recognized
 		}
 	}
+
 	Int128Type result128;
 	bool       overflow = false;
 	const unsigned int maxDigitCount32 = digitCount[radix];
+
 	if (isRadixDigit(*(s++), radix, digit)) {
 		gotDigit = true;
 		while ((digit == 0) && isRadixDigit(*s, radix, digit))
 			s++; // skip leading zeroes
+
 		bool firstChunk = true;
 		unsigned int result32 = digit;
 
@@ -307,12 +327,14 @@ Int128Type strtoint128(const Ctype *s, Ctype **end, unsigned int radix) {
 						}
 					}
 					result128 <<= bitCount32;
-					if (result32) result128 |= result32;
+					if (result32) 
+						result128 |= result32;
 				}
 				else {
 					break;
 				}
-				if (bitCount32 < maxBitCount32) break;
+				if (bitCount32 < maxBitCount32) 
+					break;
 			}
 		}
 		else {
@@ -366,9 +388,19 @@ Int128Type strtoint128(const Ctype *s, Ctype **end, unsigned int radix) {
 		else
 			return _UI128_MAX;
 	}
-	return negative ? -result128 : result128;
+	//return negative ? -result128 : result128;
+	if (negative)
+		return -result128;
+	else
+		return result128;
 }
 
+/*str   = pointer to char or wchar_t string
+  end   = pointer to pointer to char or wchar_t. On return is st to character after last digit processed.
+  radix = zero or positive number between 2 and 36. 
+  if radix = 0 input can be octal (0X or 0x prefix for hex, 
+                                   0 prefix for octal, 
+								   no prefix for decimal) */
 _int128 _strtoi128(const char *str, char **end, int radix) {
 	return strtoint128<_int128, char, true >(str, end, radix);
 }
@@ -412,14 +444,14 @@ std::wostream &operator<<(std::wostream &s, const _uint128 &n) {
 /*
 Convert a 128-bit integer to an ascii string
 The number can be output in octal, decimal or hexadecimal
-
+Process format string of form "%[flags][width][.precision]type"
 Width specification
 
-In a conversion specification, the width argument is a non-negative integer that 
-controls the minimum number of characters that are output. If the number of 
-characters in the output value is less than the specified width, blanks are 
-added to the left or the right of the values, depending on whether or not the 
-left-alignment flag (-) is specified, until the minimum width is reached.
+The width argument is a non-negative integer that controls the minimum number of 
+characters that are output. If the number of characters in the output value is 
+less than the specified width, blanks are added to the left or the right of the 
+values, depending on whether or not the left-alignment flag (-) is specified, 
+until the minimum width is reached.
 
 The precision specifies the minimum number of digits to be printed. If the 
 number of digits in the argument is less than precision, the output value is 
@@ -509,9 +541,11 @@ static void getFormat(const char FormatStr[], fc &flags, int &precision, int &wi
 	std::cout << "format string error in: " << FormatStr << '\n';
 }
 
-/* modelled on sprintf_s 
+/* Convert integer n to an ascii string. modelled on sprintf_s. 
 Types d, i and u are all treated the same. Appropriate code for signed
 or unsigned integers is executed based on the parameter type. 
+The value returned is the length of the string placed in buffer,
+or -1 if an error occurred.
 */
 int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int128  &n){
 	std::string sbuffer;
@@ -547,7 +581,7 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int
 	if (sbuffer[0] == '-')
 		ip = 1;      // If ve 1st char is -move insertion point after sign
 	else if (flags.plus) {
-		sbuffer.insert(0, 1, '+');
+		sbuffer.insert(0, 1, '+');  // insert + as 1st character
 		ip=1;    // move insertion point after sign
 		}
 		else if (flags.blank) {
@@ -595,9 +629,9 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int
 	}
 
 	auto rv = strcpy_s(buffer, buflen, sbuffer.c_str());
-	if (rv == 0)
-		return  (int)sbuffer.length();
-	else return -1;
+	if (rv == 0)   // did copy work OK?
+		return  (int)sbuffer.length();  // yes, return length
+	else return -1;                     // no, return error
 }
 
 int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _uint128  &n) {
@@ -859,8 +893,7 @@ and subtraction instead. Although more iterations are needed, it is faster
 overall because shift is much faster than divide.
 u and v are UNSIGNED, caller must use abs or similar if necessary.
 Note: mathematically gcd(a,b) = gcd(-a,b) = gcd(b,-a) = gcd (-a,-b)
-Note: GCD (greatest common denominator) is also known as HCF
-(Highest Common Factor).
+Note: GCD (greatest common denominator) is also known as HCF (Highest Common Factor).
 */
 _uint128 gcd(_uint128 u, _uint128 v) {
 	int shift, su, sv;

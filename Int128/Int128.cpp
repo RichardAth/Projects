@@ -39,7 +39,7 @@ char * boolToStr(bool b) {
 		return f;
 }
 
-#define RADIX 10
+#define RADIX 0
 //#define RADIX 16
 
 /* set value in signed int128 from keyboard input */
@@ -112,9 +112,8 @@ template<class _itype> void loopItype(_itype(*inputItype)(const TCHAR *)) {
 		_tprintf(L"x<y:%hs, x<=y:%hs, x>y:%hs, x>=y:%hs\n\n",
 			boolToStr(lt), boolToStr(le), boolToStr(gt), boolToStr(ge));
 		s = x + 10ULL;
-		d = x;
-		d += 10ULL;
-		assert(d == s);
+		d = s-10;
+		assert(d == x);
 	}
 }
 
@@ -178,17 +177,17 @@ long long dobenchmark(void) {
 			}
 			midtime = clock();
 			std::cout << "_uint128 part completed \n";
-			for (ctr = 1; ctr <=tries*100; ctr++) {
+			for (ctr = 1; ctr <=tries*10; ctr++) {
 				all = xll * yll;   // use long long do 10x number of operations
 				bll = all * xll;
 				all = bll * yll;
 				zll += all;
 			}
 			endtime = clock();
-			/* multiply time for _uint128 by 100 to compensate for fewer cycles*/
-			ratio = double(midtime - starttime)*100 / double(endtime - midtime);
+			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
+			ratio = double(midtime - starttime)*10 / double(endtime - midtime);
 			std::cout << "multiply ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC << 
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC << 
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -217,7 +216,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "divide ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';
@@ -246,7 +245,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "modulus ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';
@@ -275,7 +274,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "add ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -304,7 +303,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "subtract ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -331,7 +330,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "left shift ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -358,7 +357,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "right shift ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -386,7 +385,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "'less than' ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;
@@ -415,7 +414,7 @@ long long dobenchmark(void) {
 			/* multiply time for _uint128 by 10 to compensate for fewer cycles*/
 			ratio = double(midtime - starttime) * 10 / double(endtime - midtime);
 			std::cout << "'greater than' ratio = " << ratio;
-			std::cout << " elapsed time = " << (endtime - starttime) / CLOCKS_PER_SEC <<
+			std::cout << " elapsed time = " << (double)(endtime - starttime) / CLOCKS_PER_SEC <<
 				" seconds \n";
 			if (a != all)
 				std::cout << "error in calc x = " << x << '\n';;

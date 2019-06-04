@@ -400,98 +400,117 @@ public:
 //  and 0-bits will be shifted in for _uint128 (because there
 //  is no sign).
 //  For assign-operators (+=,-=...) the same rules apply.
-//  Vesions for built in integral types are then defined
+//  Versions for built in integral types are then defined
 //  on top of these
 
-// 4 basic combination of operator+ (128-bit integers - dont care about signed/unsigned)
-inline _int128 operator+(const _int128 &lft, const _int128 &rhs) {
-	_int128 result(lft);
-	int128add(&result, &rhs);
+/* 4 basic combination of operator + (128-bit integers - don't care about signed/unsigned) 
+changed to use _addcarry_u64 intrinsic when it's faster. */
+inline _int128 operator + (const _int128 &lft, const _int128 &rhs) {
+	/*_int128 result(lft);
+	int128add(&result, &rhs);*/
+	_int128 result;
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(result));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(result));
+	/* if c2 does not match the sign bit we have an overflow */
 	return result;
 }
-inline _int128 operator+(const _int128 &lft, const _uint128 &rhs) {
-	_int128 result(lft);
-	int128add(&result, &rhs);
+/* changed to follow normal rule that when signed and and unsigned ints
+of the same size are combined the result is unsigned */
+inline _uint128 operator + (const _int128 &lft, const _uint128 &rhs) {
+	//_int128 result(lft);
+	//int128add(&result, &rhs);
+	_uint128 result;
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(result));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(result));
+	/* if c2 !=0 we have an overflow */
 	return result;
 }
-inline _uint128 operator+(const _uint128 &lft, const _int128 &rhs) {
-	_uint128 result(lft);
-	int128add(&result, &rhs);
+inline _uint128 operator + (const _uint128 &lft, const _int128 &rhs) {
+	/*_uint128 result(lft);
+	int128add(&result, &rhs);*/
+	_uint128 result;
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(result));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(result));
+	/* if c2 !=0 we have an overflow */
 	return result;
 }
-inline _uint128 operator+(const _uint128 &lft, const _uint128 &rhs) {
-	_uint128 result(lft);
-	int128add(&result, &rhs);
-	return result;
-}
-
-// 4 basic combination of operator- (128-bit integers - dont care about signed/unsigned)
-inline _int128 operator-(const _int128 &lft, const _int128 &rhs) {
-	_int128 result(lft);
-	int128sub(&result, &rhs);
-	return result;
-}
-inline _int128 operator-(const _int128 &lft, const _uint128 &rhs) {
-	_int128 result(lft);
-	int128sub(&result, &rhs);
-	return result;
-}
-inline _uint128 operator-(const _uint128 &lft, const _int128 &rhs) {
-	_uint128 result(lft);
-	int128sub(&result, &rhs);
-	return result;
-}
-inline _uint128 operator-(const _uint128 &lft, const _uint128 &rhs) {
-	_uint128 result(lft);
-	int128sub(&result, &rhs);
+inline _uint128 operator + (const _uint128 &lft, const _uint128 &rhs) {
+	/*_uint128 result(lft);
+	int128add(&result, &rhs);*/
+	_uint128 result;
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(result));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(result));
+	/* if c2 !=0 we have an overflow */
 	return result;
 }
 
-// 4 basic combination of operator* (128-bit integers - dont care about signed/unsigned)
-inline _int128 operator*(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combination of operator - (128-bit integers - don't care about signed/unsigned)
+inline _int128 operator - (const _int128 &lft, const _int128 &rhs) {
+	_int128 result(lft);
+	int128sub(&result, &rhs);
+	return result;
+}
+inline _int128 operator - (const _int128 &lft, const _uint128 &rhs) {
+	_int128 result(lft);
+	int128sub(&result, &rhs);
+	return result;
+}
+inline _uint128 operator - (const _uint128 &lft, const _int128 &rhs) {
+	_uint128 result(lft);
+	int128sub(&result, &rhs);
+	return result;
+}
+inline _uint128 operator - (const _uint128 &lft, const _uint128 &rhs) {
+	_uint128 result(lft);
+	int128sub(&result, &rhs);
+	return result;
+}
+
+// 4 basic combination of operator * (128-bit integers - don't care about signed/unsigned)
+inline _int128 operator * (const _int128 &lft, const _int128 &rhs) {
 	_int128 result(lft);
 	int128mul(&result, &rhs);
 	return result;
 }
-inline _int128 operator*(const _int128 &lft, const _uint128 &rhs) {
+inline _int128 operator * (const _int128 &lft, const _uint128 &rhs) {
 	_int128 result(lft);
 	int128mul(&result, &rhs);
 	return result;
 }
-inline _uint128 operator*(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator * (const _uint128 &lft, const _int128 &rhs) {
 	_uint128 result(lft);
 	int128mul(&result, &rhs);
 	return result;
 }
-inline _uint128 operator*(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator * (const _uint128 &lft, const _uint128 &rhs) {
 	_uint128 result(lft);
 	int128mul(&result, &rhs);
 	return result;
 }
 
-// 4 basic combination of operator/ - signed division only if both are signed
-inline _int128 operator/(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combination of operator / - signed division only if both are signed
+inline _int128 operator / (const _int128 &lft, const _int128 &rhs) {
 	_int128 result(lft), tmp(rhs);
 	if (tmp.isZero())
 		throw std::exception("divide by zero");
 	int128div(&result, &tmp);
 	return result;
 }
-inline _int128 operator/(const _int128 &lft, const _uint128 &rhs) {
-	_int128 result(lft);
-	if (rhs.isZero())
-		throw std::exception("divide by zero");
-	uint128div(&result, &rhs);
-	return result;
-}
-inline _uint128 operator/(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator / (const _int128 &lft, const _uint128 &rhs) {
 	_uint128 result(lft);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128div(&result, &rhs);
 	return result;
 }
-inline _uint128 operator/(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator / (const _uint128 &lft, const _int128 &rhs) {
+	_uint128 result(lft);
+	if (rhs.isZero())
+		throw std::exception("divide by zero");
+	uint128div(&result, &rhs);
+	return result;
+}
+inline _uint128 operator / (const _uint128 &lft, const _uint128 &rhs) {
 	_uint128 result(lft);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
@@ -499,29 +518,30 @@ inline _uint128 operator/(const _uint128 &lft, const _uint128 &rhs) {
 	return result;
 }
 
-// 4 basic combination of operator% - signed % only if both are signed
-inline _int128 operator%(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combination of operator% - signed % only if lft is signed
+// differs from C/C++ standards in that int%unsigned returns (signed) int
+inline _int128 operator % (const _int128 &lft, const _int128 &rhs) {
 	_int128 result(lft), tmp(rhs);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	int128rem(&result, &tmp);
 	return result;
 }
-inline _int128 operator%(const _int128 &lft, const _uint128 &rhs) {
+inline _int128 operator % (const _int128 &lft, const _uint128 &rhs) {
 	_int128 result(lft);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128rem(&result, &rhs);
 	return result;
 }
-inline _uint128 operator%(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator % (const _uint128 &lft, const _int128 &rhs) {
 	_uint128 result(lft);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128rem(&result, &rhs);
 	return result;
 }
-inline _uint128 operator%(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator % (const _uint128 &lft, const _uint128 &rhs) {
 	_uint128 result(lft);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
@@ -529,91 +549,92 @@ inline _uint128 operator%(const _uint128 &lft, const _uint128 &rhs) {
 	return result;
 }
 
-// 2 version of unary - (dont care about signed/unsigned)
-inline _int128 operator-(const _int128 &x) { // unary minus
+// 2 version of unary - (don't care about signed/unsigned)
+inline _int128 operator - (const _int128 &x) { // unary minus
 	_int128 result(x);
 	int128neg(&result);
 	return result;
 }
-inline _uint128 operator-(const _uint128 &x) {
-	_uint128 result(x);
-	int128neg(&result);
-	return result;
+inline _uint128 operator - (const _uint128 &x) {
+	_uint128 result;      
+	result = x;          // value of result is such that result+x = 0 
+	int128neg(&result);  // even though they are both unsigned
+	return result;       // (overflow would occur)
 }
 
 // Basic bit operators
-// 4 basic combinations of operator& (bitwise AND)
-inline _int128 operator&(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator & (bitwise AND)
+inline _int128 operator & (const _int128 &lft, const _int128 &rhs) {
 	return _int128(HI64(lft) & HI64(rhs), LO64(lft) & LO64(rhs));
 }
-inline _int128 operator&(const _int128 &lft, const _uint128 &rhs) {
+inline _int128 operator & (const _int128 &lft, const _uint128 &rhs) {
 	return _int128(HI64(lft) & HI64(rhs), LO64(lft) & LO64(rhs));
 }
-inline _uint128 operator&(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator & (const _uint128 &lft, const _int128 &rhs) {
 	return _uint128(HI64(lft) & HI64(rhs), LO64(lft) & LO64(rhs));
 }
-inline _uint128 operator&(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator & (const _uint128 &lft, const _uint128 &rhs) {
 	return _int128(HI64(lft) & HI64(rhs), LO64(lft) & LO64(rhs));
 }
 
-// 4 basic combinations of operator| (inclusive OR)
-inline _int128 operator|(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator | (inclusive OR)
+inline _int128 operator | (const _int128 &lft, const _int128 &rhs) {
 	return _int128(HI64(lft) | HI64(rhs), LO64(lft) | LO64(rhs));
 }
-inline _int128 operator|(const _int128 &lft, const _uint128 &rhs) {
+inline _int128 operator | (const _int128 &lft, const _uint128 &rhs) {
 	return _int128(HI64(lft) | HI64(rhs), LO64(lft) | LO64(rhs));
 }
-inline _uint128 operator|(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator | (const _uint128 &lft, const _int128 &rhs) {
 	return _uint128(HI64(lft) | HI64(rhs), LO64(lft) | LO64(rhs));
 }
-inline _uint128 operator|(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator | (const _uint128 &lft, const _uint128 &rhs) {
 	return _uint128(HI64(lft) | HI64(rhs), LO64(lft) | LO64(rhs));
 }
 
-// 4 basic combinations of operator^ (bitwise XOR)
-inline _int128 operator^(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator ^ (bitwise XOR)
+inline _int128 operator ^ (const _int128 &lft, const _int128 &rhs) {
 	return _int128(HI64(lft) ^ HI64(rhs), LO64(lft) ^ LO64(rhs));
 }
-inline _int128 operator^(const _int128 &lft, const _uint128 &rhs) {
+inline _int128 operator ^ (const _int128 &lft, const _uint128 &rhs) {
 	return _int128(HI64(lft) ^ HI64(rhs), LO64(lft) ^ LO64(rhs));
 }
-inline _uint128 operator^(const _uint128 &lft, const _int128 &rhs) {
+inline _uint128 operator ^ (const _uint128 &lft, const _int128 &rhs) {
 	return _uint128(HI64(lft) ^ HI64(rhs), LO64(lft) ^ LO64(rhs));
 }
-inline _uint128 operator^(const _uint128 &lft, const _uint128 &rhs) {
+inline _uint128 operator ^ (const _uint128 &lft, const _uint128 &rhs) {
 	return _uint128(HI64(lft) ^ HI64(rhs), LO64(lft) ^ LO64(rhs));
 }
 
-// 2 versions of operator~
-inline _int128 operator~(const _int128 &n) {
+// 2 versions of operator ~
+inline _int128 operator ~ (const _int128 &n) {
 	return _int128(~HI64(n), ~LO64(n));
 }
-inline _uint128 operator~(const _uint128 &n) {
+inline _uint128 operator ~ (const _uint128 &n) {
 	return _uint128(~HI64(n), ~LO64(n));
 }
 
-// 2 version of operator>> (arithmetic shift for signed, logical shift for unsigned)
-inline _int128 operator>>(const _int128 &lft, const int shft) {
+// 2 version of operator >> (arithmetic shift for signed, logical shift for unsigned)
+inline _int128 operator >> (const _int128 &lft, const int shft) {
 	_int128 copy(lft);
 	if (shft != 0)
 		int128shr(&copy, shft);
 	return copy;
 }
-inline _uint128 operator>>(const _uint128 &lft, const int shft) {
+inline _uint128 operator >> (const _uint128 &lft, const int shft) {
 	_uint128 copy(lft);
 	if (shft != 0)
 		uint128shr(&copy, shft);
 	return copy;
 }
 
-// 2 version of operator<< (dont care about signed/unsigned)
-inline _int128 operator<<(const _int128 &lft, const int shft) {
+// 2 version of operator << (dont care about signed/unsigned)
+inline _int128 operator << (const _int128 &lft, const int shft) {
 	_int128 copy(lft);
 	if (shft != 0)
 		int128shl(&copy, shft);
 	return copy;
 }
-inline _int128 operator<<(const _uint128 &lft, const int shft) {
+inline _int128 operator << (const _uint128 &lft, const int shft) {
 	_uint128 copy(lft);
 	if (shft != 0)
 		int128shl(&copy, shft);
@@ -621,270 +642,282 @@ inline _int128 operator<<(const _uint128 &lft, const int shft) {
 }
 
 
-// 4 basic combinations of operator==. (dont care about signed/unsigned)
-inline bool operator==(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator ==. (don't care about signed/unsigned)
+inline bool operator == (const _int128 &lft, const _int128 &rhs) {
 	return (LO64(lft) == LO64(rhs)) && (HI64(lft) == HI64(rhs));
 }
-inline bool operator==(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator == (const _int128 &lft, const _uint128 &rhs) {
 	return (LO64(lft) == LO64(rhs)) && (HI64(lft) == HI64(rhs));
 }
-inline bool operator==(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator == (const _uint128 &lft, const _int128 &rhs) {
 	return (LO64(lft) == LO64(rhs)) && (HI64(lft) == HI64(rhs));
 }
-inline bool operator==(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator == (const _uint128 &lft, const _uint128 &rhs) {
 	return (LO64(lft) == LO64(rhs)) && (HI64(lft) == HI64(rhs));
 }
 
-// 4 basic combinations of operator!= (dont care about signed/unsigned)
-inline bool operator!=(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator != (don't care about signed/unsigned)
+inline bool operator != (const _int128 &lft, const _int128 &rhs) {
 	return (LO64(lft) != LO64(rhs)) || (HI64(lft) != HI64(rhs));
 }
-inline bool operator!=(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator != (const _int128 &lft, const _uint128 &rhs) {
 	return (LO64(lft) != LO64(rhs)) || (HI64(lft) != HI64(rhs));
 }
-inline bool operator!=(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator != (const _uint128 &lft, const _int128 &rhs) {
 	return (LO64(lft) != LO64(rhs)) || (HI64(lft) != HI64(rhs));
 }
-inline bool operator!=(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator != (const _uint128 &lft, const _uint128 &rhs) {
 	return (LO64(lft) != LO64(rhs)) || (HI64(lft) != HI64(rhs));
 }
 
-// 4 basic combinations of operator> (signed compare only if both are signed)
-inline bool operator>(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator > (signed compare only if both are signed)
+inline bool operator > (const _int128 &lft, const _int128 &rhs) {
 	return int128cmp(&lft, &rhs) > 0;
 }
-inline bool operator>(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator > (const _int128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) > 0;
 }
-inline bool operator>(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator > (const _uint128 &lft, const _int128 &rhs) {
 	return uint128cmp(&lft, &rhs) > 0;
 }
-inline bool operator>(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator > (const _uint128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) > 0;
 }
 
-// 4 basic combinations of operator>= (signed compare only if both are signed)
-inline bool operator>=(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator >= (signed compare only if both are signed)
+inline bool operator >= (const _int128 &lft, const _int128 &rhs) {
 	return int128cmp(&lft, &rhs) >= 0;
 }
-inline bool operator>=(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator >= (const _int128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) >= 0;
 }
-inline bool operator>=(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator >= (const _uint128 &lft, const _int128 &rhs) {
 	return uint128cmp(&lft, &rhs) >= 0;
 }
-inline bool operator>=(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator >= (const _uint128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) >= 0;
 }
 
-// 4 basic combinations of operator< (signed compare only if both are signed)
-inline bool operator<(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator < (signed compare only if both are signed)
+inline bool operator < (const _int128 &lft, const _int128 &rhs) {
 	return int128cmp(&lft, &rhs) < 0;
 }
-inline bool operator<(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator < (const _int128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) < 0;
 }
-inline bool operator<(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator < (const _uint128 &lft, const _int128 &rhs) {
 	return uint128cmp(&lft, &rhs) < 0;
 }
-inline bool operator<(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator < (const _uint128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) < 0;
 }
 
-// 4 basic combinations of operator<= (signed compare only if both are signed)
-inline bool operator<=(const _int128 &lft, const _int128 &rhs) {
+// 4 basic combinations of operator <= (signed compare only if both are signed)
+inline bool operator <= (const _int128 &lft, const _int128 &rhs) {
 	return int128cmp(&lft, &rhs) <= 0;
 }
-inline bool operator<=(const _int128 &lft, const _uint128 &rhs) {
+inline bool operator <= (const _int128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) <= 0;
 }
-inline bool operator<=(const _uint128 &lft, const _int128 &rhs) {
+inline bool operator <= (const _uint128 &lft, const _int128 &rhs) {
 	return uint128cmp(&lft, &rhs) <= 0;
 }
-inline bool operator<=(const _uint128 &lft, const _uint128 &rhs) {
+inline bool operator <= (const _uint128 &lft, const _uint128 &rhs) {
 	return uint128cmp(&lft, &rhs) <= 0;
 }
 
 // Assign operators
-// operator+= (dont care about sign)
-inline _int128 &operator+=(_int128 &lft, const _int128 &rhs) {
-	int128add(&lft, &rhs);
+// operator += (don't care about sign)
+inline _int128 &operator += (_int128 &lft, const _int128 &rhs) {
+	/*int128add(&lft, &rhs);*/
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(lft));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(lft));
+	/* if c2 does not match the sign bit we have an overflow */
 	return lft;
 }
-inline _int128 &operator+=(_int128 &lft, const _uint128 &rhs) {
-	int128add(&lft, &rhs);
+inline _int128 &operator += (_int128 &lft, const _uint128 &rhs) {
+	//int128add(&lft, &rhs);
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(lft));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(lft));
+	/* if c2 does not match the sign bit we have an overflow */
 	return lft;
 }
-inline _uint128 &operator+=(_uint128 &lft, const _int128 &rhs) {
-	int128add(&lft, &rhs);
+inline _uint128 &operator += (_uint128 &lft, const _int128 &rhs) {
+	//int128add(&lft, &rhs);
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(lft));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(lft));
+	/* if c2 is not 0 we have an overflow */
 	return lft;
 }
-inline _uint128 &operator+=(_uint128 &x, const _uint128 &rhs) {
-	int128add(&x, &rhs);
-	return x;
-}
-
-// operator-= (dont care about sign)
-inline _int128 &operator-=(_int128 &lft, const _int128 &rhs) {
-	int128sub(&lft, &rhs);
-	return lft;
-}
-inline _int128 &operator-=(_int128 &lft, const _uint128 &rhs) {
-	int128sub(&lft, &rhs);
-	return lft;
-}
-inline _uint128 &operator-=(_uint128 &lft, const _int128 &rhs) {
-	int128sub(&lft, &rhs);
-	return lft;
-}
-inline _uint128 &operator-=(_uint128 &lft, const _uint128 &rhs) {
-	int128sub(&lft, &rhs);
+inline _uint128 &operator += (_uint128 &lft, const _uint128 &rhs) {
+	//int128add(&lft, &rhs);
+	auto c = _addcarry_u64(0, LO64(lft), LO64(rhs), &LO64(lft));
+	auto c2 = _addcarry_u64(c, HI64(lft), HI64(rhs), &HI64(lft));
+	/* if c2 is not 0 we have an overflow */
 	return lft;
 }
 
-// operator*= (dont care about sign)
-inline _int128 &operator*=(_int128 &lft, const _int128 &rhs) {
+// operator -= (don't care about sign)
+inline _int128 &operator -= (_int128 &lft, const _int128 &rhs) {
+	int128sub(&lft, &rhs);
+	return lft;
+}
+inline _int128 &operator -= (_int128 &lft, const _uint128 &rhs) {
+	int128sub(&lft, &rhs);
+	return lft;
+}
+inline _uint128 &operator -= (_uint128 &lft, const _int128 &rhs) {
+	int128sub(&lft, &rhs);
+	return lft;
+}
+inline _uint128 &operator -= (_uint128 &lft, const _uint128 &rhs) {
+	int128sub(&lft, &rhs);
+	return lft;
+}
+
+// operator *= (don't care about sign)
+inline _int128 &operator *= (_int128 &lft, const _int128 &rhs) {
 	int128mul(&lft, &rhs);
 	return lft;
 }
-inline _int128 &operator*=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator *= (_int128 &lft, const _uint128 &rhs) {
 	int128mul(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator*=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator *= (_uint128 &lft, const _int128 &rhs) {
 	int128mul(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator*=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator *= (_uint128 &lft, const _uint128 &rhs) {
 	int128mul(&lft, &rhs);
 	return lft;
 }
 
-// operator/= (use signed div only if both are signed)
-inline _int128 &operator/=(_int128 &lft, const _int128 &rhs) {
+// operator /= (use signed div only if both are signed)
+inline _int128 &operator /= (_int128 &lft, const _int128 &rhs) {
 	_int128 tmp(rhs);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	int128div(&lft, &tmp);
 	return lft;
 }
-inline _int128 &operator/=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator /= (_int128 &lft, const _uint128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128div(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator/=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator /= (_uint128 &lft, const _int128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128div(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator/=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator /= (_uint128 &lft, const _uint128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128div(&lft, &rhs);
 	return lft;
 }
 
-// operator%= (use signed % only if both are signed)
-inline _int128 &operator%=(_int128 &lft, const _int128 &rhs) {
+// operator %= (use signed % only if both are signed)
+inline _int128 &operator %= (_int128 &lft, const _int128 &rhs) {
 	_int128 tmp(rhs);
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	int128rem(&lft, &tmp);
 	return lft;
 }
-inline _int128 &operator%=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator %= (_int128 &lft, const _uint128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128rem(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator%=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator %= (_uint128 &lft, const _int128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128rem(&lft, &rhs);
 	return lft;
 }
-inline _uint128 &operator%=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator %= (_uint128 &lft, const _uint128 &rhs) {
 	if (rhs.isZero())
 		throw std::exception("divide by zero");
 	uint128rem(&lft, &rhs);
 	return lft;
 }
 
-// operator&= (dont care about sign)
-inline _int128 &operator&=(_int128 &lft, const _int128 &rhs) {
+// operator &= (don't care about sign)
+inline _int128 &operator &= (_int128 &lft, const _int128 &rhs) {
 	LO64(lft) &= LO64(rhs); HI64(lft) &= HI64(rhs);
 	return lft;
 }
-inline _int128 &operator&=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator &= (_int128 &lft, const _uint128 &rhs) {
 	LO64(lft) &= LO64(rhs); HI64(lft) &= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator&=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator &= (_uint128 &lft, const _int128 &rhs) {
 	LO64(lft) &= LO64(rhs); HI64(lft) &= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator&=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator &= (_uint128 &lft, const _uint128 &rhs) {
 	LO64(lft) &= LO64(rhs); HI64(lft) &= HI64(rhs);
 	return lft;
 }
 
-// operator|= (dont care about sign)
-inline _int128 &operator|=(_int128 &lft, const _int128 &rhs) {
+// operator |= (don't care about sign)
+inline _int128 &operator |= (_int128 &lft, const _int128 &rhs) {
 	LO64(lft) |= LO64(rhs); HI64(lft) |= HI64(rhs);
 	return lft;
 }
-inline _int128 &operator|=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator |= (_int128 &lft, const _uint128 &rhs) {
 	LO64(lft) |= LO64(rhs); HI64(lft) |= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator|=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator |= (_uint128 &lft, const _int128 &rhs) {
 	LO64(lft) |= LO64(rhs); HI64(lft) |= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator|=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator |= (_uint128 &lft, const _uint128 &rhs) {
 	LO64(lft) |= LO64(rhs); HI64(lft) |= HI64(rhs);
 	return lft;
 }
 
-// operator^= (dont care about sign)
-inline _int128 &operator^=(_int128 &lft, const _int128 &rhs) {
+// operator ^= (don't care about sign)
+inline _int128 &operator ^= (_int128 &lft, const _int128 &rhs) {
 	LO64(lft) ^= LO64(rhs); HI64(lft) ^= HI64(rhs);
 	return lft;
 }
-inline _int128 &operator^=(_int128 &lft, const _uint128 &rhs) {
+inline _int128 &operator ^= (_int128 &lft, const _uint128 &rhs) {
 	LO64(lft) ^= LO64(rhs); HI64(lft) ^= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator^=(_uint128 &lft, const _int128 &rhs) {
+inline _uint128 &operator ^= (_uint128 &lft, const _int128 &rhs) {
 	LO64(lft) ^= LO64(rhs); HI64(lft) ^= HI64(rhs);
 	return lft;
 }
-inline _uint128 &operator^=(_uint128 &lft, const _uint128 &rhs) {
+inline _uint128 &operator ^= (_uint128 &lft, const _uint128 &rhs) {
 	LO64(lft) ^= LO64(rhs); HI64(lft) ^= HI64(rhs);
 	return lft;
 }
 
-inline _int128 &operator>>=(_int128 &lft, int shft) {
+inline _int128 &operator >>= (_int128 &lft, int shft) {
 	if (shft != 0)
 		int128shr(&lft, shft);
 	return lft;
 }
-inline _uint128 &operator>>=(_uint128 &lft, const int shft) {
+inline _uint128 &operator >>= (_uint128 &lft, const int shft) {
 	if (shft != 0) {
 		uint128shr(&lft, shft);
 	}
 	return lft;
 }
-inline _int128 &operator<<=(_int128 &lft, int shft) {
+inline _int128 &operator <<= (_int128 &lft, int shft) {
 	if (shft != 0)
 		int128shl(&lft, shft);
 	return lft;
 }
-inline _uint128 &operator<<=(_uint128 &lft, int shft) {
+inline _uint128 &operator <<= (_uint128 &lft, int shft) {
 	if (shft != 0)
 		int128shl(&lft, shft);
 	return lft;
@@ -918,15 +951,15 @@ inline _int128  operator+(const _int128  &lft, unsigned short rhs) {
 	return lft + (_uint128)rhs;
 }
 
-inline _uint128 operator+(const _uint128 &lft, __int64 rhs) {
-	return lft + (_int128)rhs;
-}
 inline _uint128 operator+(const _uint128 &lft, unsigned __int64 rhs) {
 	//return lft + (_uint128)rhs;
 	_uint128 sum;
 	auto c = _addcarry_u64(0, LO64(lft), rhs, &LO64(sum));
 	HI64(sum) = HI64(lft) + c;
 	return sum;
+}
+inline _uint128 operator+(const _uint128 &lft, __int64 rhs) {
+	return lft + (_int128)rhs;
 }
 inline _uint128 operator+(const _uint128 &lft, long rhs) {
 	return lft + (_int128)rhs;
@@ -2087,6 +2120,7 @@ inline bool iswodigit(wchar_t ch) {
 extern const _int128  _I128_MIN, _I128_MAX;
 extern const _uint128 _UI128_MAX;
 
+/* input and output operators declaration */
 std::istream  &operator>>(std::istream  &s, _int128  &n);
 std::ostream  &operator<<(std::ostream  &s, const _int128  &n);
 std::istream  &operator>>(std::istream  &s, _uint128 &n);
