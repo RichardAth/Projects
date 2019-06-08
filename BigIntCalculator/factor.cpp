@@ -623,7 +623,10 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;         
 	long long testP,  MaxP= 393203;  // use 1st 33333 primes
-	// MaxP must never exceed 2,642,245 to avoid overflow of LehmanLimit
+	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
+
+	// If toFactor is < LehmanLimit it will be factorised using trial division
+	// and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
 
@@ -656,7 +659,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			upperBound = Factors[i].upperBound;  // resume from where we left off
 			if (upperBound == -1)
 				continue;  // factor is prime
-			/* trial division */
+			/* trial division. Uses first 33333 primes */
 			while (upperBound < std::min((int)prime_list_count, 33333)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {

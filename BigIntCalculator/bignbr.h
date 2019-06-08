@@ -371,6 +371,11 @@ public:
 	}
 } ;
 
+void BigInteger2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
+/* output operators declaration */
+std::ostream  &operator<<(std::ostream  &s, const BigInteger &n);
+std::wostream &operator<<(std::wostream &s, const BigInteger &n);
+
 extern BigInteger TestNbrBI;
 extern limb * const TestNbr;
 extern limb *const MontgomeryMultR2;
@@ -383,6 +388,7 @@ void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod);
 void FactoringSIQS(const Znum &NbrToFactor, Znum &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
+void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
 void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
@@ -449,6 +455,3 @@ void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;
-
-//void BigInteger2Dec(const BigInteger *pBigInt, char *decimal, int groupLength);
-//void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);

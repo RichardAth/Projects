@@ -139,7 +139,7 @@ static void ComputeInversePower2(const limb *value, limb *result, limb *tmp)
 /* uses global variables TestNbr, NumberLength */
 void GetMontgomeryParms(int len) {
 	int j;
-	int value;
+
 	TestNbr[len].x = 0;    // add a leading zero
 
 	if (len == 1) {
@@ -166,7 +166,7 @@ void GetMontgomeryParms(int len) {
 		/* in reality, there can't be just 1 because numbers that fit into 
 		1 limb will already be factored before we get to this point, therefore
 		code below is never executed. */
-		value = TestNbr[NumberLength - 1].x;
+		int value = TestNbr[NumberLength - 1].x;
 		for (j = 0; j < BITS_PER_GROUP; j++) {
 			if (value == 1) {
 				powerOf2Exponent = (len - 1)*BITS_PER_GROUP + j;
@@ -1281,9 +1281,25 @@ static void modmultIntExtended(const limb *factorBig, int factorInt, limb *resul
 	}
 }
 
-/* result = FactorBig* factorInt (mod TestNbr) */
+/* result = FactorBig* factorInt (mod TestNbr) 
+note: result & factorBig may be the same variable */
 void modmultInt(const limb *factorBig, int factorInt, limb *result) {
+#ifdef _DEBUG
+	Znum fb, res, tstNbr, r2, prod, quot;
+	LimbstoZ(factorBig, fb, NumberLength);
+#endif
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
+#ifdef _DEBUG
+	LimbstoZ(result, res, NumberLength);
+	BigtoZ(tstNbr, TestNbrBI);
+	prod = fb * factorInt;
+	quot = prod / tstNbr;
+	r2 = prod%tstNbr;
+	if (r2 != res) {
+		std::cout << '(' << fb << '*' << factorInt << ") % " << tstNbr
+			<< " = " << res << " expected " << r2 << " quot = " << quot << '\n';
+	}
+#endif
 }
 
 // Input: base = base in Montgomery notation.

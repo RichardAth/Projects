@@ -24,6 +24,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 #include "showtime.h"
 #include "bignbr.h"
 #include "factor.h"
+//#define log 1
 
 extern HANDLE hConsole;
 static bool first = true;
@@ -65,10 +66,7 @@ static limb UX[MAX_LEN];
 static limb UZ[MAX_LEN];
 static limb W3[MAX_LEN];
 static limb W4[MAX_LEN];
-static limb Aux1[MAX_LEN];
-static limb Aux2[MAX_LEN];
-static limb Aux3[MAX_LEN];
-static limb Aux4[MAX_LEN];
+static limb Aux1[MAX_LEN], Aux2[MAX_LEN], Aux3[MAX_LEN], Aux4[MAX_LEN];      // work variables
 
 static unsigned char sieve[10 * SIEVE_SIZE];
 static unsigned char sieve2310[SIEVE_SIZE];
@@ -88,34 +86,56 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	const limb *x1, const limb *z1, const limb *x, const limb *z);
 static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1);
 
+#ifdef log
+static char logbuffer[2000];
+static limb Xaux[MAX_LEN], Zaux[MAX_LEN];
+FILE *logfile;
+
+void print(limb *w) {
+	Bin2Dec(w, logbuffer, NumberLength, 0);
+	fprintf_s(logfile, "%s\n", logbuffer);
+	memset(Xaux, 0, NumberLength * sizeof(limb));
+	Xaux[0].x = 1;
+	modmult(Xaux, w, Zaux);
+	Bin2Dec(Zaux, logbuffer, NumberLength, 0);
+	fprintf_s(logfile, "%s\n\n", logbuffer);
+}
+
+
+#define logf(a) {                                   \
+	Bin2Dec(##a, logbuffer, NumberLength, -6);      \
+	fprintf_s (logfile, #a " = %s at line %d \n", logbuffer, __LINE__);  \
+}
+#endif 
+
 /******************************************************/
 /* Start of code adapted from Paul Zimmermann's ECM4C */
 /******************************************************/
 #define ADD 6  /* number of multiplications in an addition */
 #define DUP 5  /* number of multiplications in a duplicate */
 
-/* returns value in YieldFreq */
+/* returns value in YieldFreq, based on NumLen which is the number of limbs in TestNbr */
 static void GetYieldFrequency(int NumLen)
 {
 	yieldFreq = 1000000 / (NumLen * NumLen) + 1;
 	if (yieldFreq > 100000) {
-		yieldFreq = yieldFreq / 100000 * 100000;
+		yieldFreq = yieldFreq / 100000 * 100000;   // round down to multiple of 100000
 	}
 	else if (yieldFreq > 10000) {
-		yieldFreq = yieldFreq / 10000 * 10000;
+		yieldFreq = yieldFreq / 10000 * 10000;     // round down to multiple of 10000
 	}
 	else if (yieldFreq > 1000) {
-		yieldFreq = yieldFreq / 1000 * 1000;
+		yieldFreq = yieldFreq / 1000 * 1000;       // round down to multiple of 1000
 	}
 	else if (yieldFreq > 100) {
-		yieldFreq = yieldFreq / 100 * 100;
+		yieldFreq = yieldFreq / 100 * 100;         // round down to multiple of 100
 	}
 }
 
 /* returns the number of modular multiplications */
 static int lucas_cost(int n, double v)
 {
-	int c, d, e, r;
+	int cost, d, e, r;
 
 	d = n;
 	r = (int)((double)d / v + 0.5);
@@ -124,7 +144,7 @@ static int lucas_cost(int n, double v)
 	}
 	d = n - r;
 	e = 2 * r - n;
-	c = DUP + ADD; /* initial duplicate and final addition */
+	cost = DUP + ADD; /* initial duplicate and final addition */
 	while (d != e) {
 		if (d < e) {
 			r = d;
@@ -135,50 +155,51 @@ static int lucas_cost(int n, double v)
 			r = (2 * d - e) / 3;
 			e = (2 * e - d) / 3;
 			d = r;
-			c += 3 * ADD; /* 3 additions */
+			cost += 3 * ADD; /* 3 additions */
 		}
 		else if (4 * d <= 5 * e && (d - e) % 6 == 0) { /* condition 2 */
 			d = (d - e) / 2;
-			c += ADD + DUP; /* one addition, one duplicate */
+			cost += ADD + DUP; /* one addition, one duplicate */
 		}
 		else if (d <= (4 * e)) { /* condition 3 */
 			d -= e;
-			c += ADD; /* one addition */
+			cost += ADD; /* one addition */
 		}
 		else if ((d + e) % 2 == 0) { /* condition 4 */
 			d = (d - e) / 2;
-			c += ADD + DUP; /* one addition, one duplicate */
+			cost += ADD + DUP; /* one addition, one duplicate */
 		}
 		else if (d % 2 == 0) { /* condition 5 */
 			d /= 2;
-			c += ADD + DUP; /* one addition, one duplicate */
+			cost += ADD + DUP; /* one addition, one duplicate */
 		}
 		else if (d % 3 == 0) { /* condition 6 */
 			d = d / 3 - e;
-			c += 3 * ADD + DUP; /* three additions, one duplicate */
+			cost += 3 * ADD + DUP; /* three additions, one duplicate */
 		}
 		else if ((d + e) % 3 == 0) { /* condition 7 */
 			d = (d - 2 * e) / 3;
-			c += 3 * ADD + DUP; /* three additions, one duplicate */
+			cost += 3 * ADD + DUP; /* three additions, one duplicate */
 		}
 		else if ((d - e) % 3 == 0) { /* condition 8 */
 			d = (d - e) / 3;
-			c += 3 * ADD + DUP; /* three additions, one duplicate */
+			cost += 3 * ADD + DUP; /* three additions, one duplicate */
 		}
 		else if (e % 2 == 0) { /* condition 9 */
 			e /= 2;
-			c += ADD + DUP; /* one addition, one duplicate */
+			cost += ADD + DUP; /* one addition, one duplicate */
 		}
 	}
-	return c;
+	return cost;
 }
 
-/* computes nP from P=(x:z) and puts the result in (x:z). Assumes n>2. */
+/* computes nP from P=(x:z) and puts the result in (x:z). Assumes n>2.
+uses global variables Aux1, Aux2, Aux3, Aux4 */
 static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *zT2)
 {
 	int d, e, r, i;
-	limb *t;
-	limb *xA = x, *zA = z;
+	limb *temp;
+	limb *xA = x,    *zA = z;
 	limb *xB = Aux1, *zB = Aux2;
 	limb *xC = Aux3, *zC = Aux4;
 	double v[] =
@@ -214,18 +235,12 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 	memcpy(zB, zA, NumberLength * sizeof(limb));
 	memcpy(xC, xA, NumberLength * sizeof(limb));   // C <- A
 	memcpy(zC, zA, NumberLength * sizeof(limb));
-	duplicate(xA, zA, xA, zA); /* A=2*A */
+	duplicate(xA, zA, xA, zA);              /* A=2*A */
 	while (d != e) {
 		if (d < e) {
-			r = d;
-			d = e;
-			e = r;
-			t = xA;
-			xA = xB;
-			xB = t;
-			t = zA;
-			zA = zB;
-			zB = t;
+			r = d;   d = e;  e = r;   // swap d & e
+			temp = xA; 	xA = xB; xB = temp;  // swap A and B
+			temp = zA;  zA = zB; zB = temp;
 		}
 		/* do the first line of Table 4 whose condition qualifies */
 		if (4 * d <= 5 * e && ((d + e) % 3) == 0) { /* condition 1 */
@@ -235,56 +250,40 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T = f(A,B,C) */
 			add3(xT2, zT2, xT, zT, xA, zA, xB, zB); /* T2 = f(T,A,B) */
 			add3(xB, zB, xB, zB, xT, zT, xA, zA); /* B = f(B,T,A) */
-			t = xA;
-			xA = xT2;
-			xT2 = t;
-			t = zA;
-			zA = zT2;
-			zT2 = t; /* swap A and T2 */
+			temp = xA; 	xA = xT2; xT2 = temp;
+			temp = zA; 	zA = zT2; zT2 = temp; /* swap A and T2 */
 		}
 		else if (4 * d <= 5 * e && (d - e) % 6 == 0) { /* condition 2 */
 			d = (d - e) / 2;
 			add3(xB, zB, xA, zA, xB, zB, xC, zC); /* B = f(A,B,C) */
-			duplicate(xA, zA, xA, zA); /* A = 2*A */
+			duplicate(xA, zA, xA, zA);       /* A = 2*A */
 		}
-		else if (d <= (4 * e)) { /* condition 3 */
+		else if (d <= (4 * e)) {      /* condition 3 */
 			d -= e;
 			add3(xT, zT, xB, zB, xA, zA, xC, zC); /* T = f(B,A,C) */
-			t = xB;
-			xB = xT;
-			xT = xC;
-			xC = t;
-			t = zB;
-			zB = zT;
-			zT = zC;
-			zC = t; /* circular permutation (B,T,C) */
+			temp = xB; 	xB = xT; xT = xC; xC = temp;
+			temp = zB;  zB = zT; zT = zC; zC = temp; /* circular permutation (B,T,C) */
 		}
-		else if ((d + e) % 2 == 0) { /* condition 4 */
+		else if ((d + e) % 2 == 0) {  /* condition 4 */
 			d = (d - e) / 2;
 			add3(xB, zB, xB, zB, xA, zA, xC, zC); /* B = f(B,A,C) */
-			duplicate(xA, zA, xA, zA); /* A = 2*A */
+			duplicate(xA, zA, xA, zA);        /* A = 2*A */
 		}
-		else if (d % 2 == 0) { /* condition 5 */
+		else if (d % 2 == 0) {         /* condition 5 */
 			d /= 2;
 			add3(xC, zC, xC, zC, xA, zA, xB, zB); /* C = f(C,A,B) */
-			duplicate(xA, zA, xA, zA); /* A = 2*A */
+			duplicate(xA, zA, xA, zA);        /* A = 2*A */
 		}
-		else if (d % 3 == 0) { /* condition 6 */
+		else if (d % 3 == 0) {        /* condition 6 */
 			d = d / 3 - e;
 			duplicate(xT, zT, xA, zA); /* T1 = 2*A */
 			add3(xT2, zT2, xA, zA, xB, zB, xC, zC); /* T2 = f(A,B,C) */
 			add3(xA, zA, xT, zT, xA, zA, xA, zA); /* A = f(T1,A,A) */
 			add3(xT, zT, xT, zT, xT2, zT2, xC, zC); /* T1 = f(T1,T2,C) */
-			t = xC;
-			xC = xB;
-			xB = xT;
-			xT = t;
-			t = zC;
-			zC = zB;
-			zB = zT;
-			zT = t; /* circular permutation (C,B,T) */
+			temp = xC; xC = xB; xB = xT; xT = temp;
+			temp = zC; zC = zB;	zB = zT; zT = temp; /* circular permutation (C,B,T) */
 		}
-		else if ((d + e) % 3 == 0) { /* condition 7 */
+		else if ((d + e) % 3 == 0) {     /* condition 7 */
 			d = (d - 2 * e) / 3;
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T1 = f(A,B,C) */
 			add3(xB, zB, xT, zT, xA, zA, xB, zB); /* B = f(T1,A,B) */
@@ -295,12 +294,8 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 			d = (d - e) / 3;
 			add3(xT, zT, xA, zA, xB, zB, xC, zC); /* T1 = f(A,B,C) */
 			add3(xC, zC, xC, zC, xA, zA, xB, zB); /* C = f(A,C,B) */
-			t = xB;
-			xB = xT;
-			xT = t;
-			t = zB;
-			zB = zT;
-			zT = t; /* swap B and T */
+			temp = xB; xB = xT; xT = temp;
+			temp = zB; zB = zT; zT = temp; /* swap B and T */
 			duplicate(xT, zT, xA, zA);
 			add3(xA, zA, xA, zA, xT, zT, xA, zA); /* A = 3*A */
 		}
@@ -319,7 +314,8 @@ Uses the following global variables:
 - n : number to factor = TestNbr
 - x, z : coordinates of P
 - TX, TZ, UX, UZ : auxiliary (global) variables
-Modifies: x3, z3, TX, TZ, UX, UZ.
+Modifies: x3, z3,
+work variables: TX, TZ, UX, UZ.
 (x3,z3) may be identical to (x2,z2) and to (x,z)
 */
 static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
@@ -336,12 +332,12 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	modmult(TX, TX,  UZ);                                 //  UZ = 4*(x1*x2-z1*z2)^2
 	SubtBigNbrModN(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x2*z1-x1*z2)
 	modmult(TX, TX, UX);                                 // UX = 4*(x2*z1-x1*z2)^2
-	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x == x3
-		memcpy(TZ, x, NumberLength * sizeof(int));       // TZ = x
-		memcpy(TX,  UZ, NumberLength * sizeof(int));     // TX = UZ = 4*(x1*x2-z1*z2)^2
-		modmult(z, TX,  UZ);                             // UZ = z*TX
-		modmult(UX, TZ, z3);                             // z3 = UX*TZ
-		memcpy(x3,  UZ, NumberLength * sizeof(int));     // x3 = UZ
+	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x != x3
+		memcpy(TZ, x, NumberLength * sizeof(limb));       // TZ = x
+		memcpy(TX,  UZ, NumberLength * sizeof(limb));     // TX = UZ = 4*(x1*x2-z1*z2)^2
+		modmult(z, TX,  UZ);                              // UZ = z*TX
+		modmult(UX, TZ, z3);                              // z3 = UX*TZ
+		memcpy(x3,  UZ, NumberLength * sizeof(limb));     // x3 = UZ
 	}
 	else {
 		modmult( UZ, z, x3);            // x3 = 4*z*(x1*x2-z1*z2)^2
@@ -354,21 +350,10 @@ Uses the following global variables:
 - n : number to factor
 - b : (a+2)/4 mod n
 - UZ,  TX,  TZ : auxiliary variables
-Modifies: x2, z2, UZ,  TX,  TZ
+Modifies: x2, z2, 
+work variables: UZ,  TX,  TZ
+Uses global variable AA
 */
-#if 0
-void print(limb *w)
-{
-	char pepe[1000];
-	Bin2Dec(w, pepe, NumberLength, 0);
-	printf("%s\n", pepe);
-	memset(Xaux, 0, NumberLength * sizeof(limb));
-	Xaux[0].x = 1;
-	modmult(Xaux, w, Zaux);
-	Bin2Dec(Zaux, pepe, NumberLength, 0);
-	printf("%s\n\n", pepe);
-}
-#endif
 static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 {
 	/* N.B. all arithmetic is mod TestNbr */
@@ -376,7 +361,7 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 	modmult(TZ, TZ, UZ);                                  //  UZ = (x1+z1)^2 (mod testNbr)
 	SubtBigNbrModN(x1, z1, TZ, TestNbr, NumberLength);    //  TZ = x1-z1 (mod testNbr)
 	modmult(TZ, TZ,  TX);                                 //  TX = (x1-z1)^2 (mod testNbr)
-	modmult(UZ, TX, x2);                                  // x2 = UZ* TX (mod testNbr)
+	modmult(UZ, TX, x2);                                  //  x2 = UZ* TX (mod testNbr)
 	SubtBigNbrModN(UZ, TX, TZ, TestNbr, NumberLength);    //  TZ = UZ- TX = 4*x1*z1 (mod testNbr)
 	modmult(AA, TZ, UZ);                                  // UZ =  TZ*AA (mod testNbr)
 	AddBigNbrModNB(UZ, TX, UZ, TestNbr, NumberLength);    // UZ = ( TX+b* TZ) (mod testNbr)
@@ -388,7 +373,7 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 1 if gcd is 1 , 2 if gcd > 1.
 The value of the gcd is returned in BiGD
 Uses global variables Temp1, BiGD, NumberLength */
-static int gcdIsOne(const limb *value, const Znum &zN) {
+static int gcdIsOne(const limb *value, const Znum &zN, int line) {
 	static Znum Temp1;
 
 	LimbstoZ(value, Temp1, NumberLength);    // Temp1 = value
@@ -401,6 +386,10 @@ static int gcdIsOne(const limb *value, const Znum &zN) {
 		return 0;
 	}
 	BiGD = gcd(Temp1, zN);     // BiGD = gcd(value, N)
+#ifdef log
+	gmp_fprintf(logfile, "value = %Zd N = %Zd gcd = %Zd, line %d \n", Temp1, zN, BiGD, line);
+	fflush(logfile);
+#endif
 	if (BiGD < 2) {
 		return (int)MulPrToLong(BiGD);    // GCD is less than 2.
 	}
@@ -506,7 +495,7 @@ static void GenerateSieve(int initial) {
 //		}
 //	}
 //
-//	/* logic failure; did't find factor */
+//	/* logic failure; did'nt find factor */
 //	std::cerr << "Lehman failed to factorise " << n << '\n';
 //	factor = 1;     // no factor found (should not happen)
 //	return;
@@ -669,11 +658,12 @@ static void upOneLine(void) {
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
 FACTOR_FOUND   - value of factor is returned in global variable BiGD
-ERROR              (not used??)  */
+ERROR              (not used??)  
+uses work variables UX, UZ, TX, TZ */
 static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
-	static limb A0[MAX_LEN];
-	static limb A02[MAX_LEN];
-	static limb A03[MAX_LEN];
+	static limb A0[MAX_LEN];     // A0 <- 2*(ElipCurvNo+1)/(3*(ElipCurvNo+1)^2 - 1) (mod TestNbr)
+	static limb A02[MAX_LEN];    // A02 <- A0^2
+	static limb A03[MAX_LEN];    // A03 <- A0^3
 
 	static limb W1[MAX_LEN];
 	static limb W2[MAX_LEN];
@@ -725,10 +715,14 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			LehmanZ(zN, k, Zfactor);
 			if (Zfactor > LIMB_RANGE) {
 				foundByLehman = true;     // Factor found.
-//#ifdef _DEBUG
+#ifdef _DEBUG
 				std::cout << "Lehman factor found. k = " << k << " N= " << zN 
 					<< " factor = " << Zfactor << '\n';
-//#endif
+#endif
+#ifdef log
+				gmp_fprintf(logfile, "Lehman factor found. k = %d  N=  %Zd factor = %Zd \n",
+					k, ZT(zN), ZT(Zfactor));
+#endif
 				return FACTOR_FOUND;
 			}
 		}
@@ -797,6 +791,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 
 		printf("%s", ptrLowerText);
 		first = false;
+#if log
+		fprintf_s(logfile, "%s", ptrLowerText);
+		fflush(logfile);
+#endif
 #if 0
 		primalityString =
 			textAreaContents
@@ -847,7 +845,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		SubtBigNbrModN(Aux3, MontgomeryMultR1, Aux2, TestNbr, NumberLength);
 		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);
 		modmult(Aux1, Aux2, A0);       // A0 <- 2*(ElipCurvNo+1)/(3*(ElipCurvNo+1)^2 - 1) (mod TestNbr)
-
+#ifdef log
+		logf(A0);
+#endif
 		//  if A0*(A0 ^ 2 - 1)*(9 * A0 ^ 2 - 1) mod N=0 then select another curve.
 		modmult(A0, A0, A02);          // A02 <- A0^2
 		modmult(A02, A0, A03);         // A03 <- A0^3
@@ -855,6 +855,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		modmultInt(A02, 9, Aux2);      // Aux2 <- 9*A0^2
 		SubtBigNbrModN(Aux2, MontgomeryMultR1, Aux2, TestNbr, NumberLength); // Aux2 <- 9*A0^2-1
 		modmult(Aux1, Aux2, Aux3);
+#ifdef log
+		logf(Aux3);
+#endif
 		if (BigNbrIsZero(Aux3, NumberLength)) {
 			continue;  // select another curve
 		}
@@ -871,11 +874,11 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		ModInvBigNbr(Aux2, Aux3, TestNbr, NumberLength);
 		modmult(Aux1, Aux3, A0);
 		//   AA <- (A + 2)*modinv(4, N) mod N
-		modmultInt(MontgomeryMultR1, 2, Aux2);  // Aux2 <- 2
+		modmultInt(MontgomeryMultR1, 2, Aux2);           // Aux2 <- 2
 		AddBigNbrModNB(A0, Aux2, Aux1, TestNbr, NumberLength); // Aux1 <- A0+2
-		modmultInt(MontgomeryMultR1, 4, Aux2);  // Aux2 <- 4
-		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);
-		modmult(Aux1, Aux2, AA);
+		modmultInt(MontgomeryMultR1, 4, Aux2);            // Aux2 <- 4
+		ModInvBigNbr(Aux2, Aux2, TestNbr, NumberLength);   // Aux2 = 1/4
+		modmult(Aux1, Aux2, AA);                // AA = Aux1 * Aux2 = Aux1/4
 		//   X <- (3 * A0 ^ 2 + 1) mod N
 		modmultInt(A02, 3, Aux1);    // Aux1 <- 3*A0^2
 		AddBigNbrModNB(Aux1, MontgomeryMultR1, X, TestNbr, NumberLength);
@@ -884,6 +887,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		/**************/
 		memcpy(Xaux, X, NumberLength * sizeof(limb));   // Xaux = X
 		memcpy(Zaux, Z, NumberLength * sizeof(limb));   // Zaux = Z
+#ifdef log
+		logf(Xaux);
+		logf(Zaux);
+#endif
 		// GcdAccumulated = 1
 		memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
 		for (Pass = 0; Pass < 2; Pass++) {
@@ -899,13 +906,16 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			}
 
 			if (Pass == 0) {
+				// GcdAccumulated *= Z
 				modmult(GcdAccumulated, Z, Aux1);
 				memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+#ifdef log
+				logf(GcdAccumulated);
+#endif
 			}
 			else {
-				if (gcdIsOne(Z, zN) > 1) {
-					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-					Zfactor = BiGD;
+				if (gcdIsOne(Z, zN, __LINE__) > 1) {
+					Zfactor = BiGD;    // copy factor to global Znum
 					return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 				}
 			}
@@ -920,13 +930,19 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				}
 				indexM++;
 				if (Pass == 0) {
+					// GcdAccumulated *= Z;
 					modmult(GcdAccumulated, Z, Aux1);
 					memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+#ifdef log
+					logf(GcdAccumulated);
+#endif
 				}
 				else {
-					if (gcdIsOne(Z, zN) > 1) {
-						//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-						Zfactor = BiGD;
+					if (gcdIsOne(Z, zN, __LINE__) > 1) {
+						Zfactor = BiGD;      // copy factor to global Znum
+#ifdef log
+						fprintf_s(logfile, "Pass = 0  - factor found \n");
+#endif
 						return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 					}
 				}
@@ -964,13 +980,16 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					indexPrimes++;
 					prac((int)(P + 2 * i), X, Z, W1, W2, W3, W4);
 					if (Pass == 0) {
+						// GcdAccumulated *= Z;
 						modmult(GcdAccumulated, Z, Aux1);
 						memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+#ifdef log
+						logf(GcdAccumulated);
+#endif
 					}
 					else {
-						if (gcdIsOne(Z, zN) > 1) {
-							//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-							Zfactor = BiGD;
+						if (gcdIsOne(Z, zN, __LINE__) > 1) {
+							Zfactor = BiGD;    // copy factor to global Znum
 							return FACTOR_FOUND;   // ** found a factor in global variable BiGD**
 						}
 					}
@@ -983,11 +1002,13 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				{ // If GcdAccumulated is multiple of TestNbr, continue.
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
-					continue; // 
+					continue; 
 				}
-				if (gcdIsOne(GcdAccumulated, zN) > 1) {
-					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-					Zfactor = BiGD;
+				if (gcdIsOne(GcdAccumulated, zN, __LINE__) > 1) {
+					Zfactor = BiGD;      // copy factor to global Znum
+#ifdef log
+					fprintf_s(logfile, "Pass = 0  - factor found \n");
+#endif
 					return FACTOR_FOUND;   // ** found a factor **  in global variable BiGD
 				}
 				break;  // exit for loop
@@ -1061,13 +1082,19 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				modmult(Aux1, Aux1, Aux2);
 				modmult(Aux2, UX, Z); // (X:Z) -> 5Q, 7Q, ...
 				if (Pass == 0) {
+					// GcdAccumulated *= Aux1
 					modmult(GcdAccumulated, Aux1, Aux2);
 					memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
+#ifdef log
+					logf(GcdAccumulated);
+#endif
 				}
 				else {
-					if (gcdIsOne(Aux1, zN) > 1) {
-						//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-						Zfactor = BiGD;
+					if (gcdIsOne(Aux1, zN, __LINE__) > 1) {
+						Zfactor = BiGD;     // copy factor to global Znum
+#ifdef log
+						fprintf(logfile, "Pass 1, I = %d factor found \n", I);
+#endif
 						return FACTOR_FOUND;   // ** found a factor in global variable BiGD
 					}
 				}
@@ -1088,6 +1115,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				memcpy(UX, WX, NumberLength * sizeof(limb));  // (UX:UZ) <-
 				memcpy(UZ, WZ, NumberLength * sizeof(limb));  // Previous (X:Z)
 			} /* end for I */
+#ifdef log
+			fprintf(logfile, "end 'for I' I=%d Pass = %d \n", I, Pass);
+#endif
 
 			AddBigNbrModNB(DX, DZ, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, Aux1, W1);
@@ -1141,25 +1171,35 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					/* Walk through sieve */
 					J = HALF_SIEVE_SIZE + (indexM % 10) * SIEVE_SIZE;
 					for (i = 0; i < GROUP_SIZE; i++) {
-						j = sieveidx[i]; // 0 < J < HALF_SIEVE_SIZE
+						j = sieveidx[i];     // 0 < J < HALF_SIEVE_SIZE
 						if (sieve[J + j] != 0 && sieve[J - 1 - j] != 0) {
 							continue; // Do not process if both are composite numbers.
 						}
+
 						SubtBigNbrModN(Aux1, root[i], M, TestNbr, NumberLength);
+						// GcdAccumulated *= M
 						modmult(GcdAccumulated, M, Aux2);
 						memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
+#ifdef log
+						logf(GcdAccumulated);
+#endif
 					}
 					if (Pass != 0) {
 						if (BigNbrIsZero(GcdAccumulated, NumberLength)) {
+#ifdef  log
+							logf(GcdAccumulated);
+#endif //  log
 							break;  // This curve cannot factor the number.
 						}
-						if (gcdIsOne(GcdAccumulated, zN) > 1) {
-							//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-							Zfactor = BiGD;
+						if (gcdIsOne(GcdAccumulated, zN, __LINE__) > 1) {
+							Zfactor = BiGD;   // copy factor to global Znum
+#ifdef log
+							fprintf(logfile, "Pass = 1, indexM = %d factor found \n", indexM);
+#endif
 							return FACTOR_FOUND;    // ** found a factor in global variable BiGD
 						}
-					}
-				}   // End for.
+					}  // end if (Pass != 0)
+				}   // End if (indexM >= Qaux)
 
 				if (indexM != 0) { // Update (X:Z)
 					memcpy(WX, X, NumberLength * sizeof(limb));
@@ -1179,28 +1219,39 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					memcpy(UX, WX, NumberLength * sizeof(limb));
 					memcpy(UZ, WZ, NumberLength * sizeof(limb));
 				}
-			} // end for Q
+			} // end for (indexM = 0; indexM <= maxIndexM; indexM++)
 
 			if (Pass == 0) {
 				int rc;
 				if (BigNbrIsZero(GcdAccumulated, NumberLength)) { // If GcdAccumulated is zero
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
+#ifdef log
+					fprintf(logfile, "GcdAccumulated = 0 ");
+					logf(X);
+					logf(Z);
+#endif
 					continue; // multiple of TestNbr, continue.
 				}
-				rc = gcdIsOne(GcdAccumulated, zN);
+				rc = gcdIsOne(GcdAccumulated, zN, __LINE__);
 				if (rc == 1) {
+#ifdef log
+					logf(GcdAccumulated);
+					fprintf(logfile, "exit from curve %d  \n", ElipCurvNo);
+#endif
 					break;    // GCD is one, so this curve does not find a factor.
 				}
 				if (rc == 0) {
 					continue;  // GcdAccumulated = N or 0
 				}
 
-				//if (memcmp(BNgcd, TestNbr, NumberLength * sizeof(limb)))
+
 				if (BiGD != zN)
 				{           // GCD is not 1 or TestNbr
-					//BigtoZ(Zfactor, BiGD); // copy factor to global Znum
-					Zfactor = BiGD;
+					Zfactor = BiGD;    // copy factor to global Znum
+#ifdef log
+					logf(GcdAccumulated);
+#endif
 					return FACTOR_FOUND;     // ** found a factor in global variable BiGD
 				}
 			}
