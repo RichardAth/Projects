@@ -172,7 +172,7 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
 }
 
 /* convert BigInteger to a text string */
-void BigInteger2Dec(const BigInteger &BigInt, char *decimal, int groupLength) {
+void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength) {
 	if (BigInt.sign == SIGN_NEGATIVE) {
 		*decimal++ = '-';
 	}
@@ -183,14 +183,15 @@ void BigInteger2Dec(const BigInteger &BigInt, char *decimal, int groupLength) {
 definitions below are crude but they work. Only decimal output
 is supported for direct output */
 std::ostream  &operator<<(std::ostream  &s, const BigInteger  &n) {
-	static std::string  buffer;
+	static std::string  buffer;   /* using std::string takes care of memory 
+								  management without risking memory leaks */
 	buffer.clear();
 	int length = n.nbrLimbs * BITS_PER_GROUP; // get length in bits
 	double buflen = (double)length*log10(2);  // get length in decimal digits
 	buflen = buflen * 7 / 6 + 5; // allow for space every 6 digits + sign + trailing null
 	buffer.resize((size_t)buflen);  // N.B. buffer larger than needed is OK, but 
 								   // too small could be disastrous
-	BigInteger2Dec(n, &buffer[0], -6);
+	Bin2Dec(n, &buffer[0], -6);
 	auto sLen = strnlen_s(&buffer[0], (size_t)buflen);
 	buffer.resize(sLen);
 	return s << buffer;

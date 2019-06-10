@@ -40,9 +40,9 @@ limb *const MontgomeryMultR2 = MontgomeryMultR2BI.limbs;
 
 static int powerOf2Exponent;
 static limb aux[MAX_LEN], aux2[MAX_LEN];
-static limb aux3[MAX_LEN], aux4[MAX_LEN];
-static limb aux5[MAX_LEN], aux6[MAX_LEN];
-static limb resultModOdd[MAX_LEN], resultModPower2[MAX_LEN];
+//static limb aux3[MAX_LEN], aux4[MAX_LEN];
+//static limb aux5[MAX_LEN], aux6[MAX_LEN];
+//static limb resultModOdd[MAX_LEN], resultModPower2[MAX_LEN];
 //static int NumberLength2;
 //int NumberLength, NumberLengthR1;
 long long lModularMult;
@@ -237,41 +237,41 @@ void GetMontgomeryParms(int len) {
 }
 
 /* Sum = Nbr1 + Nbr2 (mod m) */
-void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m, int nbrLen)
+void AddBigNbrModNB(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb m[], int nbrLen)
 {
 	unsigned int carry = 0;
 	int borrow;
 	int i;
-	for (i = 0; i < nbrLen; i++)
-	{
+	/* sum = Nbr1 + Nbr2 */
+	for (i = 0; i < nbrLen; i++) {
 		carry = (carry >> BITS_PER_GROUP) +
-			(unsigned int)(Nbr1 + i)->x + (unsigned int)(Nbr2 + i)->x;
+			(unsigned int)Nbr1[i].x + (unsigned int)Nbr2[i].x;
 		Sum[i].x = (int)(carry & MAX_VALUE_LIMB);
 	}
+	/* sum -= m */
 	borrow = 0;
 	for (i = 0; i < nbrLen; i++)
 	{
 		borrow = (borrow >> BITS_PER_GROUP) +
-			(unsigned int)Sum[i].x - (m + i)->x;
+			(unsigned int)Sum[i].x - m[i].x;
 		Sum[i].x = (int)(borrow & MAX_VALUE_LIMB);
 	}
-
+	/* if Sum is -ve, Sum += m */
 	if (carry < LIMB_RANGE && borrow < 0)
 	{
 		carry = 0;
 		for (i = 0; i < nbrLen; i++)
 		{
 			carry = (carry >> BITS_PER_GROUP) +
-				(unsigned int)(Sum + i)->x + (unsigned int)(m + i)->x;
+				(unsigned int)Sum[i].x + (unsigned int)m[i].x;
 			Sum[i].x = (int)(carry & MAX_VALUE_LIMB);
 		}
 	}
 }
 /* Sum = Nbr1 + Nbr2 (mod TestNbr) */
-//void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
-//{
-//	AddBigNbrModNB(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
-//}
+void AddBigNbrModNB(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Sum) {
+	AddBigNbrModNB(Nbr1.limbs, Nbr2.limbs, Sum.limbs, TestNbr, NumberLength);
+}
 
 /* Diff = Nbr1-Nbr2 (mod m)*/
 void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *m, int nbrLen)
@@ -294,11 +294,9 @@ void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *
 		}
 	}
 }
-/* Sum = Nbr1-Nbr2 (mod Testnbr)*/
-//void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
-//{
-//	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
-//}
+void SubtBigNbrModN(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Diff) {
+	SubtBigNbrModN(Nbr1.limbs, Nbr2.limbs, Diff.limbs, TestNbr, NumberLength);
+}
 
 /* product = factor1*factor2%mod */
 static void smallmodmult(const int factor1, const int factor2, limb *product, int mod)
@@ -1199,6 +1197,10 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	return;
 }
 
+void modmult(const BigInteger &factor1, const BigInteger &factor2, BigInteger &product) {
+	modmult(factor1.limbs, factor2.limbs, product.limbs);
+}
+
 /* Multiply big number by integer.
 result = FactorBig* factorInt (mod TestNbr)
 note: factorBig is modified */
@@ -1300,6 +1302,10 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result) {
 			<< " = " << res << " expected " << r2 << " quot = " << quot << '\n';
 	}
 #endif
+}
+
+void modmultInt(const BigInteger &factorBig, int factorInt, BigInteger &result) {
+	modmultIntExtended(factorBig.limbs, factorInt, result.limbs, TestNbr, NumberLength);
 }
 
 // Input: base = base in Montgomery notation.
@@ -1435,15 +1441,13 @@ static int modInv(int NbrMod, int currentPrime)
 	int V3 = NbrMod;
 	int U1 = 0;
 	int U3 = currentPrime;
-	while (V3 != 0)
-	{
-		if (U3 < V3 + V3)
-		{               // QQ = 1
+	while (V3 != 0) 	{
+		if (U3 < V3 + V3) {               
+			// QQ = 1
 			T1 = U1 - V1;
 			T3 = U3 - V3;
 		}
-		else
-		{
+		else 	{
 			QQ = U3 / V3;
 			T1 = U1 - V1 * QQ;
 			T3 = U3 - V3 * QQ;
@@ -1453,6 +1457,7 @@ static int modInv(int NbrMod, int currentPrime)
 		V1 = T1;
 		V3 = T3;
 	}
+
 	return U1 + (currentPrime & (U1 >> 31));
 }
 
@@ -1485,6 +1490,10 @@ static int modInv(int NbrMod, int currentPrime)
 // note: both num and mod are modified (but the value is not changed)
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 {
+#ifdef _DEBUG
+	Znum znum, zinv, zmod, zinv2;
+	LimbstoZ(num, znum, nbrLen);
+#endif
 	int len;
 	int k, steps;
 	int a, b, c, d;  // Coefficients used to update variables R, S, U, V.
@@ -1502,6 +1511,17 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
 		ComputeInversePower2(num, inv, aux);
 		(inv + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
+#ifdef _DEBUG
+		{
+			LimbstoZ(inv, zinv, nbrLen);
+			LimbstoZ(mod, zmod, nbrLen);
+			auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
+			if (rv == 0 || zinv2 != zinv) {
+				std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';
+				std::cout << " should be " << zinv2 << '\n';
+			}
+		}
+#endif
 		return;
 	}
 	//  1. U <- M, V <- X, R <- 0, S <- 1, k <- 0
@@ -1814,6 +1834,20 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 		modmult(R, S, inv);
 		modmult(inv, MontgomeryMultR2, inv);
 	}
+#ifdef _DEBUG
+	{
+		LimbstoZ(inv, zinv, nbrLen);
+		LimbstoZ(mod, zmod, nbrLen);
+		std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';
+		auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
+		if (rv == 0 || zinv2 != zinv)
+			std::cout << " should be " << zinv2 << '\n';
+	}
+#endif
+}
+
+void ModInvBigNbr(const BigInteger &num, BigInteger &inv, const BigInteger &mod) {
+	ModInvBigNbr(num.limbs, inv.limbs, mod.limbs, mod.nbrLimbs);
 }
 
 // Compute modular division for odd moduli.

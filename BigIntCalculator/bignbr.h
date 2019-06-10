@@ -371,7 +371,7 @@ public:
 	}
 } ;
 
-void BigInteger2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
+void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
 /* output operators declaration */
 std::ostream  &operator<<(std::ostream  &s, const BigInteger &n);
 std::wostream &operator<<(std::wostream &s, const BigInteger &n);
@@ -391,13 +391,16 @@ void int2dec(char **pOutput, long long nbr);
 void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
-void AddBigNbrModNB (const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
+void AddBigNbrModNB (const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
+void SubtBigNbrModN(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Diff);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
+void modmult(const BigInteger &factor1, const BigInteger &factor2, BigInteger &product);
 void modmult(const Znum &a, const Znum &b, Znum &result);
 void REDC(Znum &t, const Znum &T);
 void modmultInt(const limb *factorBig, int factorInt, limb *result);
+void modmultInt(const BigInteger &factorBig, int factorInt, BigInteger &result);
 //void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
 //void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
 //void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
@@ -405,6 +408,7 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result);
 //void AdjustModN(limb *Nbr, const limb *TestNbr, int NumLen);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
+void ModInvBigNbr(const BigInteger &num, BigInteger &inv, const BigInteger &mod);
 void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
 //static void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
 //double logLimbs(const limb *pBigNbr, int nbrLimbs);

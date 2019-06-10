@@ -24,7 +24,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 #include "showtime.h"
 #include "bignbr.h"
 #include "factor.h"
-//#define log 1
+//#define log 1              // remove this line to generate code without logging
 
 extern HANDLE hConsole;
 static bool first = true;
@@ -56,16 +56,16 @@ enum eEcmResult
 	ECM_ERROR
 };
 
-static limb AA[MAX_LEN];
-static limb DX[MAX_LEN];
+static limb AA[MAX_LEN];               //   AA <- (A + 2)*modinv(4, N) mod N
+static limb DX[MAX_LEN];               // (DX:DZ) -> HALF_SIEVE_SIZE*Q
 static limb DZ[MAX_LEN];
-static limb M[MAX_LEN];
-static limb TX[MAX_LEN];
-static limb TZ[MAX_LEN];
-static limb UX[MAX_LEN];
-static limb UZ[MAX_LEN];
-static limb W3[MAX_LEN];
-static limb W4[MAX_LEN];
+static limb M[MAX_LEN];               // used by ecmCurve
+static limb TX[MAX_LEN];              // used by add3, ecmCurve
+static limb TZ[MAX_LEN];              // used by add3, ecmCurve
+static limb UX[MAX_LEN];              // used by add3, ecmCurve
+static limb UZ[MAX_LEN];              // used by add3, ecmCurve
+static limb W3[MAX_LEN];              // used by ecmCurve  ecminit
+static limb W4[MAX_LEN];              // used by ecmCurve, ecminit
 static limb Aux1[MAX_LEN], Aux2[MAX_LEN], Aux3[MAX_LEN], Aux4[MAX_LEN];      // work variables
 
 static unsigned char sieve[10 * SIEVE_SIZE];
@@ -88,22 +88,22 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1);
 
 #ifdef log
 static char logbuffer[2000];
-static limb Xaux[MAX_LEN], Zaux[MAX_LEN];
+//static limb temp1[MAX_LEN], temp2[MAX_LEN]; 
 FILE *logfile;
 
-void print(limb *w) {
-	Bin2Dec(w, logbuffer, NumberLength, 0);
-	fprintf_s(logfile, "%s\n", logbuffer);
-	memset(Xaux, 0, NumberLength * sizeof(limb));
-	Xaux[0].x = 1;
-	modmult(Xaux, w, Zaux);
-	Bin2Dec(Zaux, logbuffer, NumberLength, 0);
-	fprintf_s(logfile, "%s\n\n", logbuffer);
-}
+//void print(limb *w) {
+//	Bin2Dec(w, logbuffer, NumberLength, 0);
+//	fprintf_s(logfile, "%s\n", logbuffer);
+//	memset(temp1, 0, NumberLength * sizeof(limb));
+//	temp1[0].x = 1;
+//	modmult(temp1, w, temp2);
+//	Bin2Dec(temp2, logbuffer, NumberLength, 0);
+//	fprintf_s(logfile, " (= %s)\n", logbuffer);
+//}
 
 
-#define logf(a) {                                   \
-	Bin2Dec(##a, logbuffer, NumberLength, -6);      \
+#define logf(a) {														  \
+	Bin2Dec(##a, logbuffer, NumberLength, -6);							  \
 	fprintf_s (logfile, #a " = %s at line %d \n", logbuffer, __LINE__);  \
 }
 #endif 
@@ -313,7 +313,7 @@ using 5/6 mul, 6 add/sub and 6 mod. One assumes that Q-R=P or R-Q=P where P=(x:z
 Uses the following global variables:
 - n : number to factor = TestNbr
 - x, z : coordinates of P
-- TX, TZ, UX, UZ : auxiliary (global) variables
+
 Modifies: x3, z3,
 work variables: TX, TZ, UX, UZ.
 (x3,z3) may be identical to (x2,z2) and to (x,z)
@@ -671,8 +671,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 	static limb WZ[MAX_LEN];
 	static limb X[MAX_LEN];
 	static limb Z[MAX_LEN];
-	static limb Xaux[MAX_LEN];
-	static limb Zaux[MAX_LEN];
+	static limb Xaux[MAX_LEN];     // copy of X
+	static limb Zaux[MAX_LEN];     // copy of Z
 	static limb root[GROUP_SIZE][MAX_LEN];
 
 #ifdef __EMSCRIPTEN__
@@ -699,7 +699,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		if (L2 > 30 && L2 <= 90)          // If between 30 and 90 digits...
 		{                                 // switch to SIQS when curve No reaches limit
 			int limit = limits[((int)L2 - 26) / 5];  // e.g if L2<=50, limit=10
-			if (ElipCurvNo  >= limit) {                          
+			if (ElipCurvNo  >= limit) { 
+#ifdef log
+				fprintf_s(logfile, "Change to SIQS\n");
+#endif
    				return CHANGE_TO_SIQS;           // Switch to SIQS.
 			}
 		}
@@ -778,7 +781,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		if (first) {
 			if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 			{
-				fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+				fprintf_s(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
 				Beep(750, 1000);
 			}
 			coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
@@ -866,13 +869,13 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		modmultInt(A0, 4, Z);
 		//   A = (-3 * A0 ^ 4 - 6 * A0 ^ 2 + 1)*modinv(4 * A0 ^ 3, N) mod N
 		modmultInt(A02, 6, Aux1);      // Aux1 <- 6*A0^2
-		SubtBigNbrModN(MontgomeryMultR1, Aux1, Aux1, TestNbr, NumberLength);
+		SubtBigNbrModN(MontgomeryMultR1, Aux1, Aux1, TestNbr, NumberLength); // Aux1 = 1-6*A0^2
 		modmult(A02, A02, Aux2);       // Aux2 <- A0^4
 		modmultInt(Aux2, 3, Aux2);     // Aux2 <- 3*A0^4
-		SubtBigNbrModN(Aux1, Aux2, Aux1, TestNbr, NumberLength);
+		SubtBigNbrModN(Aux1, Aux2, Aux1, TestNbr, NumberLength);   // Aux1 = (-3 * A0 ^ 4 - 6 * A0 ^ 2 + 1)
 		modmultInt(A03, 4, Aux2);      // Aux2 <- 4*A0^3
 		ModInvBigNbr(Aux2, Aux3, TestNbr, NumberLength);
-		modmult(Aux1, Aux3, A0);
+		modmult(Aux1, Aux3, A0);     // A0 = (-3 * A0 ^ 4 - 6 * A0 ^ 2 + 1)*modinv(4 * A0 ^ 3, N) mod N
 		//   AA <- (A + 2)*modinv(4, N) mod N
 		modmultInt(MontgomeryMultR1, 2, Aux2);           // Aux2 <- 2
 		AddBigNbrModNB(A0, Aux2, Aux1, TestNbr, NumberLength); // Aux1 <- A0+2
@@ -894,6 +897,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		// GcdAccumulated = 1
 		memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
 		for (Pass = 0; Pass < 2; Pass++) {
+#ifdef log
+			fprintf(logfile, "starting pass %d \n", Pass);
+#endif
 			/* For powers of 2 */
 			indexPrimes = 0;
 			StepECM = 1;
@@ -916,6 +922,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			else {
 				if (gcdIsOne(Z, zN, __LINE__) > 1) {
 					Zfactor = BiGD;    // copy factor to global Znum
+#ifdef log
+					logf(Z);
+					fprintf_s(logfile, "factor found Pass 1 \n");
+#endif
 					return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 				}
 			}
@@ -941,7 +951,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					if (gcdIsOne(Z, zN, __LINE__) > 1) {
 						Zfactor = BiGD;      // copy factor to global Znum
 #ifdef log
-						fprintf_s(logfile, "Pass = 0  - factor found \n");
+						logf(Z);
+						fprintf_s(logfile, "Pass = 1  - factor found \n");
 #endif
 						return FACTOR_FOUND;     // ** found a factor in global variable BiGD**
 					}
@@ -990,6 +1001,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					else {
 						if (gcdIsOne(Z, zN, __LINE__) > 1) {
 							Zfactor = BiGD;    // copy factor to global Znum
+#ifdef log
+							logf(Z);
+							fprintf_s(logfile, "Pass = 1  - factor found \n");
+#endif
 							return FACTOR_FOUND;   // ** found a factor in global variable BiGD**
 						}
 					}
@@ -1002,6 +1017,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				{ // If GcdAccumulated is multiple of TestNbr, continue.
 					memcpy(X, Xaux, NumberLength * sizeof(limb));
 					memcpy(Z, Zaux, NumberLength * sizeof(limb));
+#ifdef log
+					logf(X);
+					logf(Z);
+#endif
 					continue; 
 				}
 				if (gcdIsOne(GcdAccumulated, zN, __LINE__) > 1) {
@@ -1036,6 +1055,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		memcpy(&sieve2310[HALF_SIEVE_SIZE], &sieve2310[0], HALF_SIEVE_SIZE);
 		memcpy(Xaux, X, NumberLength * sizeof(limb));  // (X:Z) -> Q (output
 		memcpy(Zaux, Z, NumberLength * sizeof(limb));  //         from step 1)
+#ifdef log
+		logf(Xaux);
+		logf(Zaux);
+#endif
 		for (Pass = 0; Pass < 2; Pass++) {
 			int Qaux, J;
 			memcpy(GcdAccumulated, MontgomeryMultR1, NumberLength * sizeof(limb));
@@ -1093,7 +1116,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					if (gcdIsOne(Aux1, zN, __LINE__) > 1) {
 						Zfactor = BiGD;     // copy factor to global Znum
 #ifdef log
-						fprintf(logfile, "Pass 1, I = %d factor found \n", I);
+						logf(Aux1);
+						fprintf_s(logfile, "Pass 1, I = %d factor found \n", I);
 #endif
 						return FACTOR_FOUND;   // ** found a factor in global variable BiGD
 					}
@@ -1116,7 +1140,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				memcpy(UZ, WZ, NumberLength * sizeof(limb));  // Previous (X:Z)
 			} /* end for I */
 #ifdef log
-			fprintf(logfile, "end 'for I' I=%d Pass = %d \n", I, Pass);
+			fprintf_s(logfile, "end 'for I' I=%d Pass = %d \n", I, Pass);
 #endif
 
 			AddBigNbrModNB(DX, DZ, Aux1, TestNbr, NumberLength);
@@ -1187,14 +1211,14 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					if (Pass != 0) {
 						if (BigNbrIsZero(GcdAccumulated, NumberLength)) {
 #ifdef  log
-							logf(GcdAccumulated);
+							fprintf_s(logfile, "break. This curve cannot factor the number \n");
 #endif //  log
 							break;  // This curve cannot factor the number.
 						}
 						if (gcdIsOne(GcdAccumulated, zN, __LINE__) > 1) {
 							Zfactor = BiGD;   // copy factor to global Znum
 #ifdef log
-							fprintf(logfile, "Pass = 1, indexM = %d factor found \n", indexM);
+							fprintf_s(logfile, "Pass = 1, indexM = %d factor found \n", indexM);
 #endif
 							return FACTOR_FOUND;    // ** found a factor in global variable BiGD
 						}
@@ -1224,20 +1248,20 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			if (Pass == 0) {
 				int rc;
 				if (BigNbrIsZero(GcdAccumulated, NumberLength)) { // If GcdAccumulated is zero
-					memcpy(X, Xaux, NumberLength * sizeof(limb));
-					memcpy(Z, Zaux, NumberLength * sizeof(limb));
+					memcpy(X, Xaux, NumberLength * sizeof(limb));  // X = Xaux
+					memcpy(Z, Zaux, NumberLength * sizeof(limb));  // Z = Zaux
 #ifdef log
-					fprintf(logfile, "GcdAccumulated = 0 ");
+					fprintf_s(logfile, "GcdAccumulated = 0 ");
 					logf(X);
 					logf(Z);
 #endif
-					continue; // multiple of TestNbr, continue.
+					continue; // multiple of TestNbr, continue with next pass 
 				}
 				rc = gcdIsOne(GcdAccumulated, zN, __LINE__);
 				if (rc == 1) {
 #ifdef log
 					logf(GcdAccumulated);
-					fprintf(logfile, "exit from curve %d  \n", ElipCurvNo);
+					fprintf_s(logfile, "exit from curve %d  \n", ElipCurvNo);
 #endif
 					break;    // GCD is one, so this curve does not find a factor.
 				}
@@ -1266,6 +1290,9 @@ static void ecminit(Znum zN) {
 
 	ZtoBig(TestNbrBI, zN);   /* copy zN to TestNbr. NB throw exception
 				             if zN is too large! (more than about 23,000 digits) */
+#ifdef log
+	logf(TestNbr);
+#endif
 	GetYieldFrequency(NumberLength);      //get yield frequency (used by showECMStatus)
 	GetMontgomeryParms(NumberLength);
 	first = true;
@@ -1329,8 +1356,14 @@ static void ecminit(Znum zN) {
 /* returns true if successful. The factor found is returned in global Znum Zfactor */
 bool ecm(Znum &zN, long long maxdivisor) {
 
-#ifdef _DEBUG
-	//std::cout << "ecm; N = " << zN << '\n';
+#ifdef log
+	std::string name1 = std::tmpnam(nullptr);
+	auto dotpos = name1.find('.');
+	if (dotpos != std::string::npos)
+		name1.resize(dotpos);
+	name1 += "ECMlog.txt";
+	logfile = fopen(name1.c_str(), "a");
+	std::cout << "log file name = " << name1 << '\n';
 #endif
 
 	ecminit(zN);  // initialise values
@@ -1354,5 +1387,8 @@ bool ecm(Znum &zN, long long maxdivisor) {
 	lowerTextArea.setText("");
 #endif
 	StepECM = 0; /* do not show pass number on screen */
+#ifdef log
+	fclose(logfile);
+#endif
 	return true;
 }
