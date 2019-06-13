@@ -90,7 +90,9 @@ there would be a buffer overflow problem here if str were too small */
 #define STRREV(str)      ((sizeof(Ctype)==sizeof(char))?(Ctype*)_strrev((char*)str):(Ctype*)_wcsrev((wchar_t*)str))
 
 /* Function template for conversion of 128 bit integer to an ascii string
-there would be a buffer overflow problem here if str were too small */
+These functions can write past the end of a buffer that is too small. To prevent
+buffer overruns, ensure that buffer is large enough to hold the converted digits
+plus the trailing null-character and a sign character. */
 template<class Int128Type, class Ctype>
 Ctype *int128toStr(Int128Type value, Ctype *str, unsigned int radix) {
 	if ((radix < 2) || (radix > 36)) {
@@ -566,7 +568,8 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int
 	if (precision < 0)
 		precision = 0;
 
-	/* potential buffer overflow problem here if buffer is too small */
+	/* potential buffer overflow problem here if buffer is too small,
+	but radix can only be 8, 10 or 16, so 50 is enough */
 	sbuffer.resize(50);
 	if (radix == 10)
 		_i128toa(n, &sbuffer[0], radix);  // convert int to chars.
@@ -574,8 +577,7 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int
 		/* for hex or octal print as if unsigned */
 		_ui128toa(n, &sbuffer[0], radix);  // convert int to chars
 
-	auto len = strlen(sbuffer.data());
-	sbuffer.resize(len);
+	sbuffer.shrink_to_fit();
 
 	int ip = 0;
 	if (sbuffer[0] == '-')
@@ -651,12 +653,12 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _uin
 	if (precision > buflen - 1)
 		precision = buflen - 1;
 	
-	/* potential buffer overflow problem here if buffer is too small */
+	/* /* potential buffer overflow problem here if buffer is too small,
+	but radix can only be 8, 10 or 16, so 50 is enough */
 	sbuffer.resize(50);
 	_ui128toa(n, &sbuffer[0], radix);  // convert unsigned int to chars. 
 
-	auto len = strlen(sbuffer.data());
-	sbuffer.resize(len);
+	sbuffer.shrink_to_fit();
 	
 	int ip = 0;
 	if (sbuffer[0] == '-')

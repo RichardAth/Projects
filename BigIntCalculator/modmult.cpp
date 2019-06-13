@@ -324,8 +324,8 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 	int i;
 	/* Sum = Nbr1 + Nbr2 */
 	for (i = 0; i < nbrLen; i++) {
-		carry = (carry >> BITS_PER_GROUP) +
-			(unsigned long long)(Nbr1 + i)->x + (unsigned long long)(Nbr2 + i)->x;
+		carry = (carry >> BITS_PER_GROUP) + (unsigned long long)(Nbr1 + i)->x 
+			+ (unsigned long long)(Nbr2 + i)->x;
 		Sum[i].x = (long long)(carry & MAX_VALUE_LIMB);
 	}
 	/* sum -= m */
@@ -336,7 +336,7 @@ void AddBigNbrModNB(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *m
 			(unsigned long long)Sum[i].x - (m + i)->x;
 		Sum[i].x = (long long)(borrow & MAX_VALUE_LIMB);
 	}
-	/* if (sum < 0) aum += m */
+	/* if (sum < 0) sum += m */
 	if (carry < LIMB_RANGE && borrow < 0)
 	{
 		carry = 0;
@@ -375,11 +375,11 @@ void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *
 		}
 	}
 }
-/* Sum = Nbr1-Nbr2 (mod Testnbr)*/
-void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
-{
-	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
-}
+/* Sum = Nbr1+Nbr2 (mod Testnbr)*/
+//void SubtBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum)
+//{
+//	SubtBigNbrModN(Nbr1, Nbr2, Sum, TestNbr, NumberLength);
+//}
 
 /* product = factor1*factor2%mod */
 static void smallmodmult(const long long factor1, const long long factor2, 
@@ -392,7 +392,9 @@ static void smallmodmult(const long long factor1, const long long factor2,
 	else
 	{   // TestNbr has one limb but it is not small.
 #ifdef _USING128BITS_
-		product->x = (_int128)factor1 * factor2 % mod;
+		_int128 prod;
+		i128mult(prod, factor1, factor2);  // prod = factor1 * factor2 ;
+		product->x = prod%mod;
 #else
 		// Round up quotient.
 		long long quotient = (long long)floor((double)factor1 * (double)factor2 / (double)mod + 0.5);
@@ -1424,9 +1426,25 @@ static void modmultIntExtended(const limb *factorBig, long long factorInt, limb 
 	}
 }
 
-/* result = FactorBig* factorInt (mod TestNbr) */
+/* result = FactorBig* factorInt (mod TestNbr) 
+note: result & factorBig may be the same variable */
 void modmultInt(const limb *factorBig, int factorInt, limb *result) {
+#ifdef _DEBUG
+	Znum fb, res, tstNbr, r2, prod, quot;
+	LimbstoZ(factorBig, fb, NumberLength);
+#endif
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
+#ifdef _DEBUG
+	LimbstoZ(result, res, NumberLength);
+	BigtoZ(tstNbr, TestNbrBI);
+	prod = fb * factorInt;
+	quot = prod / tstNbr;
+	r2 = prod % tstNbr;
+	if (r2 != res) {
+		std::cout << '(' << fb << '*' << factorInt << ") % " << tstNbr
+			<< " = " << res << " expected " << r2 << " quot = " << quot << '\n';
+	}
+#endif
 }
 
 // Input: base = base in Montgomery notation.
@@ -1617,6 +1635,10 @@ static long long modInv(long long num, long long mod) {
 // note: both num and mod are modified (but the value is not changed)
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 {
+#ifdef _DEBUG
+	Znum znum, zinv, zmod, zinv2;
+	LimbstoZ(num, znum, nbrLen);
+#endif
 	int len;
 	int k, steps;
 	long long a, b, c, d;  // Coefficients used to update variables R, S, U, V.
@@ -1632,8 +1654,6 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 		inv->x = modInv(num->x, mod->x);
 #ifdef _DEBUG
 		{
-			Znum znum, zinv, zmod, zinv2;
-			LimbstoZ(num, znum, nbrLen);
 			LimbstoZ(inv, zinv, nbrLen);
 			LimbstoZ(mod, zmod, nbrLen);
 			auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
@@ -1966,8 +1986,6 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 	}
 #ifdef _DEBUG
 	{
-		Znum znum, zinv, zmod, zinv2;
-		LimbstoZ(num, znum, nbrLen);
 		LimbstoZ(inv, zinv, nbrLen);
 		LimbstoZ(mod, zmod, nbrLen);
 		std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';

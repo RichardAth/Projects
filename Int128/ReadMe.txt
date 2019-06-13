@@ -54,13 +54,19 @@ bool   x.isZero()
 int    x.msb()        // bit number of most significant 1 bit of x
 int    x.lsb()        // bit number of least significant 1 bit of x
 int    x.popcnt()     // number of bits in x set to 1
-double x.toDouble()   // convert x to double
+double x.toDouble()   // convert x to double (can also be invoked by casting to double:
+						double x = i.toDouble(); is equivalent to
+						double x = (double)i;  )
 
 File Int128Str.cpp contains the following functions:
 
 /* convert integer to text (ascii or wide character) 
-str   = pointer to char or wchar_t string to be converted
-radix = positive number between 2 and 36. */
+(design based on _itoa() & _itow() functions.)
+str   = pointer to char or wchar_t string to that, on return, contains the digits
+radix = positive number between 2 and 36. 
+These functions can write past the end of a buffer that is too small. To prevent 
+buffer overruns, ensure that buffer is large enough to hold the converted digits 
+plus the trailing null-character and a sign character. */
 char     *_i128toa( _int128 value,    char *str, int radix)
 wchar_t  *_i128tow( _int128 value, wchar_t *str, int radix)
 char    *_ui128toa(_uint128 value,    char *str, int radix)

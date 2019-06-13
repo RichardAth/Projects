@@ -58,7 +58,7 @@ void AddBigNbr(const long long Nbr1[], const long long Nbr2[], long long Sum[], 
 {
 	unsigned long long carry = 0;
 	int i;
-
+	/* Sum = Nbr1 + Nbr2 */
 	for (i = 0; i < nbrLen; i++)
 	{
 		carry = (carry >> BITS_PER_INT_GROUP) + (unsigned long long)Nbr1[i] + 
