@@ -23,29 +23,20 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "bignbr.h"
 /* values below are set up by calling GetMontgomeryParms*/
-//limb MontgomeryR1[MAX_LEN];  // not used
+
 BigInteger TestNbrBI;
 limb * const TestNbr = TestNbrBI.limbs;
 BigInteger MontgomeryMultNBI;
-limb * const MontgomeryMultN = MontgomeryMultNBI.limbs;
+limb * const MontgomeryMultN = MontgomeryMultNBI.limbs;   // used by  modmult, ComputeInversePower2, etc
 BigInteger  MontgomeryMultR1BI;
 limb * const MontgomeryMultR1 = MontgomeryMultR1BI.limbs;
 BigInteger  MontgomeryMultR2BI;
-limb *const MontgomeryMultR2 = MontgomeryMultR2BI.limbs;
-//limb TestNbr[MAX_LEN];      // used as modulus for modmult, modInvBigNbr etc 
-//limb MontgomeryMultN[MAX_LEN];   // N = -M^(-1) mod R  (M = TestNbr)
-//limb MontgomeryMultR1[MAX_LEN];  /* contains value of 1 in Mongomery notation 
-//								 i.e. R mod M */
-//limb MontgomeryMultR2[MAX_LEN];  // R^2 mod  M.  - used to calculate modular inverse
+limb *const MontgomeryMultR2 = MontgomeryMultR2BI.limbs;  // used by ModInvBigNbr
 
 static int powerOf2Exponent;
 static limb aux[MAX_LEN], aux2[MAX_LEN];
-//static limb aux3[MAX_LEN], aux4[MAX_LEN];
-//static limb aux5[MAX_LEN], aux6[MAX_LEN];
-//static limb resultModOdd[MAX_LEN], resultModPower2[MAX_LEN];
-//static int NumberLength2;
-//int NumberLength, NumberLengthR1;
-long long lModularMult;
+
+long long lModularMult = 0;
 mmCback modmultCallback = nullptr;     // function pointer
 static limb U[MAX_LEN], V[MAX_LEN], R[MAX_LEN], S[MAX_LEN];
 static limb Ubak[MAX_LEN], Vbak[MAX_LEN];
@@ -135,7 +126,7 @@ static void ComputeInversePower2(const limb *value, limb *result, limb *tmp)
 // R1 = R mod M 
 // N = -M^(-1) mod R
 // also compute R2 = R^2 mod  M.
-// powerOf2Exponent
+//   & powerOf2Exponent
 /* uses global variables TestNbr, NumberLength */
 void GetMontgomeryParms(int len) {
 	int j;
@@ -274,17 +265,17 @@ void AddBigNbrModNB(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &
 }
 
 /* Diff = Nbr1-Nbr2 (mod m)*/
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Diff, const limb *m, int nbrLen)
+void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Diff[], const limb m[], int nbrLen)
 {
 	int i;
 	int borrow = 0;
-	for (i = 0; i < nbrLen; i++)
-	{
+	/* Diff = Nbr1 - Nbr2 */
+	for (i = 0; i < nbrLen; i++) {
 		borrow = (borrow >> BITS_PER_GROUP) + Nbr1[i].x - Nbr2[i].x;
 		Diff[i].x = (int)(borrow & MAX_VALUE_LIMB);
 	}
-	if (borrow < 0)
-	{
+
+	if (borrow < 0) {  /* if Diff < 0 then Diff += m */
 		unsigned int carry = 0;
 		for (i = 0; i < nbrLen; i++)
 		{
@@ -1203,9 +1194,9 @@ void modmult(const BigInteger &factor1, const BigInteger &factor2, BigInteger &p
 
 /* Multiply big number by integer.
 result = FactorBig* factorInt (mod TestNbr)
-note: factorBig is modified */
-static void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, 
-	const limb *pTestNbr, int nbrLen) {
+note: factorBig is modified by adding a leading zero */
+static void modmultIntExtended(const limb factorBig[], int factorInt, limb result[], 
+	const limb TestNbr[], int nbrLen) {
 #ifdef _USING64BITS_
 	int64_t carry;
 #else
@@ -1214,34 +1205,32 @@ static void modmultIntExtended(const limb *factorBig, int factorInt, limb *resul
 	int low;
 #endif
 	int i;
-	int TrialQuotient;
-	const limb *ptrFactorBig;
-	const limb *ptrTestNbr;
+	int TrialQuotient;      // approximate value of FactorBig*FactorInt / TestNbr
 	double dTestNbr, dFactorBig;
+
 	if (nbrLen == 1) {
-		smallmodmult(factorBig->x, factorInt, result, pTestNbr->x);
+		smallmodmult(factorBig->x, factorInt, result, TestNbr[0].x);
 		return;
 	}
 	((limb *)factorBig + nbrLen)->x = 0;   // note: factorBig is modifed, but value does not change
-	dTestNbr = getMantissa(pTestNbr + nbrLen, nbrLen);
-	dFactorBig = getMantissa(factorBig + nbrLen, nbrLen);
+	dTestNbr = getMantissa(&TestNbr[nbrLen], nbrLen);
+	dFactorBig = getMantissa(&factorBig[nbrLen], nbrLen);
 	TrialQuotient = (int)(unsigned int)floor(dFactorBig * (double)factorInt / dTestNbr + 0.5);
 	if ((unsigned int)TrialQuotient >= LIMB_RANGE)
 	{   // Maximum value for limb.
 		TrialQuotient = MAX_VALUE_LIMB;
 	}
 	// Compute result <- factorBig * factorInt - TrialQuotient * TestNbr
-	ptrFactorBig = factorBig;
-	ptrTestNbr = pTestNbr;
+	// If TrialQuotient is accurate this is the required value
+
 #ifdef _USING64BITS_
 	carry = 0;
 	for (i = 0; i <= nbrLen; i++) {
-		carry += (int64_t)ptrFactorBig->x * factorInt -
-			(int64_t)TrialQuotient * ptrTestNbr->x;
-		(result + i)->x = (int)carry & MAX_INT_NBR;
+		carry += (int64_t)factorBig[i].x * factorInt -
+			(int64_t)TrialQuotient * TestNbr[i].x;
+		result[i].x = (int)carry & MAX_INT_NBR;
 		carry >>= BITS_PER_GROUP;
-		ptrFactorBig++;
-		ptrTestNbr++;
+
 	}
 #else
 	dFactorInt = (double)factorInt;
@@ -1269,16 +1258,14 @@ static void modmultIntExtended(const limb *factorBig, int factorInt, limb *resul
 		ptrTestNbr++;
 	}
 #endif
-	while (((result + nbrLen)->x & MAX_VALUE_LIMB) != 0) {
-		auto ptrResult = result;
-		ptrTestNbr = pTestNbr;
+	while ((result[nbrLen].x & MAX_VALUE_LIMB) != 0) {
 		unsigned int cy = 0;
-		for (i = 0; i <= nbrLen; i++) {
-			cy += (unsigned int)ptrTestNbr->x + (unsigned int)ptrResult->x;
-			ptrResult->x = (int)(cy & MAX_VALUE_LIMB);
+
+		for (i = 0; i <= nbrLen; i++) { 
+			/* result += TestNbr */
+			cy += (unsigned int)TestNbr[i].x + (unsigned int)result[i].x;
+			result[i].x = (int)(cy & MAX_VALUE_LIMB);
 			cy >>= BITS_PER_GROUP;
-			ptrResult++;
-			ptrTestNbr++;
 		}
 	}
 }
@@ -1836,12 +1823,12 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 	}
 #ifdef _DEBUG
 	{
-		LimbstoZ(inv, zinv, nbrLen);
+		/*LimbstoZ(inv, zinv, nbrLen);
 		LimbstoZ(mod, zmod, nbrLen);
 		std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';
 		auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
 		if (rv == 0 || zinv2 != zinv)
-			std::cout << " should be " << zinv2 << '\n';
+			std::cout << " should be " << zinv2 << '\n';*/
 	}
 #endif
 }

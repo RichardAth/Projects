@@ -27,6 +27,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
+#include "bignbr.h"
 #undef min                 // use std::min
 /* miscellaneous external declarations */
 extern int ElipCurvNo;            // Elliptic Curve Number
@@ -621,12 +622,15 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
-	int upperBound;         
-	long long testP,  MaxP= 393203;  // use 1st 33333 primes
+	int upperBound;  
+	long long testP;
+	long long MaxP = 393'203;  // use 1st  33333 primes
+	/* larger value seems to slow down factorisation overall. */
+	//long long MaxP = 2'097'143;  // use 1st 155611 primes
 	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
 
-	// If toFactor is < LehmanLimit it will be factorised using trial division
-	// and Pollard-Rho without ever using ECM or SIQS factorisiation. 
+	// If toFactor is < LehmanLimit it will be factorised completely using 
+	// trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
 
@@ -635,7 +639,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;  // assume it's not prime
-	if ((long long)primeListMax <MaxP) {  // get first 33333 primes
+	if ((long long)primeListMax <MaxP) {  // get primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
 	
@@ -660,7 +664,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			if (upperBound == -1)
 				continue;  // factor is prime
 			/* trial division. Uses first 33333 primes */
-			while (upperBound < std::min((int)prime_list_count, 33333)) {
+			while (upperBound < std::min((int)prime_list_count, 155611)) {
 				testP = primeList[upperBound];
 				if (testP*testP > Factors[i].Factor) {
 					Factors[i].upperBound = -1; // show that residue is prime
@@ -710,6 +714,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int expon;
 	ElipCurvNo = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
+	lModularMult = 0;   // reset counter
 	
 	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.size(); i++) {
 		if (Factors[i].upperBound == -1)
@@ -869,10 +874,10 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 							Mult4 = Tmp;
 						}
 					} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
-					Tmp1 = (Mult1 + Mult2)/2;   // Tmp1 <- (Mult1 + Mult2) / 2
-					Tmp2 = (Mult1 - Mult2)/2;   // Tmp2 <- (Mult1 - Mult2) / 2
-					Tmp3 = (Mult3 + Mult4)/2;   // Tmp3 <- (Mult3 + Mult4) / 2
- 					Mult4 = (Mult3 - Mult4)/2 ; // Mult4 <- (Mult3 - Mult4) / 2
+					Tmp1 = (Mult1 + Mult2)/2;   
+					Tmp2 = (Mult1 - Mult2)/2;   
+					Tmp3 = (Mult3 + Mult4)/2;   
+ 					Mult4 = (Mult3 - Mult4)/2 ;
 					Mult3 = Tmp3;
 					Mult2 = Tmp2;
 					Mult1 = Tmp1;
@@ -933,16 +938,100 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 	} /* end prime not 2 */
 }
 
+/* compute 3 values the squares of which add up to s *2^r, return values in quads */
+static void compute3squares(int r, const Znum &s, Znum quads[4]) {
+	Znum s2, s3, r2, Tmp1, Tmp2;
+	int m = 0;
+
+	for (Znum x = 0; ; x++) {
+		assert(x*x < s);
+		s2 = s - x * x;
+		for (s3 = s2, m = 0; ZisEven(s3); m++) {
+			s3 >>= 1;    // s3 = s2*2^m
+		}
+		if ((s3 & 3) != 1)
+			continue;
+		/* In general, to establish whether or not s3 can be expressed as the sum of 2 
+		squares, it would be necessary to factorise it and examine all the factors.
+		However, if s3 is prime, we know it can be so expressed, and can easily find
+		two squares. */
+#ifdef __MPIR_VERSION
+		static bool first = true;
+		static gmp_randstate_t rstate;
+		if (first) {
+			gmp_randinit_default(rstate);
+			first = false;
+		}
+
+		auto rv = mpz_likely_prime_p(ZT(s3), rstate, 0);
+#else
+		auto rv = mpz_probab_prime_p(ZT(Value), 16);
+#endif
+		if (rv != 0) {
+			/* s3 is prime of form 4k+1 */
+			ComputeFourSquares(s3, quads[0], quads[1], quads[2], quads[3]);
+			quads[0] = abs(quads[0]);  // ensure results are +ve
+			quads[1] = abs(quads[1]);
+			if (quads[0] < quads[1]) {		
+				Tmp1 = quads[0];           // quads[0] < quads[1], so exchange them.
+				quads[0] = quads[1];
+				quads[1] = Tmp1;
+			}
+			assert(quads[2] == 0);
+			assert(quads[3] == 0);
+
+			/* put back factor 2 removed earlier */
+			mpz_mul_2exp(ZT(quads[0]), ZT(quads[0]), m/2);
+			mpz_mul_2exp(ZT(quads[1]), ZT(quads[1]), m/2);
+			if ((m & 1) == 1) {
+				/* if m is odd the sum needs to be multiplied by 2.
+				We do this by using the formula 
+				2*(q0^2 + q1^2) = (q0+q1)^2 + (q0-q1)^2 */
+				Tmp1 = quads[0] + quads[1];
+				Tmp2 = quads[0] - quads[1];
+				quads[0] = Tmp1;
+				quads[1] = Tmp2;
+			}
+			
+			quads[2] = x;
+
+			for (int ix = 0; ix <= 2; ix++)
+				mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
+
+			if (quads[0] < quads[1]) {
+				Tmp1 = quads[0];		// quads[0] < quads[1], so exchange them.
+				quads[0] = quads[1];
+				quads[1] = Tmp1;
+			}
+
+			if (quads[0] < quads[2]) {
+				Tmp1 = quads[0];	// quads[0] < quads[2], so exchange them.
+				quads[0] = quads[2];
+				quads[2] = Tmp1;
+			}
+
+			if (quads[1] < quads[2]) {
+				Tmp1 = quads[1];	// quads[1] < quads[2], so exchange them.
+				quads[1] = quads[2];
+				quads[2] = Tmp1;
+			}
+
+			return;
+		}
+	}
+}
+
 /* show that the number is the sum of 4 or fewer squares. See
 https://www.alpertron.com.ar/4SQUARES.HTM */
 /* uses the identity:
 (a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
                                     + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
 This allows us to find the sum of squares for each factor separately then combine them */
-static void ComputeFourSquares(std::vector <zFactors> &factorlist, 
-	Znum quads[4]) {
+static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4],
+	Znum num) {
 	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
-	Znum p;
+	Znum pr;
+	bool twoSq = true;
 
 	quads[0] = 1;      // 1 = 1^2 + 0^2 + 0^2 + 0^2
 	quads[1] = 0;
@@ -959,22 +1048,49 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist,
 		}
 	}
 
+	/* check whether number can be formed as sum of 1 or 2 squares */
+	for (auto f: factorlist) {
+		if ((f.Factor & 3) == 3) {  // is factor of form 4k+3?
+			if ((f.exponent & 1) == 1)   // and is the exponent of that factor odd?
+			twoSq = false;    // if yes, number cannot be expressed as sum of 1 or 2 squares
+			break;       
+		}
+	}
+	if (!twoSq) {  /* check whether number can be expressed as sum of 3 squares */
+		int r = 0;
+		while ((num & 3) == 0) {
+			num /= 4;
+			r++;
+		}
+		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
+		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem*/
+		if ((abs(ZT(num)->_mp_size) < 4) && (num & 7) < 7) {
+			/* use compute3squares if number is small (<= 57 digits) and can be 
+			formed from 3 squares. (mp_size is the number of limbs. Each limb is 64 bits) */
+			compute3squares(r, num, quads);  
+			return;
+		}
+	}
+
 	for (int FactorIx = 0; FactorIx < factorlist.size(); FactorIx++) {
 		if (factorlist[FactorIx].exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
 					  process it in this for loop */
 		}
 		
-		p = factorlist[FactorIx].Factor;
+		pr = factorlist[FactorIx].Factor;
 
-		/* compute 4 or less values the squares of which add up to prime p,
+		/* compute 4 or less values the squares of which add up to prime pr,
 		return values in Mult1, Mult2, Mult3 and Mult4 */
-		ComputeFourSquares(p, Mult1, Mult2, Mult3, Mult4);
-		assert(p == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
+		ComputeFourSquares(pr, Mult1, Mult2, Mult3, Mult4);
+		//assert(pr == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
 
 		/* use the identity:
 		(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
-		+ (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 */
+		                                    + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
+		note: if twoSq is true, c, d, C, & D are zero. The expression then 
+		simplifies 	automatically to:  	
+		       (a^2+b^2)*(A^2+B^2) = (aA+bB)^2 + (aB-bA)^2 */
 
 		Tmp1 = Mult1*quads[0] + Mult2*quads[1] + Mult3*quads[2] + Mult4*quads[3];
 		Tmp2 = Mult1*quads[1] - Mult2*quads[0] + Mult3*quads[3] - Mult4*quads[2];
@@ -1068,7 +1184,8 @@ bool factorise(Znum numberZ, std::vector <zFactors> &vfactors,
 		if (!rv)
 			return false;  // failed to factorise number
 		if (quads != nullptr) {
-			ComputeFourSquares(vfactors, quads); // get a, b, c, d such that sum of their squares = number
+			ComputeFourSquares(vfactors, quads, numberZ); 
+			// get a, b, c, d such that sum of their squares = numberZ
 		}
 		return true;
 	}

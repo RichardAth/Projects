@@ -2105,7 +2105,10 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	//  threadArray = new Thread[numberThreads];
 	Temp = logBigNbr(zN);
-	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.318);
+	/* increased number of primes on 17/6/2019 in line with DA's calculator */
+	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.363 - 1);
+	if (nbrFactorBasePrimes > MAX_PRIMES)
+		nbrFactorBasePrimes = MAX_PRIMES;
 	SieveLimit = (int)exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
 	if (SieveLimit > MAX_SIEVE_LIMIT)
 	{

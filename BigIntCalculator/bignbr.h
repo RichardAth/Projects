@@ -392,7 +392,7 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
 void AddBigNbrModNB (const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
-void SubtBigNbrModN(const limb *Nbr1, const limb *Nbr2, limb *Sum, const limb *TestNbr, int NumLen);
+void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 void SubtBigNbrModN(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Diff);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 void modmult(const limb *factor1, const limb *factor2, limb *product);
