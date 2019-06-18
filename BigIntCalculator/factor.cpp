@@ -701,9 +701,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			}
 		}
 	} while (restart);  // keep looping until no more factors found.
+
 #ifdef _DEBUG
-	std::cout << "result after trial division " ;
-	printfactors(Factors);
+	std::cout << "End Trial division. " << Factors.size() - 1 << " factors found so far \n";
+	if (Factors.size() > 1) {
+		std::cout << "result after trial division ";
+		printfactors(Factors);
+	}
 #endif
 
 	/* Any small factors (up to 393,203) have now been found by trial division */

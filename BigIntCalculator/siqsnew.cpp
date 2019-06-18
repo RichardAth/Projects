@@ -35,6 +35,7 @@ the results would look completely different.
 #include <cmath>
 #include <cstdint>
 #include <cassert>
+#include <vector>
 #include <Windows.h>
 #include "bignbr.h"
 #include "factor.h"
@@ -113,7 +114,8 @@ static long largePrimeUpperBound;
 static unsigned char logar2;
 static int aindex[MAX_NBR_FACTORS] = { 0 };
 //  static Thread threadArray[];
-static PrimeSieveData primeSieveData[MAX_PRIMES + 3] = { 0 };
+//static PrimeSieveData primeSieveData[MAX_PRIMES + 3] = { 0 };
+static std::vector < PrimeSieveData>  primeSieveData;
 static PrimeTrialDivisionData primeTrialDivisionData[MAX_PRIMES] = { 0 };
 static int span;
 static int indexMinFactorA;
@@ -124,16 +126,19 @@ static unsigned int newSeed;
 static int NbrPolynomials;
 static int SieveLimit;
 //static int matrixPartial[MAX_PRIMES * 8][MAX_LIMBS_SIQS / 2 + 4] = { 0 };
-static struct MatPart {
+struct MatPart {
 	int nbrPartials;
 	int Divid;
 	int hashindex;
 	Znum value;
 	int seed;
-} matrixPartial[MAX_PRIMES * 8];
+};
+//static MatPart matrixPartial[MAX_PRIMES * 8];
+static std::vector <MatPart> matrixPartial;
 static Znum vectLeftHandSide[MAX_PRIMES + 50] = { 0 };
 static int matrixPartialHashIndex[2048] = { 0 };
-static int matrixB[MAX_PRIMES + 50][MAX_FACTORS_RELATION] = { 0 };
+//static int matrixB[MAX_PRIMES + 50][MAX_FACTORS_RELATION] = { 0 };
+static std::vector <std::vector<int>> matrixB;
 static int amodq[MAX_NBR_FACTORS] = { 0 };
 static int tmodqq[MAX_NBR_FACTORS] = { 0 };
 static char threshold;
@@ -1153,7 +1158,7 @@ static bool TrialDivisionSubA(const int index,
 	int &nbrColumns) {
 
 	int iRem;
-	const PrimeSieveData *rowPrimeSieveData = primeSieveData + index;
+	const PrimeSieveData *rowPrimeSieveData = &primeSieveData[index];
 	const PrimeTrialDivisionData *rowPrimeTrialDivisionData = &primeTrialDivisionData[index];
 
 	if (fullRemainder == false) {
@@ -2102,6 +2107,12 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	polynomialsSieved = 0;
 	nbrPartials = 0;
 	newSeed = 0;
+	/* allocate storage for arrays defined as vectors */
+	matrixB.resize(MAX_PRIMES + 50);
+	for (int i = 0; i < MAX_PRIMES + 50; i++)
+		matrixB[i].resize(MAX_FACTORS_RELATION);
+	matrixPartial.resize(MAX_PRIMES * 8);
+	primeSieveData.resize(MAX_PRIMES + 3);
 
 	//  threadArray = new Thread[numberThreads];
 	Temp = logBigNbr(zN);
@@ -2439,6 +2450,12 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		}
 	}
 #endif
+
+	matrixB.clear();   /* release memory */
+	matrixPartial.clear();
+	primeSieveData.clear();
+
+
 	if (/*getTerminateThread() ||*/ (Factor == 0))
 	{
 		//throw new ArithmeticException();
@@ -2496,7 +2513,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 		memset(vectExpParity, 0, matrixBLength * sizeof(limb));
 		for (row = matrixBlength - 1; row >= 0; row--)
 		{                  // Traverse all rows of the matrix.
-			rowMatrixB = matrixB[row];
+			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET] - 1; column >= 1; column--)
 			{                // A prime appeared in that column.
 				vectExpParity[rowMatrixB[column]]++;
@@ -2517,7 +2534,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 		// the corresponding element of the array vectExpParity equals 1.
 		for (row = 0; row < matrixBlength; row++)
 		{                  // Traverse all rows of the matrix.
-			rowMatrixB = matrixB[row];
+			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET] - 1; column >= 1; column--)
 			{                // Traverse all columns.
 				if (vectExpParity[rowMatrixB[column]] == 1)
@@ -2528,7 +2545,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 			}
 			if (column == 0)
 			{                // Singleton not found: move row upwards.
-				memcpy(matrixB[row - delta], matrixB[row], sizeof(matrixB[0]));
+				memcpy(&matrixB[row - delta][0], &matrixB[row][0], sizeof(int) * MAX_FACTORS_RELATION);
 				vectLeftHandSide[row - delta] = vectLeftHandSide[row];
 				//memcpy(vectLeftHandSide[row - delta], vectLeftHandSide[row], sizeof(vectLeftHandSide[0]));
 			}
@@ -2536,7 +2553,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 		matrixBlength -= delta;      // Update number of rows of the matrix.
 		for (row = 0; row < matrixBlength; row++)
 		{                  // Traverse all rows of the matrix.
-			rowMatrixB = matrixB[row];
+			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET]; column >= 1; column--)
 			{                // Change all column indexes in this row.
 				rowMatrixB[column] = newColumns[rowMatrixB[column]];
@@ -2600,7 +2617,7 @@ static bool LinearAlgebraPhase(
 			if ((matrixV[row] & mask) != 0) {
 				MultBigNbrModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
 				biR = biU; 
-				rowMatrixB = matrixB[row];
+				rowMatrixB = &matrixB[row][0];
 				for (j = rowMatrixB[LENGTH_OFFSET] - 1; j >= 1; j--) {
 					primeIndex = rowMatrixB[j];
 					vectExpParity[primeIndex] ^= 1;
@@ -2681,8 +2698,9 @@ static bool InsertNewRelation(
 	}
 #endif
 	// Check whether this relation is already in the matrix.
-	int *curRowMatrixB = matrixB[0];
+	size_t row = 0;
 	for (i = 0; i < congruencesFound; i++) {
+		int *curRowMatrixB = &matrixB[row][0];
 		if (nbrColumns == *(curRowMatrixB + LENGTH_OFFSET)) {
 			for (k = 1; k < nbrColumns; k++) {
 				if (*(rowMatrixB + k) != curRowMatrixB[k]) {
@@ -2693,7 +2711,8 @@ static bool InsertNewRelation(
 				return false; // Do not insert same relation.
 			}
 		}
-		curRowMatrixB += MAX_FACTORS_RELATION;
+		//curRowMatrixB += MAX_FACTORS_RELATION;
+		row++;
 	}
 
 	/* Convert negative numbers to the range 0 <= n < biModulus */
@@ -2721,7 +2740,7 @@ static bool InsertNewRelation(
 	MultBigNbrModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
 											   // Add relation to matrix B.
-	memcpy(matrixB[congruencesFound], &rowMatrixB[0], nbrColumns * sizeof(int));
+	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
 
 	vectLeftHandSide[congruencesFound] = biR;
 	congruencesFound++;
@@ -2842,7 +2861,7 @@ static void MultiplyAByMatrix(int *Matr, int *TempMatr, int *ProdMatr) {
 	memset(TempMatr, 0, matrixBLength * sizeof(int));
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int rowValue;
-		rowMatrixB = matrixB[row];
+		rowMatrixB = &matrixB[row][0];
 		rowValue = *(Matr + row);
 		for (index = *(rowMatrixB + LENGTH_OFFSET) - 1; index >= 1; index--) {
 			*(TempMatr + *(rowMatrixB + index)) ^= rowValue;
@@ -2852,7 +2871,7 @@ static void MultiplyAByMatrix(int *Matr, int *TempMatr, int *ProdMatr) {
 	/* Compute ProdMatr = Bt * TempMatr */
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int prodMatr = 0;
-		rowMatrixB = matrixB[row];
+		rowMatrixB = &matrixB[row][0];
 		for (index = *(rowMatrixB + LENGTH_OFFSET) - 1; index >= 1; index--) {
 			prodMatr ^= *(TempMatr + *(rowMatrixB + index));
 		}
@@ -3223,7 +3242,7 @@ static void BlockLanczos(void)
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int rowMatrixXmY, rowMatrixV;
 
-		rowMatrixB = matrixB[row];
+		rowMatrixB = &matrixB[row][0];
 		rowMatrixXmY = matrixXmY[row];
 		rowMatrixV = matrixV[row];
 		// The vector rowMatrixB includes the indexes of the columns set to '1'.
@@ -3470,7 +3489,7 @@ static void sieveThread(Znum &result) {
 				/*********************************************/
 				/* Initialization stage for first polynomial */
 				/*********************************************/
-				firstPrimeSieveData = primeSieveData;
+				firstPrimeSieveData = &primeSieveData[0];
 				oldSeed = newSeed;
 				newSeed = getFactorsOfA(oldSeed, aindex);
 				for (index = 0; index<nbrFactorsA; index++)
@@ -3680,7 +3699,7 @@ static void sieveThread(Znum &result) {
 			/***************/
 			/* Sieve stage */
 			/***************/
-			PerformSiqsSieveStage(primeSieveData, SieveArray,
+			PerformSiqsSieveStage(&primeSieveData[0], SieveArray,
 				PolynomialIndex,
 				biLinearCoeff);
 			ValuesSieved += 2 * SieveLimit;
@@ -3707,7 +3726,7 @@ static void sieveThread(Znum &result) {
 							}
 							SieveLocationHit(rowMatrixB,
 								rowMatrixBbeforeMerge,
-								index2 + i, primeSieveData,
+								index2 + i, &primeSieveData[0],
 								rowPartials,
 								rowSquares,
 								biDividend, biT,
@@ -3725,7 +3744,7 @@ static void sieveThread(Znum &result) {
 							}
 							SieveLocationHit(rowMatrixB,
 								rowMatrixBbeforeMerge,
-								index2 + i, primeSieveData,
+								index2 + i, &primeSieveData[0],
 								rowPartials,
 								rowSquares,
 								biDividend, biT,

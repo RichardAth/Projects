@@ -26,7 +26,8 @@ extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 bool isPrime2(unsigned __int64 num);
-BigInteger Base;
+
+static BigInteger Base;     // work area
 
 /*return addend1 + addend2 (used to overload + operator) */
 BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
@@ -153,7 +154,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	int nbrLimbsFactor1 = Factor1.nbrLimbs;
 	int nbrLimbsFactor2 = Factor2.nbrLimbs;
 	int nbrLimbs;
-	BigInteger Product;    // temporary variable 
+	BigInteger Product;                  // temporary variable 
 	limb Prodl[MAX_LEN * 2] = { 0 };    // temporary variable 
 
 	if (Factor1 == 0 || Factor2 == 0) {    // one or both factors are zero.
@@ -199,6 +200,8 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		nbrLimbs--;  // remove leading zeros
 	}
 	Product.nbrLimbs = nbrLimbs;
+
+	/* set sign of product */
 	if (nbrLimbs == 1 && Product.limbs[0].x == 0) {
 		Product.sign = SIGN_POSITIVE;  // product is zero
 	}
@@ -257,40 +260,16 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
 	return Dividend - Base;
 }
  
-/* BigInt = e^logar
-throw exception if result would be to large for a BigInteger */
-//void expBigInt(BigInteger &bigInt, double logar)
-//{
-//	int mostSignificantLimb;
-//	logar /= log(2);  // convert log to base 2
-//	/* calculate required value for most significnt limb, initially in floating point */
-//	bigInt.nbrLimbs = (int)floor(logar / BITS_PER_GROUP);  // nbrLimbs will be increased as required
-//	double value = round(exp((logar - BITS_PER_GROUP*bigInt.nbrLimbs) * log(2)));
-//
-//	/* convert double to BigInteger */
-//	bigInt.sign = SIGN_POSITIVE;
-//	
-//	mostSignificantLimb = (int) value;
-//	if (mostSignificantLimb == LIMB_RANGE)
-//	{
-//		mostSignificantLimb = 1;
-//		bigInt.nbrLimbs++;
-//	}
-//	bigInt.nbrLimbs++;
-//	if (bigInt.nbrLimbs > MAX_LEN) {
-//		std::string line = std::to_string(__LINE__);
-//		std::string mesg = "number too big : cannot expand BigInteger: ";
-//		mesg += __func__;
-//		mesg += " line ";  mesg += line;
-//		mesg += " in file "; mesg += __FILE__;
-//		throw std::range_error(mesg);
-//	}
-//	memset(bigInt.limbs, 0, bigInt.nbrLimbs * sizeof(limb));
-//	bigInt.limbs[bigInt.nbrLimbs - 1].x = mostSignificantLimb;
-//}
+/* BigInt = e^logar   */
+void expBigInt(BigInteger &bigInt, double logar) {
+	bigInt = std::exp(logar);
+	/* note: the assignment statement above uses DoubleToBigInt to 
+	convert floating point to BigInteger */
+}
 
 
-/* convert double dvalue to bigInt. Conversion is only accurate to about 15 significant digits. */
+/* convert double dvalue to bigInt. Conversion is only accurate to about 15 
+significant digits. Used for operator overloading. */
 void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 
 	if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
@@ -307,26 +286,26 @@ void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 }
 
 /* estimate natural log of BigInt. */
-//double logBigNbr (const BigInteger &pBigInt) {
-//	int nbrLimbs;
-//	double logar;
-//	nbrLimbs = pBigInt.nbrLimbs;
-//	if (nbrLimbs == 1) {
-//		logar = log((double)(pBigInt.limbs[0].x));
-//	}
-//	else {
-//		double value = pBigInt.limbs[nbrLimbs - 2].x +
-//			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
-//		if (nbrLimbs == 2) {
-//			logar = log(value);
-//		}
-//		else {
-//			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
-//		}
-//		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
-//	}
-//	return logar;
-//}
+double logBigNbr (const BigInteger &pBigInt) {
+	int nbrLimbs;
+	double logar;
+	nbrLimbs = pBigInt.nbrLimbs;
+	if (nbrLimbs == 1) {
+		logar = log((double)(pBigInt.limbs[0].x));
+	}
+	else {
+		double value = pBigInt.limbs[nbrLimbs - 2].x +
+			(double)pBigInt.limbs[nbrLimbs - 1].x * LIMB_RANGE;
+		if (nbrLimbs == 2) {
+			logar = log(value);
+		}
+		else {
+			logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3].x / LIMB_RANGE);
+		}
+		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
+	}
+	return logar;
+}
 double logBigNbr(const Znum &BigInt) {
 	double BigId;
 #ifdef __MPIR_VERSION

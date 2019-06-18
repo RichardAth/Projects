@@ -215,6 +215,8 @@ public:
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumLen);
 	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
+	friend double logBigNbr(const BigInteger &BigInt);
+	friend void expBigInt(BigInteger &bigInt, double logar);
 
 	BigInteger  operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);

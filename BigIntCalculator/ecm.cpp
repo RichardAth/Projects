@@ -703,7 +703,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		//			printf ("%s\n", text);
 #endif
 		L2 = mpz_sizeinbase(ZT(zN),10);   // Get number of digits.
-		if (L2 > 30 && L2 <= 90)          // If between 31 and 95 digits...
+		if (L2 > 30 && L2 <= 95)          // If between 31 and 95 digits...
 		{                                 // switch to SIQS when curve No reaches limit
 			int limit = limits[((int)L2 - 26) / 5];  // e.g if L2<=50, limit=10
 			if (ElipCurvNo  >= limit) { 
