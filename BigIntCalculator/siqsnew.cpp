@@ -116,7 +116,7 @@ static int aindex[MAX_NBR_FACTORS] = { 0 };
 //  static Thread threadArray[];
 //static PrimeSieveData primeSieveData[MAX_PRIMES + 3] = { 0 };
 static std::vector < PrimeSieveData>  primeSieveData;
-static PrimeTrialDivisionData primeTrialDivisionData[MAX_PRIMES] = { 0 };
+//static PrimeTrialDivisionData primeTrialDivisionData[MAX_PRIMES] = { 0 };
 static int span;
 static int indexMinFactorA;
 const static int threadNumber = 0;
@@ -133,11 +133,9 @@ struct MatPart {
 	Znum value;
 	int seed;
 };
-//static MatPart matrixPartial[MAX_PRIMES * 8];
 static std::vector <MatPart> matrixPartial;
 static Znum vectLeftHandSide[MAX_PRIMES + 50] = { 0 };
 static int matrixPartialHashIndex[2048] = { 0 };
-//static int matrixB[MAX_PRIMES + 50][MAX_FACTORS_RELATION] = { 0 };
 static std::vector <std::vector<int>> matrixB;
 static int amodq[MAX_NBR_FACTORS] = { 0 };
 static int tmodqq[MAX_NBR_FACTORS] = { 0 };
@@ -146,16 +144,25 @@ static int smallPrimeUpperLimit;
 static int firstLimit;
 static int secondLimit;
 static int thirdLimit;
-static int vectExpParity[MAX_PRIMES + 50] = { 0 };
-static int matrixAV[MAX_PRIMES] = { 0 };
-static int matrixV[MAX_PRIMES] = { 0 };
-static int matrixV1[MAX_PRIMES] = { 0 };
-static int matrixV2[MAX_PRIMES] = { 0 };
-static int matrixXmY[MAX_PRIMES] = { 0 };
-static int newColumns[MAX_PRIMES] = { 0 };
-// Matrix that holds temporary data
-static int matrixCalc3[MAX_PRIMES] = { 0 };
-static int matrixTemp2[MAX_PRIMES] = { 0 };
+/* this struct is defined as an easier way to manage memory allocation and release.
+A single malloc & free are sufficient. The disadvantage is that
+all arrays in the structure are accessed via a pointer e.g.
+ag->vectExpParity[i] rather than vectExpParity[i] */
+struct AG{
+	int vectExpParity[MAX_PRIMES + 50];
+	int matrixAV[MAX_PRIMES];
+	int matrixV[MAX_PRIMES];
+	int matrixV1[MAX_PRIMES];
+	int matrixV2[MAX_PRIMES];
+	int matrixXmY[MAX_PRIMES];
+	int newColumns[MAX_PRIMES];
+	// Matrix that holds temporary data
+	int matrixCalc3[MAX_PRIMES];
+	int matrixTemp2[MAX_PRIMES];
+	PrimeTrialDivisionData primeTrialDivisionData[MAX_PRIMES];
+};
+static AG *ag = nullptr;      // storage allocated using malloc
+
 static int nbrPrimes2;
 //static BigInteger factorSiqs;
 const static unsigned char onlyFactoring = FALSE;
@@ -1159,7 +1166,7 @@ static bool TrialDivisionSubA(const int index,
 
 	int iRem;
 	const PrimeSieveData *rowPrimeSieveData = &primeSieveData[index];
-	const PrimeTrialDivisionData *rowPrimeTrialDivisionData = &primeTrialDivisionData[index];
+	const PrimeTrialDivisionData *rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[index];
 
 	if (fullRemainder == false) {
 		Divisor = rowPrimeSieveData->value;
@@ -1253,7 +1260,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 	if (biDividend < LLONG_MAX && biDividend > LLONG_MIN) {
 		long long Dividend = mpz_get_si(ZT(biDividend));
 		for (index = 1; index < nbrFactorBasePrimes; index++) {
-			Divisor = primeTrialDivisionData[index].value;
+			Divisor = ag->primeTrialDivisionData[index].value;
 			for (;;) {
 				rem = Dividend%Divisor;
 				if (rem == 0) {
@@ -1285,7 +1292,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 	// same logic as above, but using Znum instead of long long because value of 
 	// biDividend won't fit into a 64 bit integer
 	//for (index = 1; index < nbrFactorBasePrimes; index++) {
-	//	Divisor = primeTrialDivisionData[index].value;
+	//	Divisor = ag->primeTrialDivisionData[index].value;
 	//	for (;;) {
 	//		/* profiling shows that all the CPU time is used by the function call
 	//		below, so there is no easy way to speed it up */
@@ -1318,7 +1325,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 /*************** old code *****************************************/
 	//if (NumberLengthDividend <= 1) { // Dividend has one limb.
 	//	for (index = 1; index < nbrFactorBasePrimes; index++) {
-	//		Divisor = primeTrialDivisionData[index].value;
+	//		Divisor = ag->primeTrialDivisionData[index].value;
 	//		while (biR[0] % Divisor == 0)
 	//		{
 	//			biR[0] /= Divisor;
@@ -1452,7 +1459,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 							if (Divisor > sqrtDivid) {             // End of trial division.?
 								rowSquares[0] = nbrSquares;
 								index = nbrFactorBasePrimes - 1;
-								if (dDivid <= primeTrialDivisionData[index].value &&
+								if (dDivid <= ag->primeTrialDivisionData[index].value &&
 									dDivid > 1)
 								{          // Perform binary search to find the index.
 									left = -1;
@@ -1460,7 +1467,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 
 									while (left != right) {
 										median = ((right - left) >> 1) + left;
-										nbr = primeTrialDivisionData[median].value;
+										nbr = ag->primeTrialDivisionData[median].value;
 										if (nbr < dDivid) {
 											if (median == left &&
 												congruencesFound >= matrixBLength) {
@@ -1586,14 +1593,14 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 								Divisor = (int)dDivid;
 								rowSquares[0] = nbrSquares;
 								index = nbrFactorBasePrimes - 1;
-								if (Divisor <= primeTrialDivisionData[index].value &&
+								if (Divisor <= ag->primeTrialDivisionData[index].value &&
 									Divisor > 1)
 								{          // Perform binary search to find the index.
 									left = -1;
 									median = right = nbrFactorBasePrimes;
 									while (left != right) {
 										median = ((right - left) >> 1) + left;
-										nbr = primeTrialDivisionData[median].value;
+										nbr = ag->primeTrialDivisionData[median].value;
 										if (nbr < Divisor) {
 											if (median == left &&
 												congruencesFound >= matrixBLength)
@@ -1663,7 +1670,7 @@ static void mergeArrays(int aindex[], int nbrFactorsA, int rowMatrixB[], int row
 		else
 		{
 			rowSquares[rowSquares[0]++] =
-				primeTrialDivisionData[aindex[indexAindex++]].value;
+				ag->primeTrialDivisionData[aindex[indexAindex++]].value;
 			indexRMBBM++;
 		}
 	}
@@ -1794,9 +1801,9 @@ static bool PartialRelationFound(
 			// The number is multiple of the big prime, so divide by it.
 			biT /= newDivid; // DivBigNbrByInt(biT, newDivid, biT);
 			for (index = 0; index < nbrFactorsA; index++) {
-				biT /= primeTrialDivisionData[indexFactorsA[index]].value;
+				biT /= ag->primeTrialDivisionData[indexFactorsA[index]].value;
 				/*DivBigNbrByInt(biT,
-					primeTrialDivisionData[indexFactorsA[index]].value, biT);*/
+					ag->primeTrialDivisionData[indexFactorsA[index]].value, biT);*/
 			}
 
 			for (index = 1; index < nbrFactorBasePrimes; index++) {
@@ -1808,7 +1815,7 @@ static bool PartialRelationFound(
 					}
 				}
 
-				const auto rowPrimeTrialDivisionData = &primeTrialDivisionData[index];
+				const auto rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[index];
 				Divisor = rowPrimeTrialDivisionData->value;
 
 				for (;;) {
@@ -2113,7 +2120,8 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		matrixB[i].resize(MAX_FACTORS_RELATION);
 	matrixPartial.resize(MAX_PRIMES * 8);
 	primeSieveData.resize(MAX_PRIMES + 3);
-
+	ag = (AG*)calloc(1, sizeof(AG));
+	assert(ag != nullptr);
 	//  threadArray = new Thread[numberThreads];
 	Temp = logBigNbr(zN);
 	/* increased number of primes on 17/6/2019 in line with DA's calculator */
@@ -2143,9 +2151,9 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	/* search for best Knuth-Schroeppel multiplier */
 	bestadjust = -10.0e0;
 	primeSieveData[0].value = 1;
-	primeTrialDivisionData[0].value = 1;
+	ag->primeTrialDivisionData[0].value = 1;
 	rowPrimeSieveData = &primeSieveData[1];
-	rowPrimeTrialDivisionData = &primeTrialDivisionData[1];
+	rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[1];
 	rowPrimeSieveData->value = 2;
 	rowPrimeTrialDivisionData->value = 2;
 	// (2^BITS_PER_INT_GROUP)^(j+1) mod 2
@@ -2226,7 +2234,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	if (multiplier != 1 && multiplier != 2) {
 		rowPrimeSieveData = &primeSieveData[2];
-		rowPrimeTrialDivisionData = &primeTrialDivisionData[2];
+		rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[2];
 		rowPrimeSieveData->value = multiplier;
 		rowPrimeTrialDivisionData->value = multiplier;
 		rowPrimeSieveData->modsqrt = 0;
@@ -2259,7 +2267,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			double dBase, dPower, dCurrentPrime, dRem;
 			/* use only if Jacobi symbol = 0 or 1 */
 			rowPrimeSieveData = &primeSieveData[j];
-			rowPrimeTrialDivisionData = &primeTrialDivisionData[j];
+			rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[j];
 			rowPrimeSieveData->value = (int)currentPrime;
 			rowPrimeTrialDivisionData->value = (int)currentPrime;
 			// The following works because multiplier has less than 26 significant bits.
@@ -2454,6 +2462,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	matrixB.clear();   /* release memory */
 	matrixPartial.clear();
 	primeSieveData.clear();
+	free(ag);
 
 
 	if (/*getTerminateThread() ||*/ (Factor == 0))
@@ -2505,27 +2514,27 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 	int *rowMatrixB;
 	int matrixBlength = matrixBLength;
 
-	memset(newColumns, 0, matrixBlength * sizeof(int));
+	memset(ag->newColumns, 0, matrixBlength * sizeof(int));
 	// Find singletons in matrixB storing in array vectExpParity the number
 	// of primes in each column.
 	do {   // The singleton removal phase must run until there are no more
 		   // singletons to erase.
-		memset(vectExpParity, 0, matrixBLength * sizeof(limb));
+		memset(ag->vectExpParity, 0, matrixBLength * sizeof(limb));
 		for (row = matrixBlength - 1; row >= 0; row--)
 		{                  // Traverse all rows of the matrix.
 			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET] - 1; column >= 1; column--)
 			{                // A prime appeared in that column.
-				vectExpParity[rowMatrixB[column]]++;
+				ag->vectExpParity[rowMatrixB[column]]++;
 			}
 		}
 		row = 0;
 		for (column = 0; column<nbrFactorBasePrimes; column++) {
-			if (vectExpParity[column] > 1)
+			if (ag->vectExpParity[column] > 1)
 			{                // Useful column found with at least 2 primes.
-				newColumns[column] = row;
-				primeTrialDivisionData[row++].value =
-					primeTrialDivisionData[column].value;
+				ag->newColumns[column] = row;
+				ag->primeTrialDivisionData[row++].value =
+					ag->primeTrialDivisionData[column].value;
 			}
 		}
 		nbrFactorBasePrimes = row;
@@ -2537,7 +2546,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET] - 1; column >= 1; column--)
 			{                // Traverse all columns.
-				if (vectExpParity[rowMatrixB[column]] == 1)
+				if (ag->vectExpParity[rowMatrixB[column]] == 1)
 				{              // Singleton found: erase this row.
 					delta++;
 					break;
@@ -2556,12 +2565,12 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 			rowMatrixB = &matrixB[row][0];
 			for (column = rowMatrixB[LENGTH_OFFSET]; column >= 1; column--)
 			{                // Change all column indexes in this row.
-				rowMatrixB[column] = newColumns[rowMatrixB[column]];
+				rowMatrixB[column] = ag->newColumns[rowMatrixB[column]];
 			}
 		}
 	} while (delta > 0);           // End loop if number of rows did not change.
 
-	primeTrialDivisionData[0].exp[1] = nbrFactorBasePrimes;
+	ag->primeTrialDivisionData[0].exp[1] = nbrFactorBasePrimes;
 	return matrixBlength;
 }
 
@@ -2601,8 +2610,8 @@ static bool LinearAlgebraPhase(
 	int matrixBlen = EraseSingletons(nbrFactorBasePrimes);
 	matrixBLength = matrixBlen;  // note upper case L; not same variable
 	matrixRows = matrixBlen;
-	matrixCols = primeTrialDivisionData[0].exp[1];
-	primeTrialDivisionData[0].exp[1] = 0;         // Restore correct value.
+	matrixCols = ag->primeTrialDivisionData[0].exp[1];
+	ag->primeTrialDivisionData[0].exp[1] = 0;         // Restore correct value.
 	BlockLanczos();
 	// The rows of matrixV indicate which rows must be multiplied so no
 	// primes are multiplied an odd number of times.
@@ -2611,22 +2620,22 @@ static bool LinearAlgebraPhase(
 
 		biT = 1; 
 		biR = 1; 
-		memset(vectExpParity, 0, matrixBlen * sizeof(vectExpParity[0]));
+		memset(ag->vectExpParity, 0, matrixBlen * sizeof(ag->vectExpParity[0]));
 
 		for (row = matrixBlen - 1; row >= 0; row--) {
-			if ((matrixV[row] & mask) != 0) {
+			if ((ag->matrixV[row] & mask) != 0) {
 				MultBigNbrModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
 				biR = biU; 
 				rowMatrixB = &matrixB[row][0];
 				for (j = rowMatrixB[LENGTH_OFFSET] - 1; j >= 1; j--) {
 					primeIndex = rowMatrixB[j];
-					vectExpParity[primeIndex] ^= 1;
-					if (vectExpParity[primeIndex] == 0) {
+					ag->vectExpParity[primeIndex] ^= 1;
+					if (ag->vectExpParity[primeIndex] == 0) {
 						if (primeIndex == 0) {
 							biT = zModulus - biT; //SubtractBigNbr(zModulus, biT, biT); // Multiply biT by -1.
 						}
 						else {
-							MultBigNbrByIntModN(biT, primeTrialDivisionData[primeIndex].value,
+							MultBigNbrByIntModN(biT, ag->primeTrialDivisionData[primeIndex].value,
 								biT, zModulus);
 						}
 					}
@@ -2991,8 +3000,8 @@ static void BlockLanczos(void)
 	dMult = (double)62089911;
 	dAdd = (double)54325442;
 	dDivisor = (double)0x7FFFFFFF;
-	ptrMatrixXmY = &matrixXmY[matrixBLength - 1];
-	for (ptrMatrixV = &matrixV[matrixBLength - 1]; ptrMatrixV >= matrixV; ptrMatrixV--)
+	ptrMatrixXmY = &ag->matrixXmY[matrixBLength - 1];
+	for (ptrMatrixV = &ag->matrixV[matrixBLength - 1]; ptrMatrixV >= ag->matrixV; ptrMatrixV--)
 	{
 		double dSeed2 = (dSeed * dMult + dAdd);
 		dSeed2 -= floor(dSeed2 / dDivisor) * dDivisor;
@@ -3006,7 +3015,7 @@ static void BlockLanczos(void)
 		dSeed -= floor(dSeed / dDivisor) * dDivisor;
 	}
 	// Compute matrix Vt(0) * V(0)
-	MatrTranspMult(matrixBLength, matrixV, matrixV, matrixVtV0);
+	MatrTranspMult(matrixBLength, ag->matrixV, ag->matrixV, matrixVtV0);
 #ifdef __EMSCRIPTEN__
 	showMatrixSize((char *)SIQSInfoText, matrixRows, matrixCols);
 #endif
@@ -3049,9 +3058,9 @@ static void BlockLanczos(void)
 		oldDiagonalSSt = newDiagonalSSt;
 		stepNbr++;
 		// Compute matrix A * V(i)
-		MultiplyAByMatrix(matrixV, matrixCalc3, matrixAV);
+		MultiplyAByMatrix(ag->matrixV, ag->matrixCalc3, ag->matrixAV);
 		// Compute matrix Vt(i) * A * V(i)
-		MatrTranspMult(matrixBLength, matrixV, matrixAV, matrixVtAV);
+		MatrTranspMult(matrixBLength, ag->matrixV, ag->matrixAV, matrixVtAV);
 
 		/* If Vt(i) * A * V(i) = 0, end of loop */
 		for (i = sizeof(matrixVtAV) / sizeof(matrixVtAV[0]) - 1; i >= 0; i--) {
@@ -3183,7 +3192,7 @@ static void BlockLanczos(void)
 
 		// ParenD = Vt(i)*A*A*V(i) * S*St + Vt(i)*A*V(i)
 		// D = I - Winv(i) * ParenD
-		MatrTranspMult(matrixBLength, matrixAV, matrixAV, matrixCalc1); // Vt(i)*A*A*V(i)
+		MatrTranspMult(matrixBLength, ag->matrixAV, ag->matrixAV, matrixCalc1); // Vt(i)*A*A*V(i)
 		MatrMultBySSt(32, matrixCalc1, newDiagonalSSt, matrixCalc1);
 		MatrixAddition(matrixCalc1, matrixVtAV, matrixCalcParenD);
 		MatrixMultiplication(matrixWinv, matrixCalcParenD, matrixD);
@@ -3195,16 +3204,16 @@ static void BlockLanczos(void)
 
 		/* Update value of X - Y */
 		MatrixMultiplication(matrixWinv, matrixVtV0, matrixCalc1);
-		MatrixMultAdd(matrixV, matrixCalc1, matrixXmY);
+		MatrixMultAdd(ag->matrixV, matrixCalc1, ag->matrixXmY);
 
 		/* Compute value of new matrix V(i) */
 		// V(i+1) = A * V(i) * S * St + V(i) * D + V(i-1) * E + V(i-2) * F
-		MatrMultBySSt(matrixBLength, matrixAV, newDiagonalSSt, matrixCalc3);
-		MatrixMultAdd(matrixV, matrixD, matrixCalc3);
+		MatrMultBySSt(matrixBLength, ag->matrixAV, newDiagonalSSt, ag->matrixCalc3);
+		MatrixMultAdd(ag->matrixV, matrixD, ag->matrixCalc3);
 		if (stepNbr >= 2) {
-			MatrixMultAdd(matrixV1, matrixE, matrixCalc3);
+			MatrixMultAdd(ag->matrixV1, matrixE, ag->matrixCalc3);
 			if (stepNbr >= 3) {
-				MatrixMultAdd(matrixV2, matrixF, matrixCalc3);
+				MatrixMultAdd(ag->matrixV2, matrixF, ag->matrixCalc3);
 			}
 		}
 
@@ -3219,17 +3228,20 @@ static void BlockLanczos(void)
 				MatrixAddition(matrixCalc1, matrixCalc2, matrixCalc2);
 			}
 		}
-
-		memcpy(matrixTemp2, matrixV2, sizeof(matrixTemp2));
-		memcpy(matrixV2, matrixV1, sizeof(matrixV2));
-		memcpy(matrixV1, matrixV, sizeof(matrixV1));
-		memcpy(matrixV, matrixCalc3, sizeof(matrixV));
-		memcpy(matrixCalc3, matrixTemp2, sizeof(matrixCalc3));
+		/* cycle arrays:
+		  V2 <- V1, V1 <- V, V <- Calc3, Calc3 <- V2*/
+		memcpy(ag->matrixTemp2, ag->matrixV2, sizeof(ag->matrixTemp2));
+		memcpy(ag->matrixV2, ag->matrixV1, sizeof(ag->matrixV2));
+		memcpy(ag->matrixV1, ag->matrixV, sizeof(ag->matrixV1));
+		memcpy(ag->matrixV, ag->matrixCalc3, sizeof(ag->matrixV));
+		memcpy(ag->matrixCalc3, ag->matrixTemp2, sizeof(ag->matrixCalc3));
+		/* Vt2V0 <- Vt1V0, Vt1V0 <- VtV0, VtV0 <- Calc2, Calc2 <- Vt2V0*/
 		memcpy(matrixTemp, matrixVt2V0, sizeof(matrixTemp));
 		memcpy(matrixVt2V0, matrixVt1V0, sizeof(matrixVt2V0));
 		memcpy(matrixVt1V0, matrixVtV0, sizeof(matrixVt1V0));
 		memcpy(matrixVtV0, matrixCalc2, sizeof(matrixVtV0));
 		memcpy(matrixCalc2, matrixTemp, sizeof(matrixCalc2));
+		/* swap Vt1AV1 and VtAV */
 		memcpy(matrixTemp, matrixVt1AV1, sizeof(matrixTemp));
 		memcpy(matrixVt1AV1, matrixVtAV, sizeof(matrixVt1AV1));
 		memcpy(matrixVtAV, matrixTemp, sizeof(matrixVtAV));
@@ -3237,19 +3249,19 @@ static void BlockLanczos(void)
 
 	  /* Find matrix V1:V2 = B * (X-Y:V) */
 	for (row = matrixBLength - 1; row >= 0; row--) {
-		matrixV1[row] = matrixV2[row] = 0;
+		ag->matrixV1[row] = ag->matrixV2[row] = 0;
 	}
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int rowMatrixXmY, rowMatrixV;
 
 		rowMatrixB = &matrixB[row][0];
-		rowMatrixXmY = matrixXmY[row];
-		rowMatrixV = matrixV[row];
+		rowMatrixXmY = ag->matrixXmY[row];
+		rowMatrixV = ag->matrixV[row];
 		// The vector rowMatrixB includes the indexes of the columns set to '1'.
 		for (index = rowMatrixB[LENGTH_OFFSET] - 1; index >= 1; index--) {
 			col = rowMatrixB[index];
-			matrixV1[col] ^= rowMatrixXmY;
-			matrixV2[col] ^= rowMatrixV;
+			ag->matrixV1[col] ^= rowMatrixXmY;
+			ag->matrixV2[col] ^= rowMatrixV;
 		}
 	}
 
@@ -3259,7 +3271,7 @@ static void BlockLanczos(void)
 		for (col = leftCol; col < rightCol; col++)
 		{       // For each column find the first row which has a '1'.
 				// Columns outside this range must have '0' in all rows.
-			matr = (col >= 32 ? matrixV1 : matrixV2);
+			matr = (col >= 32 ? ag->matrixV1 : ag->matrixV2);
 			mask = 0x80000000 >> (col & 31);
 			vectorIndex[col] = -1;    // indicate all rows in zero in advance.
 			for (row = 0; row < matrixBLength; row++) {
@@ -3275,7 +3287,7 @@ static void BlockLanczos(void)
 			if (vectorIndex[col] < 0)
 			{  // If all zeros in col 'col', exchange it with first column with
 			   // data different from zero (leftCol).
-				colexchange(matrixXmY, matrixV, matrixV1, matrixV2, leftCol, col);
+				colexchange(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, leftCol, col);
 				vectorIndex[col] = vectorIndex[leftCol];
 				vectorIndex[leftCol] = -1;  // This column now has zeros.
 				leftCol++;                  // Update leftCol to exclude that column.
@@ -3310,13 +3322,13 @@ static void BlockLanczos(void)
 				{        // Add first column which has '1' in the same row to
 						 // the other columns so they have '0' in this row after
 						 // this operation.
-					coladd(matrixXmY, matrixV, matrixV1, matrixV2, minind, col);
+					coladd(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, minind, col);
 				}
 			}
 		}
 		else {
 			rightCol--;
-			colexchange(matrixXmY, matrixV, matrixV1, matrixV2, minind, rightCol);
+			colexchange(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, minind, rightCol);
 		}
 	}
 
@@ -3324,7 +3336,7 @@ static void BlockLanczos(void)
 	while (leftCol < rightCol) {
 		for (col = leftCol; col < rightCol; col++)
 		{         // For each column find the first row which has a '1'.
-			matr = (col >= 32 ? matrixXmY : matrixV);
+			matr = (col >= 32 ? ag->matrixXmY : ag->matrixV);
 			mask = 0x80000000 >> (col & 31);
 			vectorIndex[col] = -1;    // indicate all rows in zero in advance.
 			for (row = 0; row < matrixBLength; row++) {
@@ -3341,7 +3353,7 @@ static void BlockLanczos(void)
 		   // data different from zero (rightCol).
 			if (vectorIndex[col] < 0) {
 				rightCol--;                 // Update rightCol to exclude that column.
-				colexchange(matrixXmY, matrixV, matrixV1, matrixV2, rightCol, col);
+				colexchange(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, rightCol, col);
 				vectorIndex[col] = vectorIndex[rightCol];
 				vectorIndex[rightCol] = -1; // This column now has zeros.
 			}
@@ -3376,12 +3388,12 @@ static void BlockLanczos(void)
 				{        // Add first column which has '1' in the same row to
 						 // the other columns so they have '0' in this row after
 						 // this operation.
-					coladd(matrixXmY, matrixV, matrixV1, matrixV2, minind, col);
+					coladd(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, minind, col);
 				}
 			}
 		}
 		else {
-			colexchange(matrixXmY, matrixV, matrixV1, matrixV2, minind, leftCol);
+			colexchange(ag->matrixXmY, ag->matrixV, ag->matrixV1, ag->matrixV2, minind, leftCol);
 			leftCol++;
 		}
 	}
@@ -3534,7 +3546,7 @@ static void sieveThread(Znum &result) {
 				for (index = 1; index < nbrFactorBasePrimes; index++) {
 					double dRem, dCurrentPrime;
 					long long Rem;
-					rowPrimeTrialDivisionData = &primeTrialDivisionData[index];
+					rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[index];
 					rowPrimeSieveData = &primeSieveData[index];
 
 
@@ -3658,7 +3670,7 @@ static void sieveThread(Znum &result) {
 			rowPrimeSieveData0 = firstPrimeSieveData + i;
 			rowPrimeSieveData->difsoln = rowPrimeSieveData0->difsoln;
 			rowPrimeSieveData->Bainv2_0 = rowPrimeSieveData0->Bainv2_0;
-			rowPrimeTrialDivisionData = &primeTrialDivisionData[i];
+			rowPrimeTrialDivisionData = &ag->primeTrialDivisionData[i];
 			currentPrime = rowPrimeTrialDivisionData->value;     // Get current prime.
 			dCurrentPrime = (double)currentPrime;
 
