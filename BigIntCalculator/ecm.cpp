@@ -31,11 +31,13 @@ static bool first = true;
 static COORD coordScreen = { 0, 0 };    // home for the cursor 
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
-static int yieldFreq;
+static int yieldFreq;   // used to control output of status messages 
 int ElipCurvNo;            // Elliptic Curve Number
+
+
 /*
 Threshold for switching to SIQS 
-Digits	31-50   51-55   56-60	61-65	66-70	71-75	76-80	81-85	86-90	91-95
+Digits	26-50   51-55   56-60	61-65	66-70	71-75	76-80	81-85	86-90	91-95
 Curve	10		15		22		26		35		50		100		150		250     260 */
 static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250, 260 };
 
@@ -118,7 +120,8 @@ FILE *logfile;
 #define ADD 6  /* number of multiplications in an addition */
 #define DUP 5  /* number of multiplications in a duplicate */
 
-/* returns value in YieldFreq, based on NumLen which is the number of limbs in TestNbr */
+/* returns value in yieldFreq, based on NumLen which is the number of limbs
+in TestNbr.  yieldFreq is used to control output of status messages */
 static void GetYieldFrequency(int NumLen)
 {
 	yieldFreq = 1000000 / (NumLen * NumLen) + 1;
@@ -510,35 +513,36 @@ void showECMStatus(void) {
 	char status[200];
 	int elapsedTime;
 	char *ptrStatus;
-	if ((lModularMult % yieldFreq) != 0)
-	{
+
+	/* check whether or not it's time for another status message */
+	if ((lModularMult % yieldFreq) != 0) {
 		return;
 	}
 	elapsedTime = (int)(tenths() - originalTenthSecond);
-	if (elapsedTime / 10 <= oldTimeElapsed/10 +5)
-	{
+	if (elapsedTime / 10 <= oldTimeElapsed/10 +5) 	{
 		return;  // less than 5 seconds since last message
 	}
+
 	oldTimeElapsed = elapsedTime;
 	ptrStatus = status;
 	strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
 	ptrStatus += strlen(ptrStatus);
-	GetDHMS(&ptrStatus, elapsedTime / 10);
+	GetDHMS(&ptrStatus, elapsedTime / 10); // days, hours, mins, secs to o/p buffer
 	switch (StepECM)
 	{
 	case 1:
 		strcpy(ptrStatus, lang ? "Paso 1: " : "Step 1: ");
 		ptrStatus += strlen(ptrStatus);
-		int2dec(&ptrStatus, indexPrimes / (nbrPrimes / 100));
-		*ptrStatus++ = '%';
+		ptrStatus += sprintf(ptrStatus, "%2d%%", indexPrimes / (nbrPrimes / 100));
 		break;
+
 	case 2:
 		strcpy(ptrStatus, lang ? "Paso 2: " : "Step 2: ");
 		ptrStatus += strlen(ptrStatus);
-		int2dec(&ptrStatus, maxIndexM == 0 ? 0 : indexM / (maxIndexM / 100));
-		*ptrStatus++ = '%';
+		ptrStatus += sprintf(ptrStatus, "%2d%%", maxIndexM == 0 ? 0 : indexM / (maxIndexM / 100));
 		break;
 	}
+
 	*ptrStatus++ = '\0';                 // add null terminator
 	printf("%s\n", status);              // send status to screen             
 #ifdef log
@@ -654,7 +658,7 @@ static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	}
 
 	/* failed to factorise in 1000 cycles, so stop trying */
-	factor = 1;   // intToBigInteger(factor, 1);   // Factor not found.
+	factor = 1;     // Factor not found.
 }
 
 static void upOneLine(void) {
@@ -776,15 +780,15 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		GetDHMSt(&ptrText, elapsedTime);
 		strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
 		ptrText += strlen(ptrText);
-		int2dec(&ptrText, ElipCurvNo);   // Show curve number.
+		ptrText += sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
+
 		strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
 		ptrText += strlen(ptrText);
-		int2dec(&ptrText, L1);   // Show first bound.
+ 		ptrText += sprintf(ptrText, "%5lld", L1);       // Show first bound.
+
 		strcpy(ptrText, lang ? " y B2=" : " and B2=");
 		ptrText += strlen(ptrText);
-		int2dec(&ptrText, L2);   // Show second bound.
-		strcpy(ptrText, "\n");
-		ptrText += strlen(ptrText);
+		ptrText += sprintf(ptrText, "%7lld \n", L2); // Show second bound.
 
 		if (first) {
 			if (!GetConsoleScreenBufferInfo(hConsole, &csbi))

@@ -1770,32 +1770,53 @@ static void doFactors(const Znum &Result, bool test) {
 }
 
 /* perform some simple tests */
-static void factortest(const Znum x3) {
+static bool factortest(const Znum x3) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
 
-	std::cout << "\nTest: factorise " << x3 << '\n';
-	factorise(x3, factorlist, Quad);
+	auto start = clock();	// used to measure execution time
+	double end, elapsed;
+
+	//std::cout << "\nTest: factorise " << x3 << '\n';
+	std::cout << "\nTest: factorise ";
+	ShowLargeNumber(x3, 6, true, false);
+	std::cout << '\n';
+	factorise(x3, factorlist, Quad);  // get factors
 
 	result = 1;
 	for (size_t i = 0; i < factorlist.size(); i++)
 		for (int j = 1; j <= factorlist[i].exponent; j++)
-			result *= factorlist[i].Factor;
+			result *= factorlist[i].Factor;  // get product of all factors
 	if (result != x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
 		Beep(750, 1000);
 	}
+	/* check that sum of squares is correct */
 	result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
 	if (result != x3) {
 		std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
 		Beep(750, 1000);
 	}
-	for (auto f : factorlist) {
-		totalFactors += f.exponent;
+	if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
+		/* x3 is not prime */
+		for (auto f : factorlist) {
+			totalFactors += f.exponent;
+		}
+		std::cout << "found " << factorlist.size() << " unique factors, total "
+			<< totalFactors << " factors\n";
+		end = clock();              // measure amount of time used
+		elapsed = (double)end - start;
+		std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+		return false;   // not prime
 	}
-	std::cout << "found " << factorlist.size() << " unique factors, total "
-		<< totalFactors << " factors\n";
+	else
+		std::cout << "is prime \n";
+
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	return true;
 }
 
 static void doTests(void) {
@@ -1956,7 +1977,7 @@ static void doTests2(void) {
 		if (i <= 39)
 			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
 		x += rand();
-		std::cout << "\nTest # " << i << '\n';
+		std::cout << "\nTest # " << i << " of 43 \n";
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
 		doFactors(x, true); /* factorise x, calculate number of divisors etc */
@@ -1983,8 +2004,8 @@ static void doTests3(void) {
 
 	srand(421040034);               // seed random number generator 
 	
-	/* check basic arithmetic operators */
-	a = 1291;
+	/* check basic arithmetic operators for BigIntegers */
+	a = 1291;        // set starting values (increased each time round loop)
 	b = 131;
 	for (int ctr = 1; ctr <= 1700; ctr++) {
 		/* with the values currently used for a and b, ctr cannot go much beyond 1700
@@ -2029,8 +2050,8 @@ static void doTests3(void) {
 
 		pBI = aBI;
 		pBI *= INT_MAX;
-		BigtoZ(p, pBI);               // p = pBI = aBI * bBI
-		assert(p == a * INT_MAX);
+		BigtoZ(p, pBI);               // p = pBI = aBI * INT_MAX
+		assert(p == a * INT_MAX);	  // verify multiplication by int
 
 		pBI = aBI / bBI;
 		BigtoZ(p, pBI);                // p = pBI = aBI / bBI
@@ -2089,14 +2110,14 @@ static void doTests3(void) {
 		}
 
 		pBI = aBI + INT_MAX;
-		BigtoZ(p, pBI);        // p = pBI = aBI + max;
-		assert(p == a + INT_MAX);
+		BigtoZ(p, pBI);              // p = pBI = aBI + max;
+		assert(p == a + INT_MAX);    // veryify addition of int
 
 		pBI = aBI - INT_MAX;
-		BigtoZ(p, pBI);        // p = pBI = aBI + max;
-		assert(p == a - INT_MAX);
+		BigtoZ(p, pBI);               // p = pBI = aBI - max;
+		assert(p == a - INT_MAX);;    // veryify subtraction of int
 
-		a *= 1237953;
+		a *= 1237953;                 // increase a & b, then repeat
 		b *= 129218;
 	}
 
@@ -2241,14 +2262,36 @@ static void doTests3(void) {
 /* see http://oeis.org/A002102 */
 
 extern unsigned __int64 R2(const unsigned __int64 n);
+//static void doTests4(void) {
+//	generatePrimes(2000);
+//	for (int i = 0; i <= 9992; i++) {
+//		auto rv2 = R2(i);
+//		auto rv = R3(i);
+//		printf_s("%4d %4lld %4lld ", i, rv2, rv);
+//		std::cout << '\n';
+//	}
+//}
+
+/* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
+this test will take more than 2 hours! 
+*/
 static void doTests4(void) {
-	generatePrimes(2000);
-	for (int i = 0; i <= 9992; i++) {
-		auto rv2 = R2(i);
-		auto rv = R3(i);
-		printf_s("%4d %4lld %4lld ", i, rv2, rv);
-		std::cout << '\n';
+	int px = 0;
+	Znum m;
+
+	auto start = clock();	// used to measure execution time
+	if (primeListMax < 1000)
+		generatePrimes(15000);
+	for (px = 0; px <= 66; px++) {
+		std::cout << "\ntest " << px + 1 << " of 67 ";
+		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);
+		m--;
+		if (factortest(m)) /* factorise m, calculate number of divisors etc */
+			std::cout << "2^" << primeList[px] << " - 1 is prime \n";
 	}
+	auto end = clock();              // measure amount of time used
+	auto elapsed = (double)end - start;
+	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
 

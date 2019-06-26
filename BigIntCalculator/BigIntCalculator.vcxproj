@@ -167,10 +167,14 @@
   <ItemGroup>
     <ClInclude Include="bignbr.h" />
     <ClInclude Include="factor.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="showtime.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BigIntCalculator.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

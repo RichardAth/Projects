@@ -923,7 +923,7 @@ void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
 }
 
 // This routine checks whether the number factor is a perfect power. 
-// If it is not, it returns one. If it is a perfect power, it returns the  
+// If it is not, it returns exponent 1. If it is a perfect power, it returns the  
 // exponent and  the base such that base^exponent = factor.
 long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 	/* upperbound is the largest number already tested as a factor by trial division

@@ -46,7 +46,7 @@ enum eSign
 	SIGN_NEGATIVE,
 };
 
-extern long long lModularMult;
+extern long long lModularMult;  // count of number of modular multiplications
 bool BigNbrIsZero(const limb *value, int nbrLength);
 //void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);

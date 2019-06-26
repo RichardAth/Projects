@@ -36,7 +36,7 @@ limb *const MontgomeryMultR2 = MontgomeryMultR2BI.limbs;  // used by ModInvBigNb
 static int powerOf2Exponent;
 static limb aux[MAX_LEN], aux2[MAX_LEN];
 
-long long lModularMult = 0;
+long long lModularMult = 0;    // count of number of modular multiplications
 mmCback modmultCallback = nullptr;     // function pointer
 static limb U[MAX_LEN], V[MAX_LEN], R[MAX_LEN], S[MAX_LEN];
 static limb Ubak[MAX_LEN], Vbak[MAX_LEN];

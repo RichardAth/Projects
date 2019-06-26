@@ -25,7 +25,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
 
-#include "showtime.h"
+//#include "showtime.h"
 
 //#ifdef __EMSCRIPTEN__
 //void getCunn(char *url, char *factorsFromServer);

@@ -947,6 +947,11 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
 	int m = 0;
 
+	if (s == 3) {
+		quads[0] = quads[1] = quads[2] = 1;
+		quads[3] = 0;
+		return;
+	}
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;

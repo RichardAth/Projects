@@ -18,14 +18,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "bignbr.h"
 #include "showtime.h"
-extern clock_t beginTime;
+
 extern int lang;
 
-#define __EMSCRIPTEN__
-
-#ifdef __EMSCRIPTEN__
 double originalTenthSecond;
 int oldTimeElapsed;
 
@@ -35,54 +31,26 @@ double tenths(void) {
 	return (double)now / (CLOCKS_PER_SEC / 10); ;
 }
 
-// Convert seconds to days, hours, minutes and seconds.
-void GetDHMS(char **pptrText, int seconds)
-{
+/* Convert seconds to days, hours, minutes and seconds.
+& move *pptrText past added text (normally 14 chars)
+output format is "nd nnh nnm nns"*/
+void GetDHMS(char **pptrText, int seconds) {
 	char *ptrText = *pptrText;
-	int2dec(&ptrText, seconds / 86400);         // Show number of days.
-	*ptrText++ = 'd';
-	*ptrText++ = ' ';
-	int2dec(&ptrText, (seconds / 3600) % 24);   // Show number of hours.
-	*ptrText++ = 'h';
-	*ptrText++ = ' ';
-	int2dec(&ptrText, (seconds / 60) % 60);     // Show number of minutes.
-	*ptrText++ = 'm';
-	*ptrText++ = ' ';
-	int2dec(&ptrText, seconds % 60);            // Show number of seconds.
-	*ptrText++ = 's';
-	*ptrText++ = ' ';
-	*ptrText = '\0';  // null terminate
-	*pptrText = ptrText;
+	
+	auto len = sprintf(ptrText, "%dd %2dh %2dm %2ds \n", seconds / 86400, 
+		(seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60);
+	*pptrText += len-1;    // pointer points at null terminator
 }
 
-void GetDHMSt(char **pptrText, int tenths)
-{
-	char *ptrText;
-	GetDHMS(pptrText, tenths / 10);
-	ptrText = *pptrText - 2;
-	*ptrText++ = '.';
-	*ptrText++ = (char)(tenths % 10 + '0');
-	*ptrText++ = 's';
-	*ptrText++ = ' ';
-	*ptrText = '\0';  // null terminate
-	*pptrText = ptrText;
-}
+/* Convert tenths to days, hours, minutes and seconds.tenths.
+& move *pptrText past added text (normally 16 chars)
+output format is "nd nnh nnm nn.ns"*/
+void GetDHMSt(char **pptrText, int tenths) {
+	char *ptrText = *pptrText;
+	int seconds = tenths / 10;
 
-#endif
-
-void showElapsedTime(char **pptrOutput)
-{
-	char *ptrOutput = *pptrOutput;
-	strcpy(ptrOutput, lang ? "\nTiempo transcurrido: " : "\nTime elapsed: ");
-	ptrOutput += strlen(ptrOutput);
-#ifdef __EMSCRIPTEN__
-	GetDHMSt(&ptrOutput, (int)(tenths() - originalTenthSecond));
-	strcpy(ptrOutput, "\n");
-	ptrOutput += strlen(ptrOutput);
-#else
-	clock_t end = clock();
-	double time_spent = (double)(end - beginTime) / CLOCKS_PER_SEC;
-	ptrOutput += sprintf(ptrOutput, "%f seconds\n", time_spent);
-#endif
-	*pptrOutput = ptrOutput;
+	auto len = sprintf(ptrText, "%dd %2dh %2dm %2d.%ds \n", seconds / 86400,
+		(seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60,
+		tenths%10);
+	*pptrText += len - 1;    // pointer points at null terminator
 }
