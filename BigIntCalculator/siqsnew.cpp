@@ -91,14 +91,14 @@ const static int debugLimit = 1000;
 const static int numberThreads = 1;
 static int matrixBLength;
 static long trialDivisions;
-static long smoothsFound;
-static long totalPartials;
-static long partialsFound;
+static long smoothsFound;     // number of full congruences.
+static long totalPartials;    // number of partial congruences
+static long partialsFound;    // number of built congruences
+static int nbrPartials;        // number of partials
 static long ValuesSieved;
 static int nbrFactorBasePrimes;
 static int congruencesFound = 0;
 static long polynomialsSieved;
-static int nbrPartials;
 static int multiplier = 1;
 //extern int multiplier;
 static int nbrFactorsA;
@@ -205,7 +205,7 @@ static void upOneLine(void) {
 #endif
 }
 
-static void InitSIQSStrings(int SieveLimit)
+static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
 	strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
@@ -214,12 +214,9 @@ static void InitSIQSStrings(int SieveLimit)
 	strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
-									//strcpy(ptrText, "\n");
-									//ptrText += strlen(ptrText);
 	ptrSIQSStrings = ptrText;
 	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
-	//databack(lowerText);
 	printf("%s", ptrLowerText);
 }
 
@@ -241,29 +238,37 @@ static void getMultAndFactorBase(int multiplier, int FactorBase)
 /* print status: timeSieve = Sieve time so far in seconds*/
 static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength, int elapsedTime)
 {
-	char SIQSInfo[200] = { 0 };
-	int percentage = (int)((float)(congruencesFound * 100) / (float)matrixBLength);
-	int u = (int)((double)timeSieve * (double)(matrixBLength - congruencesFound) / (double)congruencesFound);
+	char SIQSInfo[500] = { 0 };
 	char *ptrText = SIQSInfo;
+		// %age of congruences found so far
+	int percentage = (int)((congruencesFound * 100) / matrixBLength); 
+	/* estimate time to completion (in seconds) based on time used so far and the ratio of 
+	congruences still to be found vs congruences already found */
+	int u = (int)((double)timeSieve * (double)(matrixBLength - congruencesFound) / (double)congruencesFound);
+	u /= 2;
 
 	GetDHMS(&ptrText, elapsedTime);
+	if (lang) {  // español
+		ptrText += sprintf(ptrText, "%5d congruencias halladas \n"
+			"Relaciones: %5d completas y %5d obtenidas de %6d parciales.\n"
+			"progreso = %2d%%. ",
+			congruencesFound, smoothsFound, partialsFound, totalPartials, percentage);
+	}
+	else {  // english
+		ptrText += sprintf(ptrText, "%5d congruences found \n"
+			"Relations: %5d full and %5d found from %6d partials.\n"
+			"progress = %2d%%. ",
+			congruencesFound, smoothsFound, partialsFound, totalPartials, percentage);
+	}
 
-	int2dec(&ptrText, congruencesFound);  // Show number of congruences found.
-	strcpy(ptrText, lang ? " congruencias halladas (" : " congruences found (");
-	ptrText += strlen(ptrText);
-	int2dec(&ptrText, percentage);  // Show number of congruences found.
-	if (timeSieve > 1 && congruencesFound > 10)
-	{
-		strcpy(ptrText, lang ? "%). Fin de la criba en " : "%). End sieve in ");
+	if (timeSieve > 1 && congruencesFound > 10) {
+		strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
 		ptrText += strlen(ptrText);
-		GetDHMS(&ptrText, u / 2);
-		strcpy(ptrText, "\n");
+		GetDHMS(&ptrText, u);      // print estimated time to completion
 	}
-	else
-	{
-		strcpy(ptrText, "%)\n");
-	}
-	//databack(SIQSInfo);
+
+	strcpy(ptrText, "\n");
+
 	if (first) {
 		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 		{
@@ -278,6 +283,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	}
 	else
 		upOneLine();
+
 	printf("%s", SIQSInfo);
 	first = false;
 }
@@ -1691,7 +1697,7 @@ static bool SmoothRelationFound(
 {
 	int index;
 	int nbrSquares;
-	if (congruencesFound == matrixBLength)
+	if (congruencesFound >= matrixBLength)
 	{
 		return true;            // All congruences already found.
 	}
@@ -1780,10 +1786,10 @@ static bool PartialRelationFound(
 			getFactorsOfA(seed, indexFactorsA);
 			biR = newDivid;
 			nbrFactorsPartial = 0;
-			// biT = old (Ax+B)^2.
-			biT = biV * biV; 
-			// biT = old (Ax+B)^2 - N.
-			biT -= zModulus; 
+			
+			biT = biV * biV;     // biT = old (Ax+B)^2.
+			
+			biT -= zModulus;     // biT = old (Ax+B)^2 - N.
 			if (oldDivid < 0) {
 				rowPartials[nbrFactorsPartial++] = 0; // Insert -1 as a factor.
 			}
@@ -2121,7 +2127,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	memset(matrixPartialHashIndex, 0xFF, sizeof(matrixPartialHashIndex));
 
 #ifdef __EMSCRIPTEN__
-	InitSIQSStrings(SieveLimit);
+	InitSIQSStrings(SieveLimit, nbrFactorBasePrimes);
 	startSieveTenths = (int)(tenths() - originalTenthSecond);
 #endif
 
@@ -2195,7 +2201,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	} /* end for */
 
 	  /* Modulus = TestNbr2 * multiplier (= N * Multiplier) */
-	zModulus = zTestNbr2 * multiplier; //MultBigNbrByInt(zTestNbr2, multiplier, zModulus);
+	zModulus = zTestNbr2 * multiplier; 
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
 	rowPrimeSieveData->modsqrt = (ZisEven(zN)) ? 0 : 1;
@@ -2355,9 +2361,9 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	dlogNumberToFactor = logBigNbr(zN); 	// find logarithm of number to factor.
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
+
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);  // append Mult & Factor base to SIQS string
-												   //databack(lowerText);
 	printf("%s", lowerText);  // print Mult and Factor Base
 #endif
 
@@ -2651,7 +2657,7 @@ static bool LinearAlgebraPhase(
 }
 
 static int nn;
-/* return true if relation added to matrixB,
+/* return true if relation added to matrixB (also increment global var congruencesFound),
 or if matrixB is full.
 return false if relation already in matrixB
 uses global variables biModulus, biTestNbr2, */

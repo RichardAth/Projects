@@ -37,9 +37,9 @@ int ElipCurvNo;            // Elliptic Curve Number
 
 /*
 Threshold for switching to SIQS 
-Digits	26-50   51-55   56-60	61-65	66-70	71-75	76-80	81-85	86-90	91-95
-Curve	10		15		22		26		35		50		100		150		250     260 */
-static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250, 260 };
+Digits	26-50   51-55   56-60	61-65	66-70	71-75	76-80	81-85	86-90	91-95   96-100
+Curve	10		15		22		26		35		50		100		150		250     300     350 */
+static int limits[] = { 10, 10, 10, 10, 10, 15, 22, 26, 35, 50, 100, 150, 250, 300, 350 };
 
 
 #define __EMSCRIPTEN__   // turn on status messages
@@ -672,6 +672,7 @@ FACTOR_FOUND   - value of factor is returned in global variable BiGD
 ERROR              (not used??)  
 uses work variables UX, UZ, TX, TZ */
 static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
+	/* arrays below are static to avoid risk of stack overflow */
 	static limb A0[MAX_LEN];     // A0 <- 2*(ElipCurvNo+1)/(3*(ElipCurvNo+1)^2 - 1) (mod TestNbr)
 	static limb A02[MAX_LEN];    // A02 <- A0^2
 	static limb A03[MAX_LEN];    // A03 <- A0^3
@@ -699,6 +700,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		long long L1, L2, LS, P, IP, Paux = 1;
 
 		ElipCurvNo++;   // increment curve number
+		oldTimeElapsed = (int)(tenths() - originalTenthSecond);
 
 #ifdef __EMSCRIPTEN__
 		//			text[0] = '7';
@@ -744,7 +746,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		/* set L1, L2, LS, Paux and nbrPrimes according to value of ElipCurvNo */
 		L1 = 2000;
 		L2 = 200000;
-		LS = 45;
+		LS = 45;       // used as prime limit in pass 1
 		Paux = ElipCurvNo;
 		nbrPrimes = 303; /* Number of primes less than 2000 */
 		if (ElipCurvNo > 25) {

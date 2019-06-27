@@ -1987,7 +1987,11 @@ static void doTests2(void) {
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
-
+/*  1. check basic arithmetic operators for BigIntegers
+    2. test BigInteger multiplication with larger numbers
+	3. BigInteger division with larger numbers
+	4. Modular Multiplication using Mongomery Encoding (REDC)
+*/
 static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];

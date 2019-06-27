@@ -397,6 +397,7 @@ void AddBigNbrModNB (const limb Nbr1[], const limb Nbr2[], limb Sum[], const lim
 void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 void SubtBigNbrModN(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Diff);
 //void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
+
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 void modmult(const BigInteger &factor1, const BigInteger &factor2, BigInteger &product);
 void modmult(const Znum &a, const Znum &b, Znum &result);
