@@ -10,6 +10,7 @@
 #include "factor.h"
 
 extern Znum zR, zR2, zNI, zN;
+void msieveParam(std::string expupper);
 
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
@@ -1746,7 +1747,27 @@ static void doFactors(const Znum &Result, bool test) {
 			std::cout << "\n" << c << "= " << q;
 			c++;  // change a to b, b to c, etc
 		}
-		std::cout << '\n';
+		std::cout << "\n";
+		if (factorlist.size() > 0) {
+			std::cout << "found by";
+			if (counters.tdiv > 0)
+				std::cout << " trial division: " << counters.tdiv;
+			if (counters.prho > 0)
+				std::cout << " Pollard-rho: " << counters.prho;
+			if (counters.pm1 > 0)
+				std::cout << " power +/- 1: " << counters.pm1;
+			if (counters.ecm > 0)
+				std::cout << " elliptic curve: " << counters.ecm;
+			if (counters.siqs > 0)
+				std::cout << " SIQS: " << counters.siqs;
+			if (counters.msieve > 0)
+				std::cout << " Msieve: " << counters.msieve;
+			if (counters.carm > 0)
+				std::cout << " Carmichael: " << counters.carm;
+			if (counters.leh > 0)
+				std::cout << " Lehman: " << counters.leh;
+			std::cout << '\n';
+		}
 		if (test) {
 			Znum result = 1;
 			for (size_t i = 0; i < factorlist.size(); i++)
@@ -1804,7 +1825,24 @@ static bool factortest(const Znum x3) {
 			totalFactors += f.exponent;
 		}
 		std::cout << "found " << factorlist.size() << " unique factors, total "
-			<< totalFactors << " factors\n";
+			<< totalFactors << " factors\nfound by";
+		if (counters.tdiv > 0)
+			std::cout << " trial division: " << counters.tdiv;
+		if (counters.prho > 0)
+			std::cout << " Pollard-rho: " << counters.prho;
+		if (counters.pm1 > 0)
+			std::cout << " power +/- 1: " << counters.pm1;
+		if (counters.ecm > 0)
+			std::cout << " elliptic curve: " << counters.ecm;
+		if (counters.siqs > 0)
+			std::cout << " SIQS: " << counters.siqs;
+		if (counters.msieve > 0)
+			std::cout << " Msieve: " << counters.msieve;
+		if (counters.carm > 0)
+			std::cout << " Carmichael: " << counters.carm;
+		if (counters.leh > 0)
+			std::cout << " Lehman: " << counters.leh;
+		std::cout << '\n';
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
@@ -2452,6 +2490,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			}
 			if (expupper == "TEST4") {
 				doTests4();         // do R3 tests 
+				continue;
+			}
+			if (expupper.substr(0, 6) == "MSIEVE") {
+				msieveParam(expupper);
 				continue;
 			}
 

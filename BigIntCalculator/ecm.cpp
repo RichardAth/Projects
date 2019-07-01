@@ -750,7 +750,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		Paux = ElipCurvNo;
 		nbrPrimes = 303; /* Number of primes less than 2000 */
 		if (ElipCurvNo > 25) {
-			if (ElipCurvNo < 326) {   // 26 to 325
+			if (ElipCurvNo < 326) {   // curves 26 to 325
 				L1 = 50000;
 				L2 = 5000000;
 				LS = 224;
@@ -758,14 +758,14 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				nbrPrimes = 5133; /* Number of primes less than 50000 */
 			}
 			else {
-				if (ElipCurvNo < 2000) {  // 326 to 1999
+				if (ElipCurvNo < 2000) {  // curves 326 to 1999
 					L1 = 1000000;
 					L2 = 100000000;
 					LS = 1001;
 					Paux = ElipCurvNo - 299;
 					nbrPrimes = 78498; /* Number of primes less than 1000000 */
 				}
-				else {   // >= 2000
+				else {                  //  curve >= 2000
 					L1 = 11000000;
 					L2 = 1100000000;
 					LS = 3316;
@@ -1405,10 +1405,15 @@ bool ecm(Znum &zN, long long maxdivisor) {
 	do {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
-			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor2
+			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor
+			counters.siqs++;
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
+			if (foundByLehman)
+				counters.leh++;
+			else
+				counters.ecm++;
 			break;
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 

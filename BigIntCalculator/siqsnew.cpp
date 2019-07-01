@@ -147,6 +147,7 @@ static int smallPrimeUpperLimit;
 static int firstLimit;
 static int secondLimit;
 static int thirdLimit;
+static int nbrPrimesUsed = 0;
 /* this struct is defined as an easier way to manage memory allocation and release.
 A single malloc & free are sufficient. The disadvantage is that
 all arrays in the structure are accessed via a pointer e.g.
@@ -163,6 +164,7 @@ struct AG{
 	int matrixCalc3[MAX_PRIMES];
 	int matrixTemp2[MAX_PRIMES];
 	PrimeTrialDivisionData primeTrialDivisionData[MAX_PRIMES];
+	char primesUsed[MAX_PRIMES];
 };
 static AG *ag = nullptr;      // storage allocated using malloc
 
@@ -177,7 +179,7 @@ static bool InsertNewRelation(
 	int *rowMatrixB,
 	Znum &biT, Znum &biU, Znum &biR);
 static void BlockLanczos(void);
-static void ShowSIQSStatus(void);
+static void ShowSIQSStatus(int *rowMatrixB);
 static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
 static void sieveThread(Znum &result);
 
@@ -193,7 +195,7 @@ static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 	int2dec(&ptrText, cols);   // Show number of columns.
 	strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
 		" congruence matrix using Block Lanczos algorithm.\n");
-	//databack(lowerText);
+
 	printf("%s", ptrLowerText);
 }
 
@@ -236,29 +238,32 @@ static void getMultAndFactorBase(int multiplier, int FactorBase)
 }
 
 /* print status: timeSieve = Sieve time so far in seconds*/
-static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength, int elapsedTime)
+static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength, 
+	int elapsedTime, int *rowMatrixB)
 {
 	char SIQSInfo[500] = { 0 };
 	char *ptrText = SIQSInfo;
-		// %age of congruences found so far
+		// calculate %age of congruences found so far
 	int percentage = (int)((congruencesFound * 100) / matrixBLength); 
 	/* estimate time to completion (in seconds) based on time used so far and the ratio of 
 	congruences still to be found vs congruences already found */
 	int u = (int)((double)timeSieve * (double)(matrixBLength - congruencesFound) / (double)congruencesFound);
 	u /= 2;
 
-	GetDHMS(&ptrText, elapsedTime);
+		GetDHMS(&ptrText, elapsedTime);
 	if (lang) {  // español
-		ptrText += sprintf(ptrText, "%5d congruencias halladas \n"
+		ptrText += sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
 			"Relaciones: %5d completas y %5d obtenidas de %6d parciales.\n"
 			"progreso = %2d%%. ",
-			congruencesFound, smoothsFound, partialsFound, totalPartials, percentage);
+			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
+			totalPartials, percentage);
 	}
 	else {  // english
-		ptrText += sprintf(ptrText, "%5d congruences found \n"
+		ptrText += sprintf(ptrText, "%5d congruences found with %5d different primes \n"
 			"Relations: %5d full and %5d found from %6d partials.\n"
 			"progress = %2d%%. ",
-			congruencesFound, smoothsFound, partialsFound, totalPartials, percentage);
+			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
+			totalPartials, percentage);
 	}
 
 	if (timeSieve > 1 && congruencesFound > 10) {
@@ -310,8 +315,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 
 	F1 = PolynomialIndex;
 	indexFactorA = 0;
-	while ((F1 & 1) == 0)
-	{
+	while ((F1 & 1) == 0) {
 		F1 >>= 1;
 		indexFactorA++;
 		assert(indexFactorA < MAX_LIMBS_SIQS);
@@ -349,8 +353,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 		*(SieveArray + 0) = (short)(logar2 - threshold);
 		*(SieveArray + 1) = (short)(-threshold);
 	}
-	else
-	{
+	else {
 		*(SieveArray + 0) = (short)(-threshold);
 		*(SieveArray + 1) = (short)(logar2 - threshold);
 	}
@@ -360,8 +363,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 		*(SieveArray + 0) += (short)((logar2 - threshold) << 8);
 		*(SieveArray + 1) += (short)((-threshold) << 8);
 	}
-	else
-	{
+	else {
 		*(SieveArray + 0) += (short)((-threshold) << 8);
 		*(SieveArray + 1) += (short)((logar2 - threshold) << 8);
 	}
@@ -377,8 +379,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 
 	F2 = 2;
 	index = 2;
-	for (;;)
-	{
+	for (;;) {
 		rowPrimeSieveData = primeSieveData + index;
 		currentPrime = rowPrimeSieveData->value;
 		F3 = F2 * currentPrime;
@@ -422,8 +423,7 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 			*(SieveArray + index2) += logPrimeOddPoly;
 		}
 
-		if (currentPrime != multiplier)
-		{
+		if (currentPrime != multiplier) {
 			for (F1 = index2 = (rowPrimeSieveData->soln1 + currentPrime -
 				rowPrimeSieveData->difsoln) % currentPrime;
 				index2 < F3;
@@ -1730,7 +1730,7 @@ static bool SmoothRelationFound(
 	if (InsertNewRelation(rowMatrixB, biT, biU, biR))
 	{
 		smoothsFound++;
-		ShowSIQSStatus();
+		ShowSIQSStatus(rowMatrixB);
 		return true;
 	}
 	return false;
@@ -1865,7 +1865,7 @@ static bool PartialRelationFound(
 				InsertNewRelation(rowMatrixB, biT, biU, biR))
 			{
 				partialsFound++;
-				ShowSIQSStatus();
+				ShowSIQSStatus(rowMatrixB);
 				return true;
 			}
 			return false;
@@ -2097,14 +2097,19 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	polynomialsSieved = 0;
 	nbrPartials = 0;
 	newSeed = 0;
+	nbrPrimesUsed = 0;
+
 	/* allocate storage for arrays defined as vectors */
 	matrixB.resize(MAX_PRIMES + 50);
 	for (int i = 0; i < MAX_PRIMES + 50; i++)
 		matrixB[i].resize(MAX_FACTORS_RELATION);
 	matrixPartial.resize(MAX_PRIMES * 8);
 	primeSieveData.resize(MAX_PRIMES + 3);
+	/* allocate storage for ther arrays */
 	ag = (AG*)calloc(1, sizeof(AG));
 	assert(ag != nullptr);
+	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
+
 	//  threadArray = new Thread[numberThreads];
 	Temp = logBigNbr(zN);
 	/* increased number of primes on 17/6/2019 in line with DA's calculator */
@@ -2479,14 +2484,14 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 #endif
 }
 
-static void ShowSIQSStatus(void) {
+static void ShowSIQSStatus(int *rowMatrixB) {
 #ifdef __EMSCRIPTEN__
 	int elapsedTime = (int)(tenths() - originalTenthSecond);
-	if (elapsedTime / 10 != oldTimeElapsed / 10)
-	{   // send no more than 1 message per second
+	if (elapsedTime  >= oldTimeElapsed +50)
+	{   // send no more than 1 message per 5 seconds
 		oldTimeElapsed = elapsedTime;
 		ShowSIQSInfo((elapsedTime - startSieveTenths) / 10, congruencesFound, matrixBLength,
-			elapsedTime / 10);
+			elapsedTime / 10, rowMatrixB);
 #if DEBUG_SIQS
 		if (debug_ctr < debugLimit)
 			std::cout << "Partials = " << partialsFound << " Smooth = " << smoothsFound << '\n';
@@ -2561,7 +2566,8 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 }
 
 /****************************************************************/
-/* Linear algebra phase. returns factor found in biT            */
+/* Linear algebra phase. returns true &factor found in biT if   */
+/* factor is found, otherwise returns false                     */
 /* Uses global variables zModulus, nbrFactorBasePrimes,         */
 /* primeTrialDivisionData, matrixRows, matrixCols, vectExpParity */
 /****************************************************************/
@@ -2656,9 +2662,9 @@ static bool LinearAlgebraPhase(
 	return false;
 }
 
-static int nn;
-/* return true if relation added to matrixB (also increment global var congruencesFound),
-or if matrixB is full.
+
+/* return true if either relation added to matrixB (also increment global 
+var congruencesFound), or matrixB is full.
 return false if relation already in matrixB
 uses global variables biModulus, biTestNbr2, */
 static bool InsertNewRelation(
@@ -2675,6 +2681,7 @@ static bool InsertNewRelation(
 #if DEBUG_SIQS
 	{
 		char *ptrOutput = output;
+		static int nn;
 		std::cout << "biT = " << biT;
 		std::cout << "biU = " << biU;
 		std::cout << "biR = " << biR ;
@@ -2739,6 +2746,15 @@ static bool InsertNewRelation(
 
 	vectLeftHandSide[congruencesFound] = biR;
 	congruencesFound++;
+	
+	nbrColumns = rowMatrixB[LENGTH_OFFSET];
+	for (int k = 1; k < nbrColumns; k++) {
+		if (ag->primesUsed[rowMatrixB[k]] == 0) {
+			ag->primesUsed[rowMatrixB[k]] = 1;   // show that prime is used
+			nbrPrimesUsed++;                  // update count of primes used
+		}
+	}
+
 #if DEBUG_SIQS
 		std::cout << congruencesFound << " Congruences found: biR = " << biR << '\n';
 #endif

@@ -29,26 +29,15 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "factor.h"
 #include "bignbr.h"
 #undef min                 // use std::min
-/* miscellaneous external declarations */
-extern int ElipCurvNo;            // Elliptic Curve Number
-
-void int2dec(char **pOutput, long long nbr);
-//extern bool *primeFlags;
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-extern unsigned long long int primeListMax;
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
-void generatePrimes(unsigned long long int max_val);
-
-/* function forward declarations */
-static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 
 static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
 Znum Zfactor, Zfactor2;
+struct ctrs counters;
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -436,7 +425,7 @@ static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long di
 /* Insert new factor found into factor array. Every current factor is checked 
 against the divisor. If their gcd is not 1 the existing factor is divided by 
 the gcd and a new factor equal to the gcd is created. */
-static void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
+void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 	auto lastfactor = Factors.size();
 	auto ipoint = lastfactor;
 	zFactors temp;
@@ -633,6 +622,15 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	// trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
+	//counters.pm1    = 0;      // reset counters to 0
+	//counters.tdiv   = 0;
+	//counters.prho   = 0;
+	//counters.ecm    = 0;
+	//counters.siqs   = 0;
+	//counters.msieve = 0;
+	//counters.leh    = 0;
+	//counters.carm   = 0;
+	memset(&counters, 0, sizeof(counters));    // reset counters to 0
 
 	/* initialise factor list */
 	Factors.resize(1);  // change size of factor list to 1
@@ -649,12 +647,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
-#ifdef _DEBUG
+		counters.pm1 = (int)Factors.size() - 1;  // number of factors just found, if any
 		if (Factors.size() > 1) {
+#ifdef _DEBUG
 			std::cout << "PowerPM1Check result: ";
 			printfactors(Factors);
-		}
 #endif
+		}
 	}
 
 	do {  /* use trial division */
@@ -673,6 +672,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				if (Factors[i].Factor%testP == 0) {
 					insertIntFactor(Factors, upperBound, 0, i);
 					restart = true;
+					counters.tdiv++;
 					break;
 				}
 				Factors[i].upperBound = upperBound;
@@ -693,10 +693,12 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 #endif
 					//PollardFactor(MulPrToLong(Factors[i].Factor), f);
 					f = PollardRho(MulPrToLong(Factors[i].Factor));
-					if (f != 1)
+					if (f != 1) {
 						insertIntFactor(Factors, -1, f, i);
-					/* there is a small possibility that PollardFactor won't work,
-					 even when factor is not prime*/
+						counters.prho++;
+						/* there is a small possibility that PollardFactor won't work,
+						 even when factor is not prime*/
+					}
 				}
 			}
 		}
@@ -738,6 +740,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		}
 		if (result > 1) {  /* number is a pseudo-prime */
 			if (factorCarmichael(Zpower, Factors)) {
+				counters.carm++;
 				i = -1;			// restart loop at beginning!!
 				continue;
 			}
@@ -748,22 +751,38 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			f = PollardRho(MulPrToLong(Zpower));
 			if (f != 1) {
 				insertIntFactor(Factors, -1, f, i);
+				counters.prho++;
 				/* there is a small possibility that PollardFactor won't work,
 				even when factor is not prime*/
 				continue;
 			}
 		}
-		ElipCurvNo = 1;  // start with 1st curve
-		auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
-		if (!rv)
-			return false;  // failed to factorise number
-		 //Check whether factor is not one. In this case we found a proper factor.
-		if (Zfactor != 1) {
-			/* factor is not 1 */
-			insertBigFactor(Factors, Zfactor);
-			i = -1;			// restart loop at beginning!!
+		if (!msieve) {
+			ElipCurvNo = 1;  // start with 1st curve
+			auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
+			if (!rv)
+				return false;  // failed to factorise number
+			 //Check whether factor is not one. In this case we found a proper factor.
+			if (Zfactor != 1) {
+				/* factor is not 1 */
+				insertBigFactor(Factors, Zfactor);
+				i = -1;			// restart loop at beginning!!
+			}
+		}
+		else {
+			size_t fsave = Factors.size();
+			auto rv = callMsieve(Zpower, Factors);
+			if (rv) {
+				i = -1;   // success; restart loop at beginning to tidy up!
+				counters.msieve += (int)(Factors.size() - fsave); // record any increase in number of factors
+			}
+			else {
+				msieve = false;   // faied once, don't try again
+				i--;
+			}
 		}
 	}
+
 	SortFactors(Factors);  // tidy up factor list 
 	return true;
 }

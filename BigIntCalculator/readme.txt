@@ -93,7 +93,7 @@ B. Test whether the number is prime:
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
    Otherwise factorise it using ECM, SIQS and Lehman algorithms. SIQS is only
-   used for numbers between 30 and 90 digits.
+   used for numbers between 30 and 95 digits.
 
 The factoriser is essentially DAs program, with an interface function that converts 
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
@@ -127,6 +127,15 @@ took 291 seconds
  Advantage:     ready to use, no installation, possibility to split calculation over
                 several processors, possible to use any previously known factors.
  Disadvantage:  some bugs in calculator. No way to interface to other programs
+
+ Use Msieve
+ Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
+                 about 30 mins vs 1 hour using DA's code. However a few special
+				 cases are recognised in DAs code and processed much faster,
+				 but msieve just ploughs through using the sieve.
+ Disadvantage:   Build is tricky & and I couldn't get prebuilt version to work
+                 Calculator is basic, and result isn't sent to console window.
+				 default is that input & output are from/to files, not console window.
 
  Use Python interpreter
  Advantages:    very easy to install. 

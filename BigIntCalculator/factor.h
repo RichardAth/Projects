@@ -25,13 +25,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
 
-//#include "showtime.h"
-
-//#ifdef __EMSCRIPTEN__
-//void getCunn(char *url, char *factorsFromServer);
-//#endif
-
-typedef boost::multiprecision::mpz_int Znum;
 
 class zFactors {
 public:
@@ -60,3 +53,23 @@ void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 int PrimalityTest(const Znum &Value, long long upperBound);
 unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n);
+extern int ElipCurvNo;            // Elliptic Curve Number
+struct ctrs{
+	int pm1;           // power + / -1
+	int tdiv;          // trial division
+	int prho;          // Pollard-rho
+	int ecm;           // elliptic curve
+	int siqs;          // SIQS
+	int msieve;        // Msieve
+	int carm;          // Carmichael
+	int leh;           // Lehman:
+};
+extern struct ctrs counters;
+
+extern unsigned long long *primeList;
+extern unsigned int prime_list_count;
+extern unsigned long long int primeListMax;
+extern bool msieve;
+bool callMsieve(Znum num, std::vector<zFactors>&Factors);
+void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
+void generatePrimes(unsigned long long int max_val);

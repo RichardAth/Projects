@@ -162,6 +162,7 @@
     <ClCompile Include="R3.cpp" />
     <ClCompile Include="showtime.cpp" />
     <ClCompile Include="siqsnew.cpp" />
+    <ClCompile Include="msieve.cpp" />
     <ClCompile Include="sqroot.cpp" />
   </ItemGroup>
   <ItemGroup>
