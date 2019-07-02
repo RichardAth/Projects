@@ -1790,7 +1790,7 @@ static void doFactors(const Znum &Result, bool test) {
 		std::cout << " cannot be factorised\n";
 }
 
-/* perform some simple tests */
+/* perform some simple tests. Returns true if x3 is prime */
 static bool factortest(const Znum x3) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
@@ -1799,7 +1799,6 @@ static bool factortest(const Znum x3) {
 	auto start = clock();	// used to measure execution time
 	double end, elapsed;
 
-	//std::cout << "\nTest: factorise " << x3 << '\n';
 	std::cout << "\nTest: factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
@@ -1854,7 +1853,7 @@ static bool factortest(const Znum x3) {
 	end = clock();              // measure amount of time used
 	elapsed = (double)end - start;
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
-	return true;
+	return true;    // is prime
 }
 
 static void doTests(void) {
@@ -2315,7 +2314,7 @@ extern unsigned __int64 R2(const unsigned __int64 n);
 //}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
-this test will take more than 2 hours! 
+this test will take about 2.5 hours, but ony about 15 mins using improved msieve! 
 */
 static void doTests4(void) {
 	int px = 0;
@@ -2324,8 +2323,8 @@ static void doTests4(void) {
 	auto start = clock();	// used to measure execution time
 	if (primeListMax < 1000)
 		generatePrimes(15000);
-	for (px = 0; px <= 66; px++) {
-		std::cout << "\ntest " << px + 1 << " of 67 ";
+	for (px = 0; px <= 77; px++) {
+		std::cout << "\ntest " << px + 1 << " of 78 ";
 		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);
 		m--;
 		if (factortest(m)) /* factorise m, calculate number of divisors etc */

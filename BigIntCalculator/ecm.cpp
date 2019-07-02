@@ -560,7 +560,7 @@ We need to find integers k, a and b such that 4kn = a^2 – b^2.
 It can be shown that 1 <= k <= n^(1/3) and
 sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k)) 
 However, searching the whole range of possible values would be much too slow. */
-static void LehmanZ(const Znum &nbr, int k, Znum &factor) {
+void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	const long long bitsSqr[] = {
 		0x0000000000000003, // 3
 		0x0000000000000013, // 5

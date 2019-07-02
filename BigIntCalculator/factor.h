@@ -73,3 +73,4 @@ extern bool msieve;
 bool callMsieve(Znum num, std::vector<zFactors>&Factors);
 void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 void generatePrimes(unsigned long long int max_val);
+void LehmanZ(const Znum &nbr, int k, Znum &factor);

@@ -622,14 +622,6 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	// trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
-	//counters.pm1    = 0;      // reset counters to 0
-	//counters.tdiv   = 0;
-	//counters.prho   = 0;
-	//counters.ecm    = 0;
-	//counters.siqs   = 0;
-	//counters.msieve = 0;
-	//counters.leh    = 0;
-	//counters.carm   = 0;
 	memset(&counters, 0, sizeof(counters));    // reset counters to 0
 
 	/* initialise factor list */
@@ -739,8 +731,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			continue;
 		}
 		if (result > 1) {  /* number is a pseudo-prime */
+			size_t fsave = Factors.size();
 			if (factorCarmichael(Zpower, Factors)) {
-				counters.carm++;
+				counters.carm += (int)(Factors.size() - fsave); // record any increase in number of factors;
 				i = -1;			// restart loop at beginning!!
 				continue;
 			}
@@ -770,6 +763,27 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			}
 		}
 		else {
+			/* Try to factor N using Lehman algorithm. Result in Zfactor.
+			This seldom achieves anything, but when it does it saves a lot of time.
+			If N has 2 factors and the larger factor is < 10x smaller factor
+			this should find a factor, so this complements the elliptic curve 
+			method which is better for finding smaller factors. */
+			for (int k = 1; k <= 10; k++) {
+				LehmanZ(Zpower, k, Zfactor);
+				if (Zfactor > LIMB_RANGE) {
+					counters.leh++;     // Factor found.
+#ifdef _DEBUG
+					std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
+						<< " factor = " << Zfactor << '\n';
+#endif
+					insertBigFactor(Factors, Zfactor);
+					i = -1;   // success; restart loop at beginning to tidy up!	
+					break;
+				}
+			}
+			if (i == -1)
+				continue;
+
 			size_t fsave = Factors.size();
 			auto rv = callMsieve(Zpower, Factors);
 			if (rv) {
@@ -777,7 +791,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				counters.msieve += (int)(Factors.size() - fsave); // record any increase in number of factors
 			}
 			else {
-				msieve = false;   // faied once, don't try again
+				msieve = false;   // failed once, don't try again
 				i--;
 			}
 		}
