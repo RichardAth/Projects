@@ -14,21 +14,23 @@ std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
 std::string redirectOP = " >\\.\\pipe\\StdOutPipe 2>\\.\\pipe\\StdErrPipe ";
 
 /* process MSIEVE commands */
-void msieveParam(std::string expupper) {
-	std::string param = expupper.substr(6);  /* remove "MSIEVE */
+void msieveParam(std::string command) {
+	std::string param = command.substr(6);  /* remove "MSIEVE */
 	while (param[0] == ' ')
-		param.erase(0, 1);              /* remove leading space */
+		param.erase(0, 1);              /* remove leading space(s) */
 
 	if (param == "ON")
 		msieve = true;
 	else if (param == "OFF")
 		msieve = false;
-	else if (param == "PATH")
+	else if (param == "PATH") {
 		std::cout << "path = " << callPath << '\n';
-	/* todo; allow command to change path */
-	else if (param == "LOG")
+		/* todo; allow command to change path */
+	}
+	else if (param == "LOG") {
 		std::cout << "log file = " << logPath << '\n';
-	/* todo; allow command to change log file name */
+		/* todo; allow command to change log file name */
+	}
 
 	/* to be completed */
 }
@@ -68,31 +70,32 @@ int openPipe(const char PipeName[], HANDLE *hPipe) {
 	return 0;
 }
 
-/* use msieve to factorise num. msieve places its results in a log file.
+/* use Msieve to factorise num. Msieve places its results in a log file.
 All entries in the log file start with a time stamp such as "Sun Jun 30 16:07:40 2019". 
 For prime factors this is followed by text such as "p9 factor: 193707721" 
 where p designates a prime factor, the 9 is the number of decimal digits in the factor
 and 193707721 is the factor itself in decimal.
 
-The whole interface to msieve is a bit of a kludge but it works. Integrating them
+The whole interface to Msieve is a bit of a kludge but it works. Integrating them
 properly would be so tedious it's not worth it. I had to make several kludges
 to build msieve, and the prebuilt msieve wouldn't work */
 bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
-	//HANDLE logP;
+	/* set up command to invoke Msieve */
 	std::string command = callPath + options + " -l " + logPath;
 	std::string numStr;
-	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 	int rv, fcount = 0;
 	FILE *log;
 	std::string buffer;
+	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 
+	/* open earlier Msive log file, if any exists. Replace it with an empty file */
 	rv = fopen_s(&log, logPath.data(), "w");      
 	if (rv != 0) {
 		if (errno != 0)
 			perror(NULL);
 	}
 	else
-		fclose(log);     // if log exists, erase its contents
+		fclose(log);     // if log exists, erase its contents 
 
 	numStr.resize(numdigits + 5);             // resize buffer
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
@@ -124,25 +127,27 @@ For prime factors this is followed by text such as "p9 factor: 193707721"
 where p designates a prime factor, the 9 is the number of decimal digits in the factor
 and 193707721 is the factor itself in decimal.*/
 
-	while (true){           // read log file, find prime factors
+	while (true){            // read log file, find prime factors, ignore everything else
 		Znum f;
 		int i;
-		if (!std::getline(logStr, buffer))
-			break;          // exit loop when end of file reached 
+		if (!std::getline(logStr, buffer))   // read 1 line into buffer
+			break;                   // exit loop when end of file reached 
 		if (buffer.size() < 38)
 			continue;
-		if (buffer[26] == 'p') {  // ignore log entry unless it's a prime factor
-			//std::cout << buffer << '\n';   // temp
-			int  len = 0;
-			for (i = 27; isdigit(buffer[i]); i++)
+		if (buffer[26] == 'p') {      // ignore log entry unless it's a prime factor
+			             // note: some other log entries also have a 'p' in this position
+			int  len = 0;  
+			for (i = 27; isdigit(buffer[i]); i++)  // get number of ascii digits in factor
 				len = len * 10 + (buffer[i] - '0');
-			i += 9;        // move past text " factor: "
-			//std::cout << "factor = " << buffer.substr(i, len).c_str() << '\n';
+			if (len == 0)
+				continue;                    // p not followed by a number
+			if (buffer.substr(i, 9) != " factor: ")
+				continue;                    // pnn not followed by " factor: "
+			i += 9;                          // move past text " factor: "
 			/* convert factor from ascii to Znum */
 			auto rv = mpz_set_str(ZT(f), buffer.substr(i, len).c_str(), 10);
-			//std::cout << "factor = " << f << '\n';
 			insertBigFactor(Factors, f);     // put f into factor list
-			fcount++;
+			fcount++;                        // increase count of factors found
 		}
 	}
 

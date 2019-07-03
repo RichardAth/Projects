@@ -657,7 +657,7 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 		}
 	}
 
-	/* failed to factorise in 1000 cycles, so stop trying */
+	/* failed to factorise in 10000 cycles, so stop trying */
 	factor = 1;     // Factor not found.
 }
 

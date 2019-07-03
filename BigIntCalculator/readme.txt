@@ -59,10 +59,32 @@ alternative that worked was already available.
 
 FACTORIZATION
 
-The BigInteger structure was turned into a C++ class and various operators were 
-overloaded to work with with BigIntegers. Wherever possible, BigInteger function
-calls have been replaced with statements using arithmetic or comparison
-operators. 
+A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
+factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
+is usually significantly faster, provided that the -i option is used witm Msieve.
+The -i option causes greater use of ECM within Msieve. The default is to use ECM
+only for factors < 15 digits. In addition I modified the function choose_max_digits
+within the source file gmp_ecm.c to increase the use of ECM still further. The code 
+change is:
+
+	if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
+		if (bits > 200) {           // 200 bits = about 60 digits
+			if (bits < 240)         // 240 bits = about 72 digits
+				max_digits = 20;    // increased from 15
+			else if (bits < 280)    // 280 bits = about 84 digits 
+				max_digits = 25;    // increased from 20
+			else if (bits < 320)    // 320 bits = about 96 digits
+				max_digits = 30;    // increased from 25
+			else if (bits < 360)    // 360 bits = about 108 digits
+				max_digits = 30;
+			else if (bits < 400)    // 400 bits = about 120 digits
+				max_digits = 35;
+			else
+				max_digits = 40;
+		}
+Msieve is on by default but can be turned off by the "MSIEVE OFF" command and
+turned back on by the MSIEVE ON command. The path to access Msieve is hard coded
+in msieve.cpp and should be changed to whatever is appropriate.
 
 As mentioned above it uses algorithms ECM and SIQS.
 
@@ -92,7 +114,12 @@ A. If the factor is a perfect power replace it with the number which is the root
 B. Test whether the number is prime: 
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
-   Otherwise factorise it using ECM, SIQS and Lehman algorithms. SIQS is only
+   Otherwise either:
+      factorise it using Msieve. Using modified Msieve that makes more use of
+   elliptic curve factorisation than the standard version (even with the e option)
+   does, this is nearly always the fastest for larger numbers that would use SIQS 
+   for factorisation.
+      or factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
    used for numbers between 30 and 95 digits.
 
 The factoriser is essentially DAs program, with an interface function that converts 
@@ -112,7 +139,7 @@ the time taken to factorise a large number is unpredictable e.g.
 
 1000 000000 000000 000000 008970 000000 000000 000000 014661 000000 000000 000000 006097 (76 digits)
 = 1 000000 000000 000000 000007 * 10 000000 000000 000000 000013 * 100 000000 000000 000000 000067
-took 291 seconds
+took 291 seconds (227 seconds using Msieve)
 
 40526 919504 877216 755680 601905 432322 134980 384796 226602 145184 481280 000000 000000 (77 digits)
  = 2^53 * 3^27 * 5^13 * 7^9 * 11^5 * 13^4 * 17^3 * 19^3 * 23^2 * 29 * 31 * 37 * 41 * 43 * 47 * 53
@@ -130,9 +157,9 @@ took 291 seconds
 
  Use Msieve
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
-                 about 30 mins vs 1 hour using DA's code. However a few special
-				 cases are recognised in DAs code and processed much faster,
-				 but msieve just ploughs through using the sieve.
+                 about 30 mins vs 1 hour using DA's code. With tweaks to Msieve 
+				 so that it makes more use of elliptic curve factorisation this
+				 was reduced to about 4 minutes.
  Disadvantage:   Build is tricky & and I couldn't get prebuilt version to work
                  Calculator is basic, and result isn't sent to console window.
 				 default is that input & output are from/to files, not console window.
@@ -207,7 +234,7 @@ RevDigits(n,r)                      finds the value obtained by writing backward
                                     the digits of n in base r. 
 R2(n)                               The number of ways n can be formed as the sum of x^2 + y^2
                                     where x and y are negative, zero, or positive. The order is 
-									siginficant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
+									significant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
 									(-1)^2 + 0)
 R3(n)                               The number of ways n can be formed as the sum of x^2 + y^2 + z^2
                                     where x, y and z are negative, zero, or positive.

@@ -27,11 +27,13 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
-#include "bignbr.h"
+//#include "bignbr.h"
 #undef min                 // use std::min
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
+extern
+long long lModularMult;    // count of number of modular multiplications
 
 static long long Gamma[386];
 static long long Delta[386];
@@ -770,7 +772,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			method which is better for finding smaller factors. */
 			for (int k = 1; k <= 10; k++) {
 				LehmanZ(Zpower, k, Zfactor);
-				if (Zfactor > LIMB_RANGE) {
+				if (Zfactor > 1) {
 					counters.leh++;     // Factor found.
 #ifdef _DEBUG
 					std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
@@ -792,6 +794,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			}
 			else {
 				msieve = false;   // failed once, don't try again
+#ifdef _DEBUG
+				std::cout << "Msieve failed: turn on built-in ECM/SIQS \n";
+#endif
 				i--;
 			}
 		}

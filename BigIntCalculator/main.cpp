@@ -6,8 +6,13 @@
 #include <locale>
 #include <assert.h>
 #include <Windows.h>
-#include "bignbr.h"
 #include "factor.h"
+
+//#define BIGNBR
+#ifdef BIGNBR
+#include "bignbr.h"
+#endif
+
 
 extern Znum zR, zR2, zNI, zN;
 void msieveParam(std::string expupper);
@@ -2009,12 +2014,18 @@ static void doTests2(void) {
 	Znum x = (Znum)rand();
 	auto start = clock();	// used to measure execution time
 
-	/* note: with current seed value test 44 would take about 50 minutes! */
-	for (int i = 1; i <= 43; i++) {
+	
+	for (int i = 1; i <= 44; i++) {
+		if (i == 44) {
+			std::cout << "Test 44 skipped \n";
+			break;  /* note: with current seed value test 44 would take about 50 minutes! 
+					(about 30 minutes using Msieve) */
+		}
+
 		if (i <= 39)
 			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
 		x += rand();
-		std::cout << "\nTest # " << i << " of 43 \n";
+		std::cout << "\nTest # " << i << " of 44 \n";
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
 		doFactors(x, true); /* factorise x, calculate number of divisors etc */
@@ -2024,8 +2035,9 @@ static void doTests2(void) {
 	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
+#ifdef BIGNBR
 /*  1. check basic arithmetic operators for BigIntegers
-    2. test BigInteger multiplication with larger numbers
+	2. test BigInteger multiplication with larger numbers
 	3. BigInteger division with larger numbers
 	4. Modular Multiplication using Mongomery Encoding (REDC)
 */
@@ -2202,22 +2214,22 @@ static void doTests3(void) {
 
 	
 	/* check conversion to & from floating point */
-	//p = 10;
-	//double errorv;
-	//Znum error, relerror;
-	//for (int i = 1; i < 55;  i++, p *= 1000000 ) {
-	//	if (!ZtoBig(pBI, p))
-	//		break;            // p too large to convert so stop
-	//	double pdb = pBI.log();
-	//	//BigNbrExp(amBI, pdb);
-	//	expBigInt(amBI, pdb);
-	//	BigtoZ(am, amBI);
-	//	error = p - am;
-	//	errorv = (double)(error) / (double)p ;
-	//	relerror = (10000000000000000LL * error)/p;
-	//	std::cout << " pdb = " << pdb/std::log(10) 
-	//		<< " error = " << errorv << " relerror = " << relerror <<'\n';
-	//}
+	p = 10;
+	double errorv;
+	Znum error, relerror;
+	for (int i = 1; i < 55;  i++, p *= 1000000 ) {
+		if (!ZtoBig(pBI, p))
+			break;            // p too large to convert so stop
+		double pdb = pBI.log();
+		//BigNbrExp(amBI, pdb);
+		expBigInt(amBI, pdb);
+		BigtoZ(am, amBI);
+		error = p - am;
+		errorv = (double)(error) / (double)p ;
+		relerror = (10000000000000000LL * error)/p;
+		std::cout << " pdb = " << pdb/std::log(10) 
+			<< " error = " << errorv << " relerror = " << relerror <<'\n';
+	}
 
 	/* check division with large numbers */
 	p = 12345678901;
@@ -2298,6 +2310,7 @@ static void doTests3(void) {
 	elapsed = (double)end - start;
 	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
+#endif
 
 /* tests for r3 function */
 /* see http://oeis.org/A002102 */
@@ -2322,9 +2335,9 @@ static void doTests4(void) {
 
 	auto start = clock();	// used to measure execution time
 	if (primeListMax < 1000)
-		generatePrimes(15000);
-	for (px = 0; px <= 77; px++) {
-		std::cout << "\ntest " << px + 1 << " of 78 ";
+		generatePrimes(393203);
+	for (px = 0; px <= 69; px++) {
+		std::cout << "\ntest " << px + 1 << " of 70 ";
 		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);
 		m--;
 		if (factortest(m)) /* factorise m, calculate number of divisors etc */
@@ -2483,10 +2496,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				doTests2();         // do basic tests 
 				continue;
 			}
+#ifdef BIGNBR
 			if (expupper == "TEST3") {
 				doTests3();         // do basic tests 
 				continue;
 			}
+#endif
 			if (expupper == "TEST4") {
 				doTests4();         // do R3 tests 
 				continue;

@@ -14,7 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdlib.h>
-#include "bignbr.h"
+#include "factor.h"
 
 void squareRoot(const Znum &arg, Znum & sqRoot) {
 	assert(arg >= 0);  // no imaginary numbers allowed here!!

@@ -103,7 +103,7 @@ static int multiplier = 1;
 //extern int multiplier;
 static int nbrFactorsA;
 static int afact[MAX_NBR_FACTORS];
-static long startTime;
+//static long startTime;
 //static int biModulus[MAX_LIMBS_SIQS] = { 0 };
 //static int biTestNbr2[MAX_LIMBS_SIQS] = { 0 };
 //static int biQuadrCoeff[MAX_LIMBS_SIQS] = { 0 };
