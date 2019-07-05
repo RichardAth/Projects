@@ -44,7 +44,7 @@ extern Znum Zfactor, Zfactor2;
 
 bool factorise(const Znum numberZ, std::vector <zFactors> &factorlist,
 	Znum Quad[]);
-void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power);
+
 long long MulPrToLong(const Znum &x);
 long long JacobiSymbol(long long upper, long long lower);
 long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);

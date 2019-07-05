@@ -127,13 +127,18 @@ static int Moebius(int N) {
 	}
 	return moebius;
 }
-
-void printfactors(const std::vector <zFactors> &Factors) {
+#ifdef _DEBUG
+static void printfactors(const std::vector <zFactors> &Factors) {
 	for (int i = 0; i < Factors.size(); i++) {
 		std::cout << Factors[i].Factor << "^" << Factors[i].exponent << " ("
 			<< Factors[i].upperBound << ")  * " ;
 	}
 	std::cout << '\n';
+}
+#endif
+
+static void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
+	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
 
 static void GetAurifeuilleFactor(std::vector<zFactors> &Factors, int L, const Znum &BigBase,

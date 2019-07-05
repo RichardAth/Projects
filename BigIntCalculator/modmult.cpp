@@ -22,6 +22,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdlib>
 
 #include "bignbr.h"
+#include "bigint.h"
 /* values below are set up by calling GetMontgomeryParms*/
 
 BigInteger TestNbrBI;
@@ -259,10 +260,7 @@ void AddBigNbrModNB(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb
 		}
 	}
 }
-/* Sum = Nbr1 + Nbr2 (mod TestNbr) */
-void AddBigNbrModNB(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Sum) {
-	AddBigNbrModNB(Nbr1.limbs, Nbr2.limbs, Sum.limbs, TestNbr, NumberLength);
-}
+
 
 /* Diff = Nbr1-Nbr2 (mod m)*/
 void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Diff[], const limb m[], int nbrLen)
@@ -285,9 +283,7 @@ void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Diff[], const lim
 		}
 	}
 }
-void SubtBigNbrModN(const BigInteger &Nbr1, const BigInteger &Nbr2, BigInteger &Diff) {
-	SubtBigNbrModN(Nbr1.limbs, Nbr2.limbs, Diff.limbs, TestNbr, NumberLength);
-}
+
 
 /* product = factor1*factor2%mod */
 static void smallmodmult(const int factor1, const int factor2, limb *product, int mod)
@@ -1188,10 +1184,6 @@ void modmult(const limb *factor1, const limb *factor2, limb *product)
 	return;
 }
 
-void modmult(const BigInteger &factor1, const BigInteger &factor2, BigInteger &product) {
-	modmult(factor1.limbs, factor2.limbs, product.limbs);
-}
-
 /* Multiply big number by integer.
 result = FactorBig* factorInt (mod TestNbr)
 note: factorBig is modified by adding a leading zero */
@@ -1291,9 +1283,6 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result) {
 #endif
 }
 
-void modmultInt(const BigInteger &factorBig, int factorInt, BigInteger &result) {
-	modmultIntExtended(factorBig.limbs, factorInt, result.limbs, TestNbr, NumberLength);
-}
 
 // Input: base = base in Montgomery notation.
 //        exp  = exponent.
@@ -1833,30 +1822,3 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 #endif
 }
 
-void ModInvBigNbr(const BigInteger &num, BigInteger &inv, const BigInteger &mod) {
-	ModInvBigNbr(num.limbs, inv.limbs, mod.limbs, mod.nbrLimbs);
-}
-
-// Compute modular division for odd moduli.
-//void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
-//	const BigInteger &mod, BigInteger &quotient)
-//{
-//	NumberLength = mod.nbrLimbs;
-//	// Reduce Num modulo mod.
-//	tmpNum = Num%mod; 
-//	if (tmpNum < 0) {
-//		tmpNum  += mod; 
-//	}
-//	// Reduce Den modulo mod.
-//	tmpDen = Den%mod; 
-//	if (tmpDen < 0) {
-//		tmpDen += mod; 
-//	}
-//	BigIntegerToLimbs(aux3, tmpDen, NumberLength);  // aux3 = tmpDen
-//	modmult(aux3, MontgomeryMultR2, aux3);  // aux3 <- Den in Montgomery notation
-//	ModInvBigNbr(aux3, aux3, TestNbr, NumberLength); // aux3 <- 1 / Den in Montg notation.
-//	BigIntegerToLimbs(aux4, tmpNum, NumberLength);
-//	modmult(aux3, aux4, aux3);              // aux3 <- Num / Den in standard notation.
-//	LimbsToBigInteger(aux3, quotient, NumberLength);  // Get Num/Den
-//	return;
-//}

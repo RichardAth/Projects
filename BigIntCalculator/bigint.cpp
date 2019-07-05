@@ -19,15 +19,15 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #include <cmath>
 #include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 
-extern bool *primeFlags;
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-extern unsigned long long int primeListMax;
-bool isPrime2(unsigned __int64 num);
-
 static BigInteger Base;     // work area
+static limb approxInv[MAX_LEN];
+static limb adjustedArgument[MAX_LEN];
+static limb arrAux[MAX_LEN];
+static int bitLengthCycle[20];
+
 
 /*return addend1 + addend2 (used to overload + operator) */
 BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
@@ -260,9 +260,22 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
 	return Dividend - Base;
 }
  
-/* BigInt = e^logar   */
+/* BigInt = e^logar. note that conversion uses floating point, which limits
+the maximimum exponent to about 709.8 */
 void expBigInt(BigInteger &bigInt, double logar) {
-	bigInt = std::exp(logar);
+	double e = std::exp(logar);
+	auto rv = fpclassify(e);
+	if (rv == FP_INFINITE || rv == FP_NAN) 
+	{
+		// out of range; throw exception
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "cannot get exponent: out of range ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+	bigInt = e;
 	/* note: the assignment statement above uses DoubleToBigInt to 
 	convert floating point to BigInteger */
 }
@@ -305,61 +318,6 @@ double logBigNbr (const BigInteger &pBigInt) {
 		logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
 	}
 	return logar;
-}
-double logBigNbr(const Znum &BigInt) {
-	double BigId;
-#ifdef __MPIR_VERSION
-	long BiExp;   // changed for MPIR version 3.0.0
-#else
-    long BiExp;
-#endif
-	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
-	double logval = log(BigId)  + BiExp *  log(2);
-	return logval;
-}
-
-/* estimate natural log of BigNbr. Only the most significant 62 bits are
-taken into account because floating point numbers have limited accuracy anyway. */
-//double logLimbs(const limb *pBigNbr, int nbrLimbs)
-//{
-//	double logar;
-//	if (nbrLimbs > 1)
-//	{
-//		logar = log( (double)pBigNbr[nbrLimbs - 2].x +
-//				(double)pBigNbr[nbrLimbs - 1].x * LIMB_RANGE) +
-//			(double)(nbrLimbs - 2)*log((double)LIMB_RANGE);
-//	}
-//	else
-//	{
-//		logar = log((double)pBigNbr[nbrLimbs - 1].x) +
-//			(double)(nbrLimbs - 1)*log((double)LIMB_RANGE);
-//	}
-//	return logar;
-//}
-
-/* calculate base^exponent. */
-//void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
-//	int mask;
-//	if (pBase == 0) {     // Base = 0 -> power = 0
-//		Power = 0;
-//		return; // base = 0, so result is zero
-//	}
-//	Power = 1;
-//	for (mask = 1 << 30; mask != 0; mask >>= 1) {
-//		if ((exponent & mask) != 0) {
-//			for (; mask != 0; mask >>= 1) {
-//				Power *= Power;// BigIntMultiply(Power, Power, Power);
-//				if ((exponent & mask) != 0) {
-//					Power *= pBase; //BigIntMultiply(Power, Base, Power);
-//				}
-//			}
-//			break;
-//		}
-//	}
-//	return;
-//}
-void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
-	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
 
 /* divide by 2, use right shift for speed */
@@ -723,24 +681,6 @@ void addbigint(BigInteger &Result, int addend) {
 	Result.nbrLimbs = nbrLimbs;
 }
 
-/* returns nbrMod^Expon%currentPrime. 
-overflow could occur if currentPrime > 2^31 
-the alternative is to use modPower */
-static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
-{
-	unsigned long long power = 1;
-	unsigned long long square = (unsigned long long)NbrMod;
-	while (Expon != 0)
-	{
-		if ((Expon & 1) == 1)
-		{
-			power = (power * square) % (unsigned long long)currentPrime;
-		}
-		square = (square * square) % (unsigned long long)currentPrime;
-		Expon >>= 1;
-	}
-	return (long long)power;
-}
 
 /* creates a BigInteger from a list of values.   
 uses global value NumberLength for number of ints. 1st entry in list is number of values
@@ -851,219 +791,8 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 		}
 	}
 }
-/* number = numberZ*/
-int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
-// note: numberZ is a copy of the original. Its value is changed
-	bool neg = false;
-	Znum remainder;
 
-	if (numberZ < 0) {
-		neg = true;
-		numberZ = -numberZ;  // make numberZ +ve
-	}
-	int i = 0;
-	while (numberZ > 0) {
-		if (i >= MAX_LEN || NumLen > MAX_LEN) {
-			// number too big to convert.
-			std::string line = std::to_string(__LINE__);
-			std::string mesg = "number too big : cannot convert to limbs: ";
-			mesg += __func__;
-			mesg += " line ";  mesg += line;
-			mesg += " in file "; mesg += __FILE__;
-			throw std::range_error(mesg);
-		}
-		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-		/* calculating quotient and remainder separately turns
-		out to be faster */
-		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-		number[i].x = (int)MulPrToLong(remainder);
-		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
 
-		i++;
-	}
-	if (i < NumLen) {
-		/* set any extra limbs to zero */
-		memset(number + i, 0, (NumLen - i) * sizeof(limb));
-	}
-	if (neg) {
-		ChSignBigNbr((int *)number, i + 1);
-	}
-	return i;
-}
-int ZtoBigNbr(int number[], Znum numberZ) {
-	// note: numberZ is a copy of the original. Its value is changed
-	bool neg = false;
-	Znum quot, remainder;
-
-	if (numberZ < 0) {
-		neg = true;
-		numberZ = -numberZ;  // make numberZ +ve
-	}
-	int i = 0;
-	while (numberZ > 0) {
-		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
-		//number[i] = (int)MulPrToLong(remainder);
-		number[i] = (int)mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
-		numberZ = quot;
-		i++;
-	}
-
-	if (neg) {
-		ChSignBigNbr(number, i);
-	}
-	return i;
-}
-
-void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
-	numberZ = 0;
-	for (int i = NumLen - 1; i >= 0; i--) {
-		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-		numberZ += number[i].x;      // add next limb
-	}
-}
-
-// This routine checks whether the number factor is a perfect power. 
-// If it is not, it returns exponent 1. If it is a perfect power, it returns the  
-// exponent and  the base such that base^exponent = factor.
-long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
-	/* upperbound is the largest number already tested as a factor by trial division
-	i.e. factor has no factors < upperBound. This can be used to put a much
-	smaller limit on maxExpon (max about 2000) */
-
-	/* upperBound^maxExpon ≈ factor */
-	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
-										  
-	int h;
-	long long modulus, Exponent;
-	unsigned long long maxPrime, j;
-	int prime2310x1[] =
-	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
-	// Primes of the form 2310x+1.
-	bool expon2 = true, expon3 = true, expon5 = true;
-	bool expon7 = true, expon11 = true;
-	Znum Zmod, Root;
-	std::vector<bool>ProcessExpon(maxExpon+1);
-
-	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
-		int testprime = prime2310x1[h];
-		// Zmod = mod = Bigint%testprime
-		auto mod = mpz_mod_ui(ZT(Zmod),ZT(factor), testprime); // getRemainder(factor, testprime);
-		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
-			expon2 = false;
-		}
-		if (expon3 && intModPow(mod, testprime / 3, testprime) > 1) {
-			expon3 = false;
-		}
-		if (expon5 && intModPow(mod, testprime / 5, testprime) > 1) {
-			expon5 = false;
-		}
-		if (expon7 && intModPow(mod, testprime / 7, testprime) > 1) {
-			expon7 = false;
-		}
-		if (expon11 && intModPow(mod, testprime / 11, testprime) > 1) {
-			expon11 = false;
-		}
-	}
-
-	maxPrime = 2 * maxExpon + 3;
-	if (maxPrime > primeListMax) {
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "number too big : cannot generate prime list. function : ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
-	}
-
-	for (h = 2; h <= maxExpon; h++) {
-		ProcessExpon[h] = true;
-	}
-
-	for (size_t ix=5, h = primeList[ix]; h < maxPrime/2; ix++, h = primeList[ix]) {
-		int processed = 0;
-		for (j = 2 * h + 1; j < maxPrime; j += 2 * h) {
-			if (isPrime2(j)) {
-				modulus = mpz_mod_ui(ZT(Zmod),ZT(factor), j); // getRemainder(factor, j);
-				if (intModPow(modulus, j / h, j) > 1) {
-					for (j = h; j <= maxExpon; j += h) {
-						ProcessExpon[j] = false;
-					}
-					break;
-				}
-			}
-			if (++processed > 10) {
-				break;
-			}
-		}
-	}
-
-	/* check possible exponent values. Note that largest found exponent value
-	is returned although, unless this value is prime, any divisor of this
-	value is also a valid exponent. */
-	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
-		if (Exponent % 2 == 0 && !expon2) {
-			continue; // Not a square
-		}
-		if (Exponent % 3 == 0 && !expon3) {
-			continue; // Not a cube
-		}
-		if (Exponent % 5 == 0 && !expon5) {
-			continue; // Not a fifth power
-		}
-		if (Exponent % 7 == 0 && !expon7) {
-			continue; // Not a 7th power
-		}
-		if (Exponent % 11 == 0 && !expon11) {
-			continue; // Not an 11th power
-		}
-		if (!ProcessExpon[Exponent]) {
-			continue;
-		}
-		if (mpz_root(ZT(Root), ZT(factor), Exponent) != 0) {
-			Base = Root;   // factor is a perfect power
-			return Exponent;
-		}
-	}
-
-	Base = factor;   // not perfect power
-	return 1;
-}
-
-/* return true if value is 1 (mod p)*/
-//bool checkOne(const limb *value, int nbrLimbs)
-//{
-//	int idx;
-//	for (idx = 0; idx < nbrLimbs; idx++)
-//	{
-//		if ((value++)->x != MontgomeryMultR1[idx].x)
-//		{
-//			return false;    // Go out if value is not 1 (mod p)
-//		}
-//	}
-//	return true; // value = 1 (mod p)
-//}
-
-/* return true if value is -1 (mod p) */
-//bool checkMinusOne(const limb *value, int nbrLimbs)
-//{
-//	int idx;
-//	unsigned int carry;
-//	carry = 0;
-//	for (idx = 0; idx < nbrLimbs; idx++)
-//	{
-//		carry += (unsigned int)(value++)->x + (unsigned int)MontgomeryMultR1[idx].x;
-//		if ((carry & MAX_VALUE_LIMB) != (unsigned int)TestNbr[idx].x)
-//		{
-//			return false;    // Go out if value is not -1 (mod p)
-//		}
-//		carry >>= BITS_PER_GROUP;
-//	}
-//	return true;    // value is -1 (mod p)
-//}
-
-// Find power of 2 that divides the number.
-// output: pNbrLimbs = pointer to number of limbs
-//         pShRight = pointer to power of 2.
 
 //void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
 //{
@@ -1121,57 +850,7 @@ void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 	ShRight = (int)shift;
 }
 
-// Calculate Jacobi symbol by following algorithm 2.3.5 of C&P book.
-long long JacobiSymbol(long long upper, long long lower)
-{
-	long long tmp;
-	long long a = upper % lower;
-	long long m = lower;
-	long long t = 1;
-	while (a != 0)
-	{
-		while ((a & 1) == 0)
-		{     // a is even.
-			a >>= 1;
-			if ((m & 7) == 3 || (m & 7) == 5)
-			{   // m = 3 or m = 5 (mod 8)
-				t = -t;
-			}
-		}
-		tmp = a; a = m; m = tmp;   // Exchange a and m.
-		if ((a & m & 3) == 3)
-		{   // a = 3 and m = 3 (mod 4)
-			t = -t;
-		}
-		a = a % m;
-	}
-	if (m == 1 || m == -1)
-	{
-		return t;
-	}
-	return 0;
-}
 
-/* uses global value NumberLength for number of limbs. */
-//static void Halve(limb *pValue)
-//{
-//	if ((pValue[0].x & 1) == 0)
-//	{    // Number to halve is even. Divide by 2.
-//		DivBigNbrByInt((int *)pValue, 2, (int *)pValue, NumberLength);
-//	}
-//	else
-//	{    // Number to halve is odd. Add modulus and then divide by 2.
-//		AddBigNbr((int *)pValue, (int *)TestNbr, (int *)pValue, NumberLength + 1);
-//		DivBigNbrByInt((int *)pValue, 2, (int *)pValue, NumberLength + 1);
-//	}
-//}
-//static void Halve(Znum & Value, const Znum & mod) {
-//	if (!ZisEven(Value)) {
-//		Value += mod; // Number to halve is odd. Add modulus and then divide by 2.
-//	}
-//	Value /= 2;
-//	return;
-//}
 
 // BPSW primality test:
 // 1) If the input number is 2-SPRP composite, indicate composite and go out.
@@ -1241,31 +920,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 		return 0;			// probably prime;
 }
 
-/* returns true iff value is zero*/
-bool BigNbrIsZero(const limb *value, int NumLen) {
-	int ctr;
-	for (ctr = 0; ctr < NumLen; ctr++) {
-		if (value[ctr].x != 0) {
-			return false;  // Number is not zero.
-		}
-	}
-	return true;      // Number is zero
-}
 
-/* convert value in Limb to a double (floating point)
-note that ptrLimb points AFTER last valid value in limbs.
-up to 3 most significant limbs are used. */
-double getMantissa(const limb *ptrLimb, int nbrLimbs) {
-	double dN = (double)(ptrLimb - 1)->x;
-	double dInvLimb = 1 / (double)LIMB_RANGE;
-	if (nbrLimbs > 1) {
-		dN += (double)(ptrLimb - 2)->x * dInvLimb;
-	}
-	if (nbrLimbs > 2) {
-		dN += (double)(ptrLimb - 3)->x * dInvLimb * dInvLimb;
-	}
-	return dN;
-}
 
 /* convert Znum to BigInteger. Returns false if number is too big to convert.
 this function is also used to overload the assignment operator */
@@ -1315,15 +970,6 @@ void BigtoZ(Znum &numberZ, const BigInteger &number) {
 		numberZ = -numberZ;
 }
 
-/* convert integer list to Znum. */
-void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
-	numberZ = 0;
-	for (int i = NumLen-1; i >= 0; i--) {
-		//numberZ *= LIMB_RANGE;
-		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-		numberZ += number[i];
-	}
-}
 
 /* shift first left by the number of bits specified in shiftCtr. A -ve value
 in shiftCtr causes a right shift.
@@ -1401,7 +1047,7 @@ void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
 		if (first.sign == SIGN_NEGATIVE)
 		{   // If it is negative, add 1, perform shift right, and finally subtract 1 from result.
 			isNegative = 1;
-			result++;     //addbigint(result, 1);
+			result++;     
 		}
 		// Shift right the absolute value.
 		result.limbs[nbrLimbs].x = 0;
@@ -1421,8 +1067,300 @@ void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
 			result.nbrLimbs++;
 		}
 		if (isNegative) {    // Adjust negative number.
-			result--;        // addbigint(result, -1);
+			result--;        
 		}
 	}
 	return;
+}
+
+// This routine uses Newton iteration: if x is an approximate inverse square root of N,
+// a better approximation is: x(3-Nxx)/2. After the inverse square root is computed,
+// the square root is found just by multiplying by N.
+// The argument is multiplied by a power of 4 so the most significant limb is
+// between LIMB_RANGE/4 and LIMB_RANGE - 1 and there is an even number of limbs.
+// At the end of the calculation, the result is divided by the power of 2.
+
+// All computations are done in little-endian notation.
+// Find power of 2 that divides the number.
+// output: pNbrLimbs = pointer to number of limbs
+//         pPower2 = reference to power of 2.
+static void MultiplyBigNbrByMinPowerOf2(int &pPower2, const limb *number, int len, limb *dest)
+{
+	limb mostSignficLimb, oldLimb, newLimb;
+	int index2, mask, shLeft;
+	limb *ptrDest;
+
+	shLeft = 0;
+	mostSignficLimb.x = (number + len - 1)->x;
+	for (mask = LIMB_RANGE / 2; mask > 0; mask >>= 1)
+	{
+		if ((mostSignficLimb.x & mask) != 0)
+		{
+			break;
+		}
+		shLeft++;
+	}
+	ptrDest = dest;
+	// Multiply number by this power.
+	oldLimb.x = 0;
+	for (index2 = len; index2 > 0; index2--)
+	{
+		newLimb.x = ptrDest->x;
+		(ptrDest++)->x = ((newLimb.x << shLeft) |
+			(oldLimb.x >> (BITS_PER_GROUP - shLeft))) & MAX_VALUE_LIMB;
+		oldLimb.x = newLimb.x;
+	}
+	ptrDest->x = oldLimb.x >> (BITS_PER_GROUP - shLeft);
+	pPower2 = shLeft;
+}
+
+/* used for operator overloading */
+// After computing the number of limbs of the results, this routine finds the inverse
+// of the divisor and then multiplies it by the dividend using nbrLimbs+1 limbs.
+// After that, the quotient is adjusted.
+BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
+	BigInteger Quotient;
+	double inverse;
+	limb oldLimb, newLimb;
+	int nbrLimbs, nbrLimbsDividend, nbrLimbsDivisor;
+
+	// Check whether the divisor is zero.
+	if (Divisor == 0) {  // Indicate error if divisor is zero.
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "cannot divide by zero: ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+	// Get number of limbs of quotient.
+	nbrLimbsDividend = Dividend.nbrLimbs;
+	nbrLimbsDivisor = Divisor.nbrLimbs;
+	nbrLimbs = nbrLimbsDividend - nbrLimbsDivisor;
+	if (nbrLimbs < 0)
+	{   // Absolute value of dividend is less than absolute value of divisor.
+		Quotient.limbs[0].x = 0;
+		Quotient.nbrLimbs = 1;
+		Quotient.sign = SIGN_POSITIVE;
+		return Quotient;
+	}
+	if (nbrLimbs == 0)
+	{   // Both divisor and dividend have the same number of limbs.
+		for (nbrLimbs = nbrLimbsDividend - 1; nbrLimbs > 0; nbrLimbs--) {
+			if (Dividend.limbs[nbrLimbs].x != Divisor.limbs[nbrLimbs].x) {
+				break;
+			}
+		}
+		if (Dividend.limbs[nbrLimbs].x < Divisor.limbs[nbrLimbs].x)
+		{   // Dividend is less than divisor, so quotient is zero.
+			Quotient.limbs[0].x = 0;
+			Quotient.nbrLimbs = 1;
+			Quotient.sign = SIGN_POSITIVE;
+			return Quotient;
+		}
+	}
+	if (nbrLimbsDividend == 1) {   // If dividend is small, perform the division directly.
+		Quotient.limbs[0].x = Dividend.limbs[0].x / Divisor.limbs[0].x;
+		Quotient.nbrLimbs = 1;
+	}
+	else if (nbrLimbsDivisor == 1)
+	{   // Divisor is small: use divide by int.
+		// Sign of quotient is determined later.
+		Quotient = Dividend; //CopyBigInt(Quotient, Dividend);
+		Quotient /= Divisor.limbs[0].x;   //subtractdivide(Quotient, 0, Divisor.limbs[0].x);
+	}
+	else {
+		int index;
+		int bitLength;
+		int bitLengthNbrCycles;
+		int idx;
+		int nbrLimbsQuotient;
+		int power2;
+		limb *ptrDest, *ptrQuotient, *ptrQuot;
+		const limb *ptrDivisor, *ptrDividend;
+
+		nbrLimbs += 3;    // Use this number of limbs for intermediate calculations.
+		if (nbrLimbs > nbrLimbsDivisor) {
+			memset(&adjustedArgument[0], 0, (nbrLimbs - nbrLimbsDivisor) * sizeof(limb));
+			memcpy(&adjustedArgument[nbrLimbs - nbrLimbsDivisor], &Divisor.limbs[0], nbrLimbsDivisor * sizeof(limb));
+		}
+		else {
+			memcpy(&adjustedArgument[0], &Divisor.limbs[nbrLimbsDivisor - nbrLimbs], nbrLimbs * sizeof(limb));
+		}
+		MultiplyBigNbrByMinPowerOf2(power2, adjustedArgument, nbrLimbs, adjustedArgument);
+		// Initialize approximate inverse.
+		inverse = MAX_VALUE_LIMB / ((double)adjustedArgument[nbrLimbs - 1].x + 1);
+		approxInv[nbrLimbs - 1].x = 1;
+		if (inverse <= 1) {
+			approxInv[nbrLimbs - 2].x = 0;
+		}
+		else {
+			approxInv[nbrLimbs - 2].x = (int)floor((inverse - 1)*MAX_VALUE_LIMB);
+		}
+		// Perform Newton approximation loop.
+		// Get bit length of each cycle.
+		bitLengthNbrCycles = 0;
+		bitLength = nbrLimbs * BITS_PER_GROUP;
+		while (bitLength >= BITS_PER_GROUP) {
+			bitLengthCycle[bitLengthNbrCycles++] = bitLength;
+			bitLength = (bitLength + 1) >> 1;
+		}
+		// Each loop increments precision.
+		// Use Newton iteration: x_{n+1} = x_n(2 - x_n)
+		while (--bitLengthNbrCycles >= 0) {
+			limb *ptrArrAux;
+			int limbLength;
+
+			bitLength = bitLengthCycle[bitLengthNbrCycles];
+			limbLength = (bitLength + 3 * (BITS_PER_GROUP)-1) / BITS_PER_GROUP;
+			if (limbLength > nbrLimbs) {
+				limbLength = nbrLimbs;
+			}
+			// Compute x(2-Nx).
+			// Multiply by divisor.
+			multiply(&approxInv[nbrLimbs - limbLength],
+				&adjustedArgument[nbrLimbs - limbLength], arrAux, limbLength, NULL);
+			// Subtract arrAux from 2.
+			ptrArrAux = &arrAux[limbLength];
+			for (idx = limbLength - 1; idx > 0; idx--) {
+				ptrArrAux->x = MAX_VALUE_LIMB - ptrArrAux->x;
+				ptrArrAux++;
+			}
+			ptrArrAux->x = 1 - ptrArrAux->x;
+			// Multiply arrAux by approxInv.
+			multiply(&arrAux[limbLength], &approxInv[nbrLimbs - limbLength], approxInv, limbLength, NULL);
+			memmove(&approxInv[nbrLimbs - limbLength], &approxInv[limbLength - 1], limbLength * sizeof(limb));
+		}
+		// Multiply approxInv by argument to obtain the quotient.
+		if (nbrLimbsDividend >= nbrLimbs) {
+			multiply(&Dividend.limbs[nbrLimbsDividend - nbrLimbs],
+				approxInv, approxInv, nbrLimbs, NULL);
+		}
+		else {
+			memset(arrAux, 0, (nbrLimbs - nbrLimbsDividend) * sizeof(limb));
+			memcpy(&arrAux[nbrLimbs - nbrLimbsDividend], Dividend.limbs, nbrLimbsDividend * sizeof(limb));
+			multiply(arrAux, approxInv, approxInv, nbrLimbs, NULL);
+		}             // approxInv holds the quotient.
+					  // Shift left quotient power2 bits into result.
+		ptrDest = &approxInv[nbrLimbs - 1];
+		oldLimb.x = 0;
+		for (index = nbrLimbs; index >= 0; index--) {
+			newLimb.x = ptrDest->x;
+			(ptrDest++)->x = ((newLimb.x << power2) |
+				(oldLimb.x >> (BITS_PER_GROUP - power2))) & MAX_VALUE_LIMB;
+			oldLimb.x = newLimb.x;
+		}
+
+		// Determine number of limbs of quotient.
+		nbrLimbsQuotient = nbrLimbsDividend - nbrLimbsDivisor;
+		ptrDivisor = &Divisor.limbs[nbrLimbsDivisor - 1];
+		ptrDividend = &Dividend.limbs[nbrLimbsDividend - 1];
+		for (idx = nbrLimbsDivisor - 1; idx > 0; idx--) {
+			if (ptrDividend->x != ptrDivisor->x) {
+				break;
+			}
+			ptrDividend--;
+			ptrDivisor--;
+		}
+		if (ptrDividend->x >= ptrDivisor->x) {
+			nbrLimbsQuotient++;
+		}
+		ptrQuotient = &approxInv[2 * nbrLimbs - nbrLimbsQuotient];
+		if (approxInv[2 * nbrLimbs - 1].x == 0)
+		{  // Most significant byte is zero, so it is not part of the quotient. 
+			ptrQuotient--;
+		}
+		ptrQuot = ptrQuotient;
+		if ((ptrQuotient - 1)->x > (7 << (BITS_PER_GROUP - 3))) {
+			// Increment quotient.
+			for (idx = 0; idx <= nbrLimbsQuotient; idx++) {
+				if ((++((ptrQuotient + idx)->x)) & MAX_INT_NBR) {
+					break;
+				}
+				(ptrQuotient + idx)->x = 0;
+			}
+			if (idx >= nbrLimbsQuotient)
+			{                // Roll back on overflow.
+				for (idx = 0; idx < nbrLimbsQuotient; idx++) {
+					if (--((ptrQuotient + idx)->x) >= 0) {
+						break;
+					}
+					(ptrQuotient + idx)->x = MAX_VALUE_LIMB;
+				}
+			}
+			if (approxInv[2 * nbrLimbs - 1].x != 0)
+			{    // Most significant byte is not zero, so it is part of the quotient.
+				ptrQuot = &approxInv[2 * nbrLimbs - nbrLimbsQuotient];
+			}
+			// Test whether the quotient is correct.
+			// It is correct only if multiplied by the divisor, it is <= than the dividend.
+			if (nbrLimbsQuotient > nbrLimbsDivisor) {
+				memcpy(&approxInv[0], Divisor.limbs, nbrLimbsDivisor * sizeof(limb));
+				memset(&approxInv[nbrLimbsDivisor], 0, (nbrLimbsQuotient - nbrLimbsDivisor) * sizeof(limb));
+				multiply(&approxInv[0], ptrQuot, arrAux, nbrLimbsQuotient, NULL);
+			}
+			else {
+				memset(&approxInv[2 * nbrLimbs], 0, (nbrLimbsDivisor - nbrLimbsQuotient) * sizeof(limb));
+				multiply(Divisor.limbs, ptrQuot, arrAux, nbrLimbsDivisor, NULL);
+			}
+			ptrDividend = (limb *)&Dividend.limbs[Dividend.nbrLimbs - 1];
+			ptrDest = &arrAux[Dividend.nbrLimbs - 1];
+			for (idx = Dividend.nbrLimbs - 1; idx > 0; idx--) {
+				if (ptrDividend->x != ptrDest->x) {
+					break;
+				}
+				ptrDividend--;
+				ptrDest--;
+			}
+			if (ptrDividend->x < ptrDest->x) {  // Decrement quotient.
+				ptrQuotient = ptrQuot;
+				for (idx = 0; idx < nbrLimbsQuotient; idx++) {
+					if (--(ptrQuotient->x) >= 0) {
+						break;
+					}
+					(ptrQuotient++)->x = MAX_VALUE_LIMB;
+				}
+				if (idx == nbrLimbsQuotient) {
+					nbrLimbsQuotient--;
+				}
+			}
+		}
+		memcpy(&Quotient.limbs[0], ptrQuot, nbrLimbsQuotient * sizeof(limb));
+		Quotient.nbrLimbs = nbrLimbsQuotient;
+	}
+	if (Dividend.sign == Divisor.sign || (Quotient.limbs[0].x == 0 && Quotient.nbrLimbs == 1)) {
+		Quotient.sign = SIGN_POSITIVE;
+	}
+	else {
+		Quotient.sign = SIGN_NEGATIVE;
+	}
+
+	while (Quotient.nbrLimbs > 1) {
+		if (Quotient.limbs[Quotient.nbrLimbs - 1].x == 0)
+			Quotient.nbrLimbs--;
+		else break;
+	}
+	return Quotient;
+}
+
+/* Return Dividend/Divisor. Used for operator overloading */
+BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
+	BigInteger Quotient;
+	int len = Dividend.nbrLimbs;
+	DivBigNbrByInt((int *)Dividend.limbs, abs(Divisor), (int *)Quotient.limbs, len);
+	if (Divisor >= 0)
+		if (Dividend.sign == SIGN_POSITIVE)
+			Quotient.sign = SIGN_POSITIVE;
+		else
+			Quotient.sign = SIGN_NEGATIVE;
+	else   // Divisor is -ve
+		if (Dividend.sign == SIGN_POSITIVE)
+			Quotient.sign = SIGN_NEGATIVE;
+		else
+			Quotient.sign = SIGN_POSITIVE;
+
+	while (len > 1 && Quotient.limbs[len - 1].x == 0)
+		len--;  // remove any leading zeros
+	Quotient.nbrLimbs = len;
+	return Quotient;
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -481,7 +481,7 @@ void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &
 //	if (nbrLen >= 2 && *(Mod + nbrLen - 1) == 0) {
 //		nbrLen--;
 //	}
-//	(int)Nbr1[nbrLen] = 0;  // �value' of Nbr1 is not changed
+//	(int)Nbr1[nbrLen] = 0;  // ´value' of Nbr1 is not changed
 //	modmultIntExtended((limb *)Nbr1, Nbr2, (limb *)Prod, (limb *)Mod, nbrLen);
 //}
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
@@ -543,3 +543,361 @@ void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod) {
 	auto rv = mpz_invert(ZT(inv), ZT(num), ZT(mod));
 	assert(rv != 0);
 }
+
+/* returns true iff value is zero*/
+bool BigNbrIsZero(const limb *value, int NumLen) {
+	int ctr;
+	for (ctr = 0; ctr < NumLen; ctr++) {
+		if (value[ctr].x != 0) {
+			return false;  // Number is not zero.
+		}
+	}
+	return true;      // Number is zero
+}
+
+/* convert value in Limb to a double (floating point)
+note that ptrLimb points AFTER last valid value in limbs.
+up to 3 most significant limbs are used. */
+double getMantissa(const limb *ptrLimb, int nbrLimbs) {
+	double dN = (double)(ptrLimb - 1)->x;
+	double dInvLimb = 1 / (double)LIMB_RANGE;
+	if (nbrLimbs > 1) {
+		dN += (double)(ptrLimb - 2)->x * dInvLimb;
+	}
+	if (nbrLimbs > 2) {
+		dN += (double)(ptrLimb - 3)->x * dInvLimb * dInvLimb;
+	}
+	return dN;
+}
+
+void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
+	numberZ = 0;
+	for (int i = NumLen - 1; i >= 0; i--) {
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number[i].x;      // add next limb
+	}
+}
+
+int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
+	// note: numberZ is a copy of the original. Its value is changed
+	bool neg = false;
+	Znum remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		if (i >= MAX_LEN || NumLen > MAX_LEN) {
+			// number too big to convert.
+			std::string line = std::to_string(__LINE__);
+			std::string mesg = "number too big : cannot convert to limbs: ";
+			mesg += __func__;
+			mesg += " line ";  mesg += line;
+			mesg += " in file "; mesg += __FILE__;
+			throw std::range_error(mesg);
+		}
+		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		/* calculating quotient and remainder separately turns
+		out to be faster */
+		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
+		number[i].x = (int)MulPrToLong(remainder);
+		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
+
+		i++;
+	}
+	if (i < NumLen) {
+		/* set any extra limbs to zero */
+		memset(number + i, 0, (NumLen - i) * sizeof(limb));
+	}
+	if (neg) {
+		ChSignBigNbr((int *)number, i + 1);
+	}
+	return i;
+}
+
+/* number = numberZ*/
+int ZtoBigNbr(int number[], Znum numberZ) {
+	// note: numberZ is a copy of the original. Its value is changed
+	bool neg = false;
+	Znum quot, remainder;
+
+	if (numberZ < 0) {
+		neg = true;
+		numberZ = -numberZ;  // make numberZ +ve
+	}
+	int i = 0;
+	while (numberZ > 0) {
+		mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
+		//number[i] = (int)MulPrToLong(remainder);
+		number[i] = (int)mpz_get_si(ZT(remainder));  // faster?? - no possibility of overflow here
+		numberZ = quot;
+		i++;
+	}
+
+	if (neg) {
+		ChSignBigNbr(number, i);
+	}
+	return i;
+}
+
+/* convert integer list to Znum. */
+void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
+	numberZ = 0;
+	for (int i = NumLen - 1; i >= 0; i--) {
+		//numberZ *= LIMB_RANGE;
+		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+		numberZ += number[i];
+	}
+}
+
+/* calculate base^exponent. */
+//void BigIntPowerIntExp(const BigInteger &pBase, int exponent, BigInteger &Power) {
+//	int mask;
+//	if (pBase == 0) {     // Base = 0 -> power = 0
+//		Power = 0;
+//		return; // base = 0, so result is zero
+//	}
+//	Power = 1;
+//	for (mask = 1 << 30; mask != 0; mask >>= 1) {
+//		if ((exponent & mask) != 0) {
+//			for (; mask != 0; mask >>= 1) {
+//				Power *= Power;// BigIntMultiply(Power, Power, Power);
+//				if ((exponent & mask) != 0) {
+//					Power *= pBase; //BigIntMultiply(Power, Base, Power);
+//				}
+//			}
+//			break;
+//		}
+//	}
+//	return;
+//}
+
+double logBigNbr(const Znum &BigInt) {
+	double BigId;
+#ifdef __MPIR_VERSION
+	long BiExp;   // changed for MPIR version 3.0.0
+#else
+	long BiExp;
+#endif
+	BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
+	double logval = log(BigId) + BiExp * log(2);
+	return logval;
+}
+
+/* returns nbrMod^Expon%currentPrime.
+overflow could occur if currentPrime > 2^31
+the alternative is to use modPower */
+static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
+{
+	unsigned long long power = 1;
+	unsigned long long square = (unsigned long long)NbrMod;
+	while (Expon != 0)
+	{
+		if ((Expon & 1) == 1)
+		{
+			power = (power * square) % (unsigned long long)currentPrime;
+		}
+		square = (square * square) % (unsigned long long)currentPrime;
+		Expon >>= 1;
+	}
+	return (long long)power;
+}
+
+// This routine checks whether the number factor is a perfect power. 
+// If it is not, it returns exponent 1. If it is a perfect power, it returns the  
+// exponent and  the base such that base^exponent = factor.
+long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
+	/* upperbound is the largest number already tested as a factor by trial division
+	i.e. factor has no factors < upperBound. This can be used to put a much
+	smaller limit on maxExpon (max about 2000) */
+
+	/* upperBound^maxExpon ≈ factor */
+	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
+
+	int h;
+	long long modulus, Exponent;
+	unsigned long long maxPrime, j;
+	int prime2310x1[] =
+	{ 2311, 4621, 9241, 11551, 18481, 25411, 32341, 34651, 43891, 50821 };
+	// Primes of the form 2310x+1.
+	bool expon2 = true, expon3 = true, expon5 = true;
+	bool expon7 = true, expon11 = true;
+	Znum Zmod, Root;
+	std::vector<bool>ProcessExpon(maxExpon + 1);
+
+	for (h = 0; h < sizeof(prime2310x1) / sizeof(prime2310x1[0]); h++) {
+		int testprime = prime2310x1[h];
+		// Zmod = mod = Bigint%testprime
+		auto mod = mpz_mod_ui(ZT(Zmod), ZT(factor), testprime); // getRemainder(factor, testprime);
+		if (expon2 && intModPow(mod, testprime / 2, testprime) > 1) {
+			expon2 = false;
+		}
+		if (expon3 && intModPow(mod, testprime / 3, testprime) > 1) {
+			expon3 = false;
+		}
+		if (expon5 && intModPow(mod, testprime / 5, testprime) > 1) {
+			expon5 = false;
+		}
+		if (expon7 && intModPow(mod, testprime / 7, testprime) > 1) {
+			expon7 = false;
+		}
+		if (expon11 && intModPow(mod, testprime / 11, testprime) > 1) {
+			expon11 = false;
+		}
+	}
+
+	maxPrime = 2 * maxExpon + 3;
+	if (maxPrime > primeListMax) {
+		std::string line = std::to_string(__LINE__);
+		std::string mesg = "number too big : cannot generate prime list. function : ";
+		mesg += __func__;
+		mesg += " line ";  mesg += line;
+		mesg += " in file "; mesg += __FILE__;
+		throw std::range_error(mesg);
+	}
+
+	for (h = 2; h <= maxExpon; h++) {
+		ProcessExpon[h] = true;
+	}
+
+	for (size_t ix = 5, h = primeList[ix]; h < maxPrime / 2; ix++, h = primeList[ix]) {
+		int processed = 0;
+		for (j = 2 * h + 1; j < maxPrime; j += 2 * h) {
+			if (isPrime2(j)) {
+				modulus = mpz_mod_ui(ZT(Zmod), ZT(factor), j); // getRemainder(factor, j);
+				if (intModPow(modulus, j / h, j) > 1) {
+					for (j = h; j <= maxExpon; j += h) {
+						ProcessExpon[j] = false;
+					}
+					break;
+				}
+			}
+			if (++processed > 10) {
+				break;
+			}
+		}
+	}
+
+	/* check possible exponent values. Note that largest found exponent value
+	is returned although, unless this value is prime, any divisor of this
+	value is also a valid exponent. */
+	for (Exponent = maxExpon; Exponent >= 2; Exponent--) {
+		if (Exponent % 2 == 0 && !expon2) {
+			continue; // Not a square
+		}
+		if (Exponent % 3 == 0 && !expon3) {
+			continue; // Not a cube
+		}
+		if (Exponent % 5 == 0 && !expon5) {
+			continue; // Not a fifth power
+		}
+		if (Exponent % 7 == 0 && !expon7) {
+			continue; // Not a 7th power
+		}
+		if (Exponent % 11 == 0 && !expon11) {
+			continue; // Not an 11th power
+		}
+		if (!ProcessExpon[Exponent]) {
+			continue;
+		}
+		if (mpz_root(ZT(Root), ZT(factor), Exponent) != 0) {
+			Base = Root;   // factor is a perfect power
+			return Exponent;
+		}
+	}
+
+	Base = factor;   // not perfect power
+	return 1;
+}
+
+/* return true if value is 1 (mod p)*/
+//bool checkOne(const limb *value, int nbrLimbs)
+//{
+//	int idx;
+//	for (idx = 0; idx < nbrLimbs; idx++)
+//	{
+//		if ((value++)->x != MontgomeryMultR1[idx].x)
+//		{
+//			return false;    // Go out if value is not 1 (mod p)
+//		}
+//	}
+//	return true; // value = 1 (mod p)
+//}
+
+/* return true if value is -1 (mod p) */
+//bool checkMinusOne(const limb *value, int nbrLimbs)
+//{
+//	int idx;
+//	unsigned int carry;
+//	carry = 0;
+//	for (idx = 0; idx < nbrLimbs; idx++)
+//	{
+//		carry += (unsigned int)(value++)->x + (unsigned int)MontgomeryMultR1[idx].x;
+//		if ((carry & MAX_VALUE_LIMB) != (unsigned int)TestNbr[idx].x)
+//		{
+//			return false;    // Go out if value is not -1 (mod p)
+//		}
+//		carry >>= BITS_PER_GROUP;
+//	}
+//	return true;    // value is -1 (mod p)
+//}
+
+// Find power of 2 that divides the number.
+// output: pNbrLimbs = pointer to number of limbs
+//         pShRight = pointer to power of 2.
+
+
+
+// Calculate Jacobi symbol by following algorithm 2.3.5 of C&P book.
+long long JacobiSymbol(long long upper, long long lower)
+{
+	long long tmp;
+	long long a = upper % lower;
+	long long m = lower;
+	long long t = 1;
+	while (a != 0)
+	{
+		while ((a & 1) == 0)
+		{     // a is even.
+			a >>= 1;
+			if ((m & 7) == 3 || (m & 7) == 5)
+			{   // m = 3 or m = 5 (mod 8)
+				t = -t;
+			}
+		}
+		tmp = a; a = m; m = tmp;   // Exchange a and m.
+		if ((a & m & 3) == 3)
+		{   // a = 3 and m = 3 (mod 4)
+			t = -t;
+		}
+		a = a % m;
+	}
+	if (m == 1 || m == -1)
+	{
+		return t;
+	}
+	return 0;
+}
+
+/* uses global value NumberLength for number of limbs. */
+//static void Halve(limb *pValue)
+//{
+//	if ((pValue[0].x & 1) == 0)
+//	{    // Number to halve is even. Divide by 2.
+//		DivBigNbrByInt((int *)pValue, 2, (int *)pValue, NumberLength);
+//	}
+//	else
+//	{    // Number to halve is odd. Add modulus and then divide by 2.
+//		AddBigNbr((int *)pValue, (int *)TestNbr, (int *)pValue, NumberLength + 1);
+//		DivBigNbrByInt((int *)pValue, 2, (int *)pValue, NumberLength + 1);
+//	}
+//}
+//static void Halve(Znum & Value, const Znum & mod) {
+//	if (!ZisEven(Value)) {
+//		Value += mod; // Number to halve is odd. Add modulus and then divide by 2.
+//	}
+//	Value /= 2;
+//	return;
+//}

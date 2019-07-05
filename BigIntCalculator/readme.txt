@@ -61,7 +61,7 @@ FACTORIZATION
 
 A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
 factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
-is usually significantly faster, provided that the -i option is used witm Msieve.
+is usually significantly faster, provided that the -i option is used with Msieve.
 The -i option causes greater use of ECM within Msieve. The default is to use ECM
 only for factors < 15 digits. In addition I modified the function choose_max_digits
 within the source file gmp_ecm.c to increase the use of ECM still further. The code 

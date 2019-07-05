@@ -17,6 +17,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <stdio.h>
 #include "bignbr.h"
+#include "bigint.h"
 
 #define DIGITS_PER_LIMB 9
 #define MAX_LIMB_CONVERSION 1000000000

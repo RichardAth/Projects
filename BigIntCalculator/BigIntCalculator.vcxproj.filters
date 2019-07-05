@@ -57,9 +57,6 @@
     <ClCompile Include="R3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="division.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="msieve.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -75,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bigint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

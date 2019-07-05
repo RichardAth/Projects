@@ -8,13 +8,13 @@
 #include <Windows.h>
 #include "factor.h"
 
-//#define BIGNBR
+//#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 #include "bignbr.h"
+#include "bigint.h"
+extern Znum zR, zR2, zNI, zN;
 #endif
 
-
-extern Znum zR, zR2, zNI, zN;
 void msieveParam(std::string expupper);
 
 #define PAREN_STACK_SIZE            100
@@ -2221,7 +2221,8 @@ static void doTests3(void) {
 		if (!ZtoBig(pBI, p))
 			break;            // p too large to convert so stop
 		double pdb = pBI.log();
-		//BigNbrExp(amBI, pdb);
+		if (pdb > 708)
+			break;
 		expBigInt(amBI, pdb);
 		BigtoZ(am, amBI);
 		error = p - am;
@@ -2278,11 +2279,13 @@ static void doTests3(void) {
 	while (modL[numLen - 1].x == 0)
 		numLen--;                    // adjust length i.e. remove leading zeros
 	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	NumberLength = numLen;
 	GetMontgomeryParms(numLen);
 	modmultCallback = nullptr;      // turn off status messages from modmult
 
 	largeRand(a);				     // get large random number a
-	modmult(a%mod, zR2, am);         // convert a to Montgomery (Znum)
+	a %= mod;						 // ensure a < mod
+	modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
 	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
 	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
 	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 

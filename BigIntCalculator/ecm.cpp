@@ -23,6 +23,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 #include <Windows.h>
 #include "showtime.h"
 #include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 //#define log 1              // remove this line to generate code without logging
 
