@@ -31,3 +31,6 @@ The factoriser is essentially DAs program, with an interface function that conve
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
 messages it produces have been modified to work with a console window instead of a 
 Web Browser. 
+
+An interface to Msieve has also been added. I have found that generally for larger numbers
+(> 50 digits) Msieve is significantly faster. 

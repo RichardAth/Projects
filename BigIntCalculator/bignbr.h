@@ -73,7 +73,6 @@ void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
 void AddBigNbrModNB (const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
-//void SubtBigNbrMod (const limb *Nbr1, const limb *Nbr2, limb *Sum);
 
 void modmult(const limb *factor1, const limb *factor2, limb *product);
 
@@ -81,53 +80,19 @@ void modmult(const Znum &a, const Znum &b, Znum &result);
 void REDC(Znum &t, const Znum &T);
 void modmultInt(const limb *factorBig, int factorInt, limb *result);
 
-//void modmultIntExtended(const limb *factorBig, int factorInt, limb *result, const limb *pTestNbr, int nbrLen);
-//void AddBigNbrMod(const limb *Nbr1, const limb *Nbr2, limb *Sum);
-//void modPowBaseInt(int base, const limb *exp, int nbrGroupsExp, limb *power);
-//void modPow(const limb *base, const limb *exp, int nbrGroupsExp, limb *power);
-//void AdjustModN(limb *Nbr, const limb *TestNbr, int NumLen);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
 
 void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
-//static void ComputeInversePower2(/*@in@*/const limb *value, /*@out@*/limb *result, /*@out@*/limb *aux);
-//double logLimbs(const limb *pBigNbr, int nbrLimbs);
-//void UncompressIntLimbs(/*@in@*/const int *ptrValues, /*@out@*/limb *bigint, int nbrLen);
-//void CompressIntLimbs(/*@out@*/int *ptrValues, /*@in@*/const limb *bigint, int nbrLen);
-//bool checkOne(const limb *value, int nbrLimbs);
-//bool checkMinusOne(const limb *value, int nbrLimbs);
-//void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs);
 
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
 int BigNbrLen(const long long Nbr[], int nbrLen);
-//void AddBigNbr(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
-//void AddBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void SubtractBigNbr(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
-//void SubtractBigNbr(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void AddBigNbrB(const int Nbr1[], const int Nbr2[], int Sum[], int nbrLen);
-//void AddBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void SubtractBigNbrB(const int Nbr1[], const int Nbr2[], int Diff[], int nbrLen);
-//void SubtractBigNbrB(const Znum &Nbr1, const Znum &Nbr2, Znum &Sum);
-//void AddBigNbrModN(const int Nbr1[], const int Nbr2[], int Sum[], const int Mod[], int nbrLen);
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-//void SubtractBigNbrModN(const int Nbr1[], const int Nbr2[], int Diff[], const int Mod[], int nbrLen);
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-//void MultBigNbrByInt(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
-//void MultBigNbrByInt(const Znum &bigFactor, int factor, Znum &bigProd);
-//void MultBigNbrByIntB(const int bigFactor[], int factor, int bigProduct[], int nbrLen);
-//void MultBigNbrByIntB(const Znum &bigFactor, int factor, Znum &bigProd);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
-//void DivBigNbrByInt(const Znum &Dividend, int divisor, Znum &Quotient);
-//int RemDivBigNbrByInt(const int Dividend[], int divisor, int nbrLen);
 mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor);
-//void MultBigNbr(const int Factor1[], const int Factor2[], int Prod[], int nbrLen);
-//void MultBigNbr(const Znum &Fact1, const Znum &Fact2, Znum &Prod);
-//void IntToBigNbr(int value, int bigNbr[], int nbrLength);
-//void GcdBigNbr(const int *pNbr1, const int *pNbr2, int *pGcd, int nbrLen);
-//void MultBigNbrModN(const int Nbr1[], const int Nbr2[], int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod);
-//void MultBigNbrByIntModN(const int Nbr1[], int Nbr2, int Prod[], const int Mod[], int nbrLen);
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
 int modPower(int NbrMod, int Expon, int currentPrime);
 // calculate a^n%mod using 'bigints'   
@@ -136,6 +101,13 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);
+
+void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
+int PrimalityTest(const Znum &Value, long long upperBound);
+long long JacobiSymbol(long long upper, long long lower);
+long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);
+double logBigNbr(const Znum &BigInt);
+double logBigNbr(const Znum &BigInt, unsigned long long b);
 
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;

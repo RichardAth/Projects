@@ -27,7 +27,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
-//#include "bignbr.h"
+#include "bignbr.h"
 #undef min                 // use std::min
 
 typedef void(*mmCback)(void);

@@ -141,7 +141,7 @@ public:
 	friend void MultBigNbrByInt(BigInteger &m, int n); // m *= n
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
-	//friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
+	friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
 	//friend void BigIntGcd (const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &Result);
 	//friend void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
 		//const BigInteger &mod, BigInteger &quotient);
@@ -262,11 +262,13 @@ public:
 		BigInteger temp;
 		shiftBI(*this, b, temp);
 		*this = temp;
+		return *this;
 	}
 	BigInteger operator >>= (const int b) {
 		BigInteger temp;
 		shiftBI(*this, -b, temp);
 		*this = temp;
+		return *this;
 	}
 	BigInteger &operator >> (const int b) const {
 		BigInteger temp;

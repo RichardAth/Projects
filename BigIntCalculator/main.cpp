@@ -2214,15 +2214,20 @@ static void doTests3(void) {
 
 	
 	/* check conversion to & from floating point */
+	/*for (int i = 1; i <= 30; i++) {
+		expBigInt(amBI, i);
+		std::cout << "e^=" << amBI << " expected " << std::exp(i) << '\n';
+	}*/
+
 	p = 10;
 	double errorv;
 	Znum error, relerror;
-	for (int i = 1; i < 55;  i++, p *= 1000000 ) {
+	for (int i = 1; i < 65;  i++, p *= 1000000 ) {
 		if (!ZtoBig(pBI, p))
 			break;            // p too large to convert so stop
 		double pdb = pBI.log();
-		if (pdb > 708)
-			break;
+		/*if (pdb > 708)
+			break;*/
 		expBigInt(amBI, pdb);
 		BigtoZ(am, amBI);
 		error = p - am;

@@ -259,25 +259,66 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
 	Base = Base*Divisor;
 	return Dividend - Base;
 }
+
+/* calculate base^exponent. */
+void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) {
+	int mask;
+	if (base == 0) {     // base = 0 -> power = 0
+		Power = 0;
+		return;       // base = 0, so result is zero
+	}
+	if (exponent == 0) {
+		Power = 1LL;
+		return;
+	}
+	Power = 1;
+	for (mask = 1 << 30; mask != 0; mask >>= 1) {
+		/* first look for most significant bit of exponent */
+		if ((exponent & mask) != 0) {
+			for (; mask != 0; mask >>= 1) {
+				Power *= Power;  
+				if ((exponent & mask) != 0) {
+					Power *= base; 
+				}
+			}
+			break;  // we are finished
+		}
+	}
+	return;
+}
  
-/* BigInt = e^logar. note that conversion uses floating point, which limits
-the maximimum exponent to about 709.8 */
+/* BigInt = e^logar.  This is the inverse function of LogBigNbr. As the result
+is an integer it is not exact, and also for large values only about the 1st
+15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
 	double e = std::exp(logar);
-	auto rv = fpclassify(e);
-	if (rv == FP_INFINITE || rv == FP_NAN) 
-	{
-		// out of range; throw exception
-		std::string line = std::to_string(__LINE__);
-		std::string mesg = "cannot get exponent: out of range ";
-		mesg += __func__;
-		mesg += " line ";  mesg += line;
-		mesg += " in file "; mesg += __FILE__;
-		throw std::range_error(mesg);
+	auto rv = fpclassify(e);  // check for overflow
+	
+	if (rv != FP_INFINITE && rv != FP_NAN) {
+		bigInt = e;  /* note: the assignment statement uses DoubleToBigInt to
+					convert floating point to BigInteger */
 	}
-	bigInt = e;
-	/* note: the assignment statement above uses DoubleToBigInt to 
-	convert floating point to BigInteger */
+	else 
+		/* simple approach doesn't work, but more complicated method below
+		handles much larger numbers */
+	{
+		BigInteger base=1;   // new base for logs
+		base <<= 128;        // base = 2^128
+		double logb = logar / (std::log(2.0)*128);  // convert log to new base
+		double intpf;
+		double fracpf = modf(logb, &intpf);  // split into integer and fraction
+		/* the desired result = base^(intpf+fracpf)
+		         = base^intpf * base^fracpf */
+		int intp = (int)round(intpf);    // exact conversion
+		BigIntPowerIntExp(base, intp, bigInt);  /* bigInt = base^intpf*/
+
+		/* by using a large base we make frac large, so that conversion to integer 
+		doesn't introduce errors */
+		double frac = std::pow(2, fracpf*128);  //  frac = base^fracpf
+		BigInteger fracBI;
+		fracBI = frac;    // convert to integer      
+		bigInt = bigInt * fracBI;
+	}
 }
 
 
@@ -842,84 +883,6 @@ void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
 //	*pShRight = power2;
 //}
 
-// Find largest power of 2 that divides the number. Divide number
-// by that power and return value of power in ShRight.
-void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
-	Znum two = 2;
-	auto shift = mpz_remove(ZT(number), ZT(number), ZT(two));
-	ShRight = (int)shift;
-}
-
-
-
-// BPSW primality test:
-// 1) If the input number is 2-SPRP composite, indicate composite and go out.
-// 2) Perform a Miller-Rabin probable prime test on n 
-//    If n is not a probable prime, then n is composite.
-//    Otherwise, n is almost certainly prime.
-// Output: 0 = probable prime.
-//         1 = composite: not 2-Fermat pseudoprime.
-//         2 = composite: does not pass 2-SPRP test.
-//         3 = composite: does not pass Miller-Rabin test.
-
-int PrimalityTest(const Znum &Value, long long upperBound) {
-	int i, ctr;
-	Znum Mult1, Mult3, Mult4;
-	const Znum two = 2;
-
-	if (Value <= 2) {
-		return 0;    // Indicate prime.
-	}
-	if (ZisEven(Value)) {
-		return 1;    // Number is even and different from 2. Indicate composite.
-	}
-
-	// Perform base 2 Strong Probable Prime test (2-SPRP)
-	//see https://en.wikipedia.org/wiki/Probable_prime
-	
-	Mult3 = Value - 1;
-	DivideBigNbrByMaxPowerOf2(ctr, Mult3);  // Mult3 /= 2^ctr
-	mpz_powm(ZT(Mult1), ZT(two), ZT(Mult3), ZT(Value));  // Mult1 = 2^Mult3 (mod Value)
-	
-	if(Mult1 != 1 && Mult1 != Value-1) {
-		for (i = 0; i < ctr; i++)
-		{               // Loop that squares number.
-			mpz_powm(ZT(Mult4), ZT(Mult1), ZT(two), ZT(Value));
-			if (Mult4 ==1)
-			{  // Current value is 1 but previous value is not 1 or -1: composite
-				return 2;       // Composite. Not 2-strong probable prime.
-			}
-			if (Mult4 == Value-1) {
-				i = -1;         // Number is strong pseudoprime.
-				break;
-			}
-			Mult1 = Mult4;
-		}
-		if (i == ctr) {
-			return 1;         // composite. Not 2-Fermat probable prime.
-		}
-		if (i != -1) {
-			return 2;         // Composite. Not 2-strong probable prime.
-		}
-	}
-#ifdef __MPIR_VERSION
-	static bool first = true;
-	static gmp_randstate_t rstate;
-	if (first) {
-		gmp_randinit_default(rstate);
-		first = false;
-	}
-
-	auto rv = mpz_likely_prime_p(ZT(Value), rstate, upperBound);
-#else
-	auto rv = mpz_probab_prime_p(ZT(Value), 16);
-#endif
-	if (rv == 0)
-		return 3;			// composite - fails Miller-Rabin test
-	else
-		return 0;			// probably prime;
-}
-
 
 
 /* convert Znum to BigInteger. Returns false if number is too big to convert.
@@ -1166,8 +1129,8 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	else if (nbrLimbsDivisor == 1)
 	{   // Divisor is small: use divide by int.
 		// Sign of quotient is determined later.
-		Quotient = Dividend; //CopyBigInt(Quotient, Dividend);
-		Quotient /= Divisor.limbs[0].x;   //subtractdivide(Quotient, 0, Divisor.limbs[0].x);
+		Quotient = Dividend; 
+		Quotient /= Divisor.limbs[0].x;   
 	}
 	else {
 		int index;
