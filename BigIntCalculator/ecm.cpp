@@ -19,7 +19,9 @@ see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization
 Profiling indicates that about 2/3 of the CPU time is used during Modular Multiplication. */
 
 #define  _CRT_SECURE_NO_DEPRECATE
-#include <iostream>
+#include <iostream>          // used in debug mode, and for logging if turned on
+#include <cstdio>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "showtime.h"
 #include "bignbr.h"

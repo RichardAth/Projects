@@ -17,13 +17,15 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define __EMSCRIPTEN__
 
 #include <iostream>
-#include <string>
+#include <cstdio>
+//#include <string>
 #include <vector>
 #include <algorithm>
 #include <cstdint>
 #include <cmath>
 #include <cassert>
-#include <windows.h>
+#define WIN32_LEAN_AND_MEAN
+//#include <windows.h>
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
@@ -565,15 +567,15 @@ Note: GCD (greatest common denominator) is also known as HCF (Highest Common Fac
 */
 unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
 {
-	BOOLEAN result;
-	int shift, su, sv;
+	unsigned char result;
+	unsigned long shift, su, sv;
 	if (u == 0) return v;
 	if (v == 0) return u;
-	result = _BitScanForward64((DWORD*)&shift, u | v);  // count any common factor 2s
-	result = _BitScanForward64((DWORD*)&su, u);
+	result = _BitScanForward64(&shift, u | v);  // count any common factor 2s
+	result = _BitScanForward64(&su, u);
 	u >>= su;             // shift u until u is odd
 	do {
-		result = _BitScanForward64((DWORD*)&sv, v);
+		result = _BitScanForward64(&sv, v);
 		v >>= sv;          // shift v until v is odd
 		if (u > v) {
 			unsigned long long int t = v;

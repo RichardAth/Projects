@@ -1,10 +1,12 @@
 ﻿#include <iostream>
+#include <cstdio>
 #include <string>
 #include <mpir.h>
 #include <time.h>
 #include<assert.h>
 #include <random>
-#include <stdlib.h>
+#include <cstdlib>
+#include <stdexcept>
 
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
 #ifdef _M_AMD64

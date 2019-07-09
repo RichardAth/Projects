@@ -12,7 +12,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <iostream>
+//#include <iostream>
 #include <stdexcept>
 #include <climits>
 #include <string>
@@ -288,7 +288,7 @@ void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) 
 }
  
 /* BigInt = e^logar.  This is the inverse function of LogBigNbr. As the result
-is an integer it is not exact, and also for large values only about the 1st
+is an integer it is not exact, and also for large values only at best the 1st
 15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
 	double e = std::exp(logar);
@@ -299,17 +299,20 @@ void expBigInt(BigInteger &bigInt, double logar) {
 					convert floating point to BigInteger */
 	}
 	else 
-		/* simple approach doesn't work, but more complicated method below
-		handles much larger numbers */
+		/* simple approach didn't work, but more complicated method below handles
+		 much larger numbers. The strategy is to split the calculation into two parts.
+		 One part uses Big Integers only and so avoids floating point overflow. 
+		 The other part uses floating point, but the maximum number size is limited. 
+		 Mathematically this method is sound, but in practise it is less accurate. */
 	{
-		BigInteger base=1;   // new base for logs
-		base <<= 128;        // base = 2^128
+		BigInteger base=1;   
+		base <<= 128;        //  new base for logs = 2^128
 		double logb = logar / (std::log(2.0)*128);  // convert log to new base
-		double intpf;
-		double fracpf = modf(logb, &intpf);  // split into integer and fraction
+		double intpf;   // integer part of log
+		double fracpf = modf(logb, &intpf);  // split into log integer and fraction
 		/* the desired result = base^(intpf+fracpf)
 		         = base^intpf * base^fracpf */
-		int intp = (int)round(intpf);    // exact conversion
+		int intp = (int)round(intpf);         // exact conversion
 		BigIntPowerIntExp(base, intp, bigInt);  /* bigInt = base^intpf*/
 
 		/* by using a large base we make frac large, so that conversion to integer 
@@ -933,6 +936,35 @@ void BigtoZ(Znum &numberZ, const BigInteger &number) {
 		numberZ = -numberZ;
 }
 
+/* convert num to long long. If num > max, truncate it (right shift)
+and exp is > 0 and represents the number of discarded bits. */
+long long BigToLL(const BigInteger &num, int &exp) {
+	BigInteger temp = num;
+	if (num.nbrLimbs == 1) {
+		exp = 0;
+		if (num.sign == SIGN_POSITIVE)
+			return num.limbs[0].x;
+		else
+			return -num.limbs[0].x;
+	}
+	exp = num.bitLength() - 63;                // number of bits to truncate
+	if (exp < 0)
+		exp = 0;
+	temp >>= exp;
+	long long result = temp.lldata();
+	return result;
+}
+
+
+/* inverse of BigToLL. set num = LL *2^exp */
+void LLToBig(BigInteger &num, long long LL, int exp) {
+	num = LL;
+	if (exp == 0) { 
+		return;
+	}
+	assert(exp > 0);
+	num <<= exp;
+}
 
 /* shift first left by the number of bits specified in shiftCtr. A -ve value
 in shiftCtr causes a right shift.
@@ -1036,12 +1068,6 @@ void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
 	return;
 }
 
-// This routine uses Newton iteration: if x is an approximate inverse square root of N,
-// a better approximation is: x(3-Nxx)/2. After the inverse square root is computed,
-// the square root is found just by multiplying by N.
-// The argument is multiplied by a power of 4 so the most significant limb is
-// between LIMB_RANGE/4 and LIMB_RANGE - 1 and there is an even number of limbs.
-// At the end of the calculation, the result is divided by the power of 2.
 
 // All computations are done in little-endian notation.
 // Find power of 2 that divides the number.

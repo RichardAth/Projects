@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cstdio>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"
 
@@ -88,7 +90,7 @@ bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
 	std::string buffer;
 	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 
-	/* open earlier Msive log file, if any exists. Replace it with an empty file */
+	/* open earlier Msieve log file, if any exists. Replace it with an empty file */
 	rv = fopen_s(&log, logPath.data(), "w");      
 	if (rv != 0) {
 		if (errno != 0)

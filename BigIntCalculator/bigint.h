@@ -152,9 +152,9 @@ public:
 	friend bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
 	friend bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
 	//friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
-	//friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
+	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
-	//friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
+	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
 	//friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
@@ -166,12 +166,12 @@ public:
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
+	friend long long BigToLL(const BigInteger &num, int &exp);
+	friend void LLToBig(BigInteger &num, long long LL, int exp);
 	//friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumLen);
 	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
-	friend double logBigNbr(const BigInteger &BigInt);
-	friend void expBigInt(BigInteger &bigInt, double logar);
 
 	BigInteger  operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);

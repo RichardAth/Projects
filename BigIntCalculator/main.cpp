@@ -1,10 +1,13 @@
 ﻿#include <iostream>
+#include <cstdio>
 #include <string>
 #include <vector>
 #include <cctype>
+#include <stdexcept>
 #include <climits>
 #include <locale>
-#include <assert.h>
+#include <cassert>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"
 
@@ -25,7 +28,7 @@ bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
 HANDLE hConsole;
 
-/* list of operators, arranged in order of priority. Order is not exaxtly the
+/* list of operators, arranged in order of priority. Order is not exactly the
 same as C or Python. */
 enum class opCode {
 	oper_power       =  0, 
@@ -161,6 +164,7 @@ static char* getHex(Znum Bi_Nbr) {
 	return hexbuffer;  // hexbuffer must be a static variable
 }
 
+/* output value of Nbr as ascii text to stdout */
 static void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex) {
 	std::string nbrOutput = "";
 	char* buffer = NULL;
@@ -2133,12 +2137,12 @@ static void doTests3(void) {
 			std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
 		/* check BigtoLL function */
-		//int exp;
-		//a1 = BigToLL(aBI, exp);  // a1 * 2^exp = aBI
-		//mpz_div_2exp(ZT(b1), ZT(a), exp);   // b1 a/(2^exp)
-		//if (b1 != a1)
-		//	gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", a, a1, exp);
-		//assert(b1 == a1);
+		int exp;
+		a1 = BigToLL(aBI, exp);  // a1 * 2^exp = aBI
+		mpz_div_2exp(ZT(b1), ZT(a), exp);   // b1 = a/(2^exp)
+		if (b1 != a1)
+			gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", a, a1, exp);
+		assert(b1 == a1);
 
 		pBI = aBI << 4;      // check left shift
 		BigtoZ(p, pBI);      // p = pBI = aBI << 4
@@ -2220,21 +2224,29 @@ static void doTests3(void) {
 	}*/
 
 	p = 10;
-	double errorv;
+
 	Znum error, relerror;
-	for (int i = 1; i < 65;  i++, p *= 1000000 ) {
+	for (int i = 1; i < 99;  i++, p *= 1000000 ) {
 		if (!ZtoBig(pBI, p))
 			break;            // p too large to convert so stop
-		double pdb = pBI.log();
+		double pdb = pBI.log();  // get natural log of p
 		/*if (pdb > 708)
 			break;*/
-		expBigInt(amBI, pdb);
-		BigtoZ(am, amBI);
-		error = p - am;
-		errorv = (double)(error) / (double)p ;
-		relerror = (10000000000000000LL * error)/p;
-		std::cout << " pdb = " << pdb/std::log(10) 
-			<< " error = " << errorv << " relerror = " << relerror <<'\n';
+		expBigInt(amBI, pdb);   // convert back from log
+		BigtoZ(am, amBI);       // convert back tp Znum
+		error = p - am;         // get error
+		if (error != 0) {
+			double e1, e2, relErrf;
+			long e1l, e2l;
+			e1 = mpz_get_d_2exp(&e1l, ZT(p));
+			e2 = mpz_get_d_2exp(&e2l, ZT(am));
+			assert(e1l == e2l);   // check power of 2 exponent is correct
+			relErrf = abs(e1 - e2) / e1;   /* should be less than 10E-14 */
+			relerror = (10000000000000000LL * error) / p;
+			/* print log base 10 of p, then error ratio */
+			std::cout << " pdb = " << pdb / std::log(10)
+				<< " error = " << relErrf <<  " relerror = " << relerror << '\n';
+		}
 	}
 
 	/* check division with large numbers */

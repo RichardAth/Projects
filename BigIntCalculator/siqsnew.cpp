@@ -36,6 +36,7 @@ the results would look completely different.
 #include <cstdint>
 #include <cassert>
 #include <vector>
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "bignbr.h"
 #include "factor.h"
