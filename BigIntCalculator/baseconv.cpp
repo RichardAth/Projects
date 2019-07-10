@@ -14,7 +14,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #define _CRT_SECURE_NO_WARNINGS
-#include <string.h>
+#include <string>
+#include <iostream>
 #include "bignbr.h"
 #include "bigint.h"
 

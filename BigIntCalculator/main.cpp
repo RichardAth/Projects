@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cctype>
+#include <ctime>
 #include <stdexcept>
 #include <climits>
 #include <locale>
@@ -18,7 +19,10 @@
 extern Znum zR, zR2, zNI, zN;
 #endif
 
+/* external function declaration */
 void msieveParam(std::string expupper);
+void biperm(int n, mpz_t &result);   // declaration for external function
+
 
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
@@ -118,8 +122,6 @@ long long MulPrToLong(const Znum &x);
 static bool getBit(const unsigned long long int x, bool array[]);
 void generatePrimes(unsigned long long int max_val);
 
-void biperm(int n, mpz_t &result);   // declaration for external function
- 
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
@@ -2347,7 +2349,7 @@ extern unsigned __int64 R2(const unsigned __int64 n);
 //}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
-this test will take about 2.5 hours, but ony about 15 mins using improved msieve! 
+this test will take about 2.5 hours, but ony about 20 mins using improved msieve! 
 */
 static void doTests4(void) {
 	int px = 0;

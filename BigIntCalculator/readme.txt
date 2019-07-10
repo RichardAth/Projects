@@ -62,10 +62,10 @@ FACTORIZATION
 A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
 factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
 is usually significantly faster, provided that the -i option is used with Msieve.
-The -i option causes greater use of ECM within Msieve. The default is to use ECM
-only for factors < 15 digits. In addition I modified the function choose_max_digits
-within the source file gmp_ecm.c to increase the use of ECM still further. The code 
-change is:
+The -i option causes greater use of ECM within Msieve. The default in mseive is 
+to use ECM only for factors < 15 digits. In addition I modified the function 
+choose_max_digitswithin the source file gmp_ecm.c to increase the use of ECM 
+still further. The code change is:
 
 	if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
 		if (bits > 200) {           // 200 bits = about 60 digits
@@ -127,10 +127,10 @@ GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progr
 messages it produces have been modified to work with a console window instead of a 
 Web Browser. 
 
-A couple of checks for overflows were added. If an error is detected 
-an exception is thrown, an error message is output, and the program continues 
-without factorising the number. Realistically any number small enough to be 
-factorised in a reasonable time will not cause an overflow.
+A couple of checks for overflows were added. If an error is detected an exception 
+is thrown, an error message is output, and the program continues without 
+factorising the number. Realistically any number small enough to be factorised in
+a reasonable time will not cause an overflow.
 
 Profiling using Visual Studio suggests that changing from DAs BigIntegers to 
 GMP/MPIR would not improve performance. This would be a huge task.
@@ -159,7 +159,7 @@ took 291 seconds (227 seconds using Msieve)
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
                  about 30 mins vs 1 hour using DA's code. With tweaks to Msieve 
 				 so that it makes more use of elliptic curve factorisation this
-				 was reduced to about 4 minutes.
+				 was reduced to about 7 minutes.
  Disadvantage:   Build is tricky & and I couldn't get prebuilt version to work
                  Calculator is basic, and result isn't sent to console window.
 				 default is that input & output are from/to files, not console window.

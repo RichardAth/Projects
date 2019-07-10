@@ -132,6 +132,7 @@ public:
 	BigInteger(long long i = 0) {
 		*this = i;
 	}
+
 	friend BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2);
 	friend BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend);
 	friend static void BigIntNegate(BigInteger &pDest);

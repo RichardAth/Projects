@@ -31,7 +31,8 @@ the results would look completely different.
 #define  _CRT_SECURE_NO_DEPRECATE
 
 #include <iostream>
-#include <string>
+#include <cstdio>
+#include <cstring>
 #include <cmath>
 #include <cstdint>
 #include <cassert>

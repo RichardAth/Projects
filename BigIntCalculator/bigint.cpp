@@ -1128,9 +1128,10 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 	nbrLimbs = nbrLimbsDividend - nbrLimbsDivisor;
 	if (nbrLimbs < 0)
 	{   // Absolute value of dividend is less than absolute value of divisor.
-		Quotient.limbs[0].x = 0;
+		Quotient = 0;
+		/*Quotient.limbs[0].x = 0;
 		Quotient.nbrLimbs = 1;
-		Quotient.sign = SIGN_POSITIVE;
+		Quotient.sign = SIGN_POSITIVE;*/
 		return Quotient;
 	}
 	if (nbrLimbs == 0)
@@ -1142,9 +1143,10 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 		}
 		if (Dividend.limbs[nbrLimbs].x < Divisor.limbs[nbrLimbs].x)
 		{   // Dividend is less than divisor, so quotient is zero.
-			Quotient.limbs[0].x = 0;
+			Quotient = 0;
+			/*Quotient.limbs[0].x = 0;
 			Quotient.nbrLimbs = 1;
-			Quotient.sign = SIGN_POSITIVE;
+			Quotient.sign = SIGN_POSITIVE;*/
 			return Quotient;
 		}
 	}

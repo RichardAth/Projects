@@ -17,9 +17,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include "bignbr.h"
-//#include <stdio.h>
 #include <cmath>
 #include <cstdint>
+#include <cassert>
+#include <stdexcept>
 
 #define KARATSUBA_CUTOFF 16   /* n.b. cannot increase this unless modifying 
 						ClassicalMult as well */
