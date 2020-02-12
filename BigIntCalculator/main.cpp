@@ -1673,7 +1673,7 @@ static void textError(retCode rc)
 
 /* convert s to UPPER CASE in d. s and d must not be the same i.e. will
 not do in-place conversion */
-void strToUpper(const std::string &s, std::string &d) {
+static void strToUpper(const std::string &s, std::string &d) {
 	d.clear();
 	d.reserve(s.size());  // may be more efficient if s is very large
 	for (auto c : s) {
@@ -1682,13 +1682,36 @@ void strToUpper(const std::string &s, std::string &d) {
 }
 
 /* remove spaces, tabs, etc  from msg */
-void removeBlanks(std::string &msg) {
+static void removeBlanks(std::string &msg) {
 	for (size_t ix = 0; ix < msg.size(); ix++) {
 		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {     // look for spaces, tabs, etc
 			msg.erase(ix, 1);      // remove space character
 			ix--;  // adjust index to take account of removed blank
 		}
 	}
+}
+
+static void printCounts(void) {
+	std::cout << "found by";
+	if (counters.tdiv > 0)
+		std::cout << " trial division: " << counters.tdiv;
+	if (counters.prho > 0)
+		std::cout << " Pollard-rho: " << counters.prho;
+	if (counters.pm1 > 0)
+		std::cout << " power +/- 1: " << counters.pm1;
+	if (counters.ecm > 0)
+		std::cout << " elliptic curve: " << counters.ecm;
+	if (counters.siqs > 0)
+		std::cout << " SIQS: " << counters.siqs;
+	if (counters.msieve > 0)
+		std::cout << " Msieve: " << counters.msieve;
+	if (counters.carm > 0)
+		std::cout << " Carmichael: " << counters.carm;
+	if (counters.leh > 0)
+		std::cout << " Lehman: " << counters.leh;
+	if (counters.power > 0)
+		std::cout << " Perfect Power: " << counters.power;
+	std::cout << '\n';
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
@@ -1759,25 +1782,8 @@ static void doFactors(const Znum &Result, bool test) {
 			c++;  // change a to b, b to c, etc
 		}
 		std::cout << "\n";
-		if (factorlist.size() > 0) {
-			std::cout << "found by";
-			if (counters.tdiv > 0)
-				std::cout << " trial division: " << counters.tdiv;
-			if (counters.prho > 0)
-				std::cout << " Pollard-rho: " << counters.prho;
-			if (counters.pm1 > 0)
-				std::cout << " power +/- 1: " << counters.pm1;
-			if (counters.ecm > 0)
-				std::cout << " elliptic curve: " << counters.ecm;
-			if (counters.siqs > 0)
-				std::cout << " SIQS: " << counters.siqs;
-			if (counters.msieve > 0)
-				std::cout << " Msieve: " << counters.msieve;
-			if (counters.carm > 0)
-				std::cout << " Carmichael: " << counters.carm;
-			if (counters.leh > 0)
-				std::cout << " Lehman: " << counters.leh;
-			std::cout << '\n';
+		if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
+			printCounts();
 		}
 		if (test) {
 			Znum result = 1;
@@ -1835,24 +1841,9 @@ static bool factortest(const Znum x3) {
 			totalFactors += f.exponent;
 		}
 		std::cout << "found " << factorlist.size() << " unique factors, total "
-			<< totalFactors << " factors\nfound by";
-		if (counters.tdiv > 0)
-			std::cout << " trial division: " << counters.tdiv;
-		if (counters.prho > 0)
-			std::cout << " Pollard-rho: " << counters.prho;
-		if (counters.pm1 > 0)
-			std::cout << " power +/- 1: " << counters.pm1;
-		if (counters.ecm > 0)
-			std::cout << " elliptic curve: " << counters.ecm;
-		if (counters.siqs > 0)
-			std::cout << " SIQS: " << counters.siqs;
-		if (counters.msieve > 0)
-			std::cout << " Msieve: " << counters.msieve;
-		if (counters.carm > 0)
-			std::cout << " Carmichael: " << counters.carm;
-		if (counters.leh > 0)
-			std::cout << " Lehman: " << counters.leh;
-		std::cout << '\n';
+			<< totalFactors << " factors\n";
+		printCounts();
+
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";

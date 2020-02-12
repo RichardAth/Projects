@@ -60,6 +60,7 @@ struct ctrs{
 	int msieve;        // Msieve
 	int carm;          // Carmichael
 	int leh;           // Lehman:
+	int power;		   // perfect power
 };
 extern struct ctrs counters;
 

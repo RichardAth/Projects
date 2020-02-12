@@ -732,6 +732,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		if (expon > 1) {    /* if power is a perfect power*/
 			Factors[i].Factor = Zpower;
 			Factors[i].exponent *= expon;
+			counters.power++;
 		}
 		
 		int result = PrimalityTest(Zpower, testP- 1);
