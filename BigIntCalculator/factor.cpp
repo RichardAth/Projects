@@ -672,8 +672,15 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	int upperBound;         
-	long long testP,  MaxP= 393'203;  // use 1st 33333 primes
+	long long testP;  
+	//long long MaxP = 393'203;  // use 1st  33333 primes
+	/* larger value seems to give about 1% improvement in performance,
+	but costs nothing. */
+	long long MaxP = 2'097'143;  // use 1st 155611 primes 
 	// MaxP must never exceed 2'097'152 to avoid overflow of PollardLimit
+
+	// If toFactor is < PollardLimit it will be factorised using trial division
+	// and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long PollardLimit = MaxP*MaxP*MaxP;
 	bool restart = false;  // set true if trial division has to restart
 
@@ -682,7 +689,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	Factors[0].exponent = 1;
 	Factors[0].Factor = toFactor;
 	Factors[0].upperBound = 0;  // assume it's not prime
-	if ((long long)primeListMax <MaxP) {  // get first 33333 primes
+	if ((long long)primeListMax <MaxP) {  // get primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
 	

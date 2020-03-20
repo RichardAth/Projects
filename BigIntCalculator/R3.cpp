@@ -3,6 +3,8 @@
 #include <mpir.h>
 #include <time.h>
 #include<assert.h>
+#include <random>
+#include <cstdlib>
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
 #ifdef _M_AMD64
 #ifndef _AMD64_
@@ -42,10 +44,13 @@ struct factorsS {
 	__int64 factorlist[19][2]; // prime factor, exponent
 };
 
+/* references to external variables */
 extern bool *primeFlags;
 extern unsigned long long int primeListMax;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
+
+/* forward declarations */
 unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 void generatePrimes(unsigned long long int max_val);
 
@@ -151,45 +156,8 @@ bool isPrime2(unsigned __int64 num) {
 	if (num == 2) return true;
 	if ((num & 1) == 0) return false; // even numbers other than 2 are not prime
 	return !primeFlags[num/2];
-
-	//unsigned __int64 index;
-	//int bit;
-
-	////index = num / 64;
-	//index = num >> 6;
-	////bit = (num % 64) / 2;
-	//bit = (num & 0x3f) >> 1;   // get last 6 bits, then divide by 2
-	//return (((primeFlags[index] >> bit) & 1) == 0);
 }
 
-/* factorise number where we know that it only has 2 prime factors.
-see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm */
-//static void PollardFactor(const unsigned long long num, long long &factor) {
-//	long long x_fixed = 2, cycle_size = 2, x = 2;
-//	factor = 1;
-//	while (factor == 1) {
-//		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
-//			/* even if x*x overflows, the function as a whole still works OK */
-//			x = (x*x + 1) % num;
-//			factor = gcd(abs(x - x_fixed), num);
-//		}
-//		if (factor == num) {
-//			/* there is a small possibility that PollardFactor won't work,
-//			even when factor is not prime */
-//			std::cout << "Pollard factorisation failed for num = " << num
-//				<< " cycle_size = " << cycle_size << " x = " << x << " !!\n";
-//			factor = 1;
-//			return;   // factorisation failed!! 	
-//		}
-//		cycle_size *= 2;
-//		x_fixed = x;
-//	}
-//#ifdef _DEBUG
-//	std::cout << "Pollard Factor. num = " << num << " factor = " << factor
-//		<< " cycle_size = " << cycle_size << " x = " << x << '\n';
-//#endif
-//	return;
-//}
 
 /*
 * calculates (a * b) % c taking into account that a * b might overflow
@@ -367,7 +335,9 @@ https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ */
 long long int PollardRho(long long int n)
 {
 	/* initialize random seed */
-	srand((unsigned int)time(NULL));
+	std::random_device rd;   // non-deterministic generator
+	std::mt19937_64 gen(rd());  // to seed mersenne twister.
+	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
 
 	/* no prime divisor for 1 */
 	if (n == 1) return n;
@@ -376,13 +346,16 @@ long long int PollardRho(long long int n)
 	if (n % 2 == 0) return 2;
 
 	/* we will pick from the range [2, N) */
-	long long int x = (rand() % (n - 2)) + 2;
-	long long int y = x;
+	long long int x, y;
+	x = dist(gen);  // x is in range 1 to max
+	x = x % (n - 2) + 2;  // x is in range 2 to n-1
+	y = x;
 
 	/* the constant in f(x).
 	 * Algorithm can be re-run with a different c
 	 * if it throws failure for a composite. */
-	long long int c = (rand() % (n - 1)) + 1;
+	long long int c = dist(gen);  // c is in range 1 to max
+	c = c % (n - 1) + 1;  // c is in range 1 to n-1
 
 	/* Initialize candidate divisor (or result) */
 	long long int d = 1;
@@ -537,7 +510,7 @@ squares x^2 and y^2.
 see http://mathworld.wolfram.com/SumofSquaresFunction.html,
 also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
->= sqrt(n).
+>= cbrt(n).
 example: R2(4) = 4; 2^2+0, 0+2^2, (-2)^2+0, 0+(-2)^2 */
 unsigned __int64 R2(const unsigned __int64 n) {
 	if (n == 0)
@@ -585,7 +558,7 @@ unsigned __int64 R3(__int64 n) {
 	while (n % 4 == 0)
 		n /= 4;         // remove even factors. note that R3(4n) =R3(n)
 
-	generatePrimes(1000003);  // this is more than enough primes to factorise any 64-bit number
+	generatePrimes(2097143);  // this is more than enough primes to factorise any 63-bit number
 	squareFree(n, sq, sqf); /* make n square-free, factors removed are in sqf */
 
 	/* calculate R3(n). For large n this method is not very efficient, but it is simple */
