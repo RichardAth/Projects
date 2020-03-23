@@ -2087,14 +2087,14 @@ inline _uint128 &operator^=(_uint128 &lft, unsigned short rhs) {
 	return lft ^= (_uint128)rhs;
 }
 
-_int128   _strtoi128(const char    *str, char    **end, int radix);
+_int128   _strtoi128 (const char    *str, char    **end, int radix);
 _uint128  _strtoui128(const char    *str, char    **end, int radix);
-_int128   _wcstoi128(const wchar_t *str, wchar_t **end, int radix);
+_int128   _wcstoi128 (const wchar_t *str, wchar_t **end, int radix);
 _uint128  _wcstoui128(const wchar_t *str, wchar_t **end, int radix);
 
-char     *_i128toa(_int128   value, char    *str, int radix);
+char     *_i128toa (_int128   value, char    *str, int radix);
 char     *_ui128toa(_uint128  value, char    *str, int radix);
-wchar_t  *_i128tow(_int128   value, wchar_t *str, int radix);
+wchar_t  *_i128tow (_int128   value, wchar_t *str, int radix);
 wchar_t  *_ui128tow(_uint128  value, wchar_t *str, int radix);
 struct fc {
 	bool minus = false;

@@ -483,7 +483,8 @@ blank (' ') 	Use a blank to prefix the output    No blank appears.
 /* to be completed. Invalid format string may cause abort
 Process format string of form "%[flags][width][.precision]type" 
  */
-static void getFormat(const char FormatStr[], fc &flags, int &precision, int &width, int &radix) {
+static void getFormat(const char FormatStr[], fc &flags, int &precision, 
+	int &width, int &radix) {
 	int ix = 0;
 	auto len = strnlen_s(FormatStr, 50);
 	assert(len < 50);  // assert fails if string is not null-terminated
@@ -549,7 +550,8 @@ or unsigned integers is executed based on the parameter type.
 The value returned is the length of the string placed in buffer,
 or -1 if an error occurred.
 */
-int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int128  &n){
+int sPrintf128(char *buffer, const int buflen, const char* FormatStr, 
+	const _int128  &n){
 	std::string sbuffer;
 	fc flags = { false, false, false, false, false };
 	int precision=0, width=0, radix=10;
@@ -632,11 +634,12 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _int
 
 	auto rv = strcpy_s(buffer, buflen, sbuffer.c_str());
 	if (rv == 0)   // did copy work OK?
-		return  (int)sbuffer.length();  // yes, return length
+		return  (int)strlen(sbuffer.c_str());  // yes, return length
 	else return -1;                     // no, return error
 }
 
-int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _uint128  &n) {
+int sPrintf128(char *buffer, const int buflen, const char* FormatStr, 
+	const _uint128  &n) {
 
 	std::string sbuffer;
 	fc flags;
@@ -712,9 +715,9 @@ int sPrintf128(char *buffer, const int buflen, const char* FormatStr, const _uin
 	}
 
 	auto rv = strcpy_s(buffer, buflen, sbuffer.c_str());
-	if (rv == 0)
-		return  (int)sbuffer.length();
-	else return -1;
+	if (rv == 0)             // did copy work OK?
+		return  (int)strlen(sbuffer.c_str());  // yes, return length
+	else return -1;           // no, return error
 }
 
 
@@ -970,8 +973,8 @@ _int128 extendedGcd(const _int128 &a, const _int128 &b, _int128 &x, _int128 &y) 
 }
 #undef PA
 
-/* the modular multiplicative inverse of an integer a modulo m is an integer x such that
-(a* x) ≡ 1 (mod m). Given a and m this function calculates x.
+/* the modular multiplicative inverse of an integer a modulo m is an integer x 
+such that (a* x) ≡ 1 (mod m). Given a and m this function calculates x.
 N.B. a and m must be mutually prime i.e.no common factors i.e. gcd(a, m) is 1.
 If they are, the function returns the inverse, otherwise it throws an exception.
 */

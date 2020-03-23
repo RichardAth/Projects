@@ -57,6 +57,8 @@ int    x.popcnt()     // number of bits in x set to 1
 double x.toDouble()   // convert x to double (can also be invoked by casting to double:
 						double x = i.toDouble(); is equivalent to
 						double x = (double)i;  )
+						note: doubleTo128 converts a double to a 128 bit integer
+						but is not a member function
 
 File Int128Str.cpp contains the following functions:
 
