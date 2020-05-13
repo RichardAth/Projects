@@ -20,7 +20,8 @@ extern Znum zR, zR2, zNI, zN;
 #endif
 
 /* external function declaration */
-void msieveParam(std::string expupper);
+void msieveParam(std::string expupper);   /*process Msieve commands */
+void yafuParam(std::string command);      /*process YAFU commands */
 void biperm(int n, mpz_t &result);   // declaration for external function
 
 
@@ -30,6 +31,12 @@ static int stackIndex=0;
 static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
+#ifdef _DEBUG
+int verbose = 1;
+#else
+int verbose = 0;
+#endif
+
 HANDLE hConsole;
 
 /* list of operators, arranged in order of priority. Order is not exactly the
@@ -1705,6 +1712,8 @@ static void printCounts(void) {
 		std::cout << " SIQS: " << counters.siqs;
 	if (counters.msieve > 0)
 		std::cout << " Msieve: " << counters.msieve;
+	if (counters.yafu > 0)
+		std::cout << " YAFU:   " << counters.yafu;
 	if (counters.carm > 0)
 		std::cout << " Carmichael: " << counters.carm;
 	if (counters.leh > 0)
@@ -1807,8 +1816,9 @@ static void doFactors(const Znum &Result, bool test) {
 		std::cout << " cannot be factorised\n";
 }
 
-/* perform some simple tests. Returns true if x3 is prime */
-static bool factortest(const Znum x3) {
+/* perform some simple tests. Returns true if x3 is prime 
+method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
+static bool factortest(const Znum x3, const int method = 0) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -1819,8 +1829,16 @@ static bool factortest(const Znum x3) {
 	std::cout << "\nTest: factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
-	factorise(x3, factorlist, Quad);  // get factors
-
+	if (method == 0) {
+		factorise(x3, factorlist, Quad);  // get factors
+	}
+	if (method != 0) {
+		factorlist.resize(1);
+		factorlist[0].exponent = 1;
+		factorlist[0].upperBound = 0;
+		factorlist[0].Factor = x3;
+		callYafu(x3, factorlist);
+	}
 	result = 1;
 	for (size_t i = 0; i < factorlist.size(); i++)
 		for (int j = 1; j <= factorlist[i].exponent; j++)
@@ -1829,11 +1847,13 @@ static bool factortest(const Znum x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
 		Beep(750, 1000);
 	}
-	/* check that sum of squares is correct */
-	result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-	if (result != x3) {
-		std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
-		Beep(750, 1000);
+	if (method == 0) {
+		/* check that sum of squares is correct */
+		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+		if (result != x3) {
+			std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
+			Beep(750, 1000);
+		}
 	}
 	if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
 		/* x3 is not prime */
@@ -1842,7 +1862,8 @@ static bool factortest(const Znum x3) {
 		}
 		std::cout << "found " << factorlist.size() << " unique factors, total "
 			<< totalFactors << " factors\n";
-		printCounts();
+		if (method == 0)
+			printCounts();
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
@@ -1947,7 +1968,7 @@ static void doTests(void) {
 		factortest(x3);
 	}
 
-	/* tests below show a problem with pollard-rho for certain numbers */
+	/* tests below have shown a problem with pollard-rho for certain numbers */
 	factortest(99999999973789); // = 6478429 * 15435841
 	factortest(183038861417);   // =  408229 *   448373
 	factortest(183475587821);   // =  409477 *   448073
@@ -2361,6 +2382,28 @@ static void doTests4(void) {
 	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 
+static void doTests5(void) {
+	Znum num = 49728103; // 7001 * 7103
+	factortest(num, 1);
+
+	// factorise 127 digit number
+	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", num);
+	factortest(num, 1);
+
+	//factorise 57 digit number
+	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num);
+	factortest(num, 1);
+
+	//factorise 80 digit number
+	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num);
+	factortest(num, 1);
+
+	//factorise 85 digit number
+	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num);
+	factortest(num, 1);
+
+	return;
+}
 
 int main(int argc, char *argv[]) {
 	std::string expr, expupper;
@@ -2519,8 +2562,24 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				doTests4();         // do R3 tests 
 				continue;
 			}
+			if (expupper == "TEST5") {
+				doTests5();         // do YAFU tests 
+				continue;
+			}
 			if (expupper.substr(0, 6) == "MSIEVE") {
 				msieveParam(expupper);
+				continue;
+			}
+
+			if (expupper.substr(0, 4) == "YAFU") {
+				yafuParam(expupper);
+				continue;
+			}
+			if (expupper[0] == 'V') {
+				/* will not throw an exception if input has fat finger syndrome.
+				If no valid digits found, sets verbose to 0 */
+				verbose = atoi(expupper.substr(1).data());
+				std::cout << "verbose set to " << verbose << '\n';
 				continue;
 			}
 

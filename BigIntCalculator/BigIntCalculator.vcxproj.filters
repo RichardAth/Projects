@@ -60,6 +60,9 @@
     <ClCompile Include="msieve.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="yafu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">

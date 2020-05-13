@@ -163,6 +163,7 @@
     <ClCompile Include="siqsnew.cpp" />
     <ClCompile Include="msieve.cpp" />
     <ClCompile Include="sqroot.cpp" />
+    <ClCompile Include="yafu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bigint.h" />

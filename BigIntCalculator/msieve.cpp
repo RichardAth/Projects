@@ -108,15 +108,15 @@ bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factor
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
-std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
+static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
 "/msieve-code-r1030-trunk/bin/x64/Release/msieve.exe ";
 #else
-std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
+static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
 "/msieve-code-r1030-trunk/bin/x64/Debug/msieve.exe ";
 #endif
-std::string logPath = "C:\\users\\admin99\\msieve.log ";
-std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
-std::string redirectOP = " >\\.\\pipe\\StdOutPipe 2>\\.\\pipe\\StdErrPipe ";
+static std::string logPath = "C:\\users\\admin99\\msieve.log ";
+static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
+static std::string redirectOP = " >\\.\\pipe\\StdOutPipe 2>\\.\\pipe\\StdErrPipe ";
 
 /* process MSIEVE commands */
 void msieveParam(std::string command) {
@@ -124,8 +124,10 @@ void msieveParam(std::string command) {
 	while (param[0] == ' ')
 		param.erase(0, 1);              /* remove leading space(s) */
 
-	if (param == "ON")
+	if (param == "ON") {
 		msieve = true;
+		yafu = false;
+	}
 	else if (param == "OFF")
 		msieve = false;
 	else if (param == "PATH") {
@@ -214,11 +216,11 @@ bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
 	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
-#ifdef _DEBUG
-	static char time[10];
-	_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
-	std::cout << time << " command is: \n" << command << '\n';  // temp
-#endif
+	if (verbose > 0) {
+		static char time[10];
+		_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
+		std::cout << time << " command is: \n" << command << '\n';  // temp
+	}
 
 	/* open earlier Msieve log file, if any exists. Replace it with an empty file */
 	rv = fopen_s(&log, logPath.data(), "w");

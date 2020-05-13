@@ -129,7 +129,7 @@ static int Moebius(int N) {
 	}
 	return moebius;
 }
-#ifdef _DEBUG
+
 static void printfactors(const std::vector <zFactors> &Factors) {
 	for (int i = 0; i < Factors.size(); i++) {
 		std::cout << Factors[i].Factor << "^" << Factors[i].exponent << " ("
@@ -137,7 +137,7 @@ static void printfactors(const std::vector <zFactors> &Factors) {
 	}
 	std::cout << '\n';
 }
-#endif
+
 
 static void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
@@ -386,10 +386,10 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 		if (!swap)
 			break;  // exit loop early if we know all factors are already in ascending order
 	}
-#ifdef _DEBUG
-	std::cout << "result after sort" << '\n';
-	printfactors(Factors);
-#endif
+	if (verbose > 0) {
+		std::cout << "result after sort" << '\n';
+		printfactors(Factors);
+	}
 }
 
 /* Insert new factor found into factor array. */
@@ -425,10 +425,10 @@ static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long di
 		Factors[ix].upperBound = -1;
 	}
 	SortFactors(Factors);
-#ifdef _DEBUG
-	/*std::cout << "result after adding factor " << divisor << '\n';
-	printfactors(Factors);*/
-#endif
+	if (verbose > 0) {
+		/*std::cout << "result after adding factor " << divisor << '\n';
+		printfactors(Factors);*/
+	}
 }
 
 /* Insert new factor found into factor array. Every current factor is checked 
@@ -439,10 +439,10 @@ void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 	auto ipoint = lastfactor;
 	zFactors temp;
 	Znum g;
-#ifdef _DEBUG
-	/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
-	printfactors(Factors);*/
-#endif
+	if (verbose > 0) {
+		/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
+		printfactors(Factors);*/
+	}
 	for (int i = 0; i < lastfactor; i++) {
 		if (Factors[i].Factor == divisor)
 			break;  // factor already found
@@ -462,10 +462,10 @@ void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 			lastfactor++;
 		}
 	}
-#ifdef _DEBUG
-	//std::cout << "result before sort" << '\n';
-	//printfactors(Factors);
-#endif
+	if (verbose > 0) {
+		//std::cout << "result before sort" << '\n';
+		//printfactors(Factors);
+	}
 	SortFactors(Factors);
 }
 
@@ -611,10 +611,10 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 		cycle_size *= 2;
 		x_fixed = x;
 	}
-#ifdef _DEBUG
-	std::cout << "Pollard Factor. num = " << num << " factor = " << factor 
-		<< " cycle_size = " << cycle_size << " x = " << x <<  '\n';
-#endif
+	if (verbose > 0) {
+		std::cout << "Pollard Factor. num = " << num << " factor = " << factor
+			<< " cycle_size = " << cycle_size << " x = " << x << '\n';
+	}
 	return;
 }
 
@@ -649,11 +649,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
 		counters.pm1 = (int)Factors.size() - 1;  // number of factors just found, if any
-		if (Factors.size() > 1) {
-#ifdef _DEBUG
+		if (Factors.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
 			printfactors(Factors);
-#endif
 		}
 	}
 
@@ -688,10 +686,10 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				else {
 					/* as factor is not prime, and it has no factors < MaxP, it must have
 					just two prime factors. */
-#ifdef _DEBUG
-					std::cout << "factors before Pollard factorisation: ";
-					printfactors(Factors);
-#endif
+					if (verbose > 0) {
+						std::cout << "factors before Pollard factorisation: ";
+						printfactors(Factors);
+					}
 					//PollardFactor(MulPrToLong(Factors[i].Factor), f);
 					f = PollardRho(MulPrToLong(Factors[i].Factor));
 					if (f != 1) {
@@ -705,13 +703,13 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 		}
 	} while (restart);  // keep looping until no more factors found.
 
-#ifdef _DEBUG
-	std::cout << "End Trial division. " << Factors.size() - 1 << " factors found so far \n";
-	if (Factors.size() > 1) {
-		std::cout << "result after trial division ";
-		printfactors(Factors);
+	if (verbose > 0) {
+		std::cout << "End Trial division. " << Factors.size() - 1 << " factors found so far \n";
+		if (Factors.size() > 1) {
+			std::cout << "result after trial division ";
+			printfactors(Factors);
+		}
 	}
-#endif
 
 	/* Any small factors (up to 393,203) have now been found by trial division */
 	/* Check whether the residue is prime or prime power.
@@ -760,7 +758,7 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				continue;
 			}
 		}
-		if (!msieve) {
+		if (!msieve && !yafu) {
 			ElipCurvNo = 1;  // start with 1st curve
 			auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
 			if (!rv)
@@ -782,10 +780,10 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				LehmanZ(Zpower, k, Zfactor);
 				if (Zfactor > 1) {
 					counters.leh++;     // Factor found.
-#ifdef _DEBUG
-					std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
-						<< " factor = " << Zfactor << '\n';
-#endif
+					if (verbose > 0) {
+						std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
+							<< " factor = " << Zfactor << '\n';
+					}
 					insertBigFactor(Factors, Zfactor);
 					i = -1;   // success; restart loop at beginning to tidy up!	
 					break;
@@ -795,16 +793,26 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				continue;
 
 			size_t fsave = Factors.size();
-			auto rv = callMsieve(Zpower, Factors);
+			bool rv; 
+			/* msieve and yafu should never both be set. At this point one of them 
+			should be set. */
+			if (msieve)  
+				rv = callMsieve(Zpower, Factors);
+			else
+				rv = callYafu(Zpower, Factors);
 			if (rv) {
 				i = -1;   // success; restart loop at beginning to tidy up!
-				counters.msieve += (int)(Factors.size() - fsave); // record any increase in number of factors
+				// record any increase in number of factors
+				if (msieve)
+					counters.msieve += (int)(Factors.size() - fsave); 
+				else
+					counters.yafu += (int)(Factors.size() - fsave); 
 			}
 			else {
 				msieve = false;   // failed once, don't try again
-#ifdef _DEBUG
-				std::cout << "Msieve failed: turn on built-in ECM/SIQS \n";
-#endif
+				if (verbose > 0) {
+					std::cout << "Msieve failed: turn on built-in ECM/SIQS \n";
+				}
 				i--;
 			}
 		}

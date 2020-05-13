@@ -734,10 +734,10 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			LehmanZ(zN, k, Zfactor);
 			if (Zfactor > LIMB_RANGE) {
 				foundByLehman = true;     // Factor found.
-#ifdef _DEBUG
-				std::cout << "Lehman factor found. k = " << k << " N= " << zN 
-					<< " factor = " << Zfactor << '\n';
-#endif
+				if (verbose > 0) {
+					std::cout << "Lehman factor found. k = " << k << " N= " << zN
+						<< " factor = " << Zfactor << '\n';
+				}
 #ifdef log
 				gmp_fprintf(logfile, "Lehman factor found. k = %d  N=  %Zd factor = %Zd \n",
 					k, ZT(zN), ZT(Zfactor));

@@ -58,6 +58,7 @@ struct ctrs{
 	int ecm;           // elliptic curve
 	int siqs;          // SIQS
 	int msieve;        // Msieve
+	int yafu;          // YAFU
 	int carm;          // Carmichael
 	int leh;           // Lehman:
 	int power;		   // perfect power
@@ -68,7 +69,10 @@ extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 extern bool msieve;
+extern bool yafu;
+extern int verbose;
 bool callMsieve(Znum num, std::vector<zFactors>&Factors);
+bool callYafu(Znum num, std::vector<zFactors>&Factors);
 void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
 void generatePrimes(unsigned long long int max_val);
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
