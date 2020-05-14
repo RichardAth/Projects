@@ -32,6 +32,8 @@ GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progr
 messages it produces have been modified to work with a console window instead of a 
 Web Browser. 
 
+My attempt to speed up factorisation failed completely, so I took an entirely different approach.
+
 A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
 factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
 is usually significantly faster, provided that the -i option is used witm Msieve.
@@ -39,10 +41,7 @@ The -i option causes greater use of ECM within Msieve. The default is to use ECM
 only for factors < 15 digits. In addition I modified the function choose_max_digits
 within the source file gmp_ecm.c to increase the use of ECM still further.
 
-My attempt to speed up factorisation failed completely, so I took an entirely different approach.
-
-I have created an interface to Msieve, which is generally significantly faster than the original 
-ECM and SIQS. Use of Msieve is controlled by Msieve on/off commands. Note: msive must be installed
+Use of Msieve is controlled by Msieve on/off commands. Note: msive must be installed
 separately and the path to it must be correct.
 
 Also an interface to YAFU, which is generally faster than Msieve. Again YAFU must be installed separately
