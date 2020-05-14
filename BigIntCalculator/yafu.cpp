@@ -5,10 +5,12 @@
 #include <cstdio>
 #include "factor.h"
 
-static std::string Path = "C:/Users/admin99/Documents/Downloads_long_term_storage"
-"/yafu-1.34/";
+static std::string Path = "C:\\Users\\admin99\\Documents\\Downloads_long_term_storage"
+"\\yafu-1.34";
 static std::string yafuprog = "yafu-x64.exe ";
 static std::string logPath = "C:/users/admin99/factors.txt";
+//static std::string logPath = "factors.txt";
+std::string batfilename = "YafurunTemp.bat";
 bool yafu = false;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
 
 /*process YAFU commands */
@@ -40,6 +42,42 @@ void yafuParam(std::string command) {
 	/* to be completed */
 }
 
+void genfile(const std::string &numStr) {
+	FILE * batfile;
+	std::string buffer;
+
+	int rv = fopen_s(&batfile, batfilename.data(), "w");
+	if (rv != 0) {
+		if (errno != 0) {
+			perror("error opening batch file");
+			abort();
+		}
+	}
+
+	buffer = "pushd " + Path + '\n';  // change directory
+	rv = fputs(buffer.data(), batfile);
+	assert(rv >= 0);
+
+	buffer = yafuprog;
+	buffer += " factor(" + numStr + ")";
+	if (verbose > 0)
+		buffer += " -v";                    // set verbose mode for YAFU
+
+	buffer += " | wintee " + logPath + '\n';
+	if (verbose > 0) {
+		static char time[10];
+		_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
+		std::cout << time << " command is: \n" << buffer ;  
+	}
+	rv = fputs(buffer.data(), batfile);
+	assert(rv >= 0);
+
+	rv = fputs("popd \n", batfile);    // change directory back
+	assert(rv >= 0);
+
+	fclose(batfile);
+}
+
 bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 	int rv;
 	std::string command = Path + yafuprog;
@@ -54,29 +92,20 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 	numStr.resize(numdigits + 5);             // resize buffer
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
 	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
-	command += " factor(" + numStr + ")";      // append number to be factored to command line
+	genfile(numStr);
 
-	if (verbose > 0)
-		command += " -v";                    // set verbose mode for YAFU
-
-	command += " >" + logfile;       // redirect output to logfile
-
-	if (verbose > 0) {
-		static char time[10];
-		_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
-		std::cout << time << " command is: \n" << command << '\n';  // temp
-	}
+	//command += " factor(" + numStr + ")";      // append number to be factored to command line
 
 	/* open earlier YAFU log file, if any exists. Replace it with an empty file */
 	rv = fopen_s(&log, logfile.data(), "w");
 	if (rv != 0) {
 		if (errno != 0)
-			perror(NULL);
+			perror("error opening log file");
 	}
 	else
 		fclose(log);     // if log exists, erase its contents 
 
-	rv = system(command.data());             // start YAFU;
+	rv = system(batfilename.data());             // start YAFU;
 
 	/* get control back when YAFU has finished */
 	if (rv == -1) {
@@ -99,8 +128,6 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 		int i;
 		if (!std::getline(logStr, buffer))   // read 1 line into buffer
 			break;                   // exit loop when end of file reached 
-		if (verbose > 0)
-			std::cout << buffer << '\n';
 
 		if (buffer[0] == 'P') {      // ignore log entry unless it's a prime factor
 						 // note: some other log entries also have a 'p' in this position

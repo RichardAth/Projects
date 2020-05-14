@@ -386,6 +386,13 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 		if (!swap)
 			break;  // exit loop early if we know all factors are already in ascending order
 	}
+
+	/* for certain numbers it is possible that a spurious factor 1 is generated. 
+	In a way this is valid, but 1 is not considered a prime number so it is
+	removed */
+	if (Factors[0].Factor == 1) {
+		Factors.erase(Factors.begin());
+	}
 	if (verbose > 0) {
 		std::cout << "result after sort" << '\n';
 		printfactors(Factors);
@@ -810,8 +817,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 			}
 			else {
 				msieve = false;   // failed once, don't try again
+				yafu = false;
 				if (verbose > 0) {
-					std::cout << "Msieve failed: turn on built-in ECM/SIQS \n";
+					std::cout << "Msieve or YAFU failed: turn on built-in ECM/SIQS \n";
 				}
 				i--;
 			}

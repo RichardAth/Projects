@@ -107,15 +107,14 @@ void display_version(void) {
 	@param argc Count of paramenters contained within the argv parameter.
 	@param argv Pointer to character arrays containing the command line.
 
-	@returns 0 if the command line contains a valid option; non-zero if an invalid option is found.
+	@returns 0 if the command line contains only valid options; non-zero if an invalid option is found.
 
 	@note This function is *not* the equivelant of the *nix function getopt.
 	@note Even though this function returns non-zero to indicate that an
-			invalid command argument was given, a non-zero return value does not
-			nescesarily indicate that the function failed.
+		  invalid command argument was given, a non-zero return value does not
+		  nescesarily indicate that the function failed.
 */
-int get_opt(int argc, char *argv[])
-{
+int get_opt(int argc, char *argv[]) {
 	char **base_arg;
 	int i, result = 0, processed_parameter = FALSE;
 	char *p;
@@ -127,17 +126,15 @@ int get_opt(int argc, char *argv[])
 
 	for (i = 0; i < argc; i++)
 	{
-		p = base_arg[i];
-		switch (*p)
+		p = base_arg[i];  // copy pointer to parameter
+		switch (*p)      // switch on 1st character of parameter
 		{
 		default:
-			break;
+			break;      // parameter does not begin with - Ignore it for now.
 		case '-':
 			++p;
-			while (*p)
-			{
-				switch (*p)
-				{
+			while (*p) 	{
+				switch (*p) {
 				default:
 					result = 1;
 					break;
@@ -145,7 +142,7 @@ int get_opt(int argc, char *argv[])
 					append_files = TRUE;
 					processed_parameter = TRUE;
 					break;
-				//case 'fHandle':
+				//case 'i':
 				//	disable(); /* disable interrupts */
 				//	processed_parameter = TRUE;
 				//	break;
@@ -158,13 +155,15 @@ int get_opt(int argc, char *argv[])
 					if (!_stricmp(p, "version"))
 					{
 						display_version();
-						exit(0);
+						exit(0);    // note: in this case the function does not return; the program stops
 					}
 					else if (!_stricmp(p, "help"))
 					{
 						display_help();
 						exit(0);
 					}
+					else
+						result = 1; // -- is not followed by a valid parameter
 				}
 				p++;
 
@@ -182,14 +181,13 @@ int get_opt(int argc, char *argv[])
 	@param argc Number of arguments contained within argv.
 	@param argv Pointer to list of stream names to open.
 
-	@returns 0 if all streams were opened and added to the stream list;
-			Non-zero on failure.
+	@returns number of output files opened.
 */
 int open_outfile(int argc, char *argv[]) {
 	char **base_v = argv, *p;
 	int fHandle;            // file handle
 	errno_t errnum;
-	struct entry *n;
+	struct entry *EntryP;
 	int list_count = 0;
 
 	argc--; base_v++;
@@ -216,13 +214,13 @@ int open_outfile(int argc, char *argv[]) {
 				O_CREAT | O_APPEND | O_WRONLY, 
 				_SH_DENYNO, 
 				S_IREAD | S_IWRITE );
-		if (-1 < fHandle)
-		{
+
+		if (-1 < fHandle) {
 			/* add to the list */
-			if (NULL != (n = malloc(sizeof(struct entry)))) {
+			if (NULL != (EntryP = malloc(sizeof(struct entry)))) {
 				/* have a list node so update and move on */
-				n->outfile = fHandle;
-				TAILQ_INSERT_TAIL(&head, n, entries);
+				EntryP->outfile = fHandle;
+				TAILQ_INSERT_TAIL(&head, EntryP, entries);
 				list_count++;
 			}
 			else {
@@ -286,8 +284,13 @@ int main(int argc, char *argv[]) {
 	/* while input, output */
 	while (0 < (bytes_read = _read(STDIN, buf, MAX_BUF_SIZE)))
 	{
-		for (np = head.tqh_first; np != NULL; np = np->entries.tqe_next)
-			write_to_file(np->outfile, buf, bytes_read);
+		for (np = head.tqh_first; np != NULL; np = np->entries.tqe_next) {
+			int rv = write_to_file(np->outfile, buf, bytes_read);
+			if (rv != 0) {
+				fprintf(stderr, "*** wintee error writing to file \n");
+				abort();
+			}
+		}
 
 		/* now write to the display */
 		write_to_file(STDOUT, buf, bytes_read);
@@ -298,8 +301,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Clean up the outfile queue */
-	while (head.tqh_first != NULL)
-	{
+	while (head.tqh_first != NULL) {
 		_close(head.tqh_first->outfile);
 		TAILQ_REMOVE(&head, head.tqh_first, entries);
 	}
