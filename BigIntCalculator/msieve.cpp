@@ -109,7 +109,7 @@ bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
 static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
-"/msieve-code-r1030-trunk/bin/x64/Release/msieve.exe ";
+"/msieve/bin/x64/Release/msieve.exe ";
 #else
 static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
 "/msieve-code-r1030-trunk/bin/x64/Debug/msieve.exe ";

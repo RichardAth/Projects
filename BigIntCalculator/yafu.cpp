@@ -6,7 +6,7 @@
 #include "factor.h"
 
 static std::string Path = "C:\\Users\\admin99\\Documents\\Downloads_long_term_storage"
-"\\yafu-1.34";
+"\\yafu-1.34-src\\yafu-1.34.3\\bin\\x64\\release";
 static std::string yafuprog = "yafu-x64.exe ";
 static std::string logPath = "C:/users/admin99/factors.txt";
 //static std::string logPath = "factors.txt";
@@ -42,6 +42,7 @@ void yafuParam(std::string command) {
 	/* to be completed */
 }
 
+/* generate short batch file to run YAFU */
 void genfile(const std::string &numStr) {
 	FILE * batfile;
 	std::string buffer;
@@ -60,7 +61,7 @@ void genfile(const std::string &numStr) {
 
 	buffer = yafuprog;
 	buffer += " factor(" + numStr + ")";
-	if (verbose > 0)
+	for (int i = 1; i <= verbose; i++)
 		buffer += " -v";                    // set verbose mode for YAFU
 
 	buffer += " | wintee " + logPath + '\n';
@@ -97,13 +98,13 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 	//command += " factor(" + numStr + ")";      // append number to be factored to command line
 
 	/* open earlier YAFU log file, if any exists. Replace it with an empty file */
-	rv = fopen_s(&log, logfile.data(), "w");
-	if (rv != 0) {
-		if (errno != 0)
-			perror("error opening log file");
-	}
-	else
-		fclose(log);     // if log exists, erase its contents 
+	//rv = fopen_s(&log, logfile.data(), "w");
+	//if (rv != 0) {
+	//	if (errno != 0)
+	//		perror("error opening log file");
+	//}
+	//else
+	//	fclose(log);     // if log exists, erase its contents 
 
 	rv = system(batfilename.data());             // start YAFU;
 

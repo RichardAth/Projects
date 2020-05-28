@@ -2583,7 +2583,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				yafuParam(expupper);
 				continue;
 			}
-			if (expupper[0] == 'V') {
+			if (expupper.substr(0, 2) == "V ") {
 				/* will not throw an exception if input has fat finger syndrome.
 				If no valid digits found, sets verbose to 0 */
 				verbose = atoi(expupper.substr(1).data());
