@@ -85,7 +85,7 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 	std::string numStr;
 	std::string buffer;
 	std::string logfile = logPath;
-	FILE *log;
+	//FILE *log;
 	int fcount = 0;
 
 
