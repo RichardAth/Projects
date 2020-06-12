@@ -699,7 +699,7 @@ void *ecm_do_one_curve(void *ptr)
 			// after it is the factor
 			sscanf(ptr-2,"%d",&thread_data->stagefound);
 
-			strcpy(fact, ptr+1);
+			strcpy_s(fact, sizeof(fact), ptr+1);
 
 			mpz_set_str(thread_data->gmp_factor, fact, 10);
 			//str2hexz(fact, &thread_data->factor);

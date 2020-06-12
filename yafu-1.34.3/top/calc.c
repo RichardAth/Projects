@@ -1753,8 +1753,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 		// small factorization test routine
 		// 5 inputs
 
-		//if (0)
-		//{
+		//if (0) 	{
 		//	FILE *test;
 		//	test = fopen("res.dat", "r");
 		//	char str[100];
@@ -1766,7 +1765,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 		//		if (fgets(str, 100, test) == NULL)
 		//			break;
 
-		//		sscanf(str, "%llu", &n[i++]);				
+		//		sscanf(str, "%u", &n[i++]);				
 		//	}
 
 		//	gettimeofday(&tstart, NULL);

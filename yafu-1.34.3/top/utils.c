@@ -1566,7 +1566,7 @@ int extended_cpuid(char *CPUidstr, int *cachelinesize, char *bSSE41Extensions, i
             bMOVOptimization = (CPUInfo[0] & 0x2) || 0;
         }
     }
-	strcpy(CPUidstr,CPUBrandString);
+	strcpy_s(CPUidstr, 64, CPUBrandString);
     // Display all the information in user-friendly format.
 	if (do_print)
 		printf("\n\nCPU String: %s\n", CPUString);

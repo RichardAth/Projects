@@ -451,7 +451,7 @@ enum nfs_state_e check_existing_files(fact_obj_t *fobj, uint32 *last_spq, nfs_jo
 						// wrap
 						if (++line > 3) line = 0;
 						// then copy
-						strcpy(lines[line], tmp);
+						strcpy_s(lines[line], GSTR_MAXSIZE, tmp);
 					}
 
 					// while we are at it, count the lines
@@ -468,7 +468,7 @@ enum nfs_state_e check_existing_files(fact_obj_t *fobj, uint32 *last_spq, nfs_jo
 
 				for (i=0; i < 4; i++)
 					free(lines[i]);
-				free(lines);
+				//free(lines);
 			}
 		}
 		else
@@ -878,7 +878,7 @@ void msieve_to_ggnfs(fact_obj_t *fobj, nfs_job_t *job)
 		else if (line[0] == 'A')
 			sprintf(outline, "c%c: %s",line[1], line + 3);
 		else
-			strcpy(outline, line);	//copy the line (probably white space)
+			strcpy_s(outline, sizeof(outline), line);	//copy the line (probably white space)
 
 		fputs(outline,out);
 	}

@@ -1688,6 +1688,29 @@ static void strToUpper(const std::string &s, std::string &d) {
 	}
 }
 
+/* print elapsed time. If > 60 seconds print in hour min sec format */
+static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
+
+	if (msg.size() > 1)
+		std::cout << msg;
+	auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
+	if (elSec <= 60.0) {
+		std::cout << elSec << " seconds\n";
+	}
+	else {
+		/* round to nearest second */
+		long long sec = (long long)std::floor(elSec); // convert to an integer
+		long long min = sec / 60;  // min >= 1
+		elSec -= min * 60;         // get seconds
+		long long hour = min / 60; // hour may be zero
+		min %= 60;                 // get minutes
+		if (hour > 0)
+			std::cout << ' ' << hour << "h " << min << " min " << elSec << "sec \n";
+		else 
+			std::cout << ' ' << min << " min " << elSec << " sec \n";
+	}
+}
+
 /* remove spaces, tabs, etc  from msg */
 static void removeBlanks(std::string &msg) {
 	for (size_t ix = 0; ix < msg.size(); ix++) {
@@ -1808,8 +1831,9 @@ static void doFactors(const Znum &Result, bool test) {
 				std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
 				Beep(750, 1000);
 			}
-			auto end = clock(); double elapsed = (double)end - start;
-			std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+			auto end = clock(); 
+			double elapsed = (double)end - start;
+			PrintTimeUsed(elapsed, "time used = ");
 		}
 	}
 	else
@@ -1867,7 +1891,7 @@ static bool factortest(const Znum x3, const int method = 0) {
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
-		std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+		PrintTimeUsed(elapsed, "time used = ");
 		return false;   // not prime
 	}
 	else
@@ -1875,7 +1899,7 @@ static bool factortest(const Znum x3, const int method = 0) {
 
 	end = clock();              // measure amount of time used
 	elapsed = (double)end - start;
-	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	PrintTimeUsed(elapsed, "time used = ");
 	return true;    // is prime
 }
 
@@ -2017,7 +2041,7 @@ static void doTests(void) {
 
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
-	std::cout << "Factorisation tests completed. Time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	PrintTimeUsed(elapsed, "Factorisation tests completed. Time used= ");
 }
 
 /* generate large random number, up to 128 bits */
@@ -2050,7 +2074,7 @@ static void doTests2(void) {
 	}
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
-	std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	PrintTimeUsed(elapsed, "All tests completed. Time used = ");
 }
 
 #ifdef BIGNBR
@@ -2379,7 +2403,7 @@ static void doTests4(void) {
 	}
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
-	std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+	PrintTimeUsed(elapsed, "tests completed time used = ");
 }
 
 static void doTests5(void) {
@@ -2399,15 +2423,38 @@ static void doTests5(void) {
 	factortest(num, 1);
 
 	//factorise 57 digit number
+	/* P6 = 280673
+	  P12 = 598990818061
+	  P10 = 2756163353
+	  P13 = 4527716228491
+	  P18 = 248158049830971629
+	*/
 	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num);
 	factortest(num, 1);
 
-	//factorise 80 digit number
+	//factorise 80 digit number (about 3 minutes)
+	/* P49 = 2412329883909990626764837681505523221799246895133
+       P32 = 18138544144503826077310252140817
+    */
 	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num);
 	factortest(num, 1);
 
-	//factorise 85 digit number
+	//factorise 85 digit number (about 7 mins)
+	/* factors are 1485325304578290487744454354798448608807999 and 
+                   1263789702211268559063981919736415575710439 */
 	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num);
+	factortest(num, 1);
+
+	// factorise 94 digit number (about 90 mins)
+	/* factors are 10910042366770069935194172108679294830357131379375349 and 
+                   859735020008609871428759089831769060699941 */
+	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num);
+	factortest(num, 1);
+
+	//factorise 100 digit number - takes many hours
+	/* factor are 618162834186865969389336374155487198277265679 and
+	              4660648728983566373964395375209529291596595400646068307 */
+	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num);
 	factortest(num, 1);
 
 	return;
@@ -2618,7 +2665,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			auto end = clock();   // measure amount of time used
 			double elapsed = (double)end - start;
-			std::cout << "time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+			PrintTimeUsed(elapsed, "time used = ");
 		}
 
 		return EXIT_SUCCESS;  // EXIT command entered

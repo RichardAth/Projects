@@ -265,7 +265,7 @@ typedef struct {
 } la_col_t;
 
 /* external interface for NFS linear algebra */
-
+/* (see definition in msieve module gf2.c) */
 void nfs_solve_linear_system(msieve_obj *obj, mpz_t n);
 
 /* The largest prime ideal that is stored in compressed format

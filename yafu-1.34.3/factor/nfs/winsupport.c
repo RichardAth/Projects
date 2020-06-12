@@ -124,7 +124,7 @@ void logprintf(msieve_obj *obj, char *fmt, ...) {
 
 		va_start(ap, fmt);
 		buf[0] = 0;
-		strcpy(buf, ctime(&t));
+		strcpy_s(buf, sizeof(buf), ctime(&t));
 		*(strchr(buf, '\n')) = 0;
 		fprintf(logfile, "%s  ", buf);
 		vfprintf(logfile, fmt, ap);

@@ -169,7 +169,7 @@ void SIQS(fact_obj_t *fobj)
 	fobj->digits = gmp_base10(fobj->qs_obj.gmp_n);
 	fobj->qs_obj.savefile.name = (char *)malloc(80 * sizeof(char));
 	mallocCheck(fobj->qs_obj.savefile.name)
-	strcpy(fobj->savefile_name,fobj->qs_obj.siqs_savefile);
+	strcpy_s(fobj->savefile_name, sizeof(fobj->savefile_name), fobj->qs_obj.siqs_savefile);
 
 	//initialize the data objects
 	static_conf = (static_conf_t *)malloc(sizeof(static_conf_t));
@@ -987,7 +987,10 @@ void *process_poly(void *ptr)
 
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
-	dconf->rels_per_sec = (double)dconf->buffered_rels / t_time;
+	if (t_time > 0)
+		dconf->rels_per_sec = (double)dconf->buffered_rels / t_time;
+	else
+		dconf->rels_per_sec = 10e99;  // put stupid value but avoid divide by zero
 
 	//printf("average utilization of buckets in slices\n");
 	//for (i=0; i<20; i++)
@@ -2578,10 +2581,16 @@ int update_final(static_conf_t *sconf)
 
 	if (sieve_log != NULL)
 	{
-		logprint(sieve_log,"on average, sieving found %1.2f rels/poly and %1.2f rels/sec\n",
-			(double)(sconf->num_relations + sconf->num_cycles)/(double)sconf->tot_poly,
-			(double)(sconf->num_relations + sconf->num_cycles) /
-			((double)difference->secs + (double)difference->usecs / 1000000));
+		if ((double)sconf->tot_poly > 0.0)
+			logprint(sieve_log, "on average, sieving found %1.2f rels/poly and %1.2f rels/sec\n",
+			(double)(sconf->num_relations + sconf->num_cycles) / (double)sconf->tot_poly,
+				(double)(sconf->num_relations + sconf->num_cycles) /
+				((double)difference->secs + (double)difference->usecs / 1000000.0));
+		else  /* avoid divide-by zero error */
+			logprint(sieve_log, "on average, sieving found %1.2f rels/sec\n",
+			    (double)(sconf->num_relations + sconf->num_cycles) /
+				((double)difference->secs + (double)difference->usecs / 1000000.0));
+
 		logprint(sieve_log,"trial division touched %d sieve locations out of %s\n",
 				sconf->num, mpz_conv2str(&gstr1.s, 10, tmp1));
 		logprint(sieve_log,"==== post processing stage (msieve-1.38) ====\n");

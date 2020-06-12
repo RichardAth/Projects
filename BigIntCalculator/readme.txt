@@ -88,6 +88,11 @@ in msieve.cpp and should be changed to whatever is appropriate.
 
 As mentioned above it uses algorithms ECM and SIQS.
 
+Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
+Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
+numbers up to about 95 digits YAFU is generally significantly faster, but for 
+larger numbers it relies on ggnfs which I have not got to work.
+
 At all stages a factor list is maintained that contains all known factors, whether
 prime or not, that have not yet been split into smaller factors. Initially the
 factor list just contains the number to be factorised. Whenever a new factor is found,
@@ -119,6 +124,7 @@ B. Test whether the number is prime:
    elliptic curve factorisation than the standard version (even with the e option)
    does, this is nearly always the fastest for larger numbers that would use SIQS 
    for factorisation.
+      or factorise it using YAFU
       or factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
    used for numbers between 30 and 95 digits.
 

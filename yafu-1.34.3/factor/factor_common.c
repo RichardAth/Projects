@@ -2090,7 +2090,7 @@ void factor(fact_obj_t *fobj)
 
 	fobj->autofact_obj.autofact_active = 1;
 
-	if (VFLAG >= 0)
+	if (VFLAG >= 0)  /* print unless 'silent' */
 	{
 		gmp_printf("fac: factoring %Zd\n",b);
 		printf("fac: using pretesting plan: %s\n",fobj->autofact_obj.plan_str);
@@ -2103,8 +2103,10 @@ void factor(fact_obj_t *fobj)
 			if (fobj->autofact_obj.prefer_xover)
 				printf("fac: overriding tune info with qs/gnfs crossover of %1.0f digits\n",
 					fobj->autofact_obj.qs_gnfs_xover);
-			else
-				printf("fac: using tune info for qs/gnfs crossover\n");
+			else {
+				printf("fac: using tune info (%1.0f digits) for qs/gnfs crossover\n",
+					fobj->autofact_obj.qs_gnfs_xover);
+			}
 		}
 		else
 			printf("fac: no tune info: using qs/gnfs crossover of %1.0f digits\n",

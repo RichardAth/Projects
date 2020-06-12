@@ -377,6 +377,7 @@ void nfs(fact_obj_t *fobj)
 				// try this hack - store a pointer to the msieve obj so that
 				// we can change a flag on abort in order to interrupt the LA.
 				obj_ptr = obj;
+				/* external interface for NFS linear algebra in Msieve */
 				nfs_solve_linear_system(obj, fobj->nfs_obj.gmp_n);
 				if (obj_ptr->flags & MSIEVE_FLAG_STOP_SIEVING)
 					nfs_state = NFS_STATE_DONE;
@@ -1106,7 +1107,7 @@ void trial_sieve(fact_obj_t* fobj)
 		arg = ptr + 1;
 	}
 	filenames[i] = (char*)malloc(GSTR_MAXSIZE*sizeof(char));
-	strcpy(filenames[i++], arg);
+	strcpy_s(filenames[i++], GSTR_MAXSIZE, arg);
 
 	me = test_sieve(fobj, filenames, i, 1);
 
@@ -1213,7 +1214,7 @@ void copy_job(nfs_job_t *src, nfs_job_t *dest)
 	dest->rlambda = src->rlambda;
 	dest->alambda = src->alambda;
 	dest->qrange = src->qrange;
-	strcpy(dest->sievername, src->sievername);
+	strcpy_s (dest->sievername, 1024, src->sievername);
 	dest->startq = src->startq;
 	dest->min_rels = src->min_rels;
 	dest->current_rels = src->current_rels;

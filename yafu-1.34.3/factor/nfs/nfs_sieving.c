@@ -71,7 +71,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 
 	gettimeofday(&start2, NULL);
 
-	strcpy(orig_name, fobj->nfs_obj.job_infile);
+	strcpy_s(orig_name, sizeof(orig_name), fobj->nfs_obj.job_infile);
 	// necessary because parse/fill_job_file() get filename from fobj
 	if( are_files )
 	{ // read files into job structs (get fblim)
@@ -88,7 +88,8 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		for(i = 0; i < njobs; i++)
 		{
 			uint32 missing_params;
-			strcpy(fobj->nfs_obj.job_infile, filenames[i]);
+			strcpy_s(fobj->nfs_obj.job_infile, sizeof(fobj->nfs_obj.job_infile),
+				filenames[i]);
 
 			missing_params = parse_job_file(fobj, jobs+i); // get fblim
 			get_ggnfs_params(fobj, jobs+i); // get siever
@@ -136,12 +137,13 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 				print_poly(jobs[i].poly, out);
 			}
 			fclose(out);
-			strcpy(fobj->nfs_obj.job_infile, filenames[i]);
+			strcpy_s(fobj->nfs_obj.job_infile, sizeof(fobj->nfs_obj.job_infile), 
+				filenames[i]);
 			fill_job_file(fobj, jobs+i, PARAM_FLAG_ALL);
 		} 
 		// that seems like a lot more code than it should be
 	}
-	strcpy(fobj->nfs_obj.job_infile, orig_name);
+	strcpy_s(fobj->nfs_obj.job_infile, sizeof(fobj->nfs_obj.job_infile), orig_name);
 
 	// now we can get to the actual testing
 	for(i = 0; i < njobs; i++)
@@ -241,7 +243,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 					// wrap
 					if (++line > 3) line = 0;
 					// then copy
-					strcpy(lines[line], tmp);
+					strcpy_s(lines[line], GSTR_MAXSIZE, tmp);
 				}
 
 				count++;
@@ -467,7 +469,7 @@ void do_sieving(fact_obj_t *fobj, nfs_job_t *job)
 		thread_data[i].job.current_rels = job->current_rels;
 		thread_data[i].siever = fobj->nfs_obj.siever;
 		thread_data[i].job.startq = job->startq;
-		strcpy(thread_data[i].job.sievername, job->sievername);
+		strcpy_s(thread_data[i].job.sievername, 1024, job->sievername);
 
 		thread_data[i].tindex = i;
 		thread_data[i].is_poly_select = 0;
@@ -580,12 +582,12 @@ void *lasieve_launcher(void *ptr)
 		
 	//start ggnfs binary
 	uint32 fvalue = thread_data->job.startq;
-	if (thread_data->job.poly->side == ALGEBRAIC_SPQ
+	/*if (thread_data->job.poly->side == ALGEBRAIC_SPQ
 		&& thread_data->job.alim > fvalue)
 		fvalue = thread_data->job.alim;
 	if (thread_data->job.poly->side != ALGEBRAIC_SPQ
 		&& thread_data->job.rlim > fvalue)
-		fvalue = thread_data->job.rlim;
+		fvalue = thread_data->job.rlim;*/
 
 	sprintf(syscmd,"%s%s -%c %s -f %u -c %u -o %s -n %d",
 		thread_data->job.sievername, 

@@ -192,7 +192,7 @@ static void free_globals(void);
 static void get_computer_info(char *idstr);
 
 // function to print the splash screen to file/screen
-static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr);
+static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, fact_obj_t *fobj);
 
 // functions to make a batchfile ready to execute, and to process batchfile lines
 static void prepare_batchfile(char *input_exp);
@@ -207,12 +207,29 @@ static unsigned process_flags(int argc, char **argv, fact_obj_t *fobj);
 
 /* the first parameter should have value SIG_FPE
 the 2nd parameter can have any of the following values:
-FPE_INVALID			0x81
+FPE_INVALID			0x81   This exception occurs when the result of an operation is 
+                           ill-defined, such as (0.0 / 0.0). If trapping is enabled, 
+						   the floating-point-invalid condition is signalled. 
+						   Otherwise, a quiet NaN is returned. 
 FPE_DENORMAL		0x82
-FPE_ZERODIVIDE		0x83
-FPE_OVERFLOW		0x84
-FPE_UNDERFLOW		0x85
-FPE_INEXACT			0x86
+FPE_ZERODIVIDE		0x83   This exception occurs when a float is divided by zero. 
+                           If trapping is enabled, the  divide-by-zero condition 
+						   is signalled. Otherwise, the appropriate infinity is 
+						   returned. 
+FPE_OVERFLOW		0x84   This exception occurs when the result of an operation 
+                           is too large to be represented as a float in its 
+						   format. If trapping is enabled, the  floating-point-
+						   overflow exception is signalled. Otherwise, the 
+						   operation results in the appropriate infinity. 
+FPE_UNDERFLOW		0x85   This exception occurs when the result of an operation 
+                           is too small to be represented as a normalized float in 
+						   its format. If trapping is enabled, the floating-point-
+						   underflow condition is signalled. Otherwise, the 
+						   operation results in a denormalized float or zero. 
+FPE_INEXACT			0x86   This exception occurs when the result of an operation 
+                           is not exact, i.e. the result was rounded. If trapping 
+						   is enabled, the floating-point-inexact condition is 
+						   signalled. Otherwise, the rounded result is returned. 
 FPE_UNEMULATED		0x87
 FPE_SQRTNEG			0x88
 FPE_STACKOVERFLOW	0x8a
@@ -221,7 +238,7 @@ FPE_EXPLICITGEN     0x8c // raise(SIGFPE);
 */
 void handle_fpe(int sig, int num) {
 	unsigned int control_word;
-	errno_t err = _controlfp_s(&control_word, _EM_INEXACT & _EM_UNDERFLOW,
+	errno_t err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW,
 		MCW_EM);  /* allow hardware FP exceptions exept inexact & underflow*/
 	if (err) {
 		printf_s("could not set FP control word\n");
@@ -232,18 +249,21 @@ void handle_fpe(int sig, int num) {
 		printf_s("could not install handler on SIGFPE\n");
 		exit(1);
 	}
+	_fpreset();
 	if (num == _FPE_INEXACT)
 		return;
 	/* strictly speaking, should not call I/O routines here, but it seems to work OK */
-	printf_s("\nreceived FPE signal %d %#x; continue \n", sig, num);
+	fprintf_s(stderr, "\nreceived FPE signal %d %#x; continue \n", sig, num);
 	DumpStackTrace2();
 	if (num == _FPE_UNDERFLOW) {
 		return;  // for underflow, continue after recording it
 	}
 
+#ifdef _DEBUG
 	__debugbreak();     // try to enter debuggger (to look at call stack)
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
+#endif
 
 	return;
 }
@@ -280,7 +300,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	unsigned int control_word;
-	errno_t err = _controlfp_s(&control_word, _EM_INEXACT, MCW_EM);  
+	errno_t err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
 	/* unblock hardware FP exceptions exept inexact */
 	if (err) {
 		printf_s("could not set FP control word\n");
@@ -340,7 +360,7 @@ int main(int argc, char *argv[])
 		slog = 1;	
 		
 	// print the splash screen, to the logfile and depending on options, to the screen
-	print_splash(is_cmdline_run, logfile, CPU_ID_STR);
+	print_splash(is_cmdline_run, logfile, CPU_ID_STR, fobj);
 
 	// bigint used in this routine
 	mpz_init(tmp);
@@ -612,11 +632,17 @@ static void readINI(fact_obj_t *fobj)
 		return;
 	}
 
-	/*str = (char *)malloc(1024*sizeof(char));
-	mallocCheck(str);*/
 	while (fgets(str, 1024, doc) != NULL)
 	{
+#ifdef _DEBUG
+		printf("yafu.ini; %.160s", str);
+#else
 		//if first character is a % sign, skip this line
+		if (strncmp(str, "%print", 6) == 0) {
+			printf("yafu.ini; %.160s", str+1);
+			continue;
+		}
+#endif
 		if (str[0] == '%')
 			continue;
 		if (str[0] == '\0')
@@ -950,7 +976,8 @@ static int process_arguments(int argc, char **argv, char *input_exp, fact_obj_t 
 }
 
 // function to print the splash screen to file/screen
-static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr)
+static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, 
+	fact_obj_t *fobj)
 {
 	if (VFLAG >= 0)
 		printf("\n\n");
@@ -1010,9 +1037,13 @@ _MSC_MPIR_VERSION);
 		printf("===============================================================\n");
 		printf("cached %u primes. pmax = %u\n\n",szSOEp,spSOEprimes[szSOEp-1]);
 		char * path = _getcwd(NULL, 0);   // get current working directory
-		printf("Current directory is: %s", path);
-		printf("\n>> ");
+		printf("Current directory is: %s\n", path);
 		free(path);
+		printf("QS to NFS crossover at %1.0f digits\n",
+			fobj->autofact_obj.qs_gnfs_xover);
+		printf("%s compiled on %s \n", __FILE__, __DATE__);
+		printf("\n>> ");
+
 	}
 
 	return;
@@ -1040,7 +1071,7 @@ static void get_computer_info(char *idstr)
 
 #else
 	//read cache sizes
-	yafu_get_cache_sizes(&L1CACHE,&L2CACHE);
+	yafu_get_cache_sizes(&L1CACHE, &L2CACHE);
 
 	// run an extended cpuid command to get the cache line size, and
 	// optionally print a bunch of info to the screen
@@ -2865,13 +2896,14 @@ static void apply_tuneinfo(fact_obj_t *fobj, const char *arg)
 		if (strcmp(osstr, "WIN64") == 0)
 		{
 			//printf("Applying tune_info entry for %s - %s\n",osstr,cpustr);
-		
+			double xoversave = fobj->autofact_obj.qs_gnfs_xover;
 			sscanf(arg + i + 1, "%lg, %lg, %lg, %lg, %lg, %lg",
 				&fobj->qs_obj.qs_multiplier, &fobj->qs_obj.qs_exponent,
 				&fobj->nfs_obj.gnfs_multiplier, &fobj->nfs_obj.gnfs_exponent, 
 				&fobj->autofact_obj.qs_gnfs_xover, &fobj->nfs_obj.gnfs_tune_freq);
 			fobj->qs_obj.qs_tune_freq = fobj->nfs_obj.gnfs_tune_freq;
-
+			if (fobj->autofact_obj.prefer_xover == 1)
+				fobj->autofact_obj.qs_gnfs_xover = xoversave;
 		}
 #elif defined(WIN32)
 	if ((strcmp(cpustr,CPU_ID_STR) == 0) && (strcmp(osstr, "WIN32") == 0))

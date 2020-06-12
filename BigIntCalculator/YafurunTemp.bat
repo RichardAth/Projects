@@ -1,3 +1,3 @@
-pushd C:\Users\admin99\Documents\Downloads_long_term_storage\yafu-1.34-src\yafu-1.34.3\bin\x64\release
-yafu-x64.exe  factor(2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453) | wintee C:/users/admin99/factors.txt
+pushd C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
+yafu-x64.exe  factor(1000000000000000000000000000000000000000000000001510002100000000000000000000000000000000000000000000003171) -p | wintee C:/users/admin99/factors.txt
 popd 

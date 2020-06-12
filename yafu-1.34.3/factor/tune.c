@@ -183,12 +183,15 @@ void factor_tune(fact_obj_t *inobj)
 
 		printf("nfs: commencing construction of afb\n");
 
-		system(syscmd);
+		int status = system(syscmd);
 		gettimeofday(&stop, NULL);
 		difference = my_difftime (&start, &stop);
 		t_time2 = ((double)difference->secs + (double)difference->usecs / 1000000);
-		free(difference);			
-		printf("afb generation took %6.4f seconds.\n",t_time2);
+		free(difference);	
+		if (status == 0)
+			printf("afb generation took %6.4f seconds.\n",t_time2);
+		else
+			printf("afb returned status %d after %6.4f seconds.\n", status, t_time2);
 		remove("tune.job.afb.0");
 		MySleep(100);
 
@@ -204,7 +207,7 @@ void factor_tune(fact_obj_t *inobj)
 		int cmdret = system(syscmd);
 		if (cmdret != 0) {
 			if (VFLAG <= 1) printf("syscmd: %s\n", syscmd);
-			printf("nfs: lattice sieving failed %s \n", strerror(errno));
+			printf("nfs: lattice sieving failed. Status =  %d\n", cmdret);
 		}
 		gettimeofday(&stop, NULL);
 		difference = my_difftime (&start, &stop);
@@ -332,9 +335,10 @@ static void make_job_file(char *sname, uint32 *startq, uint32 *qrange, char *inp
 		fprintf(out, "rlambda: 2.5\n");
 		fprintf(out, "alambda: 2.5\n");
 		siever = 11;
-		*startq = 900000;  // changed from 450000
-
+		//*startq = 900000;  // changed from 450000
+		*startq = 450000;  
 		break;
+
 	case 1:
 		//90 digit info:
 		fprintf(out, "type: gnfs\n");
@@ -355,9 +359,10 @@ static void make_job_file(char *sname, uint32 *startq, uint32 *qrange, char *inp
 		fprintf(out, "rlambda: 2.5\n");
 		fprintf(out, "alambda: 2.5\n");
 		siever = 11;
-		*startq = 1200000;  // changed from 600000
-	
-		break;
+		//*startq = 1200000;  // changed from 600000
+		*startq = 600000;
+		break;	
+
 	case 2:
 		//95 digit info:
 		fprintf(out, "type: gnfs\n");
@@ -378,9 +383,10 @@ static void make_job_file(char *sname, uint32 *startq, uint32 *qrange, char *inp
 		fprintf(out, "rlambda: 2.5\n");
 		fprintf(out, "alambda: 2.5\n");
 		siever = 12;
-		*startq = 1500000; // changed from 750000
-		
-		break;
+		//*startq = 1500000; // changed from 750000
+		*startq = 750000;
+		break;		
+
 	case 3:
 		//100 digit info:
 		fprintf(out, "type: gnfs\n");
@@ -401,9 +407,10 @@ static void make_job_file(char *sname, uint32 *startq, uint32 *qrange, char *inp
 		fprintf(out, "rlambda: 2.5\n");
 		fprintf(out, "alambda: 2.5\n");
 		siever = 12;
-		*startq = 1800000; // changed from 900000
-
+		//*startq = 1800000; // changed from 900000
+		*startq = 900000;
 		break;
+
 	case 4:
 		//105 digit info:
 		fprintf(out, "type: gnfs\n");
@@ -449,9 +456,10 @@ static void make_job_file(char *sname, uint32 *startq, uint32 *qrange, char *inp
 		fprintf(out, "rlambda: 2.5\n");
 		fprintf(out, "alambda: 2.5\n");
 		siever = 13;
-		*startq = 3200000; // changed from 1600000
-		
-		break;
+		//*startq = 3200000; // changed from 1600000
+		*startq = 1600000;
+		break;		
+
 	default:
 		printf("unknown input in gnfs tuning\n");
 		exit(-1);
@@ -547,7 +555,7 @@ static void update_INI(double mult, double exponent, double mult2, double expone
 		}
 
 		//remember original line
-		strcpy(str2, str);
+		strcpy_s(str2, sizeof(str2), str);
 
 		//if last character of line is newline, remove it
 		do 

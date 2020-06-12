@@ -4,9 +4,15 @@
 #include <vector>
 #include <cstdio>
 #include "factor.h"
-
-static std::string Path = "C:\\Users\\admin99\\Documents\\Downloads_long_term_storage"
-"\\yafu-1.34-src\\yafu-1.34.3\\bin\\x64\\release";
+#ifndef _DEBUG
+static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Release";
+#else
+static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Debug";
+#endif
+//static std::string Path = "C:\\Users\\admin99\\Documents\\Downloads_long_term_storage"
+//"\\yafu-1.34-src\\yafu-1.34.3\\bin\\x64\\release";
 static std::string yafuprog = "yafu-x64.exe ";
 static std::string logPath = "C:/users/admin99/factors.txt";
 //static std::string logPath = "factors.txt";
@@ -61,6 +67,7 @@ void genfile(const std::string &numStr) {
 
 	buffer = yafuprog;
 	buffer += " factor(" + numStr + ")";
+	buffer += " -p";                // set batch priority
 	for (int i = 1; i <= verbose; i++)
 		buffer += " -v";                    // set verbose mode for YAFU
 
