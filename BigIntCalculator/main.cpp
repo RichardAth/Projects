@@ -24,6 +24,13 @@ void msieveParam(std::string expupper);   /*process Msieve commands */
 void yafuParam(std::string command);      /*process YAFU commands */
 void biperm(int n, mpz_t &result);   // declaration for external function
 
+/* get time in format hh:mm:ss */
+char * myTime(void) {
+	static char timestamp[10];   // time in format hh:mm:ss
+	_strtime_s(timestamp, sizeof(timestamp));
+	return timestamp;
+}
+
 
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
@@ -990,8 +997,9 @@ void generatePrimes(unsigned long long int max_val) {
 	
 	// allocate storage for primeList if required
 	{
-		fprintf(stdout, "Expected no of primes is %.0f\n",
-			(double)max_val / (log((double)max_val) - 1));
+		if (verbose > 0)
+			fprintf(stdout, "Expected no of primes is %.0f\n",
+				(double)max_val / (log((double)max_val) - 1));
 		if (primeList != NULL) free(primeList);
 		plist_size = (size_t)((double)max_val / (log((double)max_val) - 1)) * 102 / 100;
 		// add 2% for safety
@@ -1023,7 +1031,8 @@ void generatePrimes(unsigned long long int max_val) {
 	}
 
 	// after completing the for loop we have found all the primes < max_val
-	printf("  prime %9lld is %11lld\n", count, numsave);
+	if (verbose > 0)
+		printf("  prime %9lld is %11lld\n", count, numsave);
 	primeList[count] = ULLONG_MAX;		// set end marker
 	prime_list_count = (unsigned int)count;
 	primeListMax = primeList[count - 1];
@@ -1692,7 +1701,7 @@ static void strToUpper(const std::string &s, std::string &d) {
 static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 
 	if (msg.size() > 1)
-		std::cout << msg;
+		std::cout << myTime() << ' ' << msg;
 	auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
 	if (elSec <= 60.0) {
 		std::cout << elSec << " seconds\n";
@@ -2058,10 +2067,10 @@ static void doTests2(void) {
 
 	
 	for (int i = 1; i <= 44; i++) {
-		if (i == 44) {
+		if (i == 44 && !yafu) {
 			std::cout << "Test 44 skipped \n";
 			break;  /* note: with current seed value test 44 would take about 50 minutes! 
-					(about 30 minutes using Msieve) */
+					(about 30 minutes using Msieve, 13 mins with YAFU) */
 		}
 
 		if (i <= 39)
@@ -2547,7 +2556,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		printf("Version 2.0 %s", banner);
+		printf("%s BigInt calculator Version 2.1 %s", myTime(), banner);
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print

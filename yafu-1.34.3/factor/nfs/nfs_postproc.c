@@ -36,12 +36,13 @@ uint32 do_msieve_filtering(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job)
 		sprintf(nfs_args, "filter_maxrels=%u", job->use_max_rels);
 		obj->nfs_args = nfs_args;
 		if (VFLAG >= 0)
-			printf("nfs: commencing msieve filtering with reduced relation set\n");
+			printf("%s nfs: commencing msieve filtering with reduced relation set\n",
+				myTime());
 	}
 	else
 	{
 		if (VFLAG >= 0)
-			printf("nfs: commencing msieve filtering\n");
+			printf("%s nfs: commencing msieve filtering\n", myTime());
 	}
 
 	logfile = fopen(fobj->flogname, "a");

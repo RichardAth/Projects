@@ -104,14 +104,10 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 
 	//command += " factor(" + numStr + ")";      // append number to be factored to command line
 
-	/* open earlier YAFU log file, if any exists. Replace it with an empty file */
-	//rv = fopen_s(&log, logfile.data(), "w");
-	//if (rv != 0) {
-	//	if (errno != 0)
-	//		perror("error opening log file");
-	//}
-	//else
-	//	fclose(log);     // if log exists, erase its contents 
+	int rc = remove(logfile.data());
+	if (rc != 0 && errno != ENOENT) {
+		perror("could not remove old YAFU log file ");
+	}
 
 	rv = system(batfilename.data());             // start YAFU;
 

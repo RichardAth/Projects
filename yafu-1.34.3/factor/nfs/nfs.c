@@ -163,7 +163,7 @@ void nfs(fact_obj_t *fobj)
 
 	if (fobj->nfs_obj.filearg[0] != '\0')
 	{
-		if (VFLAG > 0) printf("test: starting trial sieving\n");
+		if (VFLAG > 0) printf("%s test: starting trial sieving\n", myTime());
 		trial_sieve(fobj);
 		return;
 	}
@@ -213,7 +213,8 @@ void nfs(fact_obj_t *fobj)
 				nfs_state = NFS_STATE_DONE;
 
 			if (VFLAG >= 0 && nfs_state != NFS_STATE_DONE)
-				gmp_printf("nfs: commencing nfs on c%d: %Zd\n",
+				gmp_printf("%s nfs: commencing nfs on c%d: %Zd\n",
+					myTime(),
 					gmp_base10(fobj->nfs_obj.gmp_n), fobj->nfs_obj.gmp_n);
 
 			if (nfs_state != NFS_STATE_DONE)
@@ -361,7 +362,7 @@ void nfs(fact_obj_t *fobj)
 				obj->flags = flags;
 
 				if (VFLAG >= 0)
-					printf("nfs: commencing msieve linear algebra\n");
+					printf("%s nfs: commencing msieve linear algebra\n", myTime());
 
 				logprint_oc(fobj->flogname, "a", "nfs: commencing msieve linear algebra\n");
 
@@ -456,7 +457,7 @@ void nfs(fact_obj_t *fobj)
 				obj->flags = flags;
 
 				if (VFLAG >= 0)
-					printf("nfs: commencing msieve sqrt\n");
+					printf("%s nfs: commencing msieve sqrt\n", myTime());
 
 				logprint_oc(fobj->flogname, "a", "nfs: commencing msieve sqrt\n");
 
@@ -519,7 +520,7 @@ void nfs(fact_obj_t *fobj)
 			free(difference);	
 
 			if (VFLAG >= 0)
-				printf("NFS elapsed time = %6.4f seconds.\n",t_time);
+				printf("%s NFS elapsed time = %6.4f seconds.\n", myTime(), t_time);
 
 			logprint_oc(fobj->flogname, "a", "NFS elapsed time = %6.4f seconds.\n",t_time);
 			logprint_oc(fobj->flogname, "a", "\n");
@@ -756,7 +757,7 @@ void nfs(fact_obj_t *fobj)
 			}
 
 			if (VFLAG >= 0)
-				printf("%s", tmpstr);
+				printf("%s %s", myTime(), tmpstr);
 
 			logprint_oc(fobj->flogname, "a", "%s", tmpstr);
 
@@ -775,7 +776,7 @@ void nfs(fact_obj_t *fobj)
 			break;
 
 		case NFS_STATE_RESUMEPOLY:
-			if (VFLAG > 1) printf("nfs: resuming poly select\n");
+			if (VFLAG > 1) printf("%s nfs: resuming poly select\n", myTime());
 			fobj->nfs_obj.polystart = job.last_leading_coeff;
 
 			nfs_state = NFS_STATE_POLY;
@@ -800,7 +801,7 @@ void nfs(fact_obj_t *fobj)
 		if ((fobj->nfs_obj.timeout > 0) && (t_time > (double)fobj->nfs_obj.timeout))
 		{
 			if (VFLAG >= 0)
-				printf("NFS timeout after %6.4f seconds.\n",t_time);
+				printf("%s NFS timeout after %6.4f seconds.\n", myTime(), t_time);
 
 			logprint_oc(fobj->flogname, "a", "NFS timeout after %6.4f seconds.\n",t_time);
 			process_done = 1;
@@ -1101,12 +1102,12 @@ void trial_sieve(fact_obj_t* fobj)
 
 	while((ptr = strchr(arg, ','))) // this sort of thing is what's absolutely brilliant about C
 	{
-		filenames[i] = (char*)malloc(GSTR_MAXSIZE*sizeof(char));
+		filenames[i] = (char*)xmalloc(GSTR_MAXSIZE*sizeof(char));
 		//printf("pointer: %p\n", filenames[i]);
 		strncpy(filenames[i++], arg, ptr-arg+1);
 		arg = ptr + 1;
 	}
-	filenames[i] = (char*)malloc(GSTR_MAXSIZE*sizeof(char));
+	filenames[i] = (char*)xmalloc(GSTR_MAXSIZE*sizeof(char));
 	strcpy_s(filenames[i++], GSTR_MAXSIZE, arg);
 
 	me = test_sieve(fobj, filenames, i, 1);

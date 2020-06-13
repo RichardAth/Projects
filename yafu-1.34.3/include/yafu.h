@@ -196,3 +196,6 @@ str_t gstr1, gstr2, gstr3;
 printf("allocate failed at line %d in %s \n", __LINE__, __FILE__);   \
 exit(-1);                               \
 }}
+
+/* get time in format hh:mm:ss */
+char * myTime(void);

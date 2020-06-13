@@ -649,7 +649,7 @@ void print_factors(fact_obj_t *fobj)
 	//always print factors unless complete silence is requested
 	if (VFLAG >= 0)
 	{
-		printf("\n\n***factors found***\n\n");
+		printf("\n\n*** %s factors found ***\n\n", myTime());
 		mpz_init(tmp);
 		mpz_set_ui(tmp, 1);
 
@@ -2092,7 +2092,7 @@ void factor(fact_obj_t *fobj)
 
 	if (VFLAG >= 0)  /* print unless 'silent' */
 	{
-		gmp_printf("fac: factoring %Zd\n",b);
+		gmp_printf("%s fac: factoring %Zd\n", myTime(), b);
 		printf("fac: using pretesting plan: %s\n",fobj->autofact_obj.plan_str);
 		if (fobj->autofact_obj.yafu_pretest_plan == PRETEST_CUSTOM)
 			printf("fac: custom pretest ratio is: %1.4f\n",fobj->autofact_obj.target_pretest_ratio);

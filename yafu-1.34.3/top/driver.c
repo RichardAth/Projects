@@ -205,6 +205,14 @@ static int process_arguments(int argc, char **argv, char *input_exp, fact_obj_t 
 static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj, int j);
 static unsigned process_flags(int argc, char **argv, fact_obj_t *fobj);
 
+/* get time in format hh:mm:ss */
+char * myTime(void) {
+	static char timestamp[10];   // time in format hh:mm:ss
+	const time_t current = time(NULL);
+	strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&current));
+	return timestamp;
+}
+
 /* the first parameter should have value SIG_FPE
 the 2nd parameter can have any of the following values:
 FPE_INVALID			0x81   This exception occurs when the result of an operation is 
@@ -673,18 +681,13 @@ static void readINI(fact_obj_t *fobj)
 
 		//read value
 		value = strtok((char *)0, "=");
-		//if (value == NULL)
-		//{
-		//	printf("expected value after keyword %s\n",key);
-		//	continue;
-		//}
 
 		//apply the option... same routine command line options use
 		applyOpt2(key, value, fobj, ix);
 	}
 
 	fclose(doc);
-	//free(str);
+
 #ifdef _DEBUG
 	/* cant' use VFLAG because it's not set up yet*/
 		printf("yafu.ini processed\n");
@@ -721,8 +724,7 @@ static void helpfunc(const char *s)
 	}
 
 	printf("searching for help on '%s'\n",func);
-	/*str = (char *)malloc(1024*sizeof(char));
-	mallocCheck(str)*/
+
 	while (!feof(doc))
 	{
 		//read a line
@@ -747,7 +749,6 @@ static void helpfunc(const char *s)
 		}
 	}
 	fclose(doc);
-	//free(str);
 	return;
 }
 
@@ -2447,8 +2448,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 		}
 
 		case 32:  //option "xover"- 1 floating point argument
-		{  /* convert text to double. Would strtod be better? */
-			//sscanf(arg, "%lf", &fobj->autofact_obj.qs_gnfs_xover);
+		{  
 			fobj->autofact_obj.qs_gnfs_xover = arg1F;
 			fobj->autofact_obj.prefer_xover = 1;
 			break;

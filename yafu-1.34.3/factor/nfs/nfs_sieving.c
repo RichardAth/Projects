@@ -170,14 +170,16 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		//create the afb/rfb - we don't want the time it takes to do this to
 		//pollute the sieve timings		
 		sprintf(syscmd, "%s -b %s -k -c 0 -F", jobs[i].sievername, filenames[i]);
-		if (VFLAG > 0) printf("\ntest: generating factor bases\n");
+		if (VFLAG > 0) 
+			printf("\n%s test: generating factor bases\n", myTime());
 		gettimeofday(&start, NULL);
 		system(syscmd);
 		gettimeofday(&stop, NULL);
 		difference = my_difftime (&start, &stop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
-		if (VFLAG > 0) printf("test: fb generation took %6.4f seconds\n", t_time);
+		if (VFLAG > 0) 
+			printf("%s test: fb generation took %6.4f seconds\n", myTime(), t_time);
 		logprint(flog, "test: fb generation took %6.4f seconds\n", t_time);
 		MySleep(100);
 
@@ -185,8 +187,9 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		sprintf(syscmd,"%s%s -%c %s -f %u -c %u -o %s.out",
 			jobs[i].sievername, VFLAG>0?" -v":"", side[0], filenames[i], jobs[i].startq, spq_range, filenames[i]);
 
-		if (VFLAG > 0) printf("test: commencing test sieving of polynomial %d on the %s side over range %u-%u\n", i, 
-			side, jobs[i].startq, jobs[i].startq + spq_range);
+		if (VFLAG > 0) 
+			printf("%s test: commencing test sieving of polynomial %d on the %s side over range %u-%u\n", 
+				myTime(), i, side, jobs[i].startq, jobs[i].startq + spq_range);
 		logprint(flog, "test: commencing test sieving of polynomial %d on the %s side over range %u-%u\n", i, 
 			side, jobs[i].startq, jobs[i].startq + spq_range);
 		print_job(&jobs[i], flog);
@@ -435,7 +438,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);			
 	if (VFLAG > 0) 
-		printf("test: test sieving took %1.2f seconds\n", t_time);
+		printf("%s test: test sieving took %1.2f seconds\n", myTime(), t_time);
 	logprint(flog, "test: test sieving took %1.2f seconds\n", t_time);
 
 	return minscore_id;
@@ -601,8 +604,9 @@ void *lasieve_launcher(void *ptr)
 
 	if (VFLAG >= 0)
 	{
-		printf("nfs: commencing %s side lattice sieving over range: %u - %u\n",
-			side, thread_data->job.startq, thread_data->job.startq + thread_data->job.qrange);
+		printf("%s nfs: commencing %s side lattice sieving over range: %u - %u\n",
+			myTime(), side, thread_data->job.startq, 
+			thread_data->job.startq + thread_data->job.qrange);
 	}
 	if (VFLAG > 1) printf("syscmd: %s\n", syscmd);
 	if (VFLAG > 1) fflush(stdout);

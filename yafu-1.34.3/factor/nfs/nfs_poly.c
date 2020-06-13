@@ -743,8 +743,8 @@ void *polyfind_launcher(void *ptr)
 	{
 		uint64 start, stop; // one instance where the new msieve api is rather a pain
 		sscanf(t->obj->nfs_args, "min_coeff=%" PRIu64 " max_coeff=%" PRIu64, &start, &stop);
-		printf("nfs: commencing polynomial search over range: %" PRIu64 " - %" PRIu64"\n",
-			start, stop);
+		printf("%s nfs: commencing polynomial search over range: %" PRIu64 " - %" PRIu64"\n",
+			myTime(), start, stop);
 		fflush(stdout);
 	}
 

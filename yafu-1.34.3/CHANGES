@@ -8,6 +8,11 @@ Many cosmetic changes to:
 (2)   Always check that malloc does not return a NULL value.
 (3)   Always check the return code after a system() call.
 
+Added a few output messages when processing yafu.ini
+
+changed the definition of msieve_obj in factor.h to match the definition in msieve.
+This was essential to get factorisation using nfs to work.
+
 v 1.34.2
 + fixed bug with cunningham/hcunningham algebraic reduction poly generation
 

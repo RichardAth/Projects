@@ -238,7 +238,7 @@ void SIQS(fact_obj_t *fobj)
 	gettimeofday(&static_conf->totaltime_start, NULL);
 
 	if (VFLAG >= 0)
-		printf("\nstarting SIQS on c%d: %s\n",fobj->digits, 
+		printf("\n%s starting SIQS on c%d: %s\n", myTime(), fobj->digits, 
 		mpz_conv2str(&gstr1.s, 10, fobj->qs_obj.gmp_n));
 
 	if (sieve_log != NULL)
@@ -615,7 +615,7 @@ void SIQS(fact_obj_t *fobj)
 
 	if (VFLAG > 0)
 	{
-		printf("QS elapsed time = %6.4f seconds.\n",t_time);
+		printf("%s QS elapsed time = %6.4f seconds.\n", myTime(), t_time);
 		//printf("Predicted MAX_DIFF = %u, Actual MAX_DIFF = %u\n",MAX_DIFF,MAX_DIFF2);
 		printf("\n==== post processing stage (msieve-1.38) ====\n");
 	}
@@ -676,13 +676,14 @@ void SIQS(fact_obj_t *fobj)
 	
 	if (VFLAG > 0)
 	{
-		printf("Lanczos elapsed time = %6.4f seconds.\n",static_conf->t_time1);
+		printf("Lanczos elapsed time = %6.4f seconds.\n", static_conf->t_time1);
 		printf("Sqrt elapsed time = %6.4f seconds.\n",static_conf->t_time2);
 		
 	}
 
 	if (VFLAG >= 0)
-		printf("SIQS elapsed time = %6.4f seconds.\n",static_conf->t_time3);
+		printf("%s SIQS elapsed time = %6.4f seconds.\n", myTime(), 
+			static_conf->t_time3);
 
 	fobj->qs_obj.total_time = static_conf->t_time3;
 
@@ -1204,7 +1205,7 @@ void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
 	//print some info to the screen and the log file
 	if (VFLAG > 0)
 	{	
-		printf("\n==== sieve params ====\n");
+		printf("\n==== %s sieve params ====\n", myTime());
 		printf("n = %d digits, %d bits\n",sconf->digits_n,sconf->bits);
 		printf("factor base: %d primes (max prime = %u)\n",sconf->factor_base->B,sconf->pmax);
 		printf("single large prime cutoff: %u (%d * pmax)\n",
