@@ -260,7 +260,7 @@ uint64 init_sieve(soe_staticdata_t *sdata)
 	}
 	else
 	{
-		if (VFLAG > 2)
+		if (Vflag > 2)
 			printf("allocated %u bytes for roots\n",(uint32)(sdata->pboundi * sizeof(uint32)));
 	}
 
@@ -368,7 +368,7 @@ uint64 init_sieve(soe_staticdata_t *sdata)
 	}
 	else
 	{
-		if (VFLAG > 2)
+		if (Vflag > 2)
 			printf("allocated %u bytes for lower mod prime\n",
 			(uint32)sdata->num_bucket_primes * (uint32)sizeof(uint32));
 	}
@@ -401,7 +401,7 @@ uint64 init_sieve(soe_staticdata_t *sdata)
 		}
 	}
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 		printf("allocated %" PRIu64 " bytes for sieve lines\n",numbytes);
 	allocated_bytes += numbytes;
 
@@ -610,7 +610,7 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 		}
 		else
 		{
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("allocated %u bytes for offsets for %d sieving primes \n",
 					(uint32)(j * sizeof(uint32)), j);
 		}
@@ -631,7 +631,7 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 			}
 			else
 			{
-				if (VFLAG > 2)
+				if (Vflag > 2)
 					printf("allocated %u bytes for bucket bases\n",
 						(uint32)sdata->blocks * (uint32)sizeof(soe_bucket_t *));
 			}
@@ -650,7 +650,7 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 				}
 				else
 				{
-					if (VFLAG > 2)
+					if (Vflag > 2)
 						printf("allocated %u bytes for large bucket bases\n",
 							(uint32)sdata->blocks * (uint32)sizeof(uint32 *));
 				}
@@ -670,7 +670,7 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 			}
 			else
 			{
-				if (VFLAG > 2)
+				if (Vflag > 2)
 					printf("allocated %u bytes for hit counters\n",
 						(uint32)sdata->blocks * (uint32)sizeof(uint32));
 			}
@@ -688,7 +688,7 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 				}
 				else
 				{
-					if (VFLAG > 2)
+					if (Vflag > 2)
 						printf("allocated %u bytes for large hit counters\n",
 							(uint32)sdata->blocks * (uint32)sizeof(uint32));
 				}
@@ -739,11 +739,11 @@ uint64 alloc_threaddata(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 							
 			}
 
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("allocated %u bytes for buckets\n",
 					(uint32)sdata->blocks * (uint32)bucket_alloc * (uint32)sizeof(soe_bucket_t));
 
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("allocated %u bytes for large buckets\n",
 					(uint32)sdata->blocks * (uint32)large_bucket_alloc * (uint32)sizeof(uint32));
 

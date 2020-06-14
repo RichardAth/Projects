@@ -26,7 +26,7 @@ uint32 do_msieve_filtering(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job)
 	char nfs_args[80];
 
 	flags = flags | MSIEVE_FLAG_USE_LOGFILE;
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		flags = flags | MSIEVE_FLAG_LOG_TO_STDOUT;
 	flags = flags | MSIEVE_FLAG_NFS_FILTER;
 	obj->flags = flags;
@@ -35,13 +35,13 @@ uint32 do_msieve_filtering(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job)
 	{
 		sprintf(nfs_args, "filter_maxrels=%u", job->use_max_rels);
 		obj->nfs_args = nfs_args;
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 			printf("%s nfs: commencing msieve filtering with reduced relation set\n",
 				myTime());
 	}
 	else
 	{
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 			printf("%s nfs: commencing msieve filtering\n", myTime());
 	}
 
@@ -86,7 +86,7 @@ uint32 do_msieve_filtering(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job)
 				}
 				else
 				{
-					if (VFLAG > 0)
+					if (Vflag > 0)
 						printf("nfs: warning: .fb file didn't match current job, overwriting\n");
 					fclose(tmp);
 					ggnfs_to_msieve(fobj, job);

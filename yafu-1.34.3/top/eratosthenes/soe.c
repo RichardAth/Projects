@@ -63,7 +63,7 @@ uint64 spSOE(uint32 *sieve_p, uint32 num_sp, mpz_t *offset,
 	//this is necessary even if THREADS = 1;	
 	allocated_bytes += alloc_threaddata(&sdata, thread_data);
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{	
 		printf("finding requested range %" PRIu64 " to %" PRIu64 "\n",sdata.orig_llimit,sdata.orig_hlimit);
 		printf("sieving range %" PRIu64 " to %" PRIu64 "\n",lowlimit,*highlimit);
@@ -181,7 +181,7 @@ void do_soe_sieving(soe_staticdata_t *sdata, thread_soedata_t *thread_data, int 
 		}
 
 		//printf a progress report if counting
-		if (VFLAG > 1)
+		if (Vflag > 1)
 		{
 			//don't print status if computing primes, because lots of routines within
 			//yafu do this and they don't want this side effect
@@ -235,7 +235,7 @@ void do_soe_sieving(soe_staticdata_t *sdata, thread_soedata_t *thread_data, int 
 			for (j=0; j<sdata->numclasses; j++)
 			{
 				//printf a progress report if counting
-				if (VFLAG > 0)
+				if (Vflag > 0)
 				{
 					int k;
 					////don't print status if computing primes, because lots of routines within
@@ -356,7 +356,7 @@ void do_soe_sieving(soe_staticdata_t *sdata, thread_soedata_t *thread_data, int 
 	sdata->num_found = num_p;
 
 #else
-	if (VFLAG > 1)
+	if (Vflag > 1)
 	{
 		//don't print status if computing primes, because lots of routines within
 		//yafu do this and they don't want this side effect

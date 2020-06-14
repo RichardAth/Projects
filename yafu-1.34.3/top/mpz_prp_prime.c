@@ -1596,7 +1596,7 @@ int mpz_aprcl(const mpz_t N)
 /* Return codes: 0 = N is composite.            */
 /*               1 = N is a bpsw probable prime */
 /*               2 = N is prime.                */
-int mpz_aprtcle(const mpz_t N, int verbose)
+int mpz_aprtcle(const mpz_t N, const int verbose)
 {
   s64_t T, U;
   int i, j, G, H, I, J, K, P, Q, W, X;

@@ -97,7 +97,7 @@ void nfs(fact_obj_t *fobj)
 	{
 		add_to_factor_list(fobj, fobj->nfs_obj.gmp_n);
 		
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 			gmp_printf("PRP%d = %Zd\n", gmp_base10(fobj->nfs_obj.gmp_n),
 				fobj->nfs_obj.gmp_n);
 		
@@ -132,7 +132,7 @@ void nfs(fact_obj_t *fobj)
 		FILE *flog;
 		uint32 j;
 
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("input is a perfect power\n");
 		
 		factor_perfect_power(fobj, fobj->nfs_obj.gmp_n);
@@ -163,7 +163,7 @@ void nfs(fact_obj_t *fobj)
 
 	if (fobj->nfs_obj.filearg[0] != '\0')
 	{
-		if (VFLAG > 0) printf("%s test: starting trial sieving\n", myTime());
+		if (Vflag > 0) printf("%s test: starting trial sieving\n", myTime());
 		trial_sieve(fobj);
 		return;
 	}
@@ -212,7 +212,7 @@ void nfs(fact_obj_t *fobj)
 			if (check_for_sievers(fobj, 1) == 1)
 				nfs_state = NFS_STATE_DONE;
 
-			if (VFLAG >= 0 && nfs_state != NFS_STATE_DONE)
+			if (Vflag >= 0 && nfs_state != NFS_STATE_DONE)
 				gmp_printf("%s nfs: commencing nfs on c%d: %Zd\n",
 					myTime(),
 					gmp_base10(fobj->nfs_obj.gmp_n), fobj->nfs_obj.gmp_n);
@@ -333,7 +333,7 @@ void nfs(fact_obj_t *fobj)
 #pragma warning (suppress: 4244)   
 					job.min_rels *= fobj->nfs_obj.filter_min_rels_nudge;
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("nfs: raising min_rels by %1.2f percent to %u\n", 
 					100*(fobj->nfs_obj.filter_min_rels_nudge-1), job.min_rels);
 
@@ -351,7 +351,7 @@ void nfs(fact_obj_t *fobj)
 				// msieve: build matrix
 				flags = 0;
 				flags = flags | MSIEVE_FLAG_USE_LOGFILE;
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					flags = flags | MSIEVE_FLAG_LOG_TO_STDOUT;
 				flags = flags | MSIEVE_FLAG_NFS_LA;
 
@@ -361,7 +361,7 @@ void nfs(fact_obj_t *fobj)
 
 				obj->flags = flags;
 
-				if (VFLAG >= 0)
+				if (Vflag >= 0)
 					printf("%s nfs: commencing msieve linear algebra\n", myTime());
 
 				logprint_oc(fobj->flogname, "a", "nfs: commencing msieve linear algebra\n");
@@ -451,12 +451,12 @@ void nfs(fact_obj_t *fobj)
 				// msieve: find factors
 				flags = 0;
 				flags = flags | MSIEVE_FLAG_USE_LOGFILE;
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					flags = flags | MSIEVE_FLAG_LOG_TO_STDOUT;
 				flags = flags | MSIEVE_FLAG_NFS_SQRT;
 				obj->flags = flags;
 
-				if (VFLAG >= 0)
+				if (Vflag >= 0)
 					printf("%s nfs: commencing msieve sqrt\n", myTime());
 
 				logprint_oc(fobj->flogname, "a", "nfs: commencing msieve sqrt\n");
@@ -480,7 +480,7 @@ void nfs(fact_obj_t *fobj)
 				}
 				else
 				{
-					if (VFLAG >= 0)
+					if (Vflag >= 0)
 					{
 						printf("nfs: failed to find factors... possibly no dependencies found\n");
 						printf("nfs: continuing with sieving\n");
@@ -519,7 +519,7 @@ void nfs(fact_obj_t *fobj)
 			t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 			free(difference);	
 
-			if (VFLAG >= 0)
+			if (Vflag >= 0)
 				printf("%s NFS elapsed time = %6.4f seconds.\n", myTime(), t_time);
 
 			logprint_oc(fobj->flogname, "a", "NFS elapsed time = %6.4f seconds.\n",t_time);
@@ -537,7 +537,7 @@ void nfs(fact_obj_t *fobj)
 		case NFS_STATE_FILTCHECK:
 			if (job.current_rels >= job.min_rels)
 			{
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("nfs: found %u relations, need at least %u, proceeding with filtering ...\n",
 					job.current_rels, job.min_rels);
 				
@@ -564,7 +564,7 @@ void nfs(fact_obj_t *fobj)
 				if ((fobj->nfs_obj.nfs_phases == NFS_DEFAULT_PHASES) ||
 					(fobj->nfs_obj.nfs_phases & NFS_PHASE_SIEVE))
 				{
-					if (VFLAG > 0)
+					if (Vflag > 0)
 						printf("nfs: found %u relations, need at least %u "
 							"(filtering ETA: %uh %um), continuing with sieving ...\n", // uh... um... hmm... idk *shrug*
 							job.current_rels, job.min_rels, est_time / 3600, 
@@ -574,7 +574,7 @@ void nfs(fact_obj_t *fobj)
 				}
 				else
 				{
-					if (VFLAG > 0)
+					if (Vflag > 0)
 						printf("nfs: found %u relations, need at least %u "
 							"(filtering ETA: %uh %um), sieving not selected, finishing ...\n",
 							job.current_rels, job.min_rels, est_time / 3600, 
@@ -756,7 +756,7 @@ void nfs(fact_obj_t *fobj)
 				}				
 			}
 
-			if (VFLAG >= 0)
+			if (Vflag >= 0)
 				printf("%s %s", myTime(), tmpstr);
 
 			logprint_oc(fobj->flogname, "a", "%s", tmpstr);
@@ -776,7 +776,7 @@ void nfs(fact_obj_t *fobj)
 			break;
 
 		case NFS_STATE_RESUMEPOLY:
-			if (VFLAG > 1) printf("%s nfs: resuming poly select\n", myTime());
+			if (Vflag > 1) printf("%s nfs: resuming poly select\n", myTime());
 			fobj->nfs_obj.polystart = job.last_leading_coeff;
 
 			nfs_state = NFS_STATE_POLY;
@@ -800,7 +800,7 @@ void nfs(fact_obj_t *fobj)
 		free(difference);	
 		if ((fobj->nfs_obj.timeout > 0) && (t_time > (double)fobj->nfs_obj.timeout))
 		{
-			if (VFLAG >= 0)
+			if (Vflag >= 0)
 				printf("%s NFS timeout after %6.4f seconds.\n", myTime(), t_time);
 
 			logprint_oc(fobj->flogname, "a", "NFS timeout after %6.4f seconds.\n",t_time);
@@ -930,7 +930,7 @@ void get_ggnfs_params(fact_obj_t *fobj, nfs_job_t *job)
 	double lambda;
 
 	/*
-	if (job->snfs == N && job->size != 0 && job->size != d && VFLAG > 0)
+	if (job->snfs == N && job->size != 0 && job->size != d && Vflag > 0)
 		printf("nfs: warning: size param in job file does not match size of "
 			"number, ignoring param\n");	*/
 
@@ -938,7 +938,7 @@ void get_ggnfs_params(fact_obj_t *fobj, nfs_job_t *job)
 	{
 		if (job->snfs->sdifficulty == 0 && job->snfs->difficulty == 0)
 		{
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("nfs: detected snfs job but no snfs difficulty; "
 					"assuming size of number is the snfs difficulty\n");
 		}
@@ -947,7 +947,7 @@ void get_ggnfs_params(fact_obj_t *fobj, nfs_job_t *job)
 
 		// http://www.mersenneforum.org/showpost.php?p=312701&postcount=2
 		i = (uint32)(0.56*d + 30.0);
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("nfs: guessing snfs difficulty %d is roughly equal to "
 				"gnfs difficulty %d\n", d, i);
 		d = i;
@@ -1098,7 +1098,7 @@ void trial_sieve(fact_obj_t* fobj)
 	char* ptr, * arg = fobj->nfs_obj.filearg;
 	int i = 0, me;
 
-	if (VFLAG < 0) VFLAG = 0;
+	if (Vflag < 0) Vflag = 0;
 
 	while((ptr = strchr(arg, ','))) // this sort of thing is what's absolutely brilliant about C
 	{

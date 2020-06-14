@@ -136,7 +136,7 @@ int OBASE;
 uint32 NUM_WITNESSES;
 
 // output behavior - used everywhere
-int VFLAG, LOGFLAG;
+int Vflag, LOGFLAG;
 
 // threading - used many places (factoring, SoE)
 int THREADS;

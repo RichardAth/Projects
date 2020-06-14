@@ -164,6 +164,6 @@ int mpz_strongbpsw_prp(const mpz_t n);
  * *********************************************************************************/
 
 int mpz_aprcl(const mpz_t N);
-int mpz_aprtcle(const mpz_t N, int verbose);
+int mpz_aprtcle(const mpz_t N, const int verbose);
 
 #endif

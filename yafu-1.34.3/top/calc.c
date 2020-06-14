@@ -1917,7 +1917,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 				difference = my_difftime (&tstart, &tstop);
 				t = ((double)difference->secs + (double)difference->usecs / 1000000);
 				free(difference);
-				if (VFLAG > 0)
+				if (Vflag > 0)
 				{
 					printf("generation of %d %d bit inputs took = %6.4f\n",numin,bits,t);
 					printf("average size was %6.4f bits (max = %d, min = %d)\n",
@@ -1927,7 +1927,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 				gettimeofday(&tstart, NULL);
 				for (i=0; (int)i<numin; i++)
 				{
-					if ((i % (numin/10) == 0) && (VFLAG > 0))
+					if ((i % (numin/10) == 0) && (Vflag > 0))
 						printf("input %d\n",i); //, %d correct\n",i,correct);
 				
 					mpz_set(fobj2->qs_obj.gmp_n, input[i]);
@@ -1986,8 +1986,8 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 					else if (test_tinysiqs)
 					{
 						fobj2->qs_obj.flags = 12345;
-						tmpv = VFLAG;
-						VFLAG = -1;
+						tmpv = Vflag;
+						Vflag = -1;
 						tinySIQS(fobj2->qs_obj.gmp_n, NULL, NULL);
 
 						//if (mpz_cmp_ui(fobj2->qs_obj.gmp_n, 1) != 0)
@@ -1995,7 +1995,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 						//	gmp_printf("not fully factored!  residue = %Zd\n", fobj2->qs_obj.gmp_n);
 						//	print_factors(fobj2);
 						//}
-						VFLAG = tmpv;
+						Vflag = tmpv;
 						//clear_factor_list(fobj2);
 					}
 					else
@@ -2029,7 +2029,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 							(mpz_get_64(input[i]) != outputs[i]))
 							proper_factors++;
 					}
-					if (VFLAG > 0)
+					if (Vflag > 0)
 						printf("factoring %d %d bit inputs took = %6.4f, found %d proper factors\n",
 							numin,bits,t,proper_factors);
 					else
@@ -2037,7 +2037,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 				}
 				else
 				{
-					if (VFLAG > 0)
+					if (Vflag > 0)
 						printf("factoring %d %d bit inputs took = %6.4f\n",numin,bits,t);
 					else
 						printf("%6.2f %6.4f\n", sum / (double)numin, t);
@@ -2350,12 +2350,12 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 				uint32 BLKSIZE = 32768;
 
 				// remember original settings that will be changed
-				v = VFLAG;
+				v = Vflag;
 				dlimit = fobj->div_obj.limit;
 				do_log = LOGFLAG;
 
 				// change them
-				VFLAG = -1;				
+				Vflag = -1;				
 				LOGFLAG = 0;
 				fobj->div_obj.limit = 0;
 
@@ -2499,7 +2499,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 				printf("found %d primes in range\n", np);
 
 				// restore settings
-				VFLAG = v;
+				Vflag = v;
 				LOGFLAG = do_log;
 				fobj->div_obj.limit = dlimit;
 
@@ -2651,7 +2651,7 @@ int set_uvar(const char *name, const mpz_t data)
 	else if (strcmp(name,"LOGFLAG") == 0) {
 		LOGFLAG = i; return 0;}
 	else if (strcmp(name,"VFLAG") == 0) {
-		VFLAG = i; return 0;}
+		Vflag = i; return 0;}
 	else if (strcmp(name,"PRIMES_TO_FILE") == 0) {
 		PRIMES_TO_FILE = i; return 0;}
 	else if (strcmp(name,"PRIMES_TO_SCREEN") == 0) {
@@ -2686,7 +2686,7 @@ int get_uvar(const char *name, mpz_t data)
 	else if (strcmp(name,"LOGFLAG") == 0) {
 		mpz_set_ui(data, LOGFLAG); return 0;}
 	else if (strcmp(name,"VFLAG") == 0) {
-		mpz_set_ui(data, VFLAG); return 0;}
+		mpz_set_ui(data, Vflag); return 0;}
 	else if (strcmp(name,"PRIMES_TO_FILE") == 0) {
 		mpz_set_ui(data, PRIMES_TO_FILE); return 0;}
 	else if (strcmp(name,"PRIMES_TO_SCREEN") == 0) {
@@ -2707,7 +2707,7 @@ int get_uvar(const char *name, mpz_t data)
 		printf("OBASE              %u\n",OBASE);		
 		printf("NUM_WITNESSES      %u\n",NUM_WITNESSES);
 		printf("LOGFLAG            %u\n",LOGFLAG);
-		printf("VFLAG              %u\n",VFLAG);
+		printf("VFLAG              %u\n",Vflag);
 		printf("PRIMES_TO_FILE     %u\n",PRIMES_TO_FILE);
 		printf("PRIMES_TO_SCREEN   %u\n",PRIMES_TO_SCREEN);
 

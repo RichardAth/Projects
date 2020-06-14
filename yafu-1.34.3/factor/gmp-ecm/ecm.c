@@ -86,7 +86,7 @@ int ecm_loop(fact_obj_t *fobj)
 	fobj->ecm_obj.num_curves += ((fobj->ecm_obj.num_curves % THREADS) ? 
 		(THREADS - (fobj->ecm_obj.num_curves % THREADS)) : 0);
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		for (i=0, total_curves_run=0; i<THREADS; i++)
             total_curves_run += thread_data[i].curves_run;
@@ -200,7 +200,7 @@ int ecm_loop(fact_obj_t *fobj)
 		if (bail)
 			goto done;
 
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 		{
 			for (i=0, total_curves_run=0; i<THREADS; i++)
 				total_curves_run += thread_data[i].curves_run;			
@@ -238,7 +238,7 @@ int ecm_loop(fact_obj_t *fobj)
 	}
 
 done:
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("\n");
 
 	flog = fopen(fobj->flogname,"a");
@@ -299,7 +299,7 @@ int ecm_deal_with_factor(ecm_thread_data_t *thread_data)
 	{
 		add_to_factor_list(fobj, thread_data->gmp_factor);
 
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			gmp_printf("\necm: found prp%d factor = %Zd\n", 
 			gmp_base10(thread_data->gmp_factor),
 			thread_data->gmp_factor);
@@ -314,7 +314,7 @@ int ecm_deal_with_factor(ecm_thread_data_t *thread_data)
 	{
 		add_to_factor_list(fobj, thread_data->gmp_factor);
 		
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			gmp_printf("\necm: found c%d factor = %Zd\n", 
 			gmp_base10(thread_data->gmp_factor),
 			thread_data->gmp_factor);
@@ -540,7 +540,7 @@ void ecm_process_init(fact_obj_t *fobj)
 	{
 		if (!fobj->ecm_obj.use_external)
 		{
-			if (VFLAG >= 2)
+			if (Vflag >= 2)
 				printf("GMP-ECM does not support multiple threads... running single threaded\n");
 			THREADS = 1;
 		}
@@ -610,8 +610,8 @@ void *ecm_do_one_curve(void *ptr)
 		int status;
 
 		thread_data->params->B1done = 1.0 + floor (1 * 128.) / 134217728.;
-		if (VFLAG >= 3)
-			thread_data->params->verbose = VFLAG - 2;		
+		if (Vflag >= 3)
+			thread_data->params->verbose = Vflag - 2;		
 		mpz_set_ui(thread_data->params->x, (unsigned long)0);
 		mpz_set_ui(thread_data->params->sigma, thread_data->sigma);
 

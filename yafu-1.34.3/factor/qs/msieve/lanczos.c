@@ -82,7 +82,7 @@ static uint64 * yafu_form_post_lanczos_matrix(fact_obj_t *obj, uint32 *nrows,
 	    (QS_POST_LANCZOS_ROWS > 0 && ncols >= QS_MIN_POST_LANCZOS_DIM)) {
 
 		if (QS_POST_LANCZOS_ROWS > 0) {
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("saving the first %u matrix rows "
 					"for later\n", QS_POST_LANCZOS_ROWS);
 			logprint(obj->logfile, "saving the first %u matrix rows "
@@ -957,7 +957,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	
 	if (packed_matrix->num_threads > 1)
 	{	
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("commencing Lanczos iteration (%u threads)\n",
 					packed_matrix->num_threads);
 		if (obj->logfile != NULL)
@@ -966,7 +966,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	}
 	else
 	{
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("commencing Lanczos iteration\n");
 		if (obj->logfile != NULL)
 			logprint(obj->logfile, "commencing Lanczos iteration\n");
@@ -997,7 +997,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	scratch = (uint64 *)xmalloc(n * sizeof(uint64));
 	v0 = NULL;
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("memory use: %.1f MB\n", (double)
 			((6LL * n * sizeof(uint64) +
 			 yafu_packed_matrix_sizeof(packed_matrix))) / 1048576);
@@ -1015,7 +1015,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	if (obj->flags & MSIEVE_FLAG_NFS_LA_RESTART) {
 		yafu_read_lanczos_state(obj, x, vt_v0, v, vt_a_v, vt_a2_v,
 				winv, n, &dim_solved, &iter, s, &dim1);
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("restarting at iteration %u (dim = %u)\n",
 				iter, dim_solved);
 		if (obj->logfile != NULL)
@@ -1274,7 +1274,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	if (report_interval)
 		fprintf(stderr, "\n");
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("lanczos halted after %u iterations (dim = %u)\n", 
 					iter, dim_solved);
 	if (obj->logfile != NULL)
@@ -1380,7 +1380,7 @@ static uint64 * yafu_block_lanczos_core(fact_obj_t *obj,
 	}
 	else
 	{
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("recovered %u nontrivial dependencies\n", 
 				*num_deps_found);
 		if (obj->logfile != NULL)
@@ -1415,7 +1415,7 @@ uint64 * qs_block_lanczos(fact_obj_t *obj, uint32 nrows,
 	post_lanczos_matrix = yafu_form_post_lanczos_matrix(obj, &nrows,
 					&num_dense_rows, ncols, B);
 	if (num_dense_rows) {
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("matrix includes %u packed rows\n", 
 					num_dense_rows);
 		if (obj->logfile != NULL)

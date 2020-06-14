@@ -604,7 +604,7 @@ void yafu_packed_matrix_init(fact_obj_t *obj,
 
 	//block_size = 32768;
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("using block size %u for "
 			"processor cache size %u kB\n", 
 				block_size, obj->cache_size2 / 1024);

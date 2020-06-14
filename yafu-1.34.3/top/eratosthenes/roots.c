@@ -57,7 +57,7 @@ void getRoots(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 	t = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 		printf("time to compute linear sieve roots = %1.2f\n", t);
 
 	gettimeofday(&tstart, NULL);
@@ -93,7 +93,7 @@ void getRoots(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 
 		if (j == (THREADS - 1)) 
 		{	
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("starting root computation over %u to %u\n", t->startid, t->stopid);
 
 			// run in the current thread
@@ -218,7 +218,7 @@ void getRoots(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 	t = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 		printf("time to compute bucket sieve roots = %1.2f\n", t);
 
 #ifdef INPLACE_BUCKET
@@ -304,7 +304,7 @@ void getRoots(soe_staticdata_t *sdata, thread_soedata_t *thread_data)
 	t = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 		printf("time to compute inplace sieve roots = %1.2f\n", t);
 
 #endif

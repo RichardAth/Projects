@@ -237,7 +237,7 @@ void SIQS(fact_obj_t *fobj)
 	//start a counter for the whole job
 	gettimeofday(&static_conf->totaltime_start, NULL);
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("\n%s starting SIQS on c%d: %s\n", myTime(), fobj->digits, 
 		mpz_conv2str(&gstr1.s, 10, fobj->qs_obj.gmp_n));
 
@@ -613,8 +613,8 @@ void SIQS(fact_obj_t *fobj)
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 
-	if (VFLAG > 0)
-	{
+	if (Vflag > 0)
+	{  /* only print if verbose set */
 		printf("%s QS elapsed time = %6.4f seconds.\n", myTime(), t_time);
 		//printf("Predicted MAX_DIFF = %u, Actual MAX_DIFF = %u\n",MAX_DIFF,MAX_DIFF2);
 		printf("\n==== post processing stage (msieve-1.38) ====\n");
@@ -674,14 +674,14 @@ void SIQS(fact_obj_t *fobj)
 	static_conf->t_time3 = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 	
-	if (VFLAG > 0)
-	{
+	if (Vflag > 0)
+	{   /* only print if verbose set */
 		printf("Lanczos elapsed time = %6.4f seconds.\n", static_conf->t_time1);
 		printf("Sqrt elapsed time = %6.4f seconds.\n",static_conf->t_time2);
 		
 	}
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("%s SIQS elapsed time = %6.4f seconds.\n", myTime(), 
 			static_conf->t_time3);
 
@@ -1203,8 +1203,8 @@ int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf)
 void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
 {
 	//print some info to the screen and the log file
-	if (VFLAG > 0)
-	{	
+	if (Vflag > 0)
+	{	/* only print if verbose set */
 		printf("\n==== %s sieve params ====\n", myTime());
 		printf("n = %d digits, %d bits\n",sconf->digits_n,sconf->bits);
 		printf("factor base: %d primes (max prime = %u)\n",sconf->factor_base->B,sconf->pmax);
@@ -1326,18 +1326,18 @@ void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
 		
 	}
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		if (THREADS == 1)
 		{
-			printf("\n==== sieving in progress (1 thread): %7u relations needed ====\n",
-				sconf->factor_base->B + sconf->num_extra_relations);
+			printf("\n==== %s sieving in progress (1 thread): %7u relations needed ====\n",
+				myTime(), sconf->factor_base->B + sconf->num_extra_relations);
 			printf(  "====           Press ctrl-c to abort and save state           ====\n");
 		}
 		else
 		{
-			printf("\n==== sieving in progress (%2d threads): %7u relations needed ====\n",
-				THREADS,sconf->factor_base->B + sconf->num_extra_relations);
+			printf("\n==== %s sieving in progress (%2d threads): %7u relations needed ====\n",
+				myTime(), THREADS ,sconf->factor_base->B + sconf->num_extra_relations);
 			printf(  "====            Press ctrl-c to abort and save state            ====\n");
 		}
 	}
@@ -1438,8 +1438,8 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 	//various things used during sieving.
 	uint32 i, memsize;
 
-	if (VFLAG > 2)
-	{
+	if (Vflag > 2)
+	{   /* only print if verbose set */
 		printf("memory usage during sieving:\n");
 	}
 
@@ -1462,8 +1462,8 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 	mallocCheck(dconf->curr_poly->gray)
 	dconf->curr_poly->nu = (char *) malloc( 65536 * sizeof(char));
 	mallocCheck(dconf->curr_poly->nu)
-	if (VFLAG > 2)
-	{
+	if (Vflag > 2)
+	{   /* only print if verbose set */
 		memsize = MAX_A_FACTORS * sizeof(int);
 		memsize += 65536 * sizeof(char);
 		memsize += 65536 * sizeof(char);
@@ -1481,8 +1481,8 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 	dconf->num_squfof_cand = 0;
 #endif
 
-	if (VFLAG > 2)
-	{
+	if (Vflag > 2)
+	{   /* only print if verbose set */
 		memsize = 32768 * sizeof(siqs_r);
 		printf("\trelation buffer: %d bytes\n",memsize);
 	}
@@ -1534,14 +1534,14 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 		(size_t)(MAX_A_FACTORS * sconf->factor_base->B * sizeof(uint16)));
 
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		memsize = sconf->factor_base->med_B * sizeof(sieve_fb_compressed) * 2;
 		memsize += sconf->factor_base->B * sizeof(sieve_fb) * 2;
 		printf("\tfactor bases: %d bytes\n",memsize);
 	}
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		memsize = sconf->factor_base->B * sizeof(int)  * 2;
 		memsize += sconf->factor_base->B * sizeof(uint32);
@@ -1553,7 +1553,7 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 	dconf->sieve = (uint8 *)xmalloc_align(
 		(size_t) (sconf->qs_blocksize * sizeof(uint8)));
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		memsize = sconf->qs_blocksize * sizeof(uint8);
 		printf("\tsieve: %d bytes\n",memsize);
@@ -1628,7 +1628,7 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 		dconf->buckets->num_slices = 0;
 	}
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		memsize = 2 * sconf->num_blocks * dconf->buckets->alloc_slices * sizeof(uint32);
 		memsize += dconf->buckets->alloc_slices * sizeof(uint32);
@@ -1704,7 +1704,7 @@ int siqs_static_init(static_conf_t *sconf, int is_tiny)
 	uint32 closnuf;
 	double sum, avg, sd;
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		printf("static memory usage:\n");
 	}
@@ -1812,7 +1812,7 @@ int siqs_static_init(static_conf_t *sconf, int is_tiny)
 			sconf->cycle_table_alloc * sizeof(qs_cycle_t));
 	}
 
-	if (VFLAG > 2)
+	if (Vflag > 2)
 	{
 		memsize = (1 << QS_LOG2_CYCLE_HASH) * sizeof(uint32);
 		printf("\tinitial cycle hashtable: %d bytes\n",memsize);
@@ -1867,7 +1867,7 @@ int siqs_static_init(static_conf_t *sconf, int is_tiny)
 			(size_t)(sconf->factor_base->B * sizeof(uint32)));
 
 
-		if (VFLAG > 2)
+		if (Vflag > 2)
 		{
 			memsize = sconf->factor_base->B * sizeof(uint32) * 5;
 			printf("\tfactor base: %d bytes\n",memsize);
@@ -2084,8 +2084,8 @@ int siqs_static_init(static_conf_t *sconf, int is_tiny)
 	}
 	sconf->factor_base->x2_large_B = i;
 
-	if (VFLAG > 1)
-	{
+	if (Vflag > 1)
+	{   /* only print if verbose set */
 		printf("fb bounds\n\tsmall: %u\n\tSPV: %u\n\t10bit: %u\n\t11bit: %u\n\t12bit: %u\n\t"
 			"13bit: %u\n\t32k div 3: %u\n\t14bit: %u\n\t15bit: %u\n\tmed: %u\n\tlarge: %u\n\tall: %u\n",
 			sconf->factor_base->small_B,
@@ -2413,7 +2413,7 @@ int update_check(static_conf_t *sconf)
 		//difference = my_difftime (&sconf->update_start, &update_stop);
 		//also change rel sum to update_rels below...
 		difference = my_difftime (&sconf->totaltime_start, &update_stop);
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 		{
 			uint32 update_rels;
 
@@ -2488,15 +2488,15 @@ int update_final(static_conf_t *sconf)
 
 	mpz_init(tmp1);
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		mpz_set_ui(tmp1, sconf->tot_poly);					//total number of polys
 		mpz_mul_ui(tmp1, tmp1, sconf->num_blocks);	//number of blocks
 		mpz_mul_2exp(tmp1, tmp1, 1);			//pos and neg sides
 		mpz_mul_2exp(tmp1, tmp1, sconf->qs_blockbits);	//sieve locations per block	
 
-		if (VFLAG > 0)
-		{
+		if (Vflag > 0)
+		{   /* only print if verbose set */
 			printf("\n\nsieving required %d total polynomials\n",
 				sconf->tot_poly);
 			gmp_printf("trial division touched %d sieve locations out of %Zd\n",

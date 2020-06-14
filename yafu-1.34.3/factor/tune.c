@@ -203,10 +203,10 @@ void factor_tune(fact_obj_t *inobj)
 			sievername, startq, qrange);
 		printf("nfs: commencing lattice sieving over range: %u - %u\n",
 			startq, startq + qrange);
-		if (VFLAG > 1) printf("syscmd: %s\n", syscmd);
+		if (Vflag > 1) printf("syscmd: %s\n", syscmd);
 		int cmdret = system(syscmd);
 		if (cmdret != 0) {
-			if (VFLAG <= 1) printf("syscmd: %s\n", syscmd);
+			if (Vflag <= 1) printf("syscmd: %s\n", syscmd);
 			printf("nfs: lattice sieving failed. Status =  %d\n", cmdret);
 		}
 		gettimeofday(&stop, NULL);
@@ -627,7 +627,7 @@ static void update_INI(double mult, double exponent, double mult2, double expone
 				sprintf(newline, "tune_info=%s,WIN32,%lg,%lg,%lg,%lg,%lg,%lg\n",
 					CPU_ID_STR,mult,exponent,mult2,exponent2,xover,MEAS_CPU_FREQUENCY);
 				fputs(newline, out);
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("tune: new settings in yafu.ini: \n  %s \n", newline);
 			}
 #elif BITS_PER_DIGIT == 64
@@ -686,7 +686,7 @@ static void update_INI(double mult, double exponent, double mult2, double expone
 		fputs(newline, out);
 #endif
 	}
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("tune: new settings in yafu.ini: \n  %s \n", newline);
 
 	fclose(in);

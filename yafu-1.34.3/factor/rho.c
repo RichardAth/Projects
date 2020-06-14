@@ -79,10 +79,11 @@ void brent_loop(fact_obj_t *fobj)
 		}
 
 		//verbose: print status to screen
-		if (VFLAG >= 0)
-			printf("rho: x^2 + %u, starting %d iterations on C%u ",
-			fobj->rho_obj.polynomials[fobj->rho_obj.curr_poly], fobj->rho_obj.iterations, 
-			(int)gmp_base10(fobj->rho_obj.gmp_n));
+		if (Vflag > 0)
+			printf("rho: x^2 + %u, starting %d iterations on C%u \n",
+				fobj->rho_obj.polynomials[fobj->rho_obj.curr_poly], 
+				fobj->rho_obj.iterations, 
+				(int)gmp_base10(fobj->rho_obj.gmp_n));
 
 		logprint(flog, "rho: x^2 + %u, starting %d iterations on C%u\n",
 			fobj->rho_obj.polynomials[fobj->rho_obj.curr_poly], fobj->rho_obj.iterations, 
@@ -104,7 +105,7 @@ void brent_loop(fact_obj_t *fobj)
 			{
 				add_to_factor_list(fobj, fobj->rho_obj.gmp_f);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					gmp_printf("rho: found prp%d factor = %Zd\n",
 					gmp_base10(fobj->rho_obj.gmp_f),fobj->rho_obj.gmp_f);
 
@@ -116,7 +117,7 @@ void brent_loop(fact_obj_t *fobj)
 			{
 				add_to_factor_list(fobj, fobj->rho_obj.gmp_f);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					gmp_printf("rho: found c%d factor = %Zd\n",
 					gmp_base10(fobj->rho_obj.gmp_f),fobj->rho_obj.gmp_f);
 
@@ -268,8 +269,8 @@ int mbrent(fact_obj_t *fobj)
 	}
 
 free:
-	if (VFLAG >= 0)
-		printf("\n");
+	//if (Vflag >= 0)
+	//	printf("\n");
 
 	mpz_clear(x);
 	mpz_clear(y);

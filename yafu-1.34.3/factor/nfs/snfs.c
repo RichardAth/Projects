@@ -122,7 +122,7 @@ void check_poly(snfs_t *poly)
 	if (mpz_cmp_ui(t,0) != 0)
 	{
 		poly->valid = 0;
-		if (VFLAG > 0) 
+		if (Vflag > 0) 
 		{
 			gmp_fprintf(stdout, "Error: M=%Zd is not a root of f(x) % N\n"
 				"n = %Zd\n", poly->poly->m, poly->n);
@@ -140,7 +140,7 @@ void check_poly(snfs_t *poly)
 	if (mpz_cmp_ui(t,0) != 0)
 	{
 		poly->valid = 0;
-		if (VFLAG > 0)
+		if (Vflag > 0)
 		gmp_fprintf (stdout, "n = %Zd\n" "Error: M=%Zd is not a root of g(x) % N\n" "Remainder is %Zd\n\n", 
 			poly->n, poly->poly->m, t);
 	}
@@ -148,7 +148,7 @@ void check_poly(snfs_t *poly)
 	//if (!isnormal(poly->anorm) || !isnormal(poly->rnorm)) // can they be negative?
 	//{
 	//	poly->valid = 0;
-	//	if (VFLAG > 0)
+	//	if (Vflag > 0)
 	//		fprintf(stderr, "Error: invalid norms\n");
 	//}
 	//
@@ -388,7 +388,7 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 		// limit the exponent so that the number is less than MAX_SNFS_BITS bits
 		maxb = (int)(MAX_SNFS_BITS / log((double)i) + 1.0);
 
-		if (VFLAG > 1)
+		if (Vflag > 1)
 			printf("nfs: checking %d^x +/- 1 for 32 <= x <= %d\n", i, maxb);
 
 		for (j=32; j<maxb; j++)
@@ -439,12 +439,12 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 				{
 					if (sign == POSITIVE)
 					{
-						if (VFLAG > 0) printf("nfs: input divides %lld*%d^%d + %lld\n", c1, i, j, c2);
+						if (Vflag > 0) printf("nfs: input divides %lld*%d^%d + %lld\n", c1, i, j, c2);
 						logprint_oc(fobj->flogname, "a", "nfs: input divides %lld*%d^%d + %lld\n", c1, i, j, c2);
 					}
 					else
 					{
-						if (VFLAG > 0) printf("nfs: input divides %lld*%d^%d - %lld\n", c1, i, j, c2);
+						if (Vflag > 0) printf("nfs: input divides %lld*%d^%d - %lld\n", c1, i, j, c2);
 						logprint_oc(fobj->flogname, "a", "nfs: input divides %lld*%d^%d - %lld\n", c1, i, j, c2);
 					}
 				}
@@ -452,12 +452,12 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 				{
 					if (sign == POSITIVE)
 					{
-						if (VFLAG > 0) printf("nfs: input divides %d^%d + %lld\n", i, j, c2);
+						if (Vflag > 0) printf("nfs: input divides %d^%d + %lld\n", i, j, c2);
 						logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d + %lld\n", i, j, c2);
 					}
 					else
 					{
-						if (VFLAG > 0) printf("nfs: input divides %d^%d - %lld\n", i, j, c2);
+						if (Vflag > 0) printf("nfs: input divides %d^%d - %lld\n", i, j, c2);
 						logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d - %lld\n", i, j, c2);
 					}
 				}
@@ -491,7 +491,7 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 	{
 		// now that we've reduced the exponent considerably, check for 
 		// large bases by looking at the remaining possible exponents.
-		if (VFLAG > 1)
+		if (Vflag > 1)
 			printf("nfs: checking x^%d +/- 1\n", i);
 		
 		// check -1 case:
@@ -500,7 +500,7 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 		mpz_pow_ui(p, b, i);
 		if ((mpz_cmp(p, a) == 0) && (mpz_sizeinbase(b, 2) < 32))
 		{
-			if (VFLAG > 0) printf("nfs: input divides %d^%d - 1\n", (int)mpz_get_ui(b), i);
+			if (Vflag > 0) printf("nfs: input divides %d^%d - 1\n", (int)mpz_get_ui(b), i);
 			logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d - 1\n", (int)mpz_get_ui(b), i);
 			form->form_type = SNFS_BRENT;
 			form->coeff1 = 1;
@@ -531,7 +531,7 @@ void find_brent_form(fact_obj_t *fobj, snfs_t *form)
 		mpz_pow_ui(p, b, i);
 		if ((mpz_cmp(p, a) == 0) && (mpz_sizeinbase(b, 2) < 32))
 		{
-			if (VFLAG > 0) printf("nfs: input divides %d^%d + 1\n", (int)mpz_get_ui(b), i);
+			if (Vflag > 0) printf("nfs: input divides %d^%d + 1\n", (int)mpz_get_ui(b), i);
 			logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d + 1\n", (int)mpz_get_ui(b), i);
 			form->form_type = SNFS_BRENT;
 			form->coeff1 = 1;
@@ -599,7 +599,7 @@ void find_hcunn_form(fact_obj_t *fobj, snfs_t *form)
 
 			// limit the exponent so that the number is less than MAX_SNFS_BITS bits
 			kmax = (int)(MAX_SNFS_BITS / log((double)i) + 1.0);
-			if (VFLAG > 1)
+			if (Vflag > 1)
 				printf("nfs: checking %d^x +/- %d^x for 20 <= x <= %d\n", i, j, kmax);
 
 			for (k=20; k<kmax; k++)
@@ -611,7 +611,7 @@ void find_hcunn_form(fact_obj_t *fobj, snfs_t *form)
 				mpz_mod(r, g, n);
 				if (mpz_cmp_ui(r, 0) == 0)
 				{
-					if (VFLAG > 0) printf("nfs: input divides %d^%d + %d^%d\n", i, k, j, k);
+					if (Vflag > 0) printf("nfs: input divides %d^%d + %d^%d\n", i, k, j, k);
 					logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d + %d^%d\n", i, k, j, k);
 					form->form_type = SNFS_H_CUNNINGHAM;
 					form->base1 = i;
@@ -636,7 +636,7 @@ void find_hcunn_form(fact_obj_t *fobj, snfs_t *form)
 				mpz_mod(r, g, n);
 				if (mpz_cmp_ui(r, 0) == 0)
 				{
-					if (VFLAG > 0) printf("nfs: input divides %d^%d - %d^%d\n", i, k, j, k);
+					if (Vflag > 0) printf("nfs: input divides %d^%d - %d^%d\n", i, k, j, k);
 					logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d - %d^%d\n", i, k, j, k);
 					form->form_type = SNFS_H_CUNNINGHAM;
 					form->base1 = i;
@@ -694,7 +694,7 @@ void find_xyyxf_form(fact_obj_t *fobj, snfs_t *form)
 	for (x=3; x<maxx; x++)
 	{
 		mpz_set_ui(xy, x);
-		if (VFLAG > 1)
+		if (Vflag > 1)
 			printf("nfs: checking %d^y + y^%d\n", x, x);
 
 		for (y=2; y<x; y++)
@@ -712,7 +712,7 @@ void find_xyyxf_form(fact_obj_t *fobj, snfs_t *form)
 			mpz_mod(r, g, n);
 			if (mpz_cmp_ui(r, 0) == 0)
 			{
-				if (VFLAG > 0) printf("nfs: input divides %d^%d + %d^%d\n", x, y, y, x);
+				if (Vflag > 0) printf("nfs: input divides %d^%d + %d^%d\n", x, y, y, x);
 				logprint_oc(fobj->flogname, "a", "nfs: input divides %d^%d + %d^%d\n", x, y, y, x);
 				form->form_type = SNFS_XYYXF;
 				form->base1 = x;
@@ -773,7 +773,7 @@ void find_primitive_factor(snfs_t *poly)
 
 	// rank 1 is a list of the distinct odd factors.
 	j=0;
-	if (VFLAG > 1) printf("gen: rank 1 terms: ");
+	if (Vflag > 1) printf("gen: rank 1 terms: ");
 	for (i=0; i<nf; i++)
 	{
 		if (f[i] & 0x1)
@@ -783,11 +783,11 @@ void find_primitive_factor(snfs_t *poly)
 			{
 				// distinct
 				franks[1][j++] = f[i];
-				if (VFLAG > 1) printf("%d ", f[i]);
+				if (Vflag > 1) printf("%d ", f[i]);
 			}
 		}
 	}
-	if (VFLAG > 1) printf("\n");
+	if (Vflag > 1) printf("\n");
 	cranks[1] = j;
 	nr = j + 1;
 
@@ -810,35 +810,35 @@ void find_primitive_factor(snfs_t *poly)
 	{
 		franks[2][0] = franks[1][0] * franks[1][1];
 		cranks[2] = 1;
-		if (VFLAG > 1) printf("gen: rank 2 term: %d\n", franks[2][0]);
+		if (Vflag > 1) printf("gen: rank 2 term: %d\n", franks[2][0]);
 	}
 	else if (cranks[1] == 3)
 	{
 		// combinations of 2 primes
 		m=0;
-		if (VFLAG > 1) printf("gen: rank 2 terms: ");
+		if (Vflag > 1) printf("gen: rank 2 terms: ");
 		for (j=0; j<cranks[1]-1; j++)
 		{
 			for (k=j+1; k<cranks[1]; k++)
 			{
 				franks[2][m++] = franks[1][j] * franks[1][k];
-				if (VFLAG > 1) printf("%d ", franks[2][m-1]);
+				if (Vflag > 1) printf("%d ", franks[2][m-1]);
 			}
 		}
 		cranks[2] = m;
-		if (VFLAG > 1) printf("\n");
+		if (Vflag > 1) printf("\n");
 
 		// combinations of 3 primes
 		franks[3][0] = franks[1][0] * franks[1][1] * franks[1][2];
 		cranks[3] = 1;
-		if (VFLAG > 1) printf("gen: rank 3 term: %d\n", franks[3][0]);
+		if (Vflag > 1) printf("gen: rank 3 term: %d\n", franks[3][0]);
 	}
 
 	// for exponents with repeated or even factors, find the multiplier
 	mult = e;
 	for (i=0; i<cranks[1]; i++)
 		mult /= franks[1][i];
-	if (VFLAG > 1) printf("gen: base exponent multiplier: %d\n", mult);
+	if (Vflag > 1) printf("gen: base exponent multiplier: %d\n", mult);
 
 	// form the primitive factor, following the rank system of
 	// http://home.earthlink.net/~elevensmooth/MathFAQ.html#PrimDistinct
@@ -870,7 +870,7 @@ void find_primitive_factor(snfs_t *poly)
 					else {
 						mpz_add(term, term, t); c = '+';
 					}
-					if (VFLAG > 1) gmp_printf("gen: multiplying by %d^%d %c %d^%d = %Zd\n", 
+					if (Vflag > 1) gmp_printf("gen: multiplying by %d^%d %c %d^%d = %Zd\n", 
 						poly->base1, franks[i][j] * mult, c, poly->base2, franks[i][j] * mult, term);
 
 				}
@@ -884,7 +884,7 @@ void find_primitive_factor(snfs_t *poly)
 					else {
 						mpz_add_ui(term, term, 1); c = '+';
 					}
-					if (VFLAG > 1) gmp_printf("gen: multiplying by %d^%d %c 1 = %Zd\n", 
+					if (Vflag > 1) gmp_printf("gen: multiplying by %d^%d %c 1 = %Zd\n", 
 						poly->base1, franks[i][j] * mult, c, term);
 				}
 				mpz_mul(n, n, term);
@@ -911,7 +911,7 @@ void find_primitive_factor(snfs_t *poly)
 					else {
 						mpz_add(term, term, t); c = '+';
 					}
-					if (VFLAG > 1) gmp_printf("gen: dividing by %d^%d %c %d^%d = %Zd\n", 
+					if (Vflag > 1) gmp_printf("gen: dividing by %d^%d %c %d^%d = %Zd\n", 
 						poly->base1, franks[i][j] * mult, c, poly->base2, franks[i][j] * mult, term);
 				}
 				else
@@ -924,7 +924,7 @@ void find_primitive_factor(snfs_t *poly)
 					else {
 						mpz_add_ui(term, term, 1); c = '+';
 					}
-					if (VFLAG > 1) gmp_printf("gen: dividing by %d^%d %c 1 = %Zd\n", 
+					if (Vflag > 1) gmp_printf("gen: dividing by %d^%d %c 1 = %Zd\n", 
 						poly->base1, franks[i][j] * mult, c, term);
 				}
 				mpz_mod(t, n, term);
@@ -1243,7 +1243,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 		for (i=0; i<apoly; i++)
 			snfs_init(&polys[i]);
 
-		if (VFLAG > 0)
+		if (Vflag > 0)
 		{
 			printf( "gen: ========================================================\n"
 				"gen: considering the following polynomials:\n"
@@ -1339,7 +1339,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 				
 				if (polys[npoly].valid)
 				{				
-					if (VFLAG > 0) print_snfs(&polys[npoly], stdout);
+					if (Vflag > 0) print_snfs(&polys[npoly], stdout);
 					npoly++;
 				}
 				else
@@ -1400,7 +1400,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 				
 				if (polys[npoly].valid)
 				{					
-					if (VFLAG > 0) print_snfs(&polys[npoly], stdout);
+					if (Vflag > 0) print_snfs(&polys[npoly], stdout);
 					npoly++;
 				}
 				else
@@ -1461,7 +1461,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 				
 				if (polys[npoly].valid)
 				{					
-					if (VFLAG > 0) print_snfs(&polys[npoly], stdout);
+					if (Vflag > 0) print_snfs(&polys[npoly], stdout);
 					npoly++;
 				}
 				else
@@ -1559,7 +1559,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 						
 						if (polys[npoly].valid)
 						{							
-							if (VFLAG > 0) print_snfs(&polys[npoly], stdout);
+							if (Vflag > 0) print_snfs(&polys[npoly], stdout);
 							npoly++;
 						}
 						else
@@ -1640,7 +1640,7 @@ snfs_t* gen_brent_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 						
 						if (polys[npoly].valid)
 						{							
-							if (VFLAG > 0) print_snfs(&polys[npoly], stdout);
+							if (Vflag > 0) print_snfs(&polys[npoly], stdout);
 							npoly++;
 						}
 						else
@@ -2008,7 +2008,7 @@ snfs_t* gen_xyyxf_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 	for (i=0; i<apoly; i++)
 		snfs_init(&final_polys[i]);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 	{
 		printf( "\ngen: ========================================================\n"
 			"gen: considering the following polynomials:\n"
@@ -2161,7 +2161,7 @@ snfs_t* gen_xyyxf_poly(fact_obj_t *fobj, snfs_t *poly, int* npolys)
 
 			if (final_polys[npoly].valid)
 			{
-				if (VFLAG > 0) print_snfs(&final_polys[npoly], stdout);
+				if (Vflag > 0) print_snfs(&final_polys[npoly], stdout);
 				npoly++;
 			}
 			else
@@ -2298,7 +2298,7 @@ void snfs_scale_difficulty(snfs_t *polys, int npoly)
 			polys[i].poly->side = ALGEBRAIC_SPQ;			
 		}
 
-		if (VFLAG > 1)
+		if (Vflag > 1)
 			printf("gen: anorm: %1.2e, rnorm: %1.2e, ratio: %1.2e, log10(ratio) = %1.2f\n",
 				polys[i].anorm, polys[i].rnorm, ratio, log10(ratio));
 		ratio = log10(ratio) / 6.;
@@ -2422,7 +2422,7 @@ int snfs_rank_polys(fact_obj_t *fobj, snfs_t *polys, int npoly)
 			}
 		}
 	}
-	if (VFLAG > 0 && k > 0)
+	if (Vflag > 0 && k > 0)
 		printf("nfs: rejected %d duplicate polys out of %d\n", k, npoly);
 
 	// then sort

@@ -223,13 +223,17 @@ bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
 	}
 
 	/* open earlier Msieve log file, if any exists. Replace it with an empty file */
-	rv = fopen_s(&log, logPath.data(), "w");
-	if (rv != 0) {
-		if (errno != 0)
-			perror(NULL);
+	//rv = fopen_s(&log, logPath.data(), "w");
+	//if (rv != 0) {
+	//	if (errno != 0)
+	//		perror(NULL);
+	//}
+	//else
+	//	fclose(log);     // if log exists, erase its contents 
+	int rc = remove(logPath.data());
+	if (rc != 0 && errno != ENOENT) {
+		perror("could not remove old Mseive log file ");
 	}
-	else
-		fclose(log);     // if log exists, erase its contents 
 
 	rv = system(command.data());             // start msieve;
 

@@ -91,7 +91,7 @@ As mentioned above it uses algorithms ECM and SIQS.
 Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
 Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
 numbers up to about 95 digits YAFU is generally significantly faster, but for 
-larger numbers it relies on ggnfs which I have not got to work.
+larger numbers it relies on ggnfs.
 
 At all stages a factor list is maintained that contains all known factors, whether
 prime or not, that have not yet been split into smaller factors. Initially the
@@ -145,7 +145,7 @@ the time taken to factorise a large number is unpredictable e.g.
 
 1000 000000 000000 000000 008970 000000 000000 000000 014661 000000 000000 000000 006097 (76 digits)
 = 1 000000 000000 000000 000007 * 10 000000 000000 000000 000013 * 100 000000 000000 000000 000067
-took 291 seconds (227 seconds using Msieve)
+took 291 seconds (227 seconds using Msieve, 90 seconds using YAFU)
 
 40526 919504 877216 755680 601905 432322 134980 384796 226602 145184 481280 000000 000000 (77 digits)
  = 2^53 * 3^27 * 5^13 * 7^9 * 11^5 * 13^4 * 17^3 * 19^3 * 23^2 * 29 * 31 * 37 * 41 * 43 * 47 * 53
@@ -163,12 +163,16 @@ took 291 seconds (227 seconds using Msieve)
 
  Use Msieve
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
-                 about 30 mins vs 1 hour using DA's code. With tweaks to Msieve 
-				 so that it makes more use of elliptic curve factorisation this
-				 was reduced to about 7 minutes.
+                 about 30 mins vs 1 hour using DA's code. 
  Disadvantage:   Build is tricky & and I couldn't get prebuilt version to work
                  Calculator is basic, and result isn't sent to console window.
 				 default is that input & output are from/to files, not console window.
+
+Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number 
+                 2^311-1 it took about 13 mins
+                 needs GGNFS for large numbers > about 95 digits. 
+                 try https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
+                 or https://download.mersenne.ca/
 
  Use Python interpreter
  Advantages:    very easy to install. 

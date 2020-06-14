@@ -74,7 +74,7 @@ void zTrial(fact_obj_t *fobj)
 			logprint(flog,"div: found prime factor = %u\n",q);
 #endif
 
-			if (print && (VFLAG > 0))
+			if (print && (Vflag > 0))
 #if BITS_PER_DIGIT == 64
 				printf("div: found prime factor = %" PRIu64 "\n",q);
 #else
@@ -402,7 +402,7 @@ void zFermat(uint64 limit, uint32 mult, fact_obj_t *fobj)
 			break;
 
 		//progress report
-		if ((count > reportIt) && (VFLAG > 1))
+		if ((count > reportIt) && (Vflag > 1))
 		{
 			for (i=0; i< numChars; i++)
 				printf("\b");

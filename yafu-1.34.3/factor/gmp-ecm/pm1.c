@@ -32,9 +32,9 @@ code to the public domain.
 // paths must use these prototypes
 void pm1_init(fact_obj_t *fobj);
 void pm1_finalize(fact_obj_t *fobj);
-void pm1exit(int sig);
+static void pm1exit(int sig);
 int pm1_wrapper(fact_obj_t *fobj);
-void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog);
+static void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog);
 
 
 uint64 TMP_STG2_MAX;
@@ -84,8 +84,8 @@ int pm1_wrapper(fact_obj_t *fobj)
 	mpz_set(pm1_data.gmp_n, fobj->pm1_obj.gmp_n);
 
 	pm1_data.params->B1done = 1.0 + floor (1 * 128.) / 134217728.;
-	if (VFLAG >= 3)
-		pm1_data.params->verbose = VFLAG - 2;		
+	if (Vflag >= 3)
+		pm1_data.params->verbose = Vflag - 2;		
 
 	if (fobj->pm1_obj.stg2_is_default == 0)
 	{
@@ -183,7 +183,7 @@ void pollard_loop(fact_obj_t *fobj)
 		{
 			add_to_factor_list(fobj, fobj->pm1_obj.gmp_f);
 
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				gmp_printf("pm1: found prp%d factor = %Zd\n",
 				gmp_base10(fobj->pm1_obj.gmp_f), fobj->pm1_obj.gmp_f);
 
@@ -195,7 +195,7 @@ void pollard_loop(fact_obj_t *fobj)
 		{
 			add_to_factor_list(fobj, fobj->pm1_obj.gmp_f);
 
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				gmp_printf("pm1: found c%d factor = %Zd\n",
 				gmp_base10(fobj->pm1_obj.gmp_f), fobj->pm1_obj.gmp_f);
 
@@ -227,7 +227,7 @@ void pollard_loop(fact_obj_t *fobj)
 	return;
 }
 
-void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
+static void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
 {
 	char suffix;
 	char stg1str[20];
@@ -278,10 +278,10 @@ void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
 	else
 		sprintf(stg2str, "gmp-ecm default");
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
-		printf("pm1: starting B1 = %s, B2 = %s on C%d",
-			stg1str,stg2str, (int)gmp_base10(fobj->pm1_obj.gmp_n));
+		printf("%s pm1: starting B1 = %s, B2 = %s on C%d",
+			myTime(), stg1str, stg2str, (int)gmp_base10(fobj->pm1_obj.gmp_n));
 		fflush(stdout);	
 	}
 	logprint(flog,"pm1: starting B1 = %s, B2 = %s on C%d\n",
@@ -289,13 +289,13 @@ void pm1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
 
 		//need a new line to make screen output look right, when
 		//using GMP-ECM, because the "processed" status is not printed
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("\n");
 
 	return;
 }
 
-void pm1exit(int sig)
+static void pm1exit(int sig)
 {
 	printf("\nAborting...\n");
 	PM1_ABORT = 1;

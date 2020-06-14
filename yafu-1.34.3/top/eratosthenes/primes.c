@@ -54,7 +54,7 @@ uint64 primes_from_lineflags(soe_staticdata_t *sdata, thread_soedata_t *thread_d
 		t->stopid = t->startid + range; 
 		lastid = t->stopid;
 
-		if (VFLAG > 2)
+		if (Vflag > 2)
 			printf("thread %d finding primes from byte offset %u to %u\n", 
 				(int)i, t->startid, t->stopid);
 	}
@@ -101,7 +101,7 @@ uint64 primes_from_lineflags(soe_staticdata_t *sdata, thread_soedata_t *thread_d
 
 				memchunk = (uint64)((double)(hi_est - lo_est) * 1.25);
 
-				if (VFLAG > 2)
+				if (Vflag > 2)
 					printf("allocating temporary space for %" PRIu64 " primes between %" PRIu64 " and %" PRIu64 "\n",
 						memchunk, tmplo, tmphi);
 
@@ -185,7 +185,7 @@ uint64 primes_from_lineflags(soe_staticdata_t *sdata, thread_soedata_t *thread_d
 				continue;
 			}
 
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("adding %" PRIu64 " primes found in thread %d\n", t->linecount, j);
 
 			memcpy(primes + GLOBAL_OFFSET + pcount, t->ddata.primes, t->linecount * sizeof(uint64));
@@ -201,7 +201,7 @@ uint64 primes_from_lineflags(soe_staticdata_t *sdata, thread_soedata_t *thread_d
 	// using a direct method
 	if (lastid != sdata->numlinebytes)
 	{
-		if (VFLAG > 2)
+		if (Vflag > 2)
 			printf("adding primes from byte offset %u to %u\n", 
 				lastid, (uint32)sdata->numlinebytes);
 
@@ -212,7 +212,7 @@ uint64 primes_from_lineflags(soe_staticdata_t *sdata, thread_soedata_t *thread_d
 	}
 
 
-	if (VFLAG > 1)
+	if (Vflag > 1)
 	{
 		//don't print status if computing primes, because lots of routines within
 		//yafu do this and they don't want this side effect
@@ -256,7 +256,7 @@ uint32 compute_8_bytes(soe_staticdata_t *sdata,
 		
 	if ((byte_offset & 32767) == 0)
 	{
-		if ((VFLAG > 1) && (pchar != NULL))
+		if ((Vflag > 1) && (pchar != NULL))
 		{
 			int k;
 			for (k = 0; k < *pchar; k++)

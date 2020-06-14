@@ -758,7 +758,7 @@ void smallmpqs(fact_obj_t *fobj)
 	s_init = closnuf;
 
 	//print some info to the screen and the log file
-	if (VFLAG > 0)
+	if (Vflag > 0)
 	{
 		gmp_printf("n = %Zd (%d digits and %d bits)\n",n,digits_n,bits_n);
 		printf("==== sieve params ====\n");
@@ -806,7 +806,7 @@ void smallmpqs(fact_obj_t *fobj)
 				s_init,fb_sieve_n,fb,full,partial,cutoff,small_bits,
 				start_prime,1,&num,numpoly);
 		
-			if (VFLAG > 1)
+			if (Vflag > 1)
 				printf("%d rels found: %d full + "
 					"%d from %d partial, (%d total polys)\r",
 					partial->act_r + full->num_r,
@@ -842,7 +842,7 @@ void smallmpqs(fact_obj_t *fobj)
 
 done:
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("%d relations found: %d full + %d from %d partial, using %d polys\n",
 			partial->act_r+full->num_r,full->num_r,partial->act_r,partial->num_r,numpoly);
 
@@ -852,7 +852,7 @@ done:
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("QS elapsed time = %6.4f seconds.\n",t_time);
 
 	//printf("%" PRIu64 " blocks scanned, %" PRIu64 " hit\n",total_locs, td_locs);
@@ -881,7 +881,7 @@ done:
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);
 	
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("Gauss elapsed time = %6.4f seconds.\n",t_time);
 		
 	for(i=0;i<num_factors;i++)
@@ -943,7 +943,7 @@ void smpqs_get_more_primes(sm_mpqs_poly *poly)
 	uint64 num_p;
 	int i;
 
-	if (VFLAG > 1)
+	if (Vflag > 1)
 		printf("smallmpqs getting more primes: poly_d = %u\n",
 		poly->poly_d);
 
@@ -962,7 +962,7 @@ void smpqs_get_more_primes(sm_mpqs_poly *poly)
 	P_MIN = 0; 
 	P_MAX = PRIMES[(uint32)NUM_P-1];
 
-	if (VFLAG > 1)
+	if (Vflag > 1)
 		printf("prime finding complete, cached %u primes. pmax = %u\n",
 		(uint32)NUM_P, (uint32)P_MAX);
 

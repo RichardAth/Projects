@@ -250,3 +250,6 @@ ModelManifest.xml
 /test
 /MontgomeryMultiplication
 /cpptest
+
+# Visual Studio filters
+*.filters

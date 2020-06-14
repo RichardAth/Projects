@@ -29,7 +29,7 @@ void snfs_choose_poly(fact_obj_t* fobj, nfs_job_t* job)
 	// (i.e., x^(2n))
 	if (mpz_sizeinbase(fobj->nfs_obj.gmp_n, 2) > 2*MAX_SNFS_BITS)
 	{
-		if (VFLAG >= 0)
+		if (Vflag >= 0)
 			printf("nfs: n is too large for snfs, skipping snfs poly select\n");
 		return;
 	}
@@ -44,19 +44,19 @@ void snfs_choose_poly(fact_obj_t* fobj, nfs_job_t* job)
 
 	if (poly->form_type == SNFS_NONE)
 	{
-		if (VFLAG >= 0) printf("nfs: searching for brent special forms...\n");
+		if (Vflag >= 0) printf("nfs: searching for brent special forms...\n");
 		find_brent_form(fobj, poly);
 	}
 
 	if (poly->form_type == SNFS_NONE)
 	{
-		if (VFLAG >= 0) printf("nfs: searching for homogeneous cunningham special forms...\n");
+		if (Vflag >= 0) printf("nfs: searching for homogeneous cunningham special forms...\n");
 		find_hcunn_form(fobj, poly);	
 	}
 
 	if (poly->form_type == SNFS_NONE)
 	{
-		if (VFLAG >= 0) printf("nfs: searching for XYYXF special forms...\n");
+		if (Vflag >= 0) printf("nfs: searching for XYYXF special forms...\n");
 		find_xyyxf_form(fobj, poly);
 	}
 
@@ -95,7 +95,7 @@ void snfs_choose_poly(fact_obj_t* fobj, nfs_job_t* job)
 	snfs_scale_difficulty(polys, npoly);
 	npoly = snfs_rank_polys(fobj, polys, npoly);
 
-	if (VFLAG > 0 && npoly > 1)
+	if (Vflag > 0 && npoly > 1)
 	{		
 		int np = MIN(npoly, NUM_SNFS_POLYS);
 		f = fopen(fobj->flogname, "a");
@@ -137,7 +137,7 @@ void snfs_choose_poly(fact_obj_t* fobj, nfs_job_t* job)
 	// return best job, which contains the best poly
 	best = snfs_test_sieve(fobj, polys, MIN(NUM_SNFS_POLYS,npoly), jobs);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 	{
 		f = fopen(fobj->flogname, "a");
 
@@ -256,7 +256,7 @@ void do_msieve_polyselect(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job,
 		}
 		else
 		{
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("nfs: resuming poly search: reducing deadline by %u seconds\n",
 					job->poly_time);
 
@@ -290,7 +290,7 @@ void do_msieve_polyselect(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job,
 		deadline /= THREADS;
 	}
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("nfs: setting deadline of %u seconds\n",deadline);
 
 	//start a counter for the poly selection
@@ -323,7 +323,7 @@ void do_msieve_polyselect(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job,
 
 	//set flags to do poly selection
 	flags = 0;
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		flags = flags | MSIEVE_FLAG_LOG_TO_STDOUT;
 	flags = flags | MSIEVE_FLAG_NFS_POLY1;
 	flags = flags | MSIEVE_FLAG_NFS_POLYSIZE;
@@ -619,7 +619,7 @@ void do_msieve_polyselect(fact_obj_t *fobj, msieve_obj *obj, nfs_job_t *job,
 	{		
 		printf("custom range search complete in %6.4f seconds\n",t_time);
 	}
-	else if (VFLAG >= 0)
+	else if (Vflag >= 0)
 		printf("elapsed time of %6.4f seconds exceeds %u second deadline; poly select done\n",
 			t_time,deadline);
 	
@@ -739,7 +739,7 @@ void *polyfind_launcher(void *ptr)
 	//remove any temporary relation files
 	remove(t->polyfilename);
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		uint64 start, stop; // one instance where the new msieve api is rather a pain
 		sscanf(t->obj->nfs_args, "min_coeff=%" PRIu64 " max_coeff=%" PRIu64, &start, &stop);

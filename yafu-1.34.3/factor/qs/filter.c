@@ -339,7 +339,7 @@ int restart_siqs(static_conf_t *sconf, dynamic_conf_t *dconf)
 		// multiplier applied (the file saved N does not include the multiplier).
 		if (mpz_cmp(dconf->gmptmp1, sconf->obj->qs_obj.gmp_n) == 0)
 		{
-			if (VFLAG > 1)
+			if (Vflag > 1)
 				printf("restarting siqs from saved data set\n");
 			fflush(stdout);
 			fflush(stderr);
@@ -390,7 +390,7 @@ int restart_siqs(static_conf_t *sconf, dynamic_conf_t *dconf)
 			sconf->num_cycles +
 			sconf->components - sconf->vertices;
 
-			if (VFLAG > 0)
+			if (Vflag > 0)
 			{
 				printf("%d relations found: %d full + "
 					"%d from %d partial\n",
@@ -770,7 +770,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 	curr_a_idx = (uint32)(-1);
 	poly_saved = 0;
 	sconf->poly_list_alloc = 0;
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("attempting to read %u relations\n", num_relations);
 
 	/* Read in the relations and the polynomials they use
@@ -911,7 +911,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 						if (obj->logfile != NULL)
 							logprint(obj->logfile, "failed to read relation %d\n", 
 								curr_expected - 1);
-						if (VFLAG > 0)
+						if (Vflag > 0)
 							printf("failed to read relation %d\n", 
 								curr_expected - 1);
 					break;
@@ -1014,7 +1014,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 		logprint(obj->logfile, "recovered %u relations\n", num_relations);
 		logprint(obj->logfile, "recovered %u polynomials\n", i);
 	}
-	if (VFLAG > 0)
+	if (Vflag > 0)
 	{
 		printf("recovered %u relations\n", num_relations);
 		printf("recovered %u polynomials\n", i);
@@ -1111,7 +1111,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 
 	if (obj->logfile != NULL)
 		logprint(obj->logfile, "attempting to build %u cycles\n", num_cycles);
-	if (VFLAG > 0)
+	if (Vflag > 0)
 	{
 		printf("attempting to build %u cycles\n", num_cycles);
 		fflush(stdout);
@@ -1217,7 +1217,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 
 	if (obj->logfile != NULL)
 		logprint(obj->logfile, "found %u cycles in %u passes\n", num_cycles, passes);
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("found %u cycles in %u passes\n", num_cycles, passes);
 	
 	/* sort the list of cycles so that the cycles with
@@ -1247,14 +1247,14 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 	if (obj->logfile != NULL)
 		logprint(obj->logfile, "distribution of cycle lengths:\n");
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("distribution of cycle lengths:\n");
 	for (i = 0; i < NUM_CYCLE_BINS; i++) {
 		if (cycle_bins[i]) {
 			if (obj->logfile != NULL)
 				logprint(obj->logfile, "   length %d : %d\n", 
 					i + 1, cycle_bins[i]);
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("   length %d : %d\n", 
 					i + 1, cycle_bins[i]);
 		}
@@ -1264,7 +1264,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 		if (obj->logfile != NULL)
 			logprint(obj->logfile, "   length %u+: %u\n", i + 1, cycle_bins[i]);
 
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("   length %u+: %u\n", i + 1, cycle_bins[i]);
 	}
 	
@@ -1272,7 +1272,7 @@ void yafu_qs_filter_relations(static_conf_t *sconf) {
 		logprint(obj->logfile, "largest cycle: %u relations\n",
 			cycle_list[num_cycles-1].cycle.num_relations);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("largest cycle: %u relations\n",
 			cycle_list[num_cycles-1].cycle.num_relations);
 }
@@ -1344,7 +1344,7 @@ uint32 qs_purge_duplicate_relations(fact_obj_t *obj,
 		if (obj->logfile != NULL)
 			logprint(obj->logfile, "freed %d duplicate relations\n", 
 					num_relations - j);
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("freed %d duplicate relations\n", 
 					num_relations - j);
 	}
@@ -1403,7 +1403,7 @@ uint32 qs_purge_singletons(fact_obj_t *obj, siqs_r *list,
 	uint32 i, j, k;
 	uint32 passes = 0;
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("begin with %u relations\n", num_relations);
 	if (obj->logfile != NULL)
 		logprint(obj->logfile, "begin with %u relations\n", num_relations);
@@ -1458,7 +1458,7 @@ uint32 qs_purge_singletons(fact_obj_t *obj, siqs_r *list,
 	if (obj->logfile != NULL)
 		logprint(obj->logfile, "reduce to %u relations in %u passes\n", 
 				num_left, passes);
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("reduce to %u relations in %u passes\n", 
 				num_left, passes);
 	return num_left;

@@ -93,7 +93,7 @@ void tinySIQS(mpz_t n, mpz_t *factors, uint32 *num_factors)
 	static_conf->bits = (uint32)mpz_sizeinbase(n, 2);
 	static_conf->digits_n = gmp_base10(n);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("\nstarting tinySIQS on c%d: %s\n",static_conf->digits_n, 
 		mpz_conv2str(&gstr1.s, 10, n));
 
@@ -143,7 +143,7 @@ void tinySIQS(mpz_t n, mpz_t *factors, uint32 *num_factors)
 		}
 		num_found = static_conf->num_cycles + static_conf->num_relations;
 
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("%d rels found: %d full + "
 				"%d from %d partial (%d examined)\n",
 				static_conf->num_cycles + static_conf->num_relations,
@@ -154,7 +154,7 @@ void tinySIQS(mpz_t n, mpz_t *factors, uint32 *num_factors)
 
 	free_sieve(dconf);
 
-	if (VFLAG > 0)
+	if (Vflag > 0)
 		printf("\n==== post processing stage (block gauss) ====\n");
 
 	static_conf->factor_list.num_factors = 0;

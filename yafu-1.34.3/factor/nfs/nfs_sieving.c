@@ -95,7 +95,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 			get_ggnfs_params(fobj, jobs+i); // get siever
 			if( missing_params )
 			{
-				if( VFLAG >= 0 )
+				if( Vflag >= 0 )
 					printf("test: warning: \"%s\" is missing some paramters (%#X). filling them.\n",
 						filenames[i], missing_params);
 				fill_job_file(fobj, jobs+i, missing_params);
@@ -170,7 +170,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		//create the afb/rfb - we don't want the time it takes to do this to
 		//pollute the sieve timings		
 		sprintf(syscmd, "%s -b %s -k -c 0 -F", jobs[i].sievername, filenames[i]);
-		if (VFLAG > 0) 
+		if (Vflag > 0) 
 			printf("\n%s test: generating factor bases\n", myTime());
 		gettimeofday(&start, NULL);
 		system(syscmd);
@@ -178,16 +178,16 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		difference = my_difftime (&start, &stop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
-		if (VFLAG > 0) 
+		if (Vflag > 0) 
 			printf("%s test: fb generation took %6.4f seconds\n", myTime(), t_time);
 		logprint(flog, "test: fb generation took %6.4f seconds\n", t_time);
 		MySleep(100);
 
 		//start the test
 		sprintf(syscmd,"%s%s -%c %s -f %u -c %u -o %s.out",
-			jobs[i].sievername, VFLAG>0?" -v":"", side[0], filenames[i], jobs[i].startq, spq_range, filenames[i]);
+			jobs[i].sievername, Vflag>0?" -v":"", side[0], filenames[i], jobs[i].startq, spq_range, filenames[i]);
 
-		if (VFLAG > 0) 
+		if (Vflag > 0) 
 			printf("%s test: commencing test sieving of polynomial %d on the %s side over range %u-%u\n", 
 				myTime(), i, side, jobs[i].startq, jobs[i].startq + spq_range);
 		logprint(flog, "test: commencing test sieving of polynomial %d on the %s side over range %u-%u\n", i, 
@@ -255,7 +255,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 
 			line = get_spq(lines, line, fobj);
 			actual_range = line - jobs[i].startq;
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("test: found %u relations in a range of %u special-q\n", 
 				count, actual_range);
 
@@ -281,7 +281,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 		{
 			minscore_id = i;
 			min_score = score[i];
-			if (VFLAG > 0) printf("test: new best estimated total sieving time = %s (with %d threads)\n", 
+			if (Vflag > 0) printf("test: new best estimated total sieving time = %s (with %d threads)\n", 
 				time_from_secs(time, (unsigned long)score[i]), THREADS); 
 			logprint(flog, "test: new best estimated total sieving time = %s (with %d threads)\n", 
 				time_from_secs(time, (unsigned long)score[i]), THREADS); 
@@ -290,7 +290,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 			// could also change siever version in more extreme cases.
 			if (count > 4*actual_range)
 			{
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("test: yield greater than 4x/spq, reducing lpbr/lpba\n");
 				jobs[i].lpba--;
 				jobs[i].lpbr--;
@@ -306,13 +306,13 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 				pos = strstr(jobs[i].sievername, "gnfs-lasieve4I");
 				siever = (pos[14] - 48) * 10 + (pos[15] - 48);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("test: yield greater than 8x/spq, reducing siever version\n");
 
 				switch (siever)
 				{
 				case 11:
-					if (VFLAG > 0) printf("test: siever version cannot be decreased further\n");
+					if (Vflag > 0) printf("test: siever version cannot be decreased further\n");
 					jobs[i].snfs->siever = 11;
 					break;
 
@@ -345,7 +345,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 
 			if (count < actual_range)
 			{
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("test: yield less than 1x/spq, increasing lpbr/lpba\n");
 				
 				jobs[i].lpba++;
@@ -362,13 +362,13 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 				pos = strstr(jobs[i].sievername, "gnfs-lasieve4I");
 				siever = (pos[14] - 48) * 10 + (pos[15] - 48);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					printf("test: yield less than 1x/2*spq, increasing siever version\n");
 
 				switch (siever)
 				{
 				case 16:
-					if (VFLAG > 0) printf("test: siever version cannot be increased further\n");
+					if (Vflag > 0) printf("test: siever version cannot be increased further\n");
 					jobs[i].snfs->siever = 16;
 					break;
 
@@ -401,7 +401,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
      	}
 		else
 		{
-			if (VFLAG > 0) printf("test: estimated total sieving time = %s (with %d threads)\n", 
+			if (Vflag > 0) printf("test: estimated total sieving time = %s (with %d threads)\n", 
 				time_from_secs(time, (unsigned long)score[i]), THREADS);
 			logprint(flog, "test: estimated total sieving time = %s (with %d threads)\n", 
 				time_from_secs(time, (unsigned long)score[i]), THREADS);
@@ -437,7 +437,7 @@ int test_sieve(fact_obj_t* fobj, void* args, int njobs, int are_files)
 	difference = my_difftime (&start2, &stop2);
 	t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 	free(difference);			
-	if (VFLAG > 0) 
+	if (Vflag > 0) 
 		printf("%s test: test sieving took %1.2f seconds\n", myTime(), t_time);
 	logprint(flog, "test: test sieving took %1.2f seconds\n", t_time);
 
@@ -594,7 +594,7 @@ void *lasieve_launcher(void *ptr)
 
 	sprintf(syscmd,"%s%s -%c %s -f %u -c %u -o %s -n %d",
 		thread_data->job.sievername, 
-		VFLAG>0?" -v":"", 
+		Vflag>0?" -v":"", 
 		*side,       // hehe (*side == side[0]) generate -a or -r
 		fobj->nfs_obj.job_infile,   // name of input file for ggnfs
 		fvalue,                     // -f <startq value> (for first_spq)
@@ -602,14 +602,14 @@ void *lasieve_launcher(void *ptr)
 		thread_data->outfilename,   // -o <op file name>
 		thread_data->tindex);       // -n <process_no>
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		printf("%s nfs: commencing %s side lattice sieving over range: %u - %u\n",
 			myTime(), side, thread_data->job.startq, 
 			thread_data->job.startq + thread_data->job.qrange);
 	}
-	if (VFLAG > 1) printf("syscmd: %s\n", syscmd);
-	if (VFLAG > 1) fflush(stdout);
+	if (Vflag > 1) printf("syscmd: %s\n", syscmd);
+	if (Vflag > 1) fflush(stdout);
 	cmdret = system(syscmd);
 
 	// a ctrl-c abort signal is caught by the system command, and nfsexit never gets called.

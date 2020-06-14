@@ -104,7 +104,7 @@ void *soe_worker_thread_main(void *thread_data) {
 		}
 		else if (t->command == SOE_COMPUTE_ROOTS)
 		{
-			if (VFLAG > 2)
+			if (Vflag > 2)
 				printf("starting root computation over %u to %u\n", t->startid, t->stopid);
 
 			if (t->sdata.sieve_range == 0)

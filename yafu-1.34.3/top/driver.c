@@ -353,8 +353,8 @@ int main(int argc, char *argv[])
 
 	//never run silently when run interactively, else the results of
 	//calculations will never be displayed.
-	if (!is_cmdline_run && VFLAG < 0)
-		VFLAG = 0;
+	if (!is_cmdline_run && Vflag < 0)
+		Vflag = 0;
 
 	//session log
 	logfile = fopen(sessionname,"a");
@@ -541,7 +541,7 @@ int main(int argc, char *argv[])
 								gstr1.s = (char *)realloc(gstr1.s, sz * sizeof(char));
 								gstr1.alloc = sz;
 							}
-							if (VFLAG >= 0)
+							if (Vflag >= 0)
 								printf("\n%s = %s\n\n",input_exp, mpz_get_str(gstr1.s, 10, tmp));
 						}
 						else if (OBASE == HEX)
@@ -552,7 +552,7 @@ int main(int argc, char *argv[])
 								gstr1.s = (char *)realloc(gstr1.s, sz * sizeof(char));
 								gstr1.alloc = (int)sz;
 							}
-							if (VFLAG >= 0)
+							if (Vflag >= 0)
 								printf("\n%s = %s\n\n",input_exp, mpz_get_str(gstr1.s, 16, tmp));
 						}
 					}
@@ -689,7 +689,7 @@ static void readINI(fact_obj_t *fobj)
 	fclose(doc);
 
 #ifdef _DEBUG
-	/* cant' use VFLAG because it's not set up yet*/
+	/* cant' use Vflag because it's not set up yet*/
 		printf("yafu.ini processed\n");
 #endif
 	return;
@@ -980,17 +980,17 @@ static int process_arguments(int argc, char **argv, char *input_exp, fact_obj_t 
 static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, 
 	fact_obj_t *fobj)
 {
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("\n\n");
 
-	if (VFLAG > 0 || !is_cmdline_run)
+	if (Vflag > 0 || !is_cmdline_run)
 	{	
 		logprint(NULL,"System/Build Info: \n");
 	}
 	logprint(logfile,"System/Build Info: \n");
 	fflush(stdout);
 
-	if (VFLAG > 0 || !is_cmdline_run)
+	if (Vflag > 0 || !is_cmdline_run)
 #ifdef _MSC_MPIR_VERSION
 		printf("Using GMP-ECM %s, Powered by MPIR %s\n", ECM_VERSION,
 _MSC_MPIR_VERSION);
@@ -1021,7 +1021,7 @@ _MSC_MPIR_VERSION);
 
 	fflush(logfile);
 
-	if (VFLAG > 0 || !is_cmdline_run)
+	if (Vflag > 0 || !is_cmdline_run)
 	{		
 		printf("detected %s\ndetected L1 = %d bytes, L2 = %d bytes, CL = %d bytes\n",
 			idstr,L1CACHE,L2CACHE,CLSIZE);
@@ -1116,7 +1116,7 @@ static void set_default_globals(void)
 	uint64 limit, i;
 	uint32 seed_p[6542], num_sp;
 	
-	VFLAG = 0;
+	Vflag = 0;
 	VERBOSE_PROC_INFO = 0;
 	LOGFLAG = 1;
 
@@ -1673,11 +1673,11 @@ If an error occurs exit with code 1
 //	}
 //	else if (strcmp(opt,OptionArray[20]) == 0) // v option
 //	{
-//		VFLAG++;
+//		Vflag++;
 //	}
 //	else if (strcmp(opt,OptionArray[21]) == 0)  // silent
 //	{
-//		VFLAG = -1;
+//		Vflag = -1;
 //	}
 //	else if (strcmp(opt,OptionArray[22]) == 0)  // pfile
 //	{
@@ -2366,13 +2366,13 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 
 		case 20: // v option
 		{
-			VFLAG++;
+			Vflag++;
 			break;
 		}
 
 		case 21: // silent
 		{
-			VFLAG = -1;
+			Vflag = -1;
 			break;
 		}
 

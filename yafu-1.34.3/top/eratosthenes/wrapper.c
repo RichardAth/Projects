@@ -198,7 +198,7 @@ uint64 *soe_wrapper(uint32 *seed_p, uint32 num_sp,
 				for (j = 0; j < num_ranges; j++)
 				{
 					*num_p += spSOE(sieve_p, num_sp, NULL, tmpl, &tmph, 1, NULL);
-					if (VFLAG > 1)
+					if (Vflag > 1)
 						printf("so far, found %" PRIu64 " primes\n",*num_p);
 					tmpl += maxrange;
 					tmph = tmpl + maxrange;
@@ -209,7 +209,7 @@ uint64 *soe_wrapper(uint32 *seed_p, uint32 num_sp,
 					tmph = tmpl + remainder;
 					*num_p += spSOE(sieve_p, num_sp, NULL, tmpl, &tmph, 1, NULL);
 				}
-				if (VFLAG > 1)
+				if (Vflag > 1)
 					printf("so far, found %" PRIu64 " primes\n",*num_p);
 			}
 			else
@@ -358,7 +358,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 				for (j = 0; j < num_ranges; j++)
 				{
 					*num_p += spSOE(seed_p, num_sp, offset, tmpl, &tmph, 1, NULL);
-					if (VFLAG > 1)
+					if (Vflag > 1)
 						printf("so far, found %" PRIu64 " primes\n",*num_p);
 					tmpl += maxrange;
 					tmph = tmpl + maxrange;
@@ -369,7 +369,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 					tmph = tmpl + remainder;
 					*num_p += spSOE(seed_p, num_sp, offset, tmpl, &tmph, 1, NULL);
 				}
-				if (VFLAG > 1)
+				if (Vflag > 1)
 					printf("so far, found %" PRIu64 " primes\n",*num_p);
 			}
 			else
@@ -422,7 +422,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 			mallocCheck(thread_data)
 			
 			// conduct PRP tests on all surviving values
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("starting PRP tests with %d witnesses on %" PRIu64 " surviving candidates\n", 
 					num_witnesses, *num_p);
 
@@ -444,7 +444,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 				t->stopid = (uint32)(t->startid + range);
 				lastid = t->stopid;
 
-				if (VFLAG > 2)
+				if (Vflag > 2)
 					printf("thread %d computing PRPs from %u to %u\n", 
 						(int)i, t->startid, t->stopid);
 			}
@@ -490,7 +490,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 					t->linecount = 0;
 					for (i = t->startid; i < t->stopid; i++)
 					{
-						if (((i & 128) == 0) && (VFLAG > 0))
+						if (((i & 128) == 0) && (Vflag > 0))
 						{
 							int k;
 							for (k = 0; k<pchar; k++)
@@ -567,7 +567,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 
 			free(thread_data);
 
-			if (VFLAG > 0)
+			if (Vflag > 0)
 			{
 				int k;
 				for (k = 0; k<pchar; k++)
@@ -575,7 +575,7 @@ uint64 *sieve_to_depth(uint32 *seed_p, uint32 num_sp,
 			}
 
 			*num_p = retval;
-			if (VFLAG > 0)
+			if (Vflag > 0)
 				printf("found %" PRIu64 " PRPs\n", *num_p);
 			
 		}

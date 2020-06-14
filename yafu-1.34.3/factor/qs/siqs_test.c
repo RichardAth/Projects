@@ -109,7 +109,7 @@ int check_specialcase(FILE *sieve_log, fact_obj_t *fobj)
 
 	if (mpz_perfect_power_p(fobj->qs_obj.gmp_n))
 	{
-		if (VFLAG > 0)
+		if (Vflag > 0)
 			printf("input is a perfect power\n");
 		
 		factor_perfect_power(fobj, fobj->qs_obj.gmp_n);

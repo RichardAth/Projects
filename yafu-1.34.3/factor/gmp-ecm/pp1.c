@@ -86,8 +86,8 @@ int pp1_wrapper(fact_obj_t *fobj)
 	mpz_set(pp1_data.gmp_n, fobj->pp1_obj.gmp_n);
 
 	pp1_data.params->B1done = 1.0 + floor (1 * 128.) / 134217728.;
-	if (VFLAG >= 3)
-		pp1_data.params->verbose = VFLAG - 2;		
+	if (Vflag >= 3)
+		pp1_data.params->verbose = Vflag - 2;		
 
 	if (fobj->pp1_obj.stg2_is_default == 0)
 	{
@@ -197,7 +197,7 @@ void williams_loop(fact_obj_t *fobj)
 			{
 				add_to_factor_list(fobj, fobj->pp1_obj.gmp_f);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					gmp_printf("pp1: found prp%d factor = %Zd\n",
 					gmp_base10(fobj->pp1_obj.gmp_f),fobj->pp1_obj.gmp_f);
 
@@ -209,7 +209,7 @@ void williams_loop(fact_obj_t *fobj)
 			{
 				add_to_factor_list(fobj, fobj->pp1_obj.gmp_f);
 
-				if (VFLAG > 0)
+				if (Vflag > 0)
 					gmp_printf("pp1: found c%d factor = %Zd\n",
 					gmp_base10(fobj->pp1_obj.gmp_f),fobj->pp1_obj.gmp_f);
 
@@ -290,7 +290,7 @@ void pp1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
 	else
 		sprintf(stg2str, "gmp-ecm default");
 
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 	{
 		printf("pp1: starting B1 = %s, B2 = %s on C%d"
 			,stg1str,stg2str, (int)gmp_base10(fobj->pp1_obj.gmp_n));
@@ -301,7 +301,7 @@ void pp1_print_B1_B2(fact_obj_t *fobj, FILE *flog)
 
 		//need a new line to make screen output look right, when
 		//using GMP-ECM, because the "processed" status is not printed
-	if (VFLAG >= 0)
+	if (Vflag >= 0)
 		printf("\n");
 
 	return;
