@@ -108,11 +108,15 @@ bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factor
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
-static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
-"/msieve/bin/x64/Release/msieve.exe ";
+//static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
+//"/msieve/bin/x64/Release/msieve.exe ";
+static std::string callPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Release\\msieve.exe ";
 #else
-static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
-"/msieve/bin/x64/Debug/msieve.exe ";
+//static std::string callPath = "C:/Users/admin99/Documents/Downloads_long_term_storage"
+//"/msieve/bin/x64/Debug/msieve.exe ";
+static std::string callPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Debug\\msieve.exe ";
 #endif
 static std::string logPath = "C:\\users\\admin99\\msieve.log ";
 static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
