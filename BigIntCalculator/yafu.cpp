@@ -4,6 +4,8 @@
 #include <vector>
 #include <cstdio>
 #include "factor.h"
+const char * myTime(void);  // get time as hh:mm:ss
+
 #ifndef _DEBUG
 static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Release";
@@ -17,7 +19,7 @@ static std::string yafuprog = "yafu-x64.exe ";
 static std::string logPath = "C:/users/admin99/factors.txt";
 //static std::string logPath = "factors.txt";
 std::string batfilename = "YafurunTemp.bat";
-bool yafu = false;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
+bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
 
 /*process YAFU commands */
 void yafuParam(std::string command) {
@@ -73,9 +75,9 @@ void genfile(const std::string &numStr) {
 
 	buffer += " | wintee " + logPath + '\n';
 	if (verbose > 0) {
-		static char time[10];
-		_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
-		std::cout << time << " command is: \n" << buffer ;  
+		//static char time[10];
+		//_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
+		std::cout << myTime() << " command is: \n" << buffer ;  
 	}
 	rv = fputs(buffer.data(), batfile);
 	assert(rv >= 0);

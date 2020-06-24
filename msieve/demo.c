@@ -12,7 +12,7 @@ benefit from your work.
 $Id: demo.c 1025 2018-08-19 02:20:28Z jasonp_sf $
 --------------------------------------------------------------------*/
 
-#include <msieve.h>
+#include "msieve.h"
 #include <signal.h>
 #include <time.h>
 
@@ -599,6 +599,9 @@ int main(int argc, char **argv) {
 	}
 
 	get_random_seeds(&seed1, &seed2);
+
+	//seed1 = 0xa30b627c;     // temp try to reproduce divide-by-zero problem
+	//seed2 = 0x7d97b23c;     // temp
 
 	if (deadline) {
 #if defined(WIN32) || defined(_WIN64)

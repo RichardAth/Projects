@@ -10,7 +10,7 @@ Many cosmetic changes to:
 
 Added a few output messages when processing yafu.ini
 
-changed the definition of msieve_obj in factor.h to match the definition in msieve.
+changed the definition of msieve_obj in factor.h to match the definition in msieve.h
 This was essential to get factorisation using nfs to work.
 
 v 1.34.2

@@ -254,3 +254,5 @@ ModelManifest.xml
 # Visual Studio filters
 *.filters
 /vsyasm-1.2.0-win64
+/BigIntCalculator/msieve.dat.p
+/BigIntCalculator/msieve.fb

@@ -730,7 +730,7 @@ done:
 	return;
 }
 
-void start_worker_thread(thread_sievedata_t *t) {
+static void start_worker_thread(thread_sievedata_t *t) {
 
     //create a thread that will process a polynomial 
 
@@ -755,7 +755,7 @@ void start_worker_thread(thread_sievedata_t *t) {
 #endif
 }
 
-void stop_worker_thread(thread_sievedata_t *t)
+static void stop_worker_thread(thread_sievedata_t *t)
 {
 
 #if defined(WIN32) || defined(_WIN64)
@@ -851,7 +851,7 @@ void *worker_thread_main(void *thread_data) {
 #endif
 }
 
-void *process_poly(void *ptr)
+static void *process_poly(void *ptr)
 //void process_hypercube(static_conf_t *sconf,dynamic_conf_t *dconf)
 {
 	//top level sieving function which performs all work for a single
@@ -1002,7 +1002,7 @@ void *process_poly(void *ptr)
 	return 0;
 }
 
-uint32 siqs_merge_data(dynamic_conf_t *dconf, static_conf_t *sconf)
+static uint32 siqs_merge_data(dynamic_conf_t *dconf, static_conf_t *sconf)
 {
 	//the sconf structure holds the master list of relations and cycles.
 	//merge everything we found in the last round of sieving into
@@ -1153,7 +1153,7 @@ uint32 siqs_merge_data(dynamic_conf_t *dconf, static_conf_t *sconf)
 	return sconf->num_r;
 }
 
-int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf)
+static int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf)
 {
 	fact_obj_t *obj = sconf->obj;
 	char buf[1024];
@@ -1200,7 +1200,7 @@ int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf)
 	return state;
 }
 
-void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
+static void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
 {
 	//print some info to the screen and the log file
 	if (Vflag > 0)
@@ -1432,7 +1432,7 @@ void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf)
 	return;
 }
 
-int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
+static int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 {
 	//allocate the dynamic structure which hold scratch space for 
 	//various things used during sieving.
@@ -1690,7 +1690,7 @@ int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf)
 	return 0;
 }
 
-int siqs_static_init(static_conf_t *sconf, int is_tiny)
+static int siqs_static_init(static_conf_t *sconf, int is_tiny)
 {
 	//find the best parameters, multiplier, and factor base
 	//for the input.  This is an iterative job because we may find
@@ -2313,7 +2313,7 @@ int siqs_static_init(static_conf_t *sconf, int is_tiny)
 	return 0;
 }
 
-int update_check(static_conf_t *sconf)
+static int update_check(static_conf_t *sconf)
 {
 	//check to see if we should combine partial relations
 	//found and check to see if we're done.  also update the screen.
@@ -2407,8 +2407,8 @@ int update_check(static_conf_t *sconf)
 
 		//update status on screen
 		sconf->num_r = sconf->num_relations + 
-		sconf->num_cycles +
-		sconf->components - sconf->vertices;
+			sconf->num_cycles +
+			sconf->components - sconf->vertices;
 
 		//difference = my_difftime (&sconf->update_start, &update_stop);
 		//also change rel sum to update_rels below...
@@ -2423,14 +2423,26 @@ int update_check(static_conf_t *sconf)
 			//to initialize last_numfull and partial when loading
 			update_rels = sconf->num_relations + sconf->num_cycles - 
 				sconf->last_numfull - sconf->last_numcycles;
+			//sconf->charcount = printf("%d rels found: %d full + "
+			//	"%d from %d partial, (%6.2f rels/sec)\r",
+			//	sconf->num_r,   sconf->num_relations,
+			//	sconf->num_cycles + sconf->components - sconf->vertices,
+			//	sconf->num_cycles,
+			//	(double)(sconf->num_relations + sconf->num_cycles) /
+			//	((double)difference->secs + (double)difference->usecs / 1000000));
+
+			double perCentDone = (double)(sconf->num_r) *100.0 / 
+				(sconf->factor_base->B + sconf->num_extra_relations);
+			double timeElapsed = (double)difference->secs + (double)difference->usecs / 1000000.0;
+			double ETA = ((timeElapsed / perCentDone)*100.0) - timeElapsed;
+			if (ETA < 0) ETA = 0.0;  // if > 100% completed eliminate -ve ETA
 			sconf->charcount = printf("%d rels found: %d full + "
-				"%d from %d partial, (%6.2f rels/sec)\r",
-				sconf->num_r,sconf->num_relations,
-				sconf->num_cycles +
-				sconf->components - sconf->vertices,
+				"%d from %d partial, (%2.0f%% complete after %1.0f secs. ETA %1.0f secs)  \r",
+				sconf->num_r,   sconf->num_relations,
+				sconf->num_cycles + sconf->components - sconf->vertices,
 				sconf->num_cycles,
-				(double)(sconf->num_relations + sconf->num_cycles) /
-				((double)difference->secs + (double)difference->usecs / 1000000));
+				perCentDone, timeElapsed, ETA);
+
 
 			fflush(stdout);
 		}
@@ -2479,7 +2491,7 @@ int update_check(static_conf_t *sconf)
 	return retcode;
 }
 
-int update_final(static_conf_t *sconf)
+static int update_final(static_conf_t *sconf)
 {
 	FILE *sieve_log = sconf->obj->logfile;
 	mpz_t tmp1;
@@ -2704,7 +2716,7 @@ int free_sieve(dynamic_conf_t *dconf)
 	return 0;
 }
 
-void free_filter_vars(static_conf_t *sconf)
+static void free_filter_vars(static_conf_t *sconf)
 {
 	int i;
 
@@ -2755,7 +2767,7 @@ void free_filter_vars(static_conf_t *sconf)
 	return;
 }
 
-int free_siqs(static_conf_t *sconf)
+static int free_siqs(static_conf_t *sconf)
 {
 	uint32 i;
 

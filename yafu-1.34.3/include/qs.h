@@ -574,8 +574,8 @@ void save_relation_siqs(uint32 offset, uint32 *large_prime, uint32 num_factors,
 						  uint32 *fb_offsets, uint32 poly_id, uint32 parity,
 						  static_conf_t *conf);
 
-void stop_worker_thread(thread_sievedata_t *t);
-void start_worker_thread(thread_sievedata_t *t);
+static void stop_worker_thread(thread_sievedata_t *t);
+static void start_worker_thread(thread_sievedata_t *t);
 
 #if defined(WIN32) || defined(_WIN64)
 DWORD WINAPI worker_thread_main(LPVOID thread_data);
@@ -583,12 +583,12 @@ DWORD WINAPI worker_thread_main(LPVOID thread_data);
 void *worker_thread_main(void *thread_data);
 #endif
 
-void *process_poly(void *ptr);
+static void *process_poly(void *ptr);
 int free_sieve(dynamic_conf_t *dconf);
-int update_final(static_conf_t *sconf);
-int update_check(static_conf_t *sconf);
-int free_siqs(static_conf_t *sconf);
-void free_filter_vars(static_conf_t *sconf);
+static int update_final(static_conf_t *sconf);
+static int update_check(static_conf_t *sconf);
+static int free_siqs(static_conf_t *sconf);
+static void free_filter_vars(static_conf_t *sconf);
 
 //poly
 void new_poly_a(static_conf_t *sconf, dynamic_conf_t *dconf);
@@ -633,10 +633,10 @@ int yafu_sort_cycles(const void *x, const void *y);
 
 //aux
 uint8 choose_multiplier_siqs(uint32 B, mpz_t n);
-int siqs_static_init(static_conf_t *sconf, int is_tiny);
-int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf);
-int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf);
-uint32 siqs_merge_data(dynamic_conf_t *dconf, static_conf_t *sconf);
+static int siqs_static_init(static_conf_t *sconf, int is_tiny);
+static int siqs_dynamic_init(dynamic_conf_t *dconf, static_conf_t *sconf);
+static int siqs_check_restart(dynamic_conf_t *dconf, static_conf_t *sconf);
+static uint32 siqs_merge_data(dynamic_conf_t *dconf, static_conf_t *sconf);
 
 #ifdef HAVE_CUDA
 int InitCUDA(static_conf_t *sconf);
@@ -653,7 +653,7 @@ int qcomp_siqs(const void *x, const void *y);
 uint32 make_fb_siqs(static_conf_t *sconf);
 void get_dummy_params(int bits, uint32 *B, uint32 *M, uint32 *NB);
 void siqstune(int bits);
-void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf);
+static void print_siqs_splash(dynamic_conf_t *dconf, static_conf_t *sconf);
 
 // tiny variants of a few routines, that live in tinySIQS.c
 int tiny_update_check(static_conf_t *sconf);

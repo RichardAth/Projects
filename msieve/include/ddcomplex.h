@@ -15,8 +15,8 @@ $Id: ddcomplex.h 32 2009-07-28 13:03:52Z jasonp_sf $
 #ifndef _DDCOMPLEX_H_
 #define _DDCOMPLEX_H_
 
-#include <util.h>
-#include <dd.h>
+#include "util.h"
+#include "dd.h"
 
 #ifdef __cplusplus
 extern "C" {

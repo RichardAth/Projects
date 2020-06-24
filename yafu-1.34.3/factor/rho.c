@@ -25,7 +25,7 @@ code to the public domain.
 #include "yafu_ecm.h"
 #include "gmp_xface.h"
 
-int mbrent(fact_obj_t *fobj);
+static int mbrent(fact_obj_t *fobj);
 
 void brent_loop(fact_obj_t *fobj)
 {
@@ -150,7 +150,7 @@ void brent_loop(fact_obj_t *fobj)
 }
 
 
-int mbrent(fact_obj_t *fobj)
+static int mbrent(fact_obj_t *fobj)
 {
 	/*
 	run pollard's rho algorithm on n with Brent's modification, 

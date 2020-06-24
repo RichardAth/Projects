@@ -13,7 +13,7 @@ benefit from your work.
 ----------------------------------------------------------------------*/
 
 #include "soe.h"
-
+/* return a list of primes from 2 to limit in primes. return number of primes */
 uint32 tiny_soe(uint32 limit, uint32 *primes)
 {
 	//simple sieve of erathosthenes for small limits - not efficient

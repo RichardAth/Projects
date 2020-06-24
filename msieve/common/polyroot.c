@@ -35,7 +35,7 @@ typedef struct {
 	double r, i;
 } complex_t;
 
-static const double are = DBL_EPSILON;
+static const double are = DBL_EPSILON; // smallest such that 1.0+DBL_EPSILON != 1.0
 static const double mre = 2.0 * M_SQRT2 * DBL_EPSILON;
 static const complex_t czero = { 0, 0 };
 
@@ -50,8 +50,9 @@ typedef struct {
 	uint32 degree;
 } jt_t;
 
-/*-----------------------------------------------------------------------*/
-static complex_t complex(double re, double im) {
+/*---------convert real,imaginary to complex -----------------------
+name changed to avoid clash with "complex" definition in corecrt_math.h */
+static complex_t CompleX(double re, double im) {
 
 	complex_t res;
 
@@ -60,32 +61,36 @@ static complex_t complex(double re, double im) {
 	return res;
 }
 
+/* return x+y */
 static complex_t cadd(complex_t x, complex_t y) {
-	return complex(x.r + y.r, x.i + y.i);
+	return CompleX(x.r + y.r, x.i + y.i);
 }
 
+/* return -x */
 static complex_t cneg(complex_t x) {
-	return complex(-x.r, -x.i);
+	return CompleX(-x.r, -x.i);
 }
 
+/* return a*b */
 static complex_t cscale(double a, complex_t b) {
-	return complex(a * b.r, a * b.i);
+	return CompleX(a * b.r, a * b.i);
 }
 
+/* return a*b */
 static complex_t cmul(complex_t a, complex_t b) {
-	return complex(a.r * b.r - a.i * b.i, 
+	return CompleX(a.r * b.r - a.i * b.i, 
 			a.r * b.i + a.i * b.r);
 }
-
+/* return a*x + b */
 static complex_t cmac(complex_t a, complex_t x, complex_t b) {
-	return complex(a.r * x.r - a.i * x.i + b.r,
+	return CompleX(a.r * x.r - a.i * x.i + b.r,
 		       a.r * x.i + a.i * x.r + b.i);
 }
 
+/* modulus of a complex number avoiding overflow 
+the definition of the modulus is sqrt (xr^2 + xi^2) where xr is the real part of x
+and xi is the imaginary part */
 static double cmod(complex_t x) {
-
-	/* modulus of a complex number avoiding overflow */
-
 	double re = fabs(x.r); 
 	double im = fabs(x.i); 
 
@@ -102,35 +107,32 @@ static double cmod(complex_t x) {
 	}
 }
 
+#pragma auto_inline (off)  /* try to diagnose divide-by zero error */
+/* complex division x/y avoiding overflow */
 static complex_t cdiv(complex_t x, complex_t y) {
-
-	/* complex division avoiding overflow */
-
 	double zr, zi;
-	double xr = x.r;
-	double xi = x.i;
-	double yr = y.r;
-	double yi = y.i;
+	const double xr = x.r;
+	const double xi = x.i;
+	const double yr = y.r;
+	const double yi = y.i;
 
 	if (yr == 0 && yi == 0) {
-		zr = zi = DBL_MAX;
+		zr = zi = DBL_MAX;  // divide by zero
 	}
 	else if (fabs(yr) < fabs(yi)) {
-		double u = yr / yi;
-		double v = yi + u * yr;
-
+		double u = yr / yi;       // 0 <= abs(u) < 1
+		double v = yi + u * yr;  // v = yi + yr^2/yi
 		zr = (xr * u + xi) / v;
 		zi = (xi * u - xr) / v;
 	}
 	else {
 		double u = yi / yr;
-		double v = yr + u * yi;
-
+		double v = yr + u * yi;  // v = yr + yi^2/yr
 		zr = (xr + xi * u) / v;
 		zi = (xi - xr * u) / v;
 	}
 
-	return complex(zr, zi);
+	return CompleX(zr, zi);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -191,6 +193,7 @@ static double cauchy_bound(uint32 n, const complex_t p[]) {
 
 	return x;
 }
+#pragma auto_inline (on)
 
 /*-----------------------------------------------------------------------*/
 static complex_t poly_val(uint32 n, complex_t s, 
@@ -446,6 +449,7 @@ static int find_one_root(complex_t *root, jt_t *w) {
 	return 0;
 }
 
+#pragma auto_inline (off)  /* try to diagnose divide-by zero error */
 /*-----------------------------------------------------------------------*/
 static uint32 jenkins_traub(complex_t poly[], 
 			uint32 degree, complex_t roots[]) {
@@ -472,8 +476,8 @@ static uint32 jenkins_traub(complex_t poly[],
 	for (i = 0; i <= w.degree; i++)
 		w.poly[i] = poly[i];
 
-	w.angle = complex(M_SQRT1_2, -M_SQRT1_2);
-	w.angle_inc = complex(cos(94 * M_PI / 180), 
+	w.angle = CompleX(M_SQRT1_2, -M_SQRT1_2);
+	w.angle_inc = CompleX(cos(94 * M_PI / 180), 
 			   sin(94 * M_PI / 180));
 
 	/* loop to find roots */
@@ -548,7 +552,7 @@ uint32 find_poly_roots(dd_t *poly, uint32 degree, dd_complex_t *roots) {
 	for (i = 0; i <= degree; i++) {
 		ddcoeffs[i].r = poly[i];
 		ddcoeffs[i].i = dd_set_d(0.0);
-		dcoeffs[degree - i] = complex(poly[i].hi, 0.0);
+		dcoeffs[degree - i] = CompleX(poly[i].hi, 0.0);
 	}
 
 	/* find the roots to a relative error close to the
@@ -577,3 +581,4 @@ uint32 find_poly_roots(dd_t *poly, uint32 degree, dd_complex_t *roots) {
 
 	return 0;
 }
+#pragma auto_inline (on)

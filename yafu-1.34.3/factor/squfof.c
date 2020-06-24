@@ -65,7 +65,7 @@ uint8 *sqr_tests, *sqr_tests2;
 
 #endif
 
-void shanks_mult_unit(uint64 N, mult_t *mult_save, uint64 *f);
+static void shanks_mult_unit(uint64 N, mult_t *mult_save, uint64 *f);
 
 uint64 sp_shanks_loop(mpz_t N, fact_obj_t *fobj)
 {
@@ -217,7 +217,7 @@ done:
 	return f64;
 }
 
-void shanks_mult_unit(uint64 N, mult_t *mult_save, uint64 *f)
+static void shanks_mult_unit(uint64 N, mult_t *mult_save, uint64 *f)
 {
 	//use shanks SQUFOF to factor N.  almost all computation can be done with longs
 	//input N < 2^63
@@ -320,7 +320,7 @@ void shanks_mult_unit(uint64 N, mult_t *mult_save, uint64 *f)
 		}
 
 		//reduce to G0
-		S = (int)sqrt(Qn);
+		S = (uint32)sqrt(Qn);
 		Ro = P + S*((b0 - P)/S);
 		t1 = Ro;
 		So = (uint32)(((int64)N - (int64)t1*(int64)t1)/(int64)S);
@@ -844,7 +844,7 @@ Compile:
 
 static double sqr_tab[1024]; 
 
-void make_sqr_tab()
+static void make_sqr_tab()
 {
 	int i;
 	for(i=0; i<1024; i++)
@@ -864,7 +864,7 @@ static unsigned char issq4199[4199];
 #define FALSE 1
 #endif
 
-void MakeIssq()
+static void MakeIssq()
 {
 	int i;
 	for(i=0; i<1024; i++){ issq1024[i] = 0; }
@@ -878,7 +878,7 @@ void MakeIssq()
 //the 6542 primes up to 65536=2^16, then sentinel 65535 at end
 static uint16 prime[6543]; 
 
-void MakePrimeTable(){
+static void MakePrimeTable(){
 	uint32 i,j,k;
 	prime[0]=2;
 	prime[1]=3;

@@ -16,7 +16,7 @@ $Id: polyroot.h 23 2009-07-20 02:59:07Z jasonp_sf $
 #define _POLYROOT_H_
 
 #include <common.h>
-#include <dd.h>
+#include "dd.h"
 #include <ddcomplex.h>
 
 #ifdef __cplusplus

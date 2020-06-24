@@ -277,6 +277,11 @@ static INLINE dd_t dd_div_d(dd_t a, double b) {
 	double s, e;
 	dd_t r;
 
+	if (b == 0) {
+		fprintf(stderr, "divide-by-zero error in file %s at line %d \n", __FILE__, __LINE__);
+		fflush(stderr);
+	}
+
 	q1 = a.hi / b;  /* approximate quotient */
 
 	/* Compute  this - q1 * b */
@@ -299,6 +304,7 @@ static INLINE dd_t dd_div_dd(dd_t a, dd_t b) {
 	dd_t r;
 	if (b.hi == 0) {
 		fprintf(stderr, "divide-by-zero error in file %s at line %d \n", __FILE__, __LINE__);
+		fflush(stderr);
 	}
 
 	q1 = a.hi / b.hi;
@@ -319,6 +325,7 @@ static INLINE dd_t dd_neg(dd_t a) {
 	return dd_set_dd(-a.hi, -a.lo);
 }
 
+/* compare a & b */
 static INLINE int32 dd_cmp_d(dd_t a, double b) {
 	if (a.hi < b)
 		return -1;
@@ -352,11 +359,8 @@ static INLINE dd_t dd_fabs(dd_t a) {
 		return a;
 }
 
+/* convert a multiple-precision number to a double-double */
 static INLINE dd_t dd_mp2dd(mp_t *x) {
-
-	/* convert a multiple-precision number to 
-	   a double-double */
-
 	int32 i;
 	dd_t d;
 

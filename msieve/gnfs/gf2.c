@@ -572,7 +572,7 @@ static void build_matrix(msieve_obj *obj, mpz_t n) {
 	mpz_poly_free(&fb.afb.poly);
 }
 
-/*------------------------------------------------------------------*/
+/*----- external interface for NFS linear algebra in YAFU -----------*/
 void nfs_solve_linear_system(msieve_obj *obj, mpz_t n) {
 
 	/* convert the list of relations from the sieving 

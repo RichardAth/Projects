@@ -21,7 +21,7 @@ extern "C" {
 
 	/* Lightweight factoring API */
 
-#include <util.h>
+#include "util.h"
 
 #ifdef HAVE_MPI
 #include <mpi.h>

@@ -6,6 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"
+const char * myTime(void);  // get time as hh:mm:ss
 
 /* output from Msieve -h option:
 
@@ -103,7 +104,7 @@ options:
 
 */
 
-bool msieve = true;  // true: use Msieve. false: use built-in ECM and SIQS
+bool msieve = false;  // true: use Msieve. false: use YAFU or built-in ECM and SIQS
 bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
@@ -209,6 +210,9 @@ bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
 	FILE *log;
 	std::string buffer;
 
+	command += " -p -t 2";    // run at idle priority, 2 threads
+	if (verbose >= 1)
+		command += " -v";    // verbose
 	if (eopt)
 		command += options;       // add -e option
 	if (nopt)
@@ -221,19 +225,11 @@ bool callMsieve(Znum num, std::vector<zFactors>&Factors) {
 	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
 	if (verbose > 0) {
-		static char time[10];
-		_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
-		std::cout << time << " command is: \n" << command << '\n';  // temp
+		//static char time[10];
+		//_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
+		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
 	}
 
-	/* open earlier Msieve log file, if any exists. Replace it with an empty file */
-	//rv = fopen_s(&log, logPath.data(), "w");
-	//if (rv != 0) {
-	//	if (errno != 0)
-	//		perror(NULL);
-	//}
-	//else
-	//	fclose(log);     // if log exists, erase its contents 
 	int rc = remove(logPath.data());
 	if (rc != 0 && errno != ENOENT) {
 		perror("could not remove old Mseive log file ");

@@ -1,4 +1,19 @@
-﻿#include <iostream>
+﻿/*
+This file is part of Alpertron Calculators.
+Copyright 2015 Dario Alejandro Alpern
+Alpertron Calculators is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+Alpertron Calculators is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+You should have received a copy of the GNU General Public License
+along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include <iostream>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -25,9 +40,14 @@ void yafuParam(std::string command);      /*process YAFU commands */
 void biperm(int n, mpz_t &result);   // declaration for external function
 
 /* get time in format hh:mm:ss */
-char * myTime(void) {
+const char * myTime(void) {
 	static char timestamp[10];   // time in format hh:mm:ss
-	_strtime_s(timestamp, sizeof(timestamp));
+	struct tm newtime;
+
+	const time_t current = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+	localtime_s(&newtime, &current);    // convert time to tm structure
+	/* convert time to hh:mm:ss */
+	strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
 	return timestamp;
 }
 
@@ -2394,7 +2414,7 @@ extern unsigned __int64 R2(const unsigned __int64 n);
 //}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
-this test will take about 2.5 hours, but ony about 20 mins using improved msieve! 
+this test will take about 2.5 hours, but only about 30 mins using improved YAFU! 
 */
 static void doTests4(void) {
 	int px = 0;
@@ -2403,10 +2423,10 @@ static void doTests4(void) {
 	auto start = clock();	// used to measure execution time
 	if (primeListMax < 1000)
 		generatePrimes(393203);
-	for (px = 0; px <= 69; px++) {
-		std::cout << "\ntest " << px + 1 << " of 70 ";
-		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);
-		m--;
+	for (px = 0; px <= 70; px++) {
+		std::cout << "\ntest " << px + 1 << " of 71 ";
+		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
+		m--;                // get 2^p -1
 		if (factortest(m)) /* factorise m, calculate number of divisors etc */
 			std::cout << "2^" << primeList[px] << " - 1 is prime \n";
 	}
@@ -2469,11 +2489,57 @@ static void doTests5(void) {
 	return;
 }
 
-int main(int argc, char *argv[]) {
-	std::string expr, expupper;
-	Znum Result;
-	retCode rv;
+static void doTests6(void) {
+	bool yafusave = yafu;
+	bool msievesave = msieve;
+	Znum m;
+	msieve = true;
+	yafu = false;
 
+	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
+	m--;                // get 2^p -1
+	factortest(m);      // 84 digits
+	/* p7  factor: 1121297
+	   p38 factor: 31133636305610209482201109050392404721
+	   p40 factor: 6955979459776540052280934851589652278783
+	*/
+
+	mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^p
+	m--;                // get 2^p -1
+	factortest(m);      // 89 digits
+	/* p26 factor: 40122362455616221971122353
+       p63 factor: 396645227028138890415611220710757921643910743103031701971222447 */
+
+	mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^p
+	m--;                // get 2^p -1
+	factortest(m);      // 94 digits
+	/* p7  factor: 5344847
+	   p31 factor: 2647649373910205158468946067671
+	   p57 factor: 294803681348959296477194164064643062187559537539328375831
+	*/
+
+	mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^p
+	m--;                // get 2^p -1
+	factortest(m);      // 95 digits
+	/* p8  factor: 10960009
+	   p17 factor: 14787970697180273
+	   p25 factor: 3857194764289141165278097
+	   p47 factor: 26693012026551688286164949958620483258358551879
+	*/
+
+	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
+	m--;                // get 2^p -1
+	factortest(m);      // 107 digits
+	/* p34 factor: 2927455476800301964116805545194017
+	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
+    */
+	
+	yafu = yafusave;
+	msieve = msievesave;
+}
+
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
+int processCmd(const std::string &expupper) {
 	const static char helpmsg[] =
 		"You can enter expressions that use the following operators, functions and parentheses:\n"
 		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
@@ -2546,6 +2612,74 @@ int main(int argc, char *argv[]) {
 		"SumDigits(n, r) : suma de dígitos de n en base r.\n"
 		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
 
+	if (expupper == "EXIT" || expupper == "SALIDA")
+		return 2;
+
+	if (expupper == "HELP" || expupper == "AYUDA") {
+		if (lang == 0)
+			printf(helpmsg);   // english
+		else
+			printf(ayuda);     // spanish
+		return 1;
+	}
+	if (expupper == "E") { lang = 0; return 1; }           // english
+	if (expupper == "S") { lang = 1; return 1; }	       // spanish (Español)
+	if (expupper == "F") { factorFlag = true; return 1; }  // do factorisation
+	if (expupper == "N") { factorFlag = false; return 1; } // don't do factorisation
+	if (expupper == "X") { hex = true; return 1; }         // hexadecimal output
+	if (expupper == "D") { hex = false; return 1; }        // decimal output
+	if (expupper == "TEST") {
+		doTests();         // do basic tests 
+		return 1;
+	}
+	if (expupper == "TEST2") {
+		doTests2();         // do basic tests 
+		return 1;
+	}
+#ifdef BIGNBR
+	if (expupper == "TEST3") {
+		doTests3();         // do basic tests 
+		return 1;
+	}
+#endif
+	if (expupper == "TEST4") {
+		doTests4();         // do R3 tests 
+		return 1;
+	}
+	if (expupper == "TEST5") {
+		doTests5();         // do YAFU tests 
+		return 1;
+	}
+	if (expupper == "TEST6") {
+		doTests6();         // do Msieve tests 
+		return 1;
+	}
+	if (expupper.substr(0, 6) == "MSIEVE") {
+		msieveParam(expupper);
+		return 1;
+	}
+
+	if (expupper.substr(0, 4) == "YAFU") {
+		yafuParam(expupper);
+		return 1;
+	}
+	if (expupper.substr(0, 2) == "V ") {
+		/* will not throw an exception if input has fat finger syndrome.
+		If no valid digits found, sets verbose to 0 */
+		verbose = atoi(expupper.substr(1).data());
+		std::cout << "verbose set to " << verbose << '\n';
+		return 1;
+	}
+
+	/* drop through to here if no command identified */
+	return 0;
+}
+
+int main(int argc, char *argv[]) {
+	std::string expr, expupper;
+	Znum Result;
+	retCode rv;
+
 	try {
 		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
@@ -2592,60 +2726,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			getline(std::cin, expr);  // expression may include spaces
 
 			strToUpper(expr, expupper);		// convert to UPPER CASE 
-			if (expupper == "EXIT" || expupper == "SALIDA")
-				break;
 
-			if (expupper == "HELP" || expupper == "AYUDA") {
-				if (lang == 0)
-					printf(helpmsg);   // english
-				else
-					printf(ayuda);     // spanish
-				continue;
-			}
-			if (expupper == "E") { lang = 0; continue; }           // english
-			if (expupper == "S") { lang = 1; continue; }	       // spanish (Español)
-			if (expupper == "F") { factorFlag = true; continue; }  // do factorisation
-			if (expupper == "N") { factorFlag = false; continue; } // don't do factorisation
-			if (expupper == "X") { hex = true; continue; }         // hexadecimal output
-			if (expupper == "D") { hex = false; continue; }        // decimal output
-			if (expupper == "TEST") {
-				doTests();         // do basic tests 
-				continue; 
-			}
-			if (expupper == "TEST2") {
-				doTests2();         // do basic tests 
-				continue;
-			}
-#ifdef BIGNBR
-			if (expupper == "TEST3") {
-				doTests3();         // do basic tests 
-				continue;
-			}
-#endif
-			if (expupper == "TEST4") {
-				doTests4();         // do R3 tests 
-				continue;
-			}
-			if (expupper == "TEST5") {
-				doTests5();         // do YAFU tests 
-				continue;
-			}
-			if (expupper.substr(0, 6) == "MSIEVE") {
-				msieveParam(expupper);
-				continue;
-			}
-
-			if (expupper.substr(0, 4) == "YAFU") {
-				yafuParam(expupper);
-				continue;
-			}
-			if (expupper.substr(0, 2) == "V ") {
-				/* will not throw an exception if input has fat finger syndrome.
-				If no valid digits found, sets verbose to 0 */
-				verbose = atoi(expupper.substr(1).data());
-				std::cout << "verbose set to " << verbose << '\n';
-				continue;
-			}
+			int cmdCode = processCmd(expupper);
+			if (cmdCode == 2) break;    // EXIT command
+			if (cmdCode == 1) continue; // command has been fully processed
 
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 

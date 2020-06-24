@@ -23,7 +23,7 @@ C++ rather than C
 
 The calculator part was extensively rewritten to use GMP/MPIR extended precision
 and the Boost multiprecision library. Wherever possible GMP functions were used
-instead of DAs version.
+instead of DAs version of bigIntegers.
 
 Hexadecimal output is turned on with the X command and turned off with D.
 If numbers are displayed in hexadecimal they are preceded by 0x. If the number is
@@ -59,39 +59,7 @@ alternative that worked was already available.
 
 FACTORIZATION
 
-A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
-factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
-is usually significantly faster, provided that the -i option is used with Msieve.
-The -i option causes greater use of ECM within Msieve. The default in mseive is 
-to use ECM only for factors < 15 digits. In addition I modified the function 
-choose_max_digitswithin the source file gmp_ecm.c to increase the use of ECM 
-still further. The code change is:
-
-	if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
-		if (bits > 200) {           // 200 bits = about 60 digits
-			if (bits < 240)         // 240 bits = about 72 digits
-				max_digits = 20;    // increased from 15
-			else if (bits < 280)    // 280 bits = about 84 digits 
-				max_digits = 25;    // increased from 20
-			else if (bits < 320)    // 320 bits = about 96 digits
-				max_digits = 30;    // increased from 25
-			else if (bits < 360)    // 360 bits = about 108 digits
-				max_digits = 30;
-			else if (bits < 400)    // 400 bits = about 120 digits
-				max_digits = 35;
-			else
-				max_digits = 40;
-		}
-Msieve is on by default but can be turned off by the "MSIEVE OFF" command and
-turned back on by the MSIEVE ON command. The path to access Msieve is hard coded
-in msieve.cpp and should be changed to whatever is appropriate.
-
-As mentioned above it uses algorithms ECM and SIQS.
-
-Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
-Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
-numbers up to about 95 digits YAFU is generally significantly faster, but for 
-larger numbers it relies on ggnfs.
+As mentioned above ECM and SIQS are used for factorisation.
 
 At all stages a factor list is maintained that contains all known factors, whether
 prime or not, that have not yet been split into smaller factors. Initially the
@@ -153,6 +121,59 @@ took 291 seconds (227 seconds using Msieve, 90 seconds using YAFU)
 
  The time required depends mainly on the size of the 2nd largest factor, but you don't
  know what that is in advance.
+
+A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
+factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
+is usually significantly faster, provided that the -i option is used with Msieve.
+The -i option causes greater use of ECM within Msieve. The default in mseive is 
+to use ECM only for factors < 15 digits. 
+
+The source code for Msieve was downloaded from https://sourceforge.net/projects/msieve/files/
+(use green buton)
+
+To build Msieve from source requires GMP-ECM library functions, which in turn 
+require Pthreads. 
+In addition I modified the function choose_max_digits within the source file gmp_ecm.c 
+to increase the use of ECM still further. The code change is:
+
+	if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
+		if (bits > 200) {           // 200 bits = about 60 digits
+			if (bits < 240)         // 240 bits = about 72 digits
+				max_digits = 20;    // increased from 15
+			else if (bits < 280)    // 280 bits = about 84 digits 
+				max_digits = 25;    // increased from 20
+			else if (bits < 320)    // 320 bits = about 96 digits
+				max_digits = 30;    // increased from 25
+			else if (bits < 360)    // 360 bits = about 108 digits
+				max_digits = 30;
+			else if (bits < 400)    // 400 bits = about 120 digits
+				max_digits = 35;
+			else
+				max_digits = 40;
+		}
+
+
+Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
+Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
+numbers up to about 95 digits YAFU is generally significantly faster than Msieve 
+but for larger numbers it relies on ggnfs.
+
+The source for YAFU was obtained from https://sourceforge.net/projects/yafu/files/1.24/
+(use green button to download version 1.34)
+
+To build YAFU from source requires Msieve and GMP-ECM library functions, which in
+turn require Pthreads. 
+
+YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
+back on by the YAFU ON command (which also turns Msieve off). The path to access 
+YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
+
+Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
+also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
+access msieve is hard coded in msieve.cpp and should be changed to whatever 
+is appropriate.
+
+
 
  ALTERNATIVES
 

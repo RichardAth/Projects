@@ -1114,7 +1114,7 @@ static void yafu_set_idle_priority(void) {
 static void set_default_globals(void)
 {
 	uint64 limit, i;
-	uint32 seed_p[6542], num_sp;
+	uint32 seed_p[6542], num_sp;  // there are 6542 primes < 65537
 	
 	Vflag = 0;
 	VERBOSE_PROC_INFO = 0;
@@ -1160,7 +1160,7 @@ static void set_default_globals(void)
 	//bootstrap the process by finding some initial sieve primes.
 	//if the requested offset+range is large we may need to find more - 
 	//we can use these primes to accomplish that.
-	num_sp = tiny_soe(65537, seed_p);
+	num_sp = tiny_soe(65537, seed_p);  // there are 6542 primes < 65537
 	PRIMES = GetPRIMESRange(seed_p, num_sp, NULL, 0, szSOEp, &limit);
 
 	//save a batch of sieve primes too.
@@ -1172,7 +1172,7 @@ static void set_default_globals(void)
 	szSOEp = (uint32)limit;
 	NUM_P = limit;
 	P_MIN = 0; 
-	P_MAX = PRIMES[(uint32)NUM_P-1];
+	P_MAX = PRIMES[NUM_P-1];
 
 	// random seeds
 	get_random_seeds(&g_rand);	
