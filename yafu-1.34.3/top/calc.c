@@ -1232,7 +1232,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 			printf("wrong number of arguments in lg2\n");
 			break;
 		}
-		mpz_set_ui(operands[0], mpz_sizeinbase(operands[0], 2));
+		mpz_set_ui(operands[0], mpz_sizeinbase(operands[0], 2)-1);
 		break;
 
 	case 10:		//log - one argument
@@ -1241,7 +1241,7 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 			printf("wrong number of arguments in log\n");
 			break;
 		}
-		mpz_set_ui(operands[0], mpz_sizeinbase(operands[0], 10));
+		mpz_set_ui(operands[0], mpz_sizeinbase(operands[0], 10)-1);
 		break;
 
 	case 11:		//ln - one argument
@@ -1425,9 +1425,12 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 		break;
 
 	case 22:		//sqrt - one argument
-		if (nargs != 1)
-		{
+		if (nargs != 1) {
 			printf("wrong number of arguments in sqrt\n");
+			break;
+		}
+		if (mpz_sgn(operands[0]) < 0) {
+			printf("sqrt is illegal for -ve numbers! \n");
 			break;
 		}
 		mpz_root(operands[0], operands[0], 2);
