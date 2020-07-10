@@ -342,7 +342,7 @@ void read_cycles(msieve_obj *obj,
 
 /* emit logging information */
 
-void logprintf(msieve_obj *obj, char *fmt, ...);
+void logprintf(const msieve_obj *obj, char *fmt, ...);
 
 /* convert an expression into an mp_t; returns 0 on
    success, negative value on failure */

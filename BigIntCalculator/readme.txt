@@ -67,9 +67,9 @@ factor list just contains the number to be factorised. Whenever a new factor is 
 existing factors that are multiples of that factor are split into two factors. If
 this process creates equal factors they are merged. 
 
-Step 1: if number to factor is > than the the square of the largest prime to be used in trial
-division, check if the number is a perfect power +/- 1 and if so attempt to factorise it.
-This step may return factors that are not prime factors.
+Step 1: if number to factor is > than the the square of the largest prime to be 
+used in trial division, check if the number is a perfect power +/- 1 and if so 
+attempt to factorise it. This step may return factors that are not prime factors.
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
 using a list of primes. If a factor is found that is: 
@@ -96,10 +96,10 @@ B. Test whether the number is prime:
       or factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
    used for numbers between 30 and 95 digits.
 
-The factoriser is essentially DAs program, with an interface function that converts 
-GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
-messages it produces have been modified to work with a console window instead of a 
-Web Browser. 
+The built-in factoriser is essentially DAs program, with an interface function 
+that converts GMP/MPIR extended precision numbers to DAs BigIntegers and vice 
+versa. The progress messages it produces have been modified to work with a 
+console window instead of a Web Browser. 
 
 A couple of checks for overflows were added. If an error is detected an exception 
 is thrown, an error message is output, and the program continues without 
@@ -124,8 +124,8 @@ took 291 seconds (227 seconds using Msieve, 90 seconds using YAFU)
 
 A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
 factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
-is usually significantly faster, provided that the -i option is used with Msieve.
-The -i option causes greater use of ECM within Msieve. The default in mseive is 
+is usually significantly faster, provided that the -e option is used with Msieve.
+The -e option causes greater use of ECM within Msieve. The default in mseive is 
 to use ECM only for factors < 15 digits. 
 
 The source code for Msieve was downloaded from https://sourceforge.net/projects/msieve/files/
@@ -252,8 +252,9 @@ P(n)                                Unrestricted Partition Number (number of
 Gcd(m,n)                            Greatest common divisor of m and n.
 Modinv(m,n)                         inverse of m modulo n, only valid when gcd(m,n)=1.
 Modpow(m,n,r)                       finds m^n modulo r. more efficient than (m^n)%r
-                                    NB. If n is -ve, the value is only defined if the inverse of 
-                                    m with respect to r exitst, i.e. only if gcd(m, r) is 1
+                                    NB. If n is -ve, the value is only defined if the 
+                                    inverse of m with respect to r exitst, i.e. only 
+                                    if gcd(m, r) is 1
 Totient(n)                          finds the number of positive integers less than n 
                                     which are relatively prime to n.
 IsPrime(n)                          returns zero if n is not probable prime, -1 if it is.
@@ -293,3 +294,81 @@ PI(n)                               n <= 10^9 (this is because this calculation 
 F(n)                                n <= 95700 (limits result to 20,000 digits)
 L(n)                                n <= 95700 (limits result to 20,000 digits)
 P(n)                                n < 60000 (implementation limit)
+
+There are a number of built-in test commands. In all tests the results are
+checked for correctness and a summary of the factorisation results is printed
+after the tests are completed:
+
+TEST    1st tests most of the calculator functions, then factorises a series of
+        numbers. The numbers are chosen to test for various special cases as well
+        as normal factorisation. This test is good for regression testing.
+
+TEST2   test factorisation using pseudo-random numbers of a specified size.
+        Command format is TEST2 [num1[,num[,num3]]] where num1 is the number of 
+        tests,  num2 is the size of the numbers to be factored in bits. If num3  
+        NE 0 the number to be factored consists of 2 approximately same-sized 
+        'strong' prime factors, otherwise it is a random number that can contain 
+        any number of factors. If the values for num2 and num3 are the same in 
+        two TEST2 commands the same sequence of numbers to be factored is 
+        generated. This command is useful for benchmarking factorisation.
+
+TEST3    Tests for the built-in bigintegers. These are based on DA's biginteger 
+         functions but made into a C++ class with arithmetic , shift, compare 
+         operators, etc implemented. However the built-in bigintegers are now 
+         only used in the the built-in ECM & SIQS, which themselver are not 
+         normally used, so this test is not normally included.
+
+TEST4     test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
+          this test will take aover an hour.
+
+TEST5     tests using only YAFU for factorisation. Note that these tests bypass the
+          trial division etc normally used and rely on YAFU for all the factorisation.
+
+TEST6     tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
+
+Test example:
+
+enter expression to be processed, or HELP, or EXIT
+TEST2 5
+Use default 48 for number size in bits
+ 
+ <******** output from indivdial tests omitted *****************>
+
+10:48:34 All tests completed. Time used = 0.172 seconds
+Test Num Size   time      Unique Factors Total Factors     2nd Fac
+   1       14  0:00:00.01             4          4            4
+   2       15  0:00:00.04             4          4            3
+   3       15  0:00:00.03             3          3            5
+   4       15  0:00:00.03             2          2            5
+   5       14  0:00:00.02             5          6            4
+
+
+   note: The 'Size' column gives the size in decimal digits of the number to be
+   factored. The '2nd Fac' column gives the size of the 2nd largest factor, 
+   which correlates much more closely with time required than the 'Size' does.
+   The 'time' column gives the time required for each factorisation to one-
+   hundredth of a second.
+
+   The YAFU command controls factorisation using YAFU:
+
+   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
+   YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
+   YAFU PATH Displays path used when starting YAFU
+   YAFU LOG  Displays path & file name for YAFU output file
+   YAFU PLAN <name> 
+             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
+             These correspond to the -plan options documented in YAFU's
+             docfile.txt file. The default is NORMAL. This is a convenient way
+             to control the amount of tesing using ECM before switching to SIQS 
+             or NFS.
+
+   The MSIEVE command controls factorisation using Msieve:
+
+   MSIEVE ON    Turns on factorisation using Msieve (and turns YAFU off)
+   MSIEVE OFF   Turns off factorisation using Msieve (revert to built-in ECM and SIQS)
+   MSIEVE PATH  Displays path used when starting Msieve
+   MSIEVE LOG   Displays path & file name for Msieve output file
+   MSIEVE E ON  Turns on -e option in Msieve; perform 'deep' ECM
+   MSIEVE E OFF Turns off -e option in Msieve
+   MSIEVE N ON  Turns on -n option in Msieve; use NFS instead of SIQS
+   MSIEVE N OFF Turns off -n option in Msieve

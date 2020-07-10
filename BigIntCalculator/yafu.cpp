@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <cstdio>
+#include <cassert>
+#include <mpir.h>
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
 
@@ -20,38 +22,73 @@ static std::string logPath = "C:/users/admin99/factors.txt";
 //static std::string logPath = "factors.txt";
 std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
+int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
 /*process YAFU commands */
-void yafuParam(std::string command) {
+void yafuParam(const std::string &command) {
 	std::string param = command.substr(4);  /* remove "YAFU" */
+	const std::vector<std::string> paramList = {
+		"ON", "OFF", "PATH", "LOG", "PLAN"
+	};
+
+	ptrdiff_t ix = 0;
+
 	while (param[0] == ' ')
 		param.erase(0, 1);              /* remove leading space(s) */
 
-	if (param == "ON") {
-		yafu = true;
-		msieve = false;
-	}
-	else if (param == "OFF") {
-		yafu = false;
-	}
-	else if (param == "PATH") {
-		std::cout << "path = " << Path << '\n';
-		/* todo; allow command to change path */
-	}
-	else if (param == "LOG") {
-		std::cout << "log file = " << logPath << '\n';
-		/* todo; allow command to change log file name */
-	}
-	
-	else {
-		std::cout << "invalid YAFU command (use ON, OFF, PATH or LOG \n";
+	/* match parameter value to a list entry */
+	for (ix = 0; ix < paramList.size(); ix++) {
+		if (param.size() < paramList[ix].size()) continue;
+		if (paramList[ix].compare(param.substr(0, paramList[ix].size())) == 0)
+			break;
 	}
 
+	switch (ix) {
+	case 0:{    // YAFU ON
+			yafu = true;
+			msieve = false;
+			break;
+		}
+	case 1: {    // YAFU OFF
+			yafu = false;
+			break;
+		}
+	case 2: {     // YAFU PATH
+			std::cout << "path = " << Path << '\n';
+			/* todo; allow command to change path */
+			break;
+		}
+	case 3: {     // YAFU LOG
+			std::cout << "log file = " << logPath << '\n';
+			/* todo; allow command to change log file name */
+			break;
+		}
+	case 4: {   // YAFU PLAN
+		// plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
+		// CUSTOM is not supported, NORMAL is default
+		param.erase(0, 4);  // get rid of "PLAN"
+		while (param[0] == ' ')
+			param.erase(0, 1);              /* remove leading space(s) */
+		if (param == "NONE")         pvalue = 1;
+		else if (param == "NOECM")   pvalue = 2;
+		else if (param == "LIGHT")   pvalue = 3;
+		else if (param == "NORMAL")  pvalue = 4;
+		else if (param == "DEEP")    pvalue = 4;
+		else std::cout
+			<< "YAFU PLAN value invalid; use NONE, NOECM, LIGHT, NORMAL, or DEEP\n";
+		break;
+	}
+
+	default: {
+			std::cout << "invalid YAFU command (use ON, OFF, PATH, LOG or PLAN \n";
+			break;
+		}
+	}
 	/* to be completed */
 }
 
 /* generate short batch file to run YAFU */
-void genfile(const std::string &numStr) {
+static void genfile(const std::string &numStr) {
 	FILE * batfile;
 	std::string buffer;
 
@@ -73,12 +110,24 @@ void genfile(const std::string &numStr) {
 	for (int i = 1; i <= verbose; i++)
 		buffer += " -v";                    // set verbose mode for YAFU
 
-	buffer += " | wintee " + logPath + '\n';
+	if (pvalue != 4) {
+		switch (pvalue) {
+		case 1: buffer += " -plan none"; break;
+		case 2: buffer += " -plan noecm"; break;
+		case 3: buffer += " -plan light"; break;
+		case 4: buffer += " -plan normal"; break;
+		case 5: buffer += " -plan deep"; break;
+		default: break;  // ignore invalid pvalue
+		}
+	}
+	buffer += " -of " + logPath + '\n';   
+
 	if (verbose > 0) {
 		//static char time[10];
 		//_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
 		std::cout << myTime() << " command is: \n" << buffer ;  
 	}
+
 	rv = fputs(buffer.data(), batfile);
 	assert(rv >= 0);
 
@@ -88,7 +137,7 @@ void genfile(const std::string &numStr) {
 	fclose(batfile);
 }
 
-bool callYafu(Znum num, std::vector<zFactors>&Factors) {
+bool callYafu(const Znum &num, std::vector<zFactors>&Factors) {
 	int rv;
 	std::string command = Path + yafuprog;
 	std::string numStr;
@@ -103,8 +152,6 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
 	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
 	genfile(numStr);
-
-	//command += " factor(" + numStr + ")";      // append number to be factored to command line
 
 	int rc = remove(logfile.data());
 	if (rc != 0 && errno != ENOENT) {
@@ -123,35 +170,59 @@ bool callYafu(Znum num, std::vector<zFactors>&Factors) {
 		return false;
 	}
 
-	std::ifstream logStr(logfile, std::ios::in);  // open log file for input
-	if (!logStr.is_open()) {
-		std::cout << "cannot open YAFU log file \n";
+	/* the format of the text file containing the factors is as follows:
+	The number to be factored is in brackets followed by a / 
+	The factors follow separated by / characters. If a factor 
+	is repeated this is indicated by a ^ for exponentiation followed by the 
+	exponent.
+	There is no / after the last factor.
+	e.g. (531069)/3/7/11^3/19   
+	The file consists of one line. Before calling YAFU the old file is deleted 
+	because otherwise YAFU would append the new result at the end of the file. */
+
+	std::ifstream factorStr(logfile, std::ios::in);  // open factor file
+	if (!factorStr.is_open()) {
+		std::cout << "cannot open YAFU factor file \n";
+		return false;
+	}
+	if (!std::getline(factorStr, buffer)) {  // read 1 line into buffer
+		std::cout << "cannot read YAFU factor file \n";
+		factorStr.close();
 		return false;
 	}
 
-	while (true) {            // read log file, find prime factors, ignore everything else
-		Znum f;
-		int i;
-		if (!std::getline(logStr, buffer))   // read 1 line into buffer
-			break;                   // exit loop when end of file reached 
-
-		if (buffer[0] == 'P') {      // ignore log entry unless it's a prime factor
-						 // note: some other log entries also have a 'p' in this position
-			int  len = 0;
-			for (i = 1; isdigit(buffer[i]); i++)  // get number of ascii digits in factor
-				len = len * 10 + (buffer[i] - '0');
-			if (len == 0)
-				continue;                    // p not followed by a number
-			i += 3;
-			auto rv = mpz_set_str(ZT(f), buffer.substr(i, len).c_str(), 10);
-			insertBigFactor(Factors, f);     // put f into factor list
-			fcount++;                        // increase count of factors found
-		}
+	auto pos1 = buffer.find("/");
+	size_t pos2;
+	ptrdiff_t len;
+	if (pos1 == std::string::npos) {
+		std::cout << "cannot find any factors in YAFU factor file \n";
+		factorStr.close();
+		return false;
 	}
+	auto factors = buffer.substr(pos1 + 1);
 
-		logStr.close();
-		if (fcount > 0)
-			return true;    // success
+	while (true) {
+		Znum f;
+		pos2 = factors.find_first_of("/^");  // find end of factor text string
+		if (pos2 != std::string::npos)
+			len = pos2;
 		else
-			return false;   // failure
+			len = factors.size();
+		auto rv = mpz_set_str(ZT(f), factors.substr(0, len).c_str(), 10);
+		assert(rv == 0);
+		insertBigFactor(Factors, f);     // put f into factor list
+		fcount++;                        // increase count of factors found
+		if (pos2 == std::string::npos)
+			break;       // pos2 at end of buffer; no more factors
+		if (pos2 != std::string::npos && factors[pos2] != '/')
+			pos2 = factors.find("/");  // move pos2 past exponent following factor
+		if (pos2 != std::string::npos)
+			factors = factors.substr(pos2 + 1);  // remove factor just processed
+		else break;    // pos2 at end of buffer; no more factors
+	}
+	factorStr.close();
+	if (fcount > 0)
+		return true;    // success
+	else
+		return false;   // failure
 }

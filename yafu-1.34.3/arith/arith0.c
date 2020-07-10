@@ -22,7 +22,7 @@ code to the public domain.
 #include "yafu.h"
 #include "arith.h"
 
-void mp2gmp(z *src, mpz_t dest) {
+void mp2gmp(const z *src, mpz_t dest) {
 
 	mpz_import(dest, (size_t)(abs(src->size)), -1, sizeof(fp_digit), 
 			0, (size_t)0, src->val);
@@ -90,7 +90,7 @@ void mpz_set_64(mpz_t dest, uint64 src)
 
 }
 
-void mpz_to_z32(mpz_t src, z32 *dest)
+void mpz_to_z32(const mpz_t src, z32 *dest)
 {
 	int i;
 
@@ -116,7 +116,7 @@ void mpz_to_z32(mpz_t src, z32 *dest)
 	return;
 }
 
-void z32_to_mpz(z32 *src, mpz_t dest)
+void z32_to_mpz(const z32 *src, mpz_t dest)
 {
 	int i;
 #if GMP_LIMB_BITS == 32
@@ -153,7 +153,7 @@ void zCopy(const z *src, z *dest)
 	return;
 }
 
-void zCopy32(z32 *src, z32 *dest)
+void zCopy32(const z32 *src, z32 *dest)
 {
 	//physically copy the digits of u into the digits of v
 	int su = abs(src->size);
@@ -255,12 +255,11 @@ void zClear32(z32 *num)
 	return;
 }
 
-char *z2decstr(z *n, str_t *s)
-{
-	//pass in a pointer to a string.  if necessary, this routine will 
-	//reallocate space for the string to accomodate its size.  If this happens
-	//the pointer to the string's (likely) new location is automatically
-	//updated and returned.
+//pass in a pointer to a string.  if necessary, this routine will 
+//reallocate space for the string to accomodate its size.  If this happens
+//the pointer to the string's (likely) new location is automatically
+//updated and returned.
+char *z2decstr(const z *n, str_t *s) {
 	z a;
 	int i,sza;
 	char *tmp;
@@ -332,7 +331,7 @@ char *z2decstr(z *n, str_t *s)
 	return s->s;
 }
 
-char *z2hexstr(z *n, str_t *s)
+char *z2hexstr(const z *n, str_t *s)
 {
 	//input bignum n, and an already allocated str_t, s
 	//convert n into s, in hex
@@ -394,7 +393,7 @@ char *z2hexstr(z *n, str_t *s)
 	return s->s;
 }
 
-void str2hexz(char in[], z *u)
+void str2hexz(const char in[], z *u)
 {
 	mpz_t t;
 	mpz_init(t);
@@ -559,7 +558,7 @@ void str2hexz(char in[], z *u)
 	*/
 }
 
-void mp_t2z(mp_t *src, z *dest)
+void mp_t2z(const mp_t *src, z *dest)
 {
 #if BITS_PER_DIGIT == 64
 	z32 tmp;
@@ -605,7 +604,7 @@ void dbl2z(double n, z *a)
 	return;
 }
 
-double z2dbl(z *a)
+double z2dbl(const z *a)
 {
 	double d;
 	d = a->val[0];
@@ -640,17 +639,17 @@ void sp642z(uint64 sp, z *mp)
 	return;
 }
 
-int isFive(z *n)
+int isFive(const z *n)
 {
 	return (abs(n->size) == 1 && n->val[0] == 5);
 }
 
-int isZero(z *n)
+int isZero(const z *n)
 {
 	return (abs(n->size) == 1 && n->val[0] == 0);
 }
 
-int isOne(z *n)
+int isOne(const z *n)
 {
 	return (abs(n->size) == 1 && n->val[0] == 1);
 }
@@ -684,7 +683,7 @@ int ndigits_1(fp_digit n)
 	return i;
 }
 
-int ndigits(z *n)
+int ndigits(const z *n)
 {
 	int i=0;
 	z nn,tmp;
@@ -707,7 +706,7 @@ int ndigits(z *n)
 	return i;
 }
 
-int zCompare(z *u, z *v)
+int zCompare(const z *u, const z *v)
 {
 	//return 1 if u > v, -1 if u < v, 0 if equal
 	int i,j,su,sv;
@@ -764,7 +763,7 @@ int zCompare(z *u, z *v)
 	return 0;
 }
 
-int zCompare32(z32 *u, z32 *v)
+int zCompare32(const z32 *u, const z32 *v)
 {
 	//return 1 if u > v, -1 if u < v, 0 if equal
 	int i,j,su,sv;
@@ -819,24 +818,24 @@ int zCompare32(z32 *u, z32 *v)
 	return 0;
 }
 
-void zDec2Hex(z *u, z *v)
+void zDec2Hex(const z *u, z *v)
 {
 	//convert u[] in dec to v[] in hex by multiplying the ith digit by (1e9)*i
 	//and adding to the previous digits
 
-	z a,b,vv;
-	int i,su = abs(u->size);
+	z a, b, vv;
+	int i, su = abs(u->size);
 
 	zInit(&a);
 	zInit(&b);
 	zInit(&vv);
 
 	if (v->alloc < su)
-		zGrow(v,su);
+		zGrow(v, su);
 
 	if (a.alloc < su)
 	{
-		zGrow(&a,su);
+		zGrow(&a, su);
 		zClear(&a);
 	}
 
@@ -885,7 +884,7 @@ void zDec2Hex(z *u, z *v)
 	return;
 }
 
-void zHex2Dec(z *u, z *v)
+void zHex2Dec(const z *u, z *v)
 {
 	//convert u[] in hex to v[] in decimal by repeatedly dividing
 	//u by 1e9 = 0x3b9aca00

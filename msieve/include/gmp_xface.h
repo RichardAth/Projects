@@ -30,7 +30,7 @@ extern "C" {
 	   be 32 bits in size and not 64 */
 
 /*--------------------------------------------------------------------*/
-static INLINE void mp2gmp(mp_t *src, mpz_t dest) {
+static INLINE void mp2gmp(const mp_t *src, mpz_t dest) {
 
 	mpz_import(dest, (size_t)(src->nwords), -1, sizeof(uint32), 
 			0, (size_t)0, src->val);

@@ -65,6 +65,7 @@ typedef struct
 	int type;
 } z32;
 
+/* these definitions are copied from msieve common mp.h */
 typedef struct {
 	uint32 nwords;		/* number of nonzero words in val[] */
 	uint32 val[MAX_MP_WORDS];
@@ -82,10 +83,10 @@ typedef struct
 	int alloc;		//bytes allocated to s
 } str_t;
 
-typedef struct
+typedef struct        // used for user variables
 {
-	char name[40];
-	mpz_t data;
+	char name[40];    // variable name
+	mpz_t data;       // and value
 } uvar_t;
 
 typedef struct

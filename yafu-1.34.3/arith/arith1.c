@@ -28,7 +28,7 @@ for the operations that require a carry.
 #include "arith.h"
 #include "common.h"
 
-int zBits(z *n)
+int zBits(const z *n)
 {
 	if (n->size == 0)
 		return 0;
@@ -36,22 +36,23 @@ int zBits(z *n)
 	return BITS_PER_DIGIT*(abs(n->size)-1) + spBits(n->val[abs(n->size)-1]);
 }
 
-int gmp_base10(mpz_t x)
-{
+/* get g such that 10^g > x */
+int gmp_base10(const mpz_t x) {
 	mpz_t t;	//temp
 	int g;		//guess: either correct or +1
 
 	mpz_init(t);
-	g = (int)mpz_sizeinbase(x,10);
-	mpz_set_ui(t,10);
+	g = (int)mpz_sizeinbase(x, 10);
+	mpz_set_ui(t, 10);
 	mpz_pow_ui(t, t, g - 1);
+	/* if 10^(g-1) > x decrement g */
 	g = g - (mpz_cmp(t, x) > 0 ? 1 : 0);
 	mpz_clear(t);
 	return g;
 }
 	
 // borrowed from jasonp... 
-double zlog(mpz_t x) {
+double zlog(const mpz_t x) {
 
 #if GMP_LIMB_BITS == 32
 	uint32 i = mpz_size(x);
@@ -104,6 +105,9 @@ double zlog(mpz_t x) {
 
 }
 
+/* find the most significant 1-bit. bits are numbered from 1 to 32.
+if n is zero return 0
+_BitScanReverse would be faster */
 fp_digit spBits(fp_digit n)
 {	
 	int i = 0;
@@ -144,20 +148,20 @@ void zAdd(z *u, z *v, z *w)
 		if (v->size > 0)
 		{
 			//u is negative, v is not
-			u->size *= -1;
-			zSub(v,u,w);
+			u->size *= -1;    // change sign of u
+			zSub(v, u, w);
 			if (u != w)
-				u->size *= -1;
+				u->size *= -1;  // restore sign of u
 			return;
 		}
 	}
 	else if (v->size < 0)
 	{
 		//v is negative, u is not
-		v->size *= -1;
-		zSub(u,v,w);
+		v->size *= -1;    // change sign of v
+		zSub(u, v, w);
 		if (v != w)
-			v->size *= -1;
+			v->size *= -1;  // restore sign of v
 		return;
 	}
 
@@ -394,7 +398,7 @@ void zShortAdd(z *u, fp_digit v, z *w)
 	{
 		//u is negative
 		u->size *= -1;
-		zShortSub(u,v,w);
+		zShortSub(u, v, w);
 		w->size *= -1;
 		u->size *= -1;
 		return;
@@ -407,7 +411,7 @@ void zShortAdd(z *u, fp_digit v, z *w)
 	if (w->alloc < (su + 1))
 		zGrow(w,su + LIMB_BLKSZ);
 
-	zCopy(u,w);
+	zCopy(u, w);
 
 	//add
 	spAdd(u->val[0],v,w->val,&k);
@@ -450,7 +454,7 @@ int zSub(z *u, z *v, z *w)
 		{
 			//u is negative, v is not, so really an addition
 			u->size *= -1;
-			zAdd(u,v,w);
+			zAdd(u, v, w);
 			if (u != w)
 				u->size *= -1;
 			w->size *= -1;
@@ -461,7 +465,7 @@ int zSub(z *u, z *v, z *w)
 			//both are negative, so we really have -u + v or v - u
 			v->size *= -1;
 			u->size *= -1;
-			zSub(v,u,w);
+			zSub(v, u, w);
 			if (v != w)
 				v->size *= -1;
 			if (u != w)
@@ -786,7 +790,7 @@ void zShortSub(z *u, fp_digit v, z *w)
 //q = u/v
 //return the remainder
 //schoolbook long division.  see knuth TAOCP, vol. 2
-fp_digit zShortDiv(z *u, fp_digit v, z *q)
+fp_digit zShortDiv(const z *u, fp_digit v, z *q)
 {
 	int su = abs(u->size);
 	int i;
@@ -881,7 +885,7 @@ fp_digit zShortDiv(z *u, fp_digit v, z *q)
 //return the remainder
 //schoolbook long division.  see knuth TAOCP, vol. 2
 //only used in the trial division stage of QS
-uint32 zShortDiv32(z32 *u, uint32 v, z32 *q)
+uint32 zShortDiv32(const z32 *u, uint32 v, z32 *q)
 {
 	int su = u->size;
 	int i;
@@ -963,8 +967,7 @@ uint32 zShortDiv32(z32 *u, uint32 v, z32 *q)
 }
 
 //return the remainder
-fp_digit zShortMod(z *u, fp_digit v)
-{
+fp_digit zShortMod(const z *u, fp_digit v) {
 	int i;
 
 #if defined(MSC_ASM32A) 
@@ -1071,11 +1074,9 @@ fp_digit zShortMod(z *u, fp_digit v)
 
 //return the remainder
 //only used during trial division stage of QS
-uint32 zShortMod32(z32 *u, uint32 v)
-{
-	//q = u/v
+uint32 zShortMod32(const z32 *u, uint32 v) {
 	int i;
-
+	//q = u/v
 #if defined(MSC_ASM32A) 
 
 	uint32 rem = 0;
@@ -1158,9 +1159,8 @@ uint32 zShortMod32(z32 *u, uint32 v)
 
 }
 
-uint32 zShortEDiv32(z32 *u, uint32 v, uint32 inv)
-{
-	//u is overwritten with the quotient (exact) of u / v;
+//u is overwritten with the quotient (exact) of u / v;
+uint32 zShortEDiv32(z32 *u, uint32 v, uint32 inv) {
 	uint64 q64;
 	uint32 qhat;
 	int i,su = u->size;
@@ -1293,7 +1293,7 @@ void zDiv(z *u, z *v, z *q, z *r)
 
 	//normalize v by shifting left (x2) shift number of times
 	//overflow should never occur to v during normalization
-	zShiftLeft_x(v,v,shift);
+	zShiftLeft_x(v, v, shift);
 
 	//left shift u the same amount - may get an overflow here
 	zShiftLeft_x(u,u,shift);
@@ -1420,9 +1420,10 @@ void zDiv(z *u, z *v, z *q, z *r)
 	return;
 }
 
-int shortCompare(fp_digit p[2], fp_digit t[2])
+//utility function used in zDiv    p <=> t
+int shortCompare(const fp_digit p[2], const fp_digit t[2])
 {
-	//utility function used in zDiv
+	
 	int i;
 
 	for (i=1;i>=0;--i)
@@ -1433,9 +1434,8 @@ int shortCompare(fp_digit p[2], fp_digit t[2])
 	return 0;
 }
 
-int shortSubtract(fp_digit u[2], fp_digit v[2], fp_digit w[2])
-{
-	//utility function used in zDiv
+//utility function used in zDiv
+int shortSubtract(const fp_digit u[2], const fp_digit v[2], fp_digit w[2]) {
 	fp_digit j=0;
 
 	w[0] = u[0] - v[0];
@@ -1474,7 +1474,7 @@ void zMul(z *u, z *v, z *w)
 
 	if (w->alloc < (su+sv))
 		zGrow(w,su+sv);
-
+	/* ensure that u and v are the same size */
 	if (u->alloc < v->alloc)
 		zGrow(u,v->alloc);
 
@@ -1510,7 +1510,7 @@ void zMul(z *u, z *v, z *w)
 		k=0;
 		wptr = &tmp.val[i];
 		for (j=0;j<sv;++j)
-			spMulAdd(u->val[i],v->val[j],wptr[j],k,&wptr[j],&k);
+			spMulAdd(u->val[i], v->val[j], wptr[j], k, &wptr[j], &k);
 		wptr[j] += k;
 	}
 	tmp.size = su+sv;
@@ -1527,15 +1527,15 @@ void zMul(z *u, z *v, z *w)
 	return;
 }
 
-void zModMul(z *u, z *v, z *n, z *w)
-{
+// w = (u*v)%n 
+void zModMul(z *u, z *v, z *n, z *w) {
 	z t1,t2;
 	
 	zInit(&t1);
 	zInit(&t2);
 
-	zMul(u,v,&t1);
-	zDiv(&t1,n,&t2,w);
+	zMul(u, v, &t1);       // t1 = u*v
+	zDiv(&t1, n, &t2, w);  // t2 = t1/n  w = t1%n
 
 	zFree(&t1);
 	zFree(&t2);
@@ -1543,10 +1543,9 @@ void zModMul(z *u, z *v, z *n, z *w)
 	return;
 }
 
-void zShortMul(z *u, fp_digit v, z *w)
-{
-	//w = u * v
-	//schoolbook multiplication, see knuth TAOCP, vol. 2
+// w = u * v
+//schoolbook multiplication, see knuth TAOCP, vol. 2
+void zShortMul(const z *u, fp_digit v, z *w) {
 	fp_digit k=0;
 	long i;
 	long su;
@@ -1588,15 +1587,14 @@ void zShortMul(z *u, fp_digit v, z *w)
 	return;
 }
 
-void zSqr(z *x, z *y)
-{
-	//w = x * x
+// y = x * x
+void zSqr(z *x, z *y) {
 	fp_digit v,u[2],c[2],highbitv,k;
 	fp_digit *wptr;
 	int i,j,t;
 	z *w, tmp;
 
-	zMul(x,x,y);
+	zMul(x, x, y);  // y = x*x
 	return;
 
 	//from the handbook of applied cryptography:
@@ -1690,12 +1688,10 @@ void zSqr(z *x, z *y)
 	return;
 }
 
-void zNeg(z *u)
-{
-	//two's complement negation
-	//set u = -u
-	//-u = ~u + 1
-
+//two's complement negation
+//set u = -u
+//-u = ~u + 1
+void zNeg(z *u) {
 	int i,s=1;
 	int su;
 
@@ -1723,9 +1719,8 @@ void zNeg(z *u)
 	return;
 }
 
-void zShiftLeft_1(z *a, z *b)
-{	
-	/* Computes a = b << 1 */
+/* Computes a = b << 1 */
+void zShiftLeft_1(z *a, const z *b) {	
 	int sign;
 	int y;
 	int sb,j;
@@ -1795,7 +1790,7 @@ static const uint32 LEFTSHIFTMASKS32[32] = {
 	0xFFFFFF00, 0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0,
 	0xFFFFFFF0, 0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE};
 
-void zShiftLeft_x(z *a, z *b, int x)
+void zShiftLeft_x(z *a, const z *b, int x)
 {	
 	/* Computes a = b << x, where x is less than a word */
 	int sign;
@@ -1848,9 +1843,8 @@ void zShiftLeft_x(z *a, z *b, int x)
 	return;
 }
 
-void zShiftLeft(z *a, z *b, int x)
-{	
-	/* Computes a = b << x */
+/* Computes a = b << x */
+void zShiftLeft(z *a, const z *b, int x) {	
 	int i,sign,wordshift;
 	int y;
 	int sb,j;
@@ -1907,9 +1901,9 @@ void zShiftLeft(z *a, z *b, int x)
 	return;
 }
 
-void zShiftLeft32(z32 *a, z32 *b, int x)
-{	
-	/* Computes a = b << x */
+
+/* Computes a = b << x */
+void zShiftLeft32(z32 *a, const z32 *b, int x) {	
 	int i,sign,wordshift;
 	int y;
 	int sb,j;
@@ -1990,9 +1984,8 @@ static const uint32 RIGHTSHIFTMASKS32[32] = {
 	0x00FFFFFF, 0x01FFFFFF, 0x03FFFFFF, 0x07FFFFFF,
 	0x0FFFFFFF, 0x1FFFFFFF, 0x3FFFFFFF, 0x7FFFFFFF};
 
-
-void zShiftRight(z *a, z *b, int x)
-{	/* Computes a = b >> x */
+/* Computes a = b >> x */
+void zShiftRight(z *a, const z *b, int x) {	
 	int i, y, sign, wordshift;
 	long sb;
 	fp_digit mask, carry, nextcarry;
@@ -2061,8 +2054,8 @@ void zShiftRight(z *a, z *b, int x)
 	return;
 }
 
-void zShiftRight_x(z *a, z *b, int x)
-{	/* Computes a = b >> x, where x is less than a word*/
+/* Computes a = b >> x, where x is less than a word*/
+void zShiftRight_x(z *a, const z *b, int x) {	
 	int i, y, sign;
 	long sb;
 	fp_digit mask, carry, nextcarry;
@@ -2116,9 +2109,8 @@ void zShiftRight_x(z *a, z *b, int x)
 	return;
 }
 
-
-void zShiftRight_1(z *a, z *b)
-{	/* Computes a = b >> 1 */
+/* Computes a = b >> 1 */
+void zShiftRight_1(z *a, const z *b) {	
 	int i, y, sign;
 	long sb;
 	fp_digit carry, nextcarry;
@@ -2164,12 +2156,9 @@ void zShiftRight_1(z *a, z *b)
 	return;
 }
 
-
-void zShiftRight32(z32 *a, z32 *b, int x)
-{	
-	//Computes a = in >> 1 
-	//only used in the trial division stage of QS
-
+//Computes a = b >> x 
+//only used in the trial division stage of QS
+void zShiftRight32(z32 *a, const z32 *b, int x) {	
 	int i, y, sign, wordshift;
 	long sb;
 	fp_digit mask, carry, nextcarry;
@@ -2231,11 +2220,9 @@ void zShiftRight32(z32 *a, z32 *b, int x)
 	return;
 }
 
-void zShiftRight32_x(z32 *a, z32 *b, int x)
-{	
-	//Computes a = in >> x, where x is less than a word 
-	//only used in the trial division stage of QS
-
+//Computes a = b >> x, where x is less than a word 
+//only used in the trial division stage of QS
+void zShiftRight32_x(z32 *a, const z32 *b, int x) {	
 	int i, y, sign;
 	long sb;
 	fp_digit mask, carry, nextcarry;
@@ -2697,7 +2684,7 @@ void spMulMod(fp_digit u, fp_digit v, fp_digit m, fp_digit *w)
 
 #elif BITS_PER_DIGIT == 32
 
-fp_digit spDivide(fp_digit *q, fp_digit *r, fp_digit u[2], fp_digit v)
+fp_digit spDivide(fp_digit *q, fp_digit *r, const fp_digit u[2], fp_digit v)
 {
 	fp_word uu,qq;
 	uu = (fp_word)u[1] << BITS_PER_DIGIT | u[0];
@@ -2832,6 +2819,3 @@ void spMulMod(fp_digit u, fp_digit v, fp_digit m, fp_digit *w)
 }
 
 #endif
-
-
-

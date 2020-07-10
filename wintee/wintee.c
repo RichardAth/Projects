@@ -41,7 +41,7 @@
 #include <fcntl.h>
 #include <sys\stat.h>
 #include "queue.h"
-#include <dos.h>
+//#include <dos.h>
 #include <string.h>
 #include <windows.h>
 
@@ -62,7 +62,7 @@ int get_opt(int argc, char *argv[]);
 int output_to_stdout = FALSE;
 int append_files = FALSE;
 int ignore_interrupts = FALSE;
-int show_help = FALSE;
+//int show_help = FALSE;
 
 /* Need list to keep track of the file handles opened for output so we can
 	close them when we're done */
@@ -132,7 +132,7 @@ int get_opt(int argc, char *argv[]) {
 		default:
 			break;      // parameter does not begin with - Ignore it for now.
 		case '-':
-			++p;
+			++p;   // move past '-' character
 			while (*p) 	{
 				switch (*p) {
 				default:
@@ -165,7 +165,7 @@ int get_opt(int argc, char *argv[]) {
 					else
 						result = 1; // -- is not followed by a valid parameter
 				}
-				p++;
+				p++;  // move past option letter just processed
 
 			}
 			continue;
@@ -202,12 +202,14 @@ int open_outfile(int argc, char *argv[]) {
 			continue;
 		}
 
-		if (!append_files)
+		if (!append_files) {
 			//fHandle = _open(*base_v++, O_CREAT | O_WRONLY, S_IREAD | S_IWRITE);
-			errno = _sopen_s(&fHandle, *base_v++, 
+			auto rv = remove(*base_v);   // delete old file if any
+			errno = _sopen_s(&fHandle, *base_v++,
 				O_CREAT | O_WRONLY,   // oflag:  create file if it doesn't already exist, write only
 				_SH_DENYNO,           // shflag: permits read and write access
 				S_IREAD | S_IWRITE);  // pmode:  reading & writing permitted
+		}
 		else
 			//fHandle = _open(*base_v++, O_CREAT | O_APPEND | O_WRONLY, S_IREAD | S_IWRITE);
 			errnum = _sopen_s(&fHandle, *base_v++, 
@@ -237,29 +239,30 @@ int open_outfile(int argc, char *argv[]) {
 }
 
 /**
-	Function that writes a given number of bytes from a buffer to a given stream.
+Function that writes a given number of bytes from a buffer to a given stream.
 
-	@param file Stream to write the buffer to.
-	@param buffer Pointer to the buffer to write to the stream.
-	@param bytes_to_write Number of bytes to write from the buffer.
+file            Stream to write the buffer to.
+buffer          Pointer to the buffer to write to the stream.
+bytes_to_write  Number of bytes to write from the buffer.
 
-	@returns 0 if there were no problems writing to the stream; Non-zero if errors occured.
+returns 0 if there were no problems writing to the stream; 
+Non-zero if errors occured.
 */
 int write_to_file(int file, char *buffer, int bytes_to_write) {
-	int bytes_written, total_written = 0;
+	int bytes_written;
 	char *p = buffer;
 
-	while (0 < (bytes_written = _write(file, p, bytes_to_write))) {
-		/* short write */
+	while (1) {
+		bytes_written = _write(file, p, bytes_to_write);
+		if (bytes_written == -1)
+			return -1;
+		/* short write ?*/
 		bytes_to_write -= bytes_written;
 		p += bytes_written;
-		total_written += bytes_written;
+		if (bytes_to_write <= 0)
+			break;
 	}
-
-	if (bytes_written == -1)
-		return -1;
-
-	return bytes_to_write - total_written;
+	return bytes_to_write;
 }
 
 int main(int argc, char *argv[]) {

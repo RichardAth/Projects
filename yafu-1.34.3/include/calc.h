@@ -61,7 +61,7 @@ int new_uvar(const char *name, mpz_t data);
 int set_uvar(const char *name, const mpz_t data);
 int get_uvar(const char *name, mpz_t data);
 static void free_uvars();
-int invalid_dest(char *dest);
+int invalid_dest(const char *dest);
 //int invalid_num(char *num);
 //int calc2(str_t *in);
 static char** tokenize(const char *in, int *token_types, int *num_tokens);

@@ -29,7 +29,7 @@ for the operations that require a carry.
 #include "arith.h"
 #include "gmp_xface.h"
 
-void zShanksTonelli(z *a, fp_digit p, fp_digit *sq)
+void zShanksTonelli(const z *a, fp_digit p, fp_digit *sq)
 {
 	//a is a quadratic residue mod p
 	//p is an odd prime
@@ -301,10 +301,8 @@ uint32 modinv_1b(uint32 a, uint32 p) {
 		return 0xFFFFFFFF - ps1 + 1;
 }
 
-int zExp(uint32 e, z *u, z *w)
-{
-	//return u^e = w
-
+//return w = u^e
+int zExp(uint32 e,const z *u, z *w) {
 	mpz_t result, base;
 
 	mpz_init(result);
@@ -327,9 +325,8 @@ int zExp(uint32 e, z *u, z *w)
 	return 1;
 }
 
-int zPrimorial(uint32 n, z *w)
-{
-	//return n# = p1 * p2 * p3 ... all the primes < n
+//return n# = p1 * p2 * p3 ... all the primes < n
+int zPrimorial(uint32 n, z *w) {
 	uint32 i;
 	fp_digit q;
 	int approx_words = (int)(10*n/DEC_DIGIT_PER_WORD);  
@@ -357,9 +354,8 @@ int zPrimorial(uint32 n, z *w)
 	return 1;
 }
 
-int zFactorial(uint32 n, z *w)
-{
-	//return n! = n*(n-1)*(n-2)*...*(1)
+//return n! = n*(n-1)*(n-2)*...*(1)
+int zFactorial(uint32 n, z *w){
 	mpz_t result;
 
 	mpz_init(result);
@@ -421,7 +417,7 @@ void zModExp(z *a, z *b, z *m, z *u)
 	return;
 }
 
-void zModExp_1(z *a, fp_digit b, fp_digit m, fp_digit *u)
+void zModExp_1 (const z *a, fp_digit b, fp_digit m, fp_digit *u)
 {
 	//computes a^b mod m = u using the binary method
 	//see, for instance, the handbook of applied cryptography
@@ -480,8 +476,8 @@ void spModExp(fp_digit a, fp_digit b, fp_digit m, fp_digit *u)
 	return;
 }
 
-
-int zNroot(z *u, z *w, int n)
+/* get w = nth root of u  */
+int zNroot(const z *u, z *w, int n)
 {
 	mpz_t result, base;
 

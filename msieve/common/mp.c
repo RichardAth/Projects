@@ -25,7 +25,7 @@ $Id: mp.c 976 2015-03-02 09:19:51Z brgladman $
 #define STRING(x) _(x)
 
 /*---------------------------------------------------------------*/
-static uint32 num_nonzero_words(uint32 *x, uint32 max_words) {
+static uint32 num_nonzero_words(const uint32 *x, uint32 max_words) {
 
 	/* return the index of the first nonzero word in
 	   x, searching backwards from max_words */
@@ -37,7 +37,7 @@ static uint32 num_nonzero_words(uint32 *x, uint32 max_words) {
 }
 
 /*---------------------------------------------------------------*/
-uint32 mp_bits(mp_t *a) {
+uint32 mp_bits(const mp_t *a) {
 
 	uint32 i, bits, mask, top_word;
 
@@ -68,7 +68,7 @@ uint32 mp_bits(mp_t *a) {
 }
 
 /*---------------------------------------------------------------*/
-double mp_log(mp_t *x) {
+double mp_log(const mp_t *x) {
 
 	uint32 i = x->nwords;
 
@@ -89,7 +89,7 @@ double mp_log(mp_t *x) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_add(mp_t *a, mp_t *b, mp_t *sum) {
+void mp_add(const mp_t *a, const mp_t *b, mp_t *sum) {
 
 	uint32 max_words;
 
@@ -176,7 +176,7 @@ void mp_add(mp_t *a, mp_t *b, mp_t *sum) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_add_1(mp_t *a, uint32 b, mp_t *sum) {
+void mp_add_1(const mp_t *a, uint32 b, mp_t *sum) {
 
 	uint32 max_words = a->nwords;
 	uint32 i;
@@ -200,7 +200,7 @@ void mp_add_1(mp_t *a, uint32 b, mp_t *sum) {
 }
 
 /*---------------------------------------------------------------*/
-void signed_mp_add(signed_mp_t *a, signed_mp_t *b, signed_mp_t *sum) {
+void signed_mp_add(const signed_mp_t *a, const signed_mp_t *b, signed_mp_t *sum) {
 
 	switch(2 * a->sign + b->sign) {
 
@@ -235,7 +235,7 @@ void signed_mp_add(signed_mp_t *a, signed_mp_t *b, signed_mp_t *sum) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_sub(mp_t *a, mp_t *b, mp_t *diff) {
+void mp_sub(const mp_t *a, const mp_t *b, mp_t *diff) {
 
 	uint32 max_words = a->nwords;
 
@@ -305,7 +305,7 @@ void mp_sub(mp_t *a, mp_t *b, mp_t *diff) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_sub_1(mp_t *a, uint32 b, mp_t *diff) {
+void mp_sub_1(const mp_t *a, uint32 b, mp_t *diff) {
 
 	uint32 max_words = a->nwords;
 	int32 i;
@@ -324,7 +324,7 @@ void mp_sub_1(mp_t *a, uint32 b, mp_t *diff) {
 }
 
 /*---------------------------------------------------------------*/
-void signed_mp_sub(signed_mp_t *a, signed_mp_t *b, signed_mp_t *diff) {
+void signed_mp_sub(const signed_mp_t *a, const signed_mp_t *b, signed_mp_t *diff) {
 
 	switch(2 * a->sign + b->sign) {
 
@@ -359,7 +359,7 @@ void signed_mp_sub(signed_mp_t *a, signed_mp_t *b, signed_mp_t *diff) {
 }
 
 /*---------------------------------------------------------------*/
-static void mp_addmul_1(mp_t *a, uint32 b, uint32 *x) {
+static void mp_addmul_1(const mp_t *a, uint32 b, uint32 *x) {
 
 	uint32 words = a->nwords;
 	uint32 carry = 0;
@@ -437,7 +437,7 @@ static void mp_addmul_1(mp_t *a, uint32 b, uint32 *x) {
 }
 
 /*---------------------------------------------------------------*/
-static uint32 mp_submul_1(uint32 *a, uint32 b, 
+static uint32 mp_submul_1(const uint32 *a, uint32 b, 
 			uint32 words, uint32 *x) {
 
 	uint32 carry = 0;
@@ -504,7 +504,7 @@ static uint32 mp_submul_1(uint32 *a, uint32 b,
 }
 
 /*---------------------------------------------------------------*/
-void mp_mul_1(mp_t *a, uint32 b, mp_t *x) {
+void mp_mul_1(const mp_t *a, uint32 b, mp_t *x) {
 
 	uint32 i;
 	uint32 carry = 0;
@@ -577,11 +577,11 @@ void mp_mul_1(mp_t *a, uint32 b, mp_t *x) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_mul(mp_t *a, mp_t *b, mp_t *prod) {
+void mp_mul(const mp_t *a, const mp_t *b, mp_t *prod) {
 
 	uint32 i;
-	mp_t *small = a;
-	mp_t *large = b;
+	const mp_t *small = a;
+	const mp_t *large = b;
 
 	if (small->nwords > large->nwords) {
 		small = b;
@@ -601,7 +601,7 @@ void mp_mul(mp_t *a, mp_t *b, mp_t *prod) {
 }
 
 /*---------------------------------------------------------------*/
-void signed_mp_mul(signed_mp_t *a, signed_mp_t *b, 
+void signed_mp_mul(const signed_mp_t *a, const signed_mp_t *b, 
 				signed_mp_t *prod) {
 
 	mp_mul(&a->num, &b->num, &prod->num);
@@ -609,7 +609,7 @@ void signed_mp_mul(signed_mp_t *a, signed_mp_t *b,
 }
 
 /*---------------------------------------------------------------*/
-void mp_rshift(mp_t *a, uint32 shift, mp_t *res) {
+void mp_rshift(const mp_t *a, uint32 shift, mp_t *res) {
 
 	int32 i;
 	int32 words = a->nwords;
@@ -641,7 +641,7 @@ void mp_rshift(mp_t *a, uint32 shift, mp_t *res) {
 }
 
 /*---------------------------------------------------------------*/
-uint32 mp_rjustify(mp_t *a, mp_t *res) {
+uint32 mp_rjustify(const mp_t *a, mp_t *res) {
 
 	uint32 i, mask, shift, words;
 
@@ -671,7 +671,7 @@ uint32 mp_rjustify(mp_t *a, mp_t *res) {
 }
 
 /*---------------------------------------------------------------*/
-static void mp_divrem_core(big_mp_t *num, mp_t *denom, 
+static void mp_divrem_core(const big_mp_t *num, const mp_t *denom, 
 			mp_t *quot, mp_t *rem) {
 
 	int32 i, j, k;
@@ -791,7 +791,7 @@ static void mp_divrem_core(big_mp_t *num, mp_t *denom,
 }
 
 /*---------------------------------------------------------------*/
-void mp_divrem(mp_t *num, mp_t *denom, mp_t *quot, mp_t *rem) {
+void mp_divrem(const mp_t *num, const mp_t *denom, mp_t *quot, mp_t *rem) {
 
 	mp_t tmp_quot, tmp_rem;
 
@@ -843,7 +843,7 @@ void mp_divrem(mp_t *num, mp_t *denom, mp_t *quot, mp_t *rem) {
 }
 
 /*---------------------------------------------------------------*/
-uint32 mp_divrem_1(mp_t *num, uint32 denom, mp_t *quot) {
+uint32 mp_divrem_1(const mp_t *num, uint32 denom, mp_t *quot) {
 
 	int32 i;
 	uint32 rem = 0;
@@ -883,12 +883,12 @@ uint32 mp_divrem_1(mp_t *num, uint32 denom, mp_t *quot) {
 	return rem;
 }
 	
-/*---------------------------------------------------------------*/
-void mp_modmul(mp_t *a, mp_t *b, mp_t *n, mp_t *res) {
+/*-----res = (a*b) % n ------------------------------------------*/
+void mp_modmul(const mp_t *a, const mp_t *b, const mp_t *n, mp_t *res) {
 
 	uint32 i;
-	mp_t *small = a;
-	mp_t *large = b;
+	const mp_t *small = a;
+	const mp_t *large = b;
 	big_mp_t prod;
 
 	if (small->nwords > large->nwords) {
@@ -1065,7 +1065,7 @@ uint64 mp_modmul_2(uint64 a, uint64 b, uint64 p) {
 #endif /* !defined(GCC_ASM64A) && !(defined(_MSC_VER) && defined(_WIN64)) */
 
 /*---------------------------------------------------------------*/
-uint32 mp_iroot(mp_t *a, uint32 root, mp_t *res) {
+uint32 mp_iroot(const mp_t *a, uint32 root, mp_t *res) {
 
 	double fp_root;
 
@@ -1133,7 +1133,7 @@ uint32 mp_iroot(mp_t *a, uint32 root, mp_t *res) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_gcd(mp_t *x, mp_t *y, mp_t *out) {
+void mp_gcd(const mp_t *x, const mp_t *y, mp_t *out) {
 
 	mp_t x0, y0;
 	mp_t *xptr, *yptr;
@@ -1185,7 +1185,7 @@ void mp_gcd(mp_t *x, mp_t *y, mp_t *out) {
 }
 
 /*---------------------------------------------------------------*/
-char * mp_print(mp_t *a, uint32 base, FILE *f, char *scratch) {
+char * mp_print(const mp_t *a, uint32 base, FILE *f, char *scratch) {
 
 	mp_t tmp;
 	char *bufptr;
@@ -1350,7 +1350,7 @@ int32 mp_legendre_1(uint32 a, uint32 p) {
 }
 
 /*---------------------------------------------------------------*/
-int32 mp_legendre(mp_t *a, mp_t *p) {
+int32 mp_legendre(const mp_t *a, const mp_t *p) {
 
 	mp_t *x, *y, *tmp;
 	mp_t tmp_a, tmp_p;
@@ -1388,13 +1388,17 @@ int32 mp_legendre(mp_t *a, mp_t *p) {
 	return 0;
 }
 
-/*---------------------------------------------------------------*/
-void mp_expo(mp_t *a, mp_t *b, mp_t *n, mp_t *res) {
+/*---------------------------------------------------------------
+modular exponentiation: raise 'a' to the power 'b' mod 'n' 
+	and return the result. a and b may exceed n.
+	In the multiple precision case, the result may not
+	alias any of the inputs */
+void mp_expo(const mp_t *a, const mp_t *b, const mp_t *n, mp_t *res) {
 
 	uint32 i, mask;
 
 	mp_clear(res);
-	res->nwords = res->val[0] = 1;
+	res->nwords = res->val[0] = 1;    // res = 1
 	if (mp_is_zero(b))
 		return;
 
@@ -1407,10 +1411,10 @@ void mp_expo(mp_t *a, mp_t *b, mp_t *n, mp_t *res) {
 	}
 	
 	while (i) {
-		mp_modmul(res, res, n, res);
+		mp_modmul(res, res, n, res);  // res = (res^2) mod n 
 
 		if (b->val[i-1] & mask)
-			mp_modmul(res, a, n, res);
+			mp_modmul(res, a, n, res);   // res = (res*a nod n)
 
 		mask >>= 1;
 		if (mask == 0) {
@@ -1420,8 +1424,11 @@ void mp_expo(mp_t *a, mp_t *b, mp_t *n, mp_t *res) {
 	}
 }
 		
-/*---------------------------------------------------------------*/
-void mp_pow(mp_t *a, mp_t *b, mp_t *res) {
+/*---------------------------------------------------------------
+ordinary exponentiation: raise 'a' to the power 'b' and return the 
+result. The result may not alias any of the inputs, and must fit 
+in an mp_t */
+void mp_pow(const mp_t *a, const mp_t *b, mp_t *res) {
 
 	uint32 i, mask;
 	mp_t tmp;
@@ -1456,7 +1463,7 @@ void mp_pow(mp_t *a, mp_t *b, mp_t *res) {
 	}
 }
 		
-/*---------------------------------------------------------------*/
+/*-----return random number in res, seed1 & seed2 are changed ---*/
 void mp_rand(uint32 bits, mp_t *res, uint32 *seed1, uint32 *seed2) {
 
 	uint32 i;
@@ -1536,10 +1543,10 @@ uint32 mp_modsqrt_1(uint32 a, uint32 p) {
 }
 
 /*---------------------------------------------------------------*/
-void mp_modsqrt(mp_t *a, mp_t *p, mp_t *res,
+void mp_modsqrt(const mp_t *a, const mp_t *p, mp_t *res,
 		uint32 *seed1, uint32 *seed2) {
 
-	mp_t *a0 = a;
+	const mp_t *a0 = a;
 	mp_t tmp;
 
 	if ( (p->val[0] & 7) == 3 || (p->val[0] & 7) == 7 ) {
@@ -1608,7 +1615,7 @@ void mp_modsqrt(mp_t *a, mp_t *p, mp_t *res,
 }
 		
 /*---------------------------------------------------------------*/
-void mp_modsqrt2(mp_t *a, mp_t *p, mp_t *res,
+void mp_modsqrt2(const mp_t *a, const mp_t *p, mp_t *res,
 		 uint32 *seed1, uint32 *seed2) {
 
 	mp_t p0, p1, r0, r1, r2;
@@ -1635,8 +1642,9 @@ void mp_modsqrt2(mp_t *a, mp_t *p, mp_t *res,
 		mp_sub(&r0, res, res);
 }
 
-/*---------------------------------------------------------------*/
-int32 mp_is_prime(mp_t *p, uint32 *seed1, uint32 *seed2) {
+/*---classify p as prime, probable prime or composite --------------
+     seed1 & seed2 values are altered */
+int32 mp_is_prime(const mp_t *p, uint32 *seed1, uint32 *seed2) {
 
 	const uint32 factors[] = {3,5,7,11,13,17,19,23,29,31,37,41,43,
 				  47,53,59,61,67,71,73,79,83,89,97,101,
@@ -1801,7 +1809,7 @@ void mp_random_prime(uint32 bits, mp_t *res,
 }
 		
 /*---------------------------------------------------------------*/
-uint32 mp_next_prime(mp_t *p, mp_t *res,
+uint32 mp_next_prime(const mp_t *p, mp_t *res,
 		uint32 *seed1, uint32 *seed2) {
 
 	uint32 inc;

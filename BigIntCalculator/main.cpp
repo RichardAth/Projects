@@ -25,6 +25,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <cassert>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <Mmsystem.h >   // for sound effects
 #include "factor.h"
 
 //#define BIGNBR       // define to include bignbr tests 
@@ -35,8 +36,8 @@ extern Znum zR, zR2, zNI, zN;
 #endif
 
 /* external function declaration */
-void msieveParam(std::string expupper);   /*process Msieve commands */
-void yafuParam(std::string command);      /*process YAFU commands */
+void msieveParam(const std::string &expupper);   /*process Msieve commands */
+void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, mpz_t &result);   // declaration for external function
 
 /* get time in format hh:mm:ss */
@@ -651,6 +652,75 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
+/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime */
+static Znum llt(Znum p) {
+	int rv;
+	Znum n, tmp, ncopy, limit, i, d;
+	long long exp = MulPrToLong(p);
+	bool composite = false;
+
+/* 1st check if p is prime*/
+#ifdef __MPIR_VERSION
+	static gmp_randstate_t state;
+	static bool first = true;
+	if (first) {
+		gmp_randinit_default(state);
+		first = false;
+	}
+	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
+#else
+	rv = mpz_probab_prime_p(ZT(p), 16);
+#endif 
+	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
+	if (rv == 0) return 0;  // if p is composite, 2^p -1 is composite.
+
+	n = 1;
+	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^exp
+	n -= 1;                  // n = 2^exp-1
+	ncopy = n;
+
+	/*  n is a mersenne number calculated as (2^p)-1 and p is a prime number.
+		The factors of n must be in the form of q = 2ip+1, where q < n) 
+		2ip+1 < n therefore
+		i < (n-1)/2p */
+	limit = (sqrt(n)-1)/(2*p)+1;  
+	/* if we find all factors < sqrt(n) the residue is the one remaining factor */
+	if (limit > 1000000) limit = 1000000;   // large n would take too long
+	for (i = 1; i <= limit; i++)	{
+		d = 2 * i*exp + 1;
+		if (n%d == 0)
+		{
+			gmp_printf("2*%Zd*p+1 (= %Zd) is a factor\n", i, d);
+			composite = true;
+			ncopy /= d;
+		}
+	}
+	if (composite) {
+		if (ncopy > 1)
+			gmp_printf("%Zd is a factor\n", ncopy);
+		return 0;
+	}
+	else {   //else do the ll test
+		tmp = 4;
+		int nchars = 0;
+		for (long long i = 0; i < exp - 2; i++) {
+			tmp *= tmp;
+			tmp -= 2;
+			//tmp %= n;
+			mpz_tdiv_r(ZT(tmp), ZT(tmp), ZT(n));
+			if ((i & 511) == 0) {
+				for (int j = 0; j < nchars; j++)
+					printf("\b");    // erase previous output
+				nchars = printf("llt iteration %lld", i);
+				fflush(stdout);
+			}
+		}
+		printf("\n");
+		if (tmp == 0) return 1;  // prime
+		else return 0;            // composite
+	}
+}
+
 enum class fn_Code {
 	fn_gcd,
 	fn_modpow,
@@ -674,6 +744,7 @@ enum class fn_Code {
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
+	fn_llt,
 	fn_invalid = -1,
 } ;
 
@@ -686,7 +757,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 22> functionList{
+const static std::array <struct functions, 23> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -699,16 +770,17 @@ const static std::array <struct functions, 22> functionList{
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
+	"LLT",	     1,  fn_Code::fn_llt,           // lucas
 	"LE",		 2,  fn_Code::fn_legendre,
 	"L",         1,  fn_Code::fn_luc,			// Lucas Number
 	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
 	"P",         1,  fn_Code::fn_part,			// number of partitions
-	"N",         1,  fn_Code::fn_np,				// next prime
-	"B",         1,  fn_Code::fn_pp,				// previous prime
+	"N",         1,  fn_Code::fn_np,			// next prime
+	"B",         1,  fn_Code::fn_pp,			// previous prime
 	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 primes
 	"R3",        1,  fn_Code::fn_r3,
 	"JA",		 2,  fn_Code:: fn_jacobi,
-	"KR",		 2,  fn_Code::fn_kronecker
+	"KR",		 2,  fn_Code::fn_kronecker,
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -862,6 +934,10 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	}
 	case fn_Code::fn_kronecker: {
 		result = mpz_kronecker(ZT(p1), ZT(p2));
+		break;
+	}
+	case fn_Code::fn_llt: {
+		result = llt(p1);
 		break;
 	}
 	
@@ -1723,6 +1799,11 @@ static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 	if (msg.size() > 1)
 		std::cout << myTime() << ' ' << msg;
 	auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
+
+	if (elSec > 10.0)
+		PlaySound(TEXT("c:/Windows/Media/Alarm09.wav"), NULL,
+			SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+
 	if (elSec <= 60.0) {
 		std::cout << elSec << " seconds\n";
 	}
@@ -1750,6 +1831,8 @@ static void removeBlanks(std::string &msg) {
 	}
 }
 
+/* indicate how the number's factors were found. No detailed breakdown 
+for factors found by YAFU or Msieve */
 static void printCounts(void) {
 	std::cout << "found by";
 	if (counters.tdiv > 0)
@@ -1775,11 +1858,47 @@ static void printCounts(void) {
 	std::cout << '\n';
 }
 
+struct summary {
+	int numsize;		// number of decimal digits in number
+	double time;		// time used in seconds
+	int NumFacs;		// number of unique factors
+	int totalFacs;		// total number of factors (=1 for a prime number)
+	int testNum;		// test number (if applicable)
+	int sndFac;		    // number of decimal digits in 2nd largest factor
+};
+
+std::vector <summary> results;
+
+/* print summary - 1 line per test */
+static void printSummary(void) {
+	long long sec, min, hour;
+	double elSec;
+	printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac\n");
+	for (auto res : results) {
+		/* round to nearest second */
+		sec = (long long)std::floor(res.time); // convert to an integer
+		min = sec / 60;  // min may be 0
+		elSec = res.time - min * 60;         // get seconds including fractional part
+		hour = min / 60; // hour may be zero
+		min %= 60;       // get minutes
+		printf_s("%4d %8d %2lld:%02lld:", res.testNum, res.numsize,
+			hour, min);
+		if (elSec < 10.0)
+			printf_s("0%.2f ", elSec);  // insert leading zero
+		else
+			printf_s("%.2f ", elSec);
+
+		printf_s("     %8d   %8d     %8d\n", res.NumFacs, res.totalFacs, res.sndFac);
+	}
+}
+
 /* factorise Result, calculate number of divisors etc and print results */
 static void doFactors(const Znum &Result, bool test) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4];
 	clock_t start;
+	summary sum;    // save summary of factorisation
+
 	if (test)
 		start = clock();	// used to measure execution time
 
@@ -1844,13 +1963,16 @@ static void doFactors(const Znum &Result, bool test) {
 		}
 		std::cout << "\n";
 		if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
-			printCounts();
+			printCounts();  // print if not prime
 		}
 		if (test) {
 			Znum result = 1;
-			for (size_t i = 0; i < factorlist.size(); i++)
+			sum.totalFacs = 0;
+			for (size_t i = 0; i < factorlist.size(); i++) {
 				for (int j = 1; j <= factorlist[i].exponent; j++)
 					result *= factorlist[i].Factor;
+				sum.totalFacs += factorlist[i].exponent;
+			}
 			if (result != Result) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
 				Beep(750, 1000);
@@ -1863,6 +1985,14 @@ static void doFactors(const Znum &Result, bool test) {
 			auto end = clock(); 
 			double elapsed = (double)end - start;
 			PrintTimeUsed(elapsed, "time used = ");
+			sum.time = elapsed / CLOCKS_PER_SEC;
+			sum.numsize = (int)ComputeNumDigits(result, 10);
+			sum.NumFacs = (int)factorlist.size();
+			if (factorlist.size() > 1)
+				/* get number of digits in 2nd largest factor */
+				sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+			else sum.sndFac = 0;
+			results.push_back(sum);
 		}
 	}
 	else
@@ -1875,9 +2005,12 @@ static bool factortest(const Znum x3, const int method = 0) {
 	std::vector <zFactors> factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
+	summary sum;    // save summary of test
 
 	auto start = clock();	// used to measure execution time
 	double end, elapsed;
+
+	sum.numsize = (int)ComputeNumDigits(x3, 10);
 
 	std::cout << "\nTest: factorise ";
 	ShowLargeNumber(x3, 6, true, false);
@@ -1893,9 +2026,14 @@ static bool factortest(const Znum x3, const int method = 0) {
 		callYafu(x3, factorlist);
 	}
 	result = 1;
-	for (size_t i = 0; i < factorlist.size(); i++)
+	for (size_t i = 0; i < factorlist.size(); i++) {
 		for (int j = 1; j <= factorlist[i].exponent; j++)
 			result *= factorlist[i].Factor;  // get product of all factors
+	}
+	if (factorlist.size() > 1)
+		/* get number of digits in 2nd largest factor */
+		sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+	else sum.sndFac = 0;
 	if (result != x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
 		Beep(750, 1000);
@@ -1915,27 +2053,40 @@ static bool factortest(const Znum x3, const int method = 0) {
 		}
 		std::cout << "found " << factorlist.size() << " unique factors, total "
 			<< totalFactors << " factors\n";
+		sum.totalFacs = (int)totalFactors;
+		if (factorlist.size() > 1)
+			/* get number of digits in 2nd largest factor */
+			sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+		else sum.sndFac = 0;
 		if (method == 0)
 			printCounts();
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
+		sum.time = elapsed / CLOCKS_PER_SEC;
+		sum.NumFacs = (int)factorlist.size();
+		results.push_back(sum);
 		return false;   // not prime
 	}
-	else
+	else {
 		std::cout << "is prime \n";
-
-	end = clock();              // measure amount of time used
-	elapsed = (double)end - start;
-	PrintTimeUsed(elapsed, "time used = ");
-	return true;    // is prime
+		sum.NumFacs = 1;
+		sum.totalFacs = 1;
+		sum.sndFac = 0;
+		end = clock();              // measure amount of time used
+		elapsed = (double)end - start;
+		PrintTimeUsed(elapsed, "time used = ");
+		sum.time = elapsed / CLOCKS_PER_SEC;
+		results.push_back(sum);
+		return true;    // is prime
+	}
 }
 
 static void doTests(void) {
 	Znum x3, x4, result;
 	int i;
-
+	int testcnt = 0;
 	struct test {
 		std::string text;        // text of expression to be evaluated
 		long long expected_result;   // can only do tests that return a value <2^63
@@ -1995,6 +2146,8 @@ static void doTests(void) {
 		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
 	};
 
+	results.clear();
+
 	auto start = clock();	// used to measure execution time
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
@@ -2017,43 +2170,66 @@ static void doTests(void) {
 		mpz_nextprime(ZT(x2), ZT(i));  // get next prime
 		x3 = x1*x2;
 		factortest(x3);
+		results.back().testNum = ++testcnt;
 		x3++;
 		factortest(x3);
+		results.back().testNum = ++testcnt;
+
 	}
 
 	/* tests below have shown a problem with pollard-rho for certain numbers */
 	factortest(99999999973789); // = 6478429 * 15435841
+	results.back().testNum = ++testcnt;
 	factortest(183038861417);   // =  408229 *   448373
+	results.back().testNum = ++testcnt;
 	factortest(183475587821);   // =  409477 *   448073
+	results.back().testNum = ++testcnt;
 	factortest(181919916457);   // =  400307 *   454451
+	results.back().testNum = ++testcnt;
 	factortest(199996999457);   // =  441361 *   453137
+	results.back().testNum = ++testcnt;
 	factortest(204493418837);   // =  401209 *   509693
+	results.back().testNum = ++testcnt;
 
 	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
 	x3 -= 1;                        // x3 = 10^20-1
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 	x3 += 2;
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 	ComputeExpr("n(10^10)^2-1", x3);  // test power of large number-1
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 
 	ComputeExpr("120#-1", x3);
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 	ComputeExpr("n(10^15)^2", x3);  // test power of large number
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 	ComputeExpr("n(10^6+20)^1667", x3);  // test power of large prime number
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 	ComputeExpr("n(10^7)^3*n(10^8)^2", x3);  // test powers of two large prime number
 	factortest(x3);
-	ComputeExpr("n(3*10^5+50)*n(3*10^5+500)", x3);  // test Lehman factorisation
+	results.back().testNum = ++testcnt;
+
+	ComputeExpr("n(3*10^9+50)*n(3*10^10+500)", x3);  // test Lehman factorisation
 	factortest(x3);
+	results.back().testNum = ++testcnt;
+	x3 = 0;
+	ComputeExpr("n(10^9)^3*n(10^10)", x3);  // test Lehman factorisation
+	factortest(x3);
+	results.back().testNum = ++testcnt;
 
 	/* test using carmichael numbers. note that 1st example has no small factors  */
 	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
 		60977817398996785 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
 		factortest(carmichael[i]);
+		results.back().testNum = ++testcnt;
 	}
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
@@ -2063,47 +2239,145 @@ static void doTests(void) {
 	/* in general numbers > about 110 digits cannot be factorised in a reasonable time 
 	but this one can, because a special algorithm just for Carmichael numbers is used. */
 	factortest(x4);   // 397-digit Carmichael number
+	results.back().testNum = ++testcnt;
 	std::cout << "factorised 397-digit Carmichael number \n";
 
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
 	factortest(x3);
+	results.back().testNum = ++testcnt;
 
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "Factorisation tests completed. Time used= ");
+	printSummary();
 }
 
 /* generate large random number, up to 128 bits */
-static void largeRand(Znum &a) {
-	a = ((long long)rand() << 32) + rand();
-	a <<= 64;
-	a += ((long long)rand() << 32) + rand();
+//static void largeRand(Znum &a) {
+//	a = ((long long)rand() << 32) + rand();
+//	a <<= 64;
+//	a += ((long long)rand() << 32) + rand();
+//}
+
+//find a random 'strong' prime of size 'bits'
+//follows the Handbook of applied cryptography
+static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
+	/*
+	SUMMARY: a strong prime p is generated.
+	1. Generate two large random primes s and t of roughly equal bitlength (see Note 4.54).
+	2. Select an integer i0. Find the first prime in the sequence 2it + 1,
+	for i = i0; i0 + 1; i0 + 2; : : : (see Note 4.54). Denote this prime by r = 2it+ 1.
+	3. Compute p0 = 2(sr-2 mod r)s - 1.
+	4. Select an integer j0. Find the first prime in the sequence p0 +2jrs,
+	for j = j0; j0 + 1; j0 + 2; : : : (see Note 4.54). Denote this prime by
+	p = p0 + 2jrs.
+	5. Return(p).
+
+  4.54 Note (implementing Gordon’s algorithm)
+	(i) The primes s and t required in step 1 can be probable primes generated by
+	Algorithm 4.44. The Miller-Rabin test (Algorithm 4.24) can be used to test
+	each candidate for primality in steps 2 and 4, after ruling out candidates
+	that are divisible by a small prime less than some bound B. See Note 4.45 for
+	guidance on selecting B. Since the Miller-Rabin test is a probabilistic
+	primality test, the output of this implementation of Gordon’s algorithm is
+	a probable prime.
+	(ii) By carefully choosing the sizes of primes s, t and parameters i0, j0,
+	one can control the exact bitlength of the resulting prime p. Note that the
+	bitlengths of r and s will be about half that of p, while the bitlength of
+	t will be slightly less than that of r.
+	*/
+	Znum r, s, t, t2, p0;
+
+	//1. s and t should be about half the bitlength of p
+	mpz_urandomb(ZT(s), state, bits/2-2);
+	mpz_nextprime(ZT(s), ZT(s));        // make s prime
+
+	mpz_urandomb(ZT(t), state, bits/2 -2);
+	mpz_nextprime(ZT(t), ZT(t));        // make t prime
+
+
+	// 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
+	t2 = t * 2;
+	r = t2 + 1;
+	while (!mpz_likely_prime_p(ZT(r), state, 0))
+		r += t2;
+
+
+	// 3. Compute p0 = 2(sr-2 mod r)s - 1.
+	p0 = ((s*r - 2) % r)*s * 2 - 1;
+
+	// 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
+	p = p0;
+	while (!mpz_likely_prime_p(ZT(p), state, 0))
+		p += 2 * r*s;
+	return;
 }
 
-static void doTests2(void) {
-	srand(756128234);
-	Znum x = (Znum)rand();
+/* generate RSA-style difficult to factor number, size = bits +/- 1 */
+static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
+	Znum p, q;
+	x = 0;
+
+	/* keep generating random strong primes till we get a pair that produces
+	a product of about the right size. */
+	while (abs(NoOfBits(x)-bits) >1) {
+		gordon(p, state, bits / 2);
+		gordon(q, state, bits / 2);
+		x = p * q;
+	}
+	return;
+}
+
+/* test factorisation using pseudo-random numbers of a specified size.
+Command format is TEST2 [num1[,num[,num3]]] where 
+num1 is the number of tests, 
+num2 is the size of the numbers to be factored in bits,
+if num3  NE 0 the number to be factored consists of 2 approximately same-sized prime
+factors, otherwise it is a random number that can contain any number of factors. */
+static void doTests2(const std::string &params) {
+	long long p1;  // number of tests; must be greater than 0
+	long long p2;  // size of numbers to be factored in bits (>= 48)
+	long long p3=0;  // optional, if non-zero generate RSA-style difficult to factor number
+	gmp_randstate_t state;
+	Znum x;
+
+	auto numParams = sscanf_s(params.data(), "%lld,%lld,%lld", &p1, &p2, &p3);
+	if (p1 <= 0 || numParams < 1) {
+		std::cout << "Use default 2 for number of tests \n";
+		p1 = 2;
+	}
+	if (p2 < 48 || numParams < 2) {
+		std::cout << "Use default 48 for number size in bits \n";
+		p2 = 48;
+	}
+	if (p2 >= 500)
+		std::cout << "**warning: factoring such large numbers could take weeks! \n";
+	gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+	gmp_randseed_ui(state, 756128234);
+	/* fixed seed means that the exact same tests can be repeated provided
+	   that the same size of number is used each time */
+
 	auto start = clock();	// used to measure execution time
 
-	
-	for (int i = 1; i <= 44; i++) {
-		if (i == 44 && !yafu) {
-			std::cout << "Test 44 skipped \n";
-			break;  /* note: with current seed value test 44 would take about 50 minutes! 
-					(about 30 minutes using Msieve, 13 mins with YAFU) */
-		}
+	results.clear();
 
-		if (i <= 39)
-			mpz_mul_2exp(ZT(x), ZT(x), 8); // shift x left 8 bits
-		x += rand();
-		std::cout << "\nTest # " << i << " of 44 \n";
+	for (int i = 1; i <= p1; i++) {
+		std::cout << "\nTest # " << i << " of " << p1 << '\n';
+		if (p3 == 0)
+			mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
+		else
+			get_RSA(x, state, p2);  // get RSA type number size p2 bits
 		ShowLargeNumber(x, 6, true, false);
 		std::cout << '\n';
 		doFactors(x, true); /* factorise x, calculate number of divisors etc */
+		results.back().testNum = i;
 	}
+
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "All tests completed. Time used = ");
+	printSummary();
+	gmp_randclear(state);  // clear state - avoid memory leakage
 }
 
 #ifdef BIGNBR
@@ -2414,30 +2688,44 @@ extern unsigned __int64 R2(const unsigned __int64 n);
 //}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
-this test will take about 2.5 hours, but only about 30 mins using improved YAFU! 
+this test will take about 2.5 hours 
 */
 static void doTests4(void) {
 	int px = 0;
+	const int pmax = 75;
 	Znum m;
 
+	results.clear();
 	auto start = clock();	// used to measure execution time
 	if (primeListMax < 1000)
 		generatePrimes(393203);
-	for (px = 0; px <= 70; px++) {
-		std::cout << "\ntest " << px + 1 << " of 71 ";
+
+	for (px = 0; px <= pmax; px++) {
+		if (px >= 70 && !yafu) {
+			std::cout << "remaining tests skipped \n";
+			break;
+		}
+		std::cout << "\ntest " << px + 1 << " of " << pmax+1 ;
 		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
 		m--;                // get 2^p -1
 		if (factortest(m)) /* factorise m, calculate number of divisors etc */
 			std::cout << "2^" << primeList[px] << " - 1 is prime \n";
+		results.back().testNum = px + 1;
 	}
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "tests completed time used = ");
+	printSummary();           // pritnt summary 1 line per test
 }
 
+/* tests using only YAFU for factorisation */
 static void doTests5(void) {
+	results.clear();
+	int testcnt = 0;
+
 	Znum num = 49728103; // 7001 * 7103
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
 	// factorise 127 digit number
 	/*  =                               280673 
@@ -2450,6 +2738,7 @@ static void doTests5(void) {
 	(7 factors)   */
 	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
 	//factorise 57 digit number
 	/* P6 = 280673
@@ -2460,6 +2749,7 @@ static void doTests5(void) {
 	*/
 	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
 	//factorise 80 digit number (about 3 minutes)
 	/* P49 = 2412329883909990626764837681505523221799246895133
@@ -2467,38 +2757,49 @@ static void doTests5(void) {
     */
 	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
 	//factorise 85 digit number (about 7 mins)
 	/* factors are 1485325304578290487744454354798448608807999 and 
                    1263789702211268559063981919736415575710439 */
 	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
-	// factorise 94 digit number (about 90 mins)
+	// factorise 94 digit number (about 60 mins)
 	/* factors are 10910042366770069935194172108679294830357131379375349 and 
                    859735020008609871428759089831769060699941 */
 	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
 
 	//factorise 100 digit number - takes many hours
 	/* factor are 618162834186865969389336374155487198277265679 and
 	              4660648728983566373964395375209529291596595400646068307 */
 	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num);
 	factortest(num, 1);
+	results.back().testNum = ++testcnt;
+
+	printSummary();    // print summary - 1 line per test
 
 	return;
 }
 
+/* tests using only Msieve for factorisation. Factorise selected Mersenne numbers */
 static void doTests6(void) {
 	bool yafusave = yafu;
 	bool msievesave = msieve;
 	Znum m;
 	msieve = true;
 	yafu = false;
+	int testcnt = 0;
+
+	results.clear();
 
 	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
 	m--;                // get 2^p -1
 	factortest(m);      // 84 digits
+	results.back().testNum = ++testcnt;
 	/* p7  factor: 1121297
 	   p38 factor: 31133636305610209482201109050392404721
 	   p40 factor: 6955979459776540052280934851589652278783
@@ -2507,12 +2808,14 @@ static void doTests6(void) {
 	mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^p
 	m--;                // get 2^p -1
 	factortest(m);      // 89 digits
+	results.back().testNum = ++testcnt;
 	/* p26 factor: 40122362455616221971122353
        p63 factor: 396645227028138890415611220710757921643910743103031701971222447 */
 
 	mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^p
 	m--;                // get 2^p -1
 	factortest(m);      // 94 digits
+	results.back().testNum = ++testcnt;
 	/* p7  factor: 5344847
 	   p31 factor: 2647649373910205158468946067671
 	   p57 factor: 294803681348959296477194164064643062187559537539328375831
@@ -2521,6 +2824,7 @@ static void doTests6(void) {
 	mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^p
 	m--;                // get 2^p -1
 	factortest(m);      // 95 digits
+	results.back().testNum = ++testcnt;
 	/* p8  factor: 10960009
 	   p17 factor: 14787970697180273
 	   p25 factor: 3857194764289141165278097
@@ -2530,16 +2834,18 @@ static void doTests6(void) {
 	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
 	m--;                // get 2^p -1
 	factortest(m);      // 107 digits
+	results.back().testNum = ++testcnt;
 	/* p34 factor: 2927455476800301964116805545194017
 	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
     */
 	
 	yafu = yafusave;
 	msieve = msievesave;
+	printSummary();           // print 1 line per test
 }
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
-int processCmd(const std::string &expupper) {
+int processCmd(const std::string &command) {
 	const static char helpmsg[] =
 		"You can enter expressions that use the following operators, functions and parentheses:\n"
 		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
@@ -2612,61 +2918,64 @@ int processCmd(const std::string &expupper) {
 		"SumDigits(n, r) : suma de dígitos de n en base r.\n"
 		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
 
-	if (expupper == "EXIT" || expupper == "SALIDA")
+	if (command == "EXIT" || command == "SALIDA")
 		return 2;
 
-	if (expupper == "HELP" || expupper == "AYUDA") {
+	if (command == "HELP" || command == "AYUDA") {
 		if (lang == 0)
 			printf(helpmsg);   // english
 		else
 			printf(ayuda);     // spanish
 		return 1;
 	}
-	if (expupper == "E") { lang = 0; return 1; }           // english
-	if (expupper == "S") { lang = 1; return 1; }	       // spanish (Español)
-	if (expupper == "F") { factorFlag = true; return 1; }  // do factorisation
-	if (expupper == "N") { factorFlag = false; return 1; } // don't do factorisation
-	if (expupper == "X") { hex = true; return 1; }         // hexadecimal output
-	if (expupper == "D") { hex = false; return 1; }        // decimal output
-	if (expupper == "TEST") {
+	if (command == "E") { lang = 0; return 1; }           // english
+	if (command == "S") { lang = 1; return 1; }	       // spanish (Español)
+	if (command == "F") { factorFlag = true; return 1; }  // do factorisation
+	if (command == "N") { factorFlag = false; return 1; } // don't do factorisation
+	if (command == "X") { hex = true; return 1; }         // hexadecimal output
+	if (command == "D") { hex = false; return 1; }        // decimal output
+	if (command == "TEST") {
 		doTests();         // do basic tests 
 		return 1;
 	}
-	if (expupper == "TEST2") {
-		doTests2();         // do basic tests 
+	if (command.substr(0,5) == "TEST2") {
+		if (command.size() > 5)
+			doTests2(command.substr(6));         // do basic tests 
+		else
+			doTests2("");
 		return 1;
 	}
 #ifdef BIGNBR
-	if (expupper == "TEST3") {
+	if (command == "TEST3") {
 		doTests3();         // do basic tests 
 		return 1;
 	}
 #endif
-	if (expupper == "TEST4") {
+	if (command == "TEST4") {
 		doTests4();         // do R3 tests 
 		return 1;
 	}
-	if (expupper == "TEST5") {
+	if (command == "TEST5") {
 		doTests5();         // do YAFU tests 
 		return 1;
 	}
-	if (expupper == "TEST6") {
+	if (command == "TEST6") {
 		doTests6();         // do Msieve tests 
 		return 1;
 	}
-	if (expupper.substr(0, 6) == "MSIEVE") {
-		msieveParam(expupper);
+	if (command.substr(0, 6) == "MSIEVE") {
+		msieveParam(command);
 		return 1;
 	}
 
-	if (expupper.substr(0, 4) == "YAFU") {
-		yafuParam(expupper);
+	if (command.substr(0, 4) == "YAFU") {
+		yafuParam(command);
 		return 1;
 	}
-	if (expupper.substr(0, 2) == "V ") {
+	if (command.substr(0, 2) == "V ") {
 		/* will not throw an exception if input has fat finger syndrome.
 		If no valid digits found, sets verbose to 0 */
-		verbose = atoi(expupper.substr(1).data());
+		verbose = atoi(command.substr(1).data());
 		std::cout << "verbose set to " << verbose << '\n';
 		return 1;
 	}
@@ -2723,6 +3032,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			else
 				printf("ingrese la expresión para ser procesada, o AYUDA o SALIDA\n");
 
+			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
+				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 			getline(std::cin, expr);  // expression may include spaces
 
 			strToUpper(expr, expupper);		// convert to UPPER CASE 
@@ -2753,12 +3064,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				std::cout << '\n';				
 				if (factorFlag) {
 					doFactors(Result,false); /* factorise Result, calculate number of divisors etc */
+					results.clear();  // get rid of unwanted results
 				}
 			}
 
 			auto end = clock();   // measure amount of time used
 			double elapsed = (double)end - start;
 			PrintTimeUsed(elapsed, "time used = ");
+
 		}
 
 		return EXIT_SUCCESS;  // EXIT command entered

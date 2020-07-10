@@ -327,7 +327,7 @@ void add_next_factor(msieve_obj *obj, mp_t *n,
 }
 
 /*--------------------------------------------------------------------*/
-void logprintf(msieve_obj *obj, char *fmt, ...) {
+void logprintf(const msieve_obj *obj, char *fmt, ...) {
 
 	va_list ap;
 
@@ -477,7 +477,7 @@ void factor_list_free(mp_t *n, factor_list_t *list, msieve_obj *obj) {
 }
 
 /*--------------------------------------------------------------------*/
-static void factor_list_add_core(msieve_obj *obj, 
+static void factor_list_add_core(const msieve_obj *obj, 
 				factor_list_t *list, 
 				mp_t *new_factor) {
 
@@ -564,9 +564,10 @@ static void factor_list_add_core(msieve_obj *obj,
 			list->final_factors[i]->type = MSIEVE_PRIME;
 		}
 		else {
+			/* seed1 and seed2 are changed, need to override 'const' 
+			attribute of obj */
 			list->final_factors[i]->type = mp_is_prime(
-						new_factor, 
-						&obj->seed1, &obj->seed2);
+				new_factor, (uint32*)&obj->seed1, (uint32*)&obj->seed2);
 		}
 		mp_copy(new_factor, &(list->final_factors[i]->factor));
 	}

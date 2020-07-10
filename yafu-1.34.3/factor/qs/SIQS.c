@@ -2436,6 +2436,10 @@ static int update_check(static_conf_t *sconf)
 			double timeElapsed = (double)difference->secs + (double)difference->usecs / 1000000.0;
 			double ETA = ((timeElapsed / perCentDone)*100.0) - timeElapsed;
 			if (ETA < 0) ETA = 0.0;  // if > 100% completed eliminate -ve ETA
+			/* calculation above for ETA assumes linear progress and is highly
+			inaccurate. Kludge is to divide by 2 which is hopefully near enough to
+			be useful. */
+			ETA /= 2.0;
 			sconf->charcount = printf("%d rels found: %d full + "
 				"%d from %d partial, (%2.0f%% complete after %1.0f secs. ETA %1.0f secs)  \r",
 				sconf->num_r,   sconf->num_relations,

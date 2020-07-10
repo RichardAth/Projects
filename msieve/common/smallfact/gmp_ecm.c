@@ -136,7 +136,7 @@ static uint32 postprocess(msieve_obj *obj, mpz_t factor,
 }
 
 /*--------------------------------------------------------------------*/
-static uint32 choose_max_digits(msieve_obj *obj, uint32 bits) {
+static uint32 choose_max_digits(const msieve_obj *obj, uint32 bits) {
 
 	/* choose the amount of work to do. We want the
 	   chosen digit level to be a small fraction of what

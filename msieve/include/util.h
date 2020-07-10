@@ -214,14 +214,11 @@ void * get_lib_symbol(libhandle_t h, const char *symbol_name);
 #define M_PI 3.14159265358979323846
 #endif
 
+/* A multiply-with-carry generator by George Marsaglia.
+The period is about 2^63. Values in rand_seed & rand_carry are changed*/
 static INLINE uint32 
 get_rand(uint32 *rand_seed, uint32 *rand_carry) {
-   
-	/* A multiply-with-carry generator by George Marsaglia.
-	   The period is about 2^63. */
-
-	#define RAND_MULT 2131995753
-
+  	#define RAND_MULT 2131995753
 	uint64 temp;
 
 	temp = (uint64)(*rand_seed) * 

@@ -452,16 +452,15 @@ void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 	}
 	for (int i = 0; i < lastfactor; i++) {
 		if (Factors[i].Factor == divisor)
-			break;  // factor already found
+			continue;  // factor already found, but continue checking 
 		g = gcd(Factors[i].Factor, divisor);
 		if (g != 1 && g < Factors[i].Factor) {
 			Znum qnew;
 			Factors.resize(lastfactor + 1);  // increase size of factor list
 			/* we can replace Factor with 2 factors, Factor/g and g 
 			(if Factor is a multiple of divisor, g = divisor) */
-			//Factors[i].Factor /= g;
 			mp_bitcnt_t fexp = mpz_remove(ZT(qnew), ZT(Factors[i].Factor), ZT(g));
-			Factors[i].Factor = qnew;
+			Factors[i].Factor = qnew;   //Factors[i].Factor /= g^fexp;
 			Factors[ipoint].Factor = g;
 			Factors[ipoint].exponent = Factors[i].exponent*(int)fexp;
 			Factors[ipoint].upperBound = Factors[i].upperBound;

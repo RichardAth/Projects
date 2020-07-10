@@ -53,7 +53,6 @@ following if linking against 2345+ (all 6.* versions are the old way) */
 	#include <ecm.h>
 #endif
 
-// the number of recognized command line options
 //#define NUMOPTIONS 67
 // maximum length of command line option strings
 #define MAXOPTIONLEN 20
@@ -177,6 +176,7 @@ static struct {
 	"filt_bump",     1, 3,
 	"nc1",           0, 0,  //  65 -66
 };
+// the number of recognized command line options
 static const int NumOptions = sizeof(option) / sizeof(option[0]);
 
 // function to read the .ini file and populate options
@@ -192,7 +192,8 @@ static void free_globals(void);
 static void get_computer_info(char *idstr);
 
 // function to print the splash screen to file/screen
-static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, fact_obj_t *fobj);
+static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, 
+	const fact_obj_t *fobj);
 
 // functions to make a batchfile ready to execute, and to process batchfile lines
 static void prepare_batchfile(char *input_exp);
@@ -289,15 +290,15 @@ int main(int argc, char *argv[])
 	fact_obj_t *fobj;
 	char indup[GSTR_MAXSIZE];
 
-	//the input expression
 	input_exp = (char *)malloc(GSTR_MAXSIZE*sizeof(char));
 	mallocCheck(input_exp)
-	/*indup = (char *)malloc(GSTR_MAXSIZE*sizeof(char));
-	mallocCheck(indup)*/
-	//strcpy_s(input_exp, sizeof(input_exp), "");
 	input_exp[0] = '\0';
 
 	sInit(&str);
+
+	//get the computer name, cache sizes, etc.  store in globals
+	// Must be called before set_default_globals to set cycles_per_tick 
+	get_computer_info(CPU_ID_STR);
 
 	//set defaults for various things
 	set_default_globals();
@@ -323,8 +324,7 @@ int main(int argc, char *argv[])
 	mallocCheck(fobj)
 	init_factobj(fobj);
 
-	//get the computer name, cache sizes, etc.  store in globals
-	get_computer_info(CPU_ID_STR);	
+		
 
 	//now check for an .ini file, which will override these defaults
 	//command line arguments will override the .ini file
@@ -377,13 +377,11 @@ int main(int argc, char *argv[])
 	//right now this just allocates room for user variables
 	calc_init();				
 		
-	if (USERSEED)
-	{
-		logprint(logfile,"User random seed:  %u\n\n",g_rand.low);
+	if (USERSEED) {
+		logprint(logfile,"User random seed:  %u, %u\n\n", g_rand.hi, g_rand.low);
 	}
-	else
-	{		
-		logprint(logfile,"New random seeds: %u, %u\n\n",g_rand.hi,g_rand.low);
+	else {		
+		logprint(logfile,"New random seeds: %u, %u\n\n", g_rand.hi, g_rand.low);
 	}
 	fflush(logfile);
 
@@ -392,12 +390,12 @@ int main(int argc, char *argv[])
 	//g_rand.low = 123;
 	srand(g_rand.low);
 	gmp_randinit_default(gmp_randstate);
-	gmp_randseed_ui(gmp_randstate, g_rand.low);
+	gmp_randseed_ui(gmp_randstate, g_rand.low);    // seed for mpz_urandom
 
 #if BITS_PER_DIGIT == 64
 	LCGSTATE = (uint64)g_rand.hi << 32 | (uint64)g_rand.low;
 #else
-	LCGSTATE = g_rand.low;
+	LCGSTATE = g_rand.low;  // 'seed' for spRand()
 #endif	
 
 
@@ -613,7 +611,7 @@ int main(int argc, char *argv[])
 
 //check if optbuf contains a valid option. If so set j to index for option
 // if not valid return -1;
-static int checkopt(char optbuf[]) {
+static int checkopt(const char optbuf[]) {
 	if (optbuf == NULL)
 		return -1;
 	for (int j = 0; j < NumOptions; j++)
@@ -753,7 +751,7 @@ static void helpfunc(const char *s)
 }
 
 //return 1 if invalid, 0 otherwise
-static int invalid_dest(char *dest)
+static int invalid_dest(const char *dest)
 {
 	int i;
 
@@ -978,7 +976,7 @@ static int process_arguments(int argc, char **argv, char *input_exp, fact_obj_t 
 
 // function to print the splash screen to file/screen
 static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr, 
-	fact_obj_t *fobj)
+	const fact_obj_t *fobj)
 {
 	if (Vflag >= 0)
 		printf("\n\n");
@@ -1043,6 +1041,8 @@ _MSC_MPIR_VERSION);
 		printf("QS to NFS crossover at %1.0f digits\n",
 			fobj->autofact_obj.qs_gnfs_xover);
 		printf("%s compiled on %s \n", __FILE__, __DATE__);
+		if (Vflag > 0 && !USERSEED)
+			printf("New random seeds: %u, %u\n", g_rand.hi, g_rand.low);
 		printf("\n>> ");
 
 	}
@@ -2203,7 +2203,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break; 
 		}
 
-		case 1:  // B1pp1 - 1 integer argument
+		case 1:        // B1pp1 - 1 integer argument
 		{
 			fobj->pp1_obj.B1 = (uint32)arg1Int;
 			if (fobj->pp1_obj.stg2_is_default)
@@ -2216,7 +2216,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 2:  // B1ecm  - 1 integer argument
+		case 2:        // B1ecm  - 1 integer argument
 		{
 			fobj->ecm_obj.B1 = (uint32)arg1Int;
 			if (fobj->pp1_obj.stg2_is_default)
@@ -2229,34 +2229,34 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 3:		 // rhomax - 1 integer argument
+		case 3:		   // rhomax - 1 integer argument
 		{
 			fobj->rho_obj.iterations = (uint32)arg1Int;
 			break;
 		}
 
-		case 4:  // B2pm1  - 1 integer argument
+		case 4:        // B2pm1  - 1 integer argument
 		{
 			fobj->pm1_obj.B2 = arg1Int;
 			fobj->pm1_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 5:	   // B2pp1 - 1 integer argument
+		case 5:	       // B2pp1 - 1 integer argument
 		{
 			fobj->pp1_obj.B2 = arg1Int;
 			fobj->pp1_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 6:		 // B2ecm - 1 integer argument
+		case 6:		   // B2ecm - 1 integer argument
 		{
 			fobj->ecm_obj.B2 = arg1Int;
 			fobj->ecm_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 7:  // qssave  argument is a string
+		case 7:        // qssave  argument is a string
 		{	
 			if (strlen(arg) < sizeof(fobj->qs_obj.siqs_savefile))
 				strcpy_s(fobj->qs_obj.siqs_savefile, sizeof(fobj->qs_obj.siqs_savefile),
@@ -2266,35 +2266,35 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 8:	   // siqsB - 1 integer argument
+		case 8:	       // siqsB - 1 integer argument
 		{
 			fobj->qs_obj.gbl_override_B = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_B_flag = 1;
 			break;
 		}
 
-		case 9:  // siqsTF - 1 integer argument
+		case 9:        // siqsTF - 1 integer argument
  		{
 			fobj->qs_obj.gbl_override_tf = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_tf_flag = 1;
 			break;
 		}
 
-		case 10:  // siqsR - 1 integer argument
+		case 10:       // siqsR - 1 integer argument
 		{
 			fobj->qs_obj.gbl_override_rel = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_rel_flag = 1;
 			break;
 		}
 
-		case 11:    // siqsT - 1 integer argument
+		case 11:       // siqsT - 1 integer argument
 		{
 			fobj->qs_obj.gbl_override_time = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_time_flag = 1;
 			break;
 		}
 
-		case 12:   // siqsNB - 1 integer argument
+		case 12:       // siqsNB - 1 integer argument
 		{
 			fobj->qs_obj.gbl_override_blocks = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_blocks_flag = 1;
@@ -2308,7 +2308,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 14:  // logfile   argument is a string
+		case 14:       // logfile   argument is a string
 		{	
 			if (strlen(arg) < sizeof(fobj->flogname))
 				strcpy_s(fobj->flogname, sizeof(fobj->flogname), arg);
@@ -2317,7 +2317,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 15:  // batchfile   argument is a string
+		case 15:       // batchfile   argument is a string
 		{	
 			if (strlen(arg) < 80) {
 				strcpy_s(batchfilename, 80, arg);
@@ -2328,10 +2328,9 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 16:	    // seed - needs 2 integer parameters
+		case 16:	   // seed - needs 2 integer parameters
 		{
 			USERSEED = 1;
-			//sscanf(arg, "%u,%u", &g_rand.hi, &g_rand.low);
 			if (numCount < 2) {
 				printf("expected number,number for option %s\n", opt);
 				exit(1);
@@ -2341,13 +2340,13 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 17:   // sigma - 1 integer argument
+		case 17:       // sigma - 1 integer argument
 		{
 			fobj->ecm_obj.sigma = (uint32)arg1Int;
 			break;
 		}
 
-		case 18:    // session. argument is a string
+		case 18:       // session. argument is a string
 		{	
 			if (strlen(arg) < sizeof(sessionname))
 			{
@@ -2358,25 +2357,25 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 19:    // threads - 1 integer argument
+		case 19:       // threads - 1 integer argument
 		{
 			THREADS = (uint32)arg1Int;
 			break;
 		}
 
-		case 20: // v option
+		case 20:       // v option
 		{
 			Vflag++;
 			break;
 		}
 
-		case 21: // silent
+		case 21:       // silent
 		{
 			Vflag = -1;
 			break;
 		}
 
-		case 22:	  // pfile
+		case 22:	   // pfile
 		{
 			PRIMES_TO_FILE = 1;
 			break;
@@ -2388,25 +2387,25 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 24:	  // forceDLP
+		case 24:	   // forceDLP
 		{
 			fobj->qs_obj.gbl_force_DLP = 1;
 			break;
 		}
 
-		case 25:	  // fmtmax - 1 integer argument
+		case 25:	   // fmtmax - 1 integer argument
 		{
 			fobj->div_obj.fmtlimit = (uint32)arg1Int;
 			break;
 		}
 
-		case 26: // noopt
+		case 26:       // noopt
    		{
 			fobj->qs_obj.no_small_cutoff_opt = 1;
 			break;
 		}
 
-		case 27:  // vproc
+		case 27:       // vproc
 		{
 			//#ifdef __APPLE__
 			//		printf("extended cpuid not supported\n");
@@ -2416,13 +2415,13 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 28:   // noecm
+		case 28:       // noecm
 		{
 			fobj->autofact_obj.yafu_pretest_plan = PRETEST_NOECM;
 			break;
 		}
 
-		case 29: // ggnfs-dir argument is a string
+		case 29:       // ggnfs-dir argument is a string
 		{
 			if (strlen(arg) < sizeof(fobj->nfs_obj.ggnfs_dir))
 				strcpy_s(fobj->nfs_obj.ggnfs_dir, sizeof(fobj->nfs_obj.ggnfs_dir),
@@ -2432,14 +2431,14 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 30:   // tune-info
+		case 30:       // tune-info
 		{	//parse the tune_info string and if it matches the current OS and CPU, 
 			//set the appropriate globals
 			apply_tuneinfo(fobj, arg);
 			break;
 		}
 
-		case 31: //option "pretest_ratio" - 1 floating point argument
+		case 31:       //option "pretest_ratio" - 1 floating point argument
 		{
 			/* convert text to double. Would strtod be better? */
 			//sscanf(arg, "%lf", &fobj->autofact_obj.target_pretest_ratio);
@@ -2447,14 +2446,14 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 32:  //option "xover"- 1 floating point argument
+		case 32:       //option "xover"- 1 floating point argument
 		{  
 			fobj->autofact_obj.qs_gnfs_xover = arg1F;
 			fobj->autofact_obj.prefer_xover = 1;
 			break;
 		}
 
-		case 33:	 //argument "one"
+		case 33:	   //argument "one"
 		{
 			fobj->autofact_obj.want_only_1_factor = 1;
 			break;
@@ -2462,8 +2461,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 
 		case 34:      //option  "op".  argument is a string
 		{	
-			if (strlen(arg) < sizeof(fobj->autofact_obj.op_str))
-			{
+			if (strlen(arg) < sizeof(fobj->autofact_obj.op_str)) {
 				strcpy_s(fobj->autofact_obj.op_str, sizeof(fobj->autofact_obj.op_str),
 					arg);
 				fobj->autofact_obj.want_output_primes = 1;
@@ -2473,10 +2471,9 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 35:  //option "of".  argument is a string
+		case 35:      //option "of".  argument is a string
 		{	
-			if (strlen(arg) < sizeof(fobj->autofact_obj.of_str))
-			{
+			if (strlen(arg) < sizeof(fobj->autofact_obj.of_str)) {
 				strcpy_s(fobj->autofact_obj.of_str, sizeof(fobj->autofact_obj.of_str),
 					arg);
 				fobj->autofact_obj.want_output_factors = 1;

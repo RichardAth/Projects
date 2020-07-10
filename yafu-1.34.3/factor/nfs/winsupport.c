@@ -17,6 +17,27 @@ benefit from your work.
 #include "yafu_string.h"
 #include "arith.h"
 #include "factor.h"
+//#include "mp.h"  // can't do this! copy required declarations instead 
+
+/* return the number of bits needed to hold an mp_t.
+	   This is equivalent to floor(log2(a)) + 1. */
+uint32 mp_bits(const mp_t *a);
+
+/* Calculate greatest common divisor of x and y.
+   Any quantities may alias */
+void mp_gcd(const mp_t *x, const mp_t *y, mp_t *out);
+
+/* General-purpose division routines. mp_divrem
+   divides num by denom, putting the quotient in
+   quot (if not NULL) and the remainder in rem
+   (if not NULL). No aliasing is allowed */
+void mp_divrem(const mp_t *num, const mp_t *denom, mp_t *quot, mp_t *rem);
+
+/* mp_is_prime returns 1 if the input is prime and 0 otherwise. 
+   The probability of accidentally declaring a composite
+   to be prime is < 4 ^ -NUM_WITNESSES, and probably is
+   drastically smaller than that */
+int32 mp_is_prime(const mp_t *p, uint32 *seed1, uint32 *seed2);
 
 #ifdef USE_NFS
 
@@ -229,7 +250,7 @@ static INLINE void mp_clear(mp_t *a) {
 	memset(a, 0, sizeof(mp_t));
 }
 
-static INLINE void mp_copy(mp_t *a, mp_t *b) {
+static INLINE void mp_copy(const mp_t *a, mp_t *b) {
 	*b = *a;
 }
 

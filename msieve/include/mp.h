@@ -80,35 +80,34 @@ static INLINE void signed_mp_clear(signed_mp_t *a) {
 	a->sign = POSITIVE;
 }
 
-static INLINE void mp_copy(mp_t *a, mp_t *b) {
+static INLINE void mp_copy(const mp_t *a, mp_t *b) {
 	*b = *a;
 }
 
-static INLINE void signed_mp_copy(signed_mp_t *a, signed_mp_t *b) {
+static INLINE void signed_mp_copy(const signed_mp_t *a, signed_mp_t *b) {
 	*b = *a;
 }
 
 	/* return the number of bits needed to hold an mp_t.
    	   This is equivalent to floor(log2(a)) + 1. */
-
-uint32 mp_bits(mp_t *a);
+uint32 mp_bits(const mp_t *a);
 
 	/* approximate the logarithm of an mp_t */
 
-double mp_log(mp_t *x);
+double mp_log(const mp_t *x);
 
 	/* Addition and subtraction; a + b = sum
 	   or a - b = diff. 'b' may be an integer or 
 	   another mp_t. sum or diff may overwrite 
 	   the input operands */
 
-void mp_add(mp_t *a, mp_t *b, mp_t *sum);
-void mp_add_1(mp_t *a, uint32 b, mp_t *sum);
-void mp_sub(mp_t *a, mp_t *b, mp_t *diff);
-void mp_sub_1(mp_t *a, uint32 b, mp_t *diff);
+void mp_add(const mp_t *a, const mp_t *b, mp_t *sum);
+void mp_add_1(const mp_t *a, uint32 b, mp_t *sum);
+void mp_sub(const mp_t *a, const mp_t *b, mp_t *diff);
+void mp_sub_1(const mp_t *a, uint32 b, mp_t *diff);
 
-void signed_mp_add(signed_mp_t *a, signed_mp_t *b, signed_mp_t *sum);
-void signed_mp_sub(signed_mp_t *a, signed_mp_t *b, signed_mp_t *diff);
+void signed_mp_add(const signed_mp_t *a, const signed_mp_t *b, signed_mp_t *sum);
+void signed_mp_sub(const signed_mp_t *a, const signed_mp_t *b, signed_mp_t *diff);
 
 	/* return -1, 0, or 1 if a is less than, equal to,
 	   or greater than b, respectively */
@@ -142,21 +141,21 @@ static INLINE int32 mp_cmp(const mp_t *a, const mp_t *b) {
 	   The result may overwrite 'a'. shift amount
 	   must not exceed 32*MAX_MP_WORDS */
 
-void mp_rshift(mp_t *a, uint32 shift, mp_t *res);
+void mp_rshift(const mp_t *a, uint32 shift, mp_t *res);
 
 	/* Right-shift 'a' by an amount equal to the
 	   number of trailing zeroes. Return the shift count */
 
-uint32 mp_rjustify(mp_t *a, mp_t *res);
+uint32 mp_rjustify(const mp_t *a, mp_t *res);
 
 	/* multiply a by b. 'b' is either a 1-word
 	   operand or an mp_t. In the latter case, 
 	   the product must fit in MAX_MP_WORDS words
 	   and may not overwrite the input operands. */
 
-void mp_mul(mp_t *a, mp_t *b, mp_t *prod);
-void mp_mul_1(mp_t *a, uint32 b, mp_t *x);
-void signed_mp_mul(signed_mp_t *a, signed_mp_t *b, signed_mp_t *prod);
+void mp_mul(const mp_t *a, const mp_t *b, mp_t *prod);
+void mp_mul_1(const mp_t *a, uint32 b, mp_t *x);
+void signed_mp_mul(const signed_mp_t *a, const signed_mp_t *b, signed_mp_t *prod);
 
 	/* divide a 64-bit input by a 32-bit input,
 	   and return the remainder. The quotient must
@@ -197,7 +196,7 @@ static INLINE uint32 mp_mod64(uint64 a, uint32 n) {
 	   MAX_MP_WORDS words each; the out 'res' can alias
 	   a or b but not n */
 
-void mp_modmul(mp_t *a, mp_t *b, mp_t *n, mp_t *res);
+void mp_modmul(const mp_t *a, const mp_t *b, const mp_t *n, mp_t *res);
 
 static INLINE uint32 mp_modmul_1(uint32 a, uint32 b, uint32 n) {
 	uint64 acc = (uint64)a * (uint64)b;
@@ -231,12 +230,12 @@ uint64 mp_modmul_2(uint64 a, uint64 b, uint64 n);
 
 #endif
 
-	/* General-purpose division routines. mp_divrem
-	   divides num by denom, putting the quotient in
-	   quot (if not NULL) and the remainder in rem
-	   (if not NULL). No aliasing is allowed */
+/* General-purpose division routines. mp_divrem
+   divides num by denom, putting the quotient in
+   quot (if not NULL) and the remainder in rem
+   (if not NULL). No aliasing is allowed */
 
-void mp_divrem(mp_t *num, mp_t *denom, mp_t *quot, mp_t *rem);
+void mp_divrem(const mp_t *num, const mp_t *denom, mp_t *quot, mp_t *rem);
 #define mp_div(n, d, q) mp_divrem(n, d, q, NULL)
 #define mp_mod(n, d, rem) mp_divrem(n, d, NULL, rem)
 
@@ -245,12 +244,12 @@ void mp_divrem(mp_t *num, mp_t *denom, mp_t *quot, mp_t *rem);
 	   and the remainder is returned.  quot may 
 	   overwrite the input */
 
-uint32 mp_divrem_1(mp_t *num, uint32 denom, mp_t *quot);
+uint32 mp_divrem_1(const mp_t *num, uint32 denom, mp_t *quot);
 
 	/* internal mod_1 routine, used with variable size numerator */
 
-static INLINE uint32 mp_mod_1_core(uint32 *num, 
-				uint32 nwords, uint32 denom) {
+static INLINE uint32 mp_mod_1_core(const uint32 *num, 
+				uint32 nwords, const uint32 denom) {
 
 	uint32 i = nwords;
 	uint32 rem = 0;
@@ -302,20 +301,20 @@ static INLINE uint32 mp_mod_1_core(uint32 *num,
 	/* Divide an mp_t by a single word and return the
 	   remainder */
 
-static INLINE uint32 mp_mod_1(mp_t *num, uint32 denom) {
+static INLINE uint32 mp_mod_1(const mp_t *num, uint32 denom) {
 	return mp_mod_1_core(num->val, num->nwords, denom);
 }
 
 	/* Calculate floor(i_th root of 'a'). The return value 
 	   is zero if res is an exact i_th root of 'a' */
 
-uint32 mp_iroot(mp_t *a, uint32 i, mp_t *res);
+uint32 mp_iroot(const mp_t *a, uint32 i, mp_t *res);
 #define mp_isqrt(a, res) mp_iroot(a, 2, res)
 
 	/* Calculate greatest common divisor of x and y.
 	   Any quantities may alias */
 
-void mp_gcd(mp_t *x, mp_t *y, mp_t *out);
+void mp_gcd(const mp_t *x, const mp_t *y, mp_t *out);
 
 static INLINE uint32 mp_gcd_1(uint32 x, uint32 y) {
 
@@ -341,7 +340,7 @@ static INLINE uint32 mp_gcd_1(uint32 x, uint32 y) {
 	   32*MAX_MP_WORDS+1 bytes (i.e. enough to print
 	   out 'a' in base 2) */
 
-char * mp_print(mp_t *a, uint32 base, FILE *f, char *scratch);
+char * mp_print(const mp_t *a, uint32 base, FILE *f, char *scratch);
 #define mp_printf(a, base, scratch) mp_print(a, base, stdout, scratch)
 #define mp_fprintf(a, base, f, scratch) mp_print(a, base, f, scratch)
 #define mp_sprintf(a, base, scratch) mp_print(a, base, NULL, scratch)
@@ -361,14 +360,13 @@ void mp_str2mp(char *str, mp_t *a, uint32 base);
 	   mod 'n' and return the result. a and b may exceed n.
 	   In the multiple precision case, the result may not
 	   alias any of the inputs */
-
-void mp_expo(mp_t *a, mp_t *b, mp_t *n, mp_t *res);
+void mp_expo(const mp_t *a, const mp_t *b, const mp_t *n, mp_t *res);
 
 	/* ordinary exponentiation: raise 'a' to the power 'b' 
 	   and return the result. The result may not alias 
 	   any of the inputs, and must fit in an mp_t */
 
-void mp_pow(mp_t *a, mp_t *b, mp_t *res);
+void mp_pow(const mp_t *a, const mp_t *b, mp_t *res);
 
 static INLINE uint32 mp_expo_1(uint32 a, uint32 b, uint32 n) {
 
@@ -388,7 +386,7 @@ static INLINE uint32 mp_expo_1(uint32 a, uint32 b, uint32 n) {
 	   an odd prime, and a may exceed p */
 
 int32 mp_legendre_1(uint32 a, uint32 p);
-int32 mp_legendre(mp_t *a, mp_t *p);
+int32 mp_legendre(const mp_t *a, const mp_t *p);
 
 	/* Find an inverse of 'a' modulo prime 'p', i.e. the number
 	   x such that a * x mod p is 1. These routines assume that 
@@ -489,8 +487,8 @@ static INLINE uint64 mp_modinv_2(uint64 a, uint64 p) {
 	   This state is updated as random numbers are produced */
 
 uint32 mp_modsqrt_1(uint32 a, uint32 p);
-void mp_modsqrt(mp_t *a, mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
-void mp_modsqrt2(mp_t *a, mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
+void mp_modsqrt(const mp_t *a, const mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
+void mp_modsqrt2(const mp_t *a, const mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
 
 	/* Generate a random number between 0 and 2^bits - 1 */
 
@@ -506,10 +504,10 @@ void mp_rand(uint32 bits, mp_t *res, uint32 *seed1, uint32 *seed2);
 	   drastically smaller than that */
 
 #define NUM_WITNESSES 20
-int32 mp_is_prime(mp_t *p, uint32 *seed1, uint32 *seed2);
+int32 mp_is_prime(const mp_t *p, uint32 *seed1, uint32 *seed2);
 int32 mp_is_prime_1(uint32 p);
 void mp_random_prime(uint32 bits, mp_t *res, uint32 *seed1, uint32 *seed2);
-uint32 mp_next_prime(mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
+uint32 mp_next_prime(const mp_t *p, mp_t *res, uint32 *seed1, uint32 *seed2);
 
 
 	/* Modular addition/subtraction: compute a +- b mod p
@@ -599,7 +597,7 @@ static INLINE uint64 mp_modadd_2(uint64 a, uint64 b, uint64 p) {
 	   any precision in the mantissa at all, the input
 	   should have under 100 digits */
 
-static INLINE double mp_mp2d(mp_t *x) {
+static INLINE double mp_mp2d(const mp_t *x) {
 
 	/* convert a multiple-precision number to a double */
 
@@ -623,7 +621,7 @@ static INLINE double mp_mp2d(mp_t *x) {
 	}
 }
 
-static INLINE double mp_signed_mp2d(signed_mp_t *x) {
+static INLINE double mp_signed_mp2d(const signed_mp_t *x) {
 
 	if (x->sign == POSITIVE)
 		return mp_mp2d(&x->num);

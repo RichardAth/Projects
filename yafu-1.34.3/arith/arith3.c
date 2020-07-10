@@ -29,7 +29,7 @@ theoretic routines
 */
 int d_pull_twos(double *n, int *j, double p);
 int pull_twos(fp_digit *n, int *j, fp_digit p);
-int z_pull_twos(z *n, int *j, z *p);
+int z_pull_twos(z *n, int *j, const z *p);
 
 int d_pull_twos(double *n, int *j, double p)
 {
@@ -59,7 +59,7 @@ int pull_twos(fp_digit *n, int *j, fp_digit p)
 	return c;
 }
 
-int z_pull_twos(z *n, int *j, z *p)
+int z_pull_twos(z *n, int *j, const z *p)
 {
 	//n is overwritten
 	int c = 0;
@@ -74,8 +74,8 @@ int z_pull_twos(z *n, int *j, z *p)
 		zShiftRight(n,n,1);
 		c = 1 - c;
 	}
-	zExp(2,p,&t2);
-	zSub(&t2,&zOne,&t1);
+	zExp(2, p, &t2);
+	zSub(&t2, &zOne, &t1);
 	r = zShortDiv(&t1,16,&t2);
 
 	if ((c * r) == 8)
@@ -87,7 +87,7 @@ int z_pull_twos(z *n, int *j, z *p)
 }
 
 
-int isPrime(z *n)
+int isPrime(const z *n)
 {
 	// translate into gmp's test
 	mpz_t gmpz;
@@ -102,7 +102,7 @@ int isPrime(z *n)
 	return (i > 0);
 }
 
-int isSquare(z *n)
+int isSquare(const z *n)
 {
 	//thanks fenderbender @ mersenneforum.org
 	unsigned long m;
@@ -403,7 +403,7 @@ int d_jacobi(double n, double p)
 	return j;
 }
 
-int zJacobi(z *n, z *p)
+int zJacobi(const z *n, const z *p)
 {
 	//compute the jacobi symbol (n/p) using the iterative method
 	//p must be odd
@@ -538,16 +538,19 @@ void dblGCD(double x, double y, double *w)
 	return;
 }
 
+/* perform Lucas-Lehmer test. Return 0 if 2^exp-1 is composite, 1 if prime*/
 int llt(uint32 exp)
 {
-	mpz_t tmp,tmp2,n;
+	mpz_t tmp, n;
 	clock_t start, stop;
 	double t;
-	uint32 i,j,nchars;
-	fp_digit d;
+	uint32 i, j, nchars;
+	uint64 d;
+	unsigned long long nsqrt;
 
-	mpz_init(tmp);
-	mpz_set_ui(tmp, exp); //sp2z(exp,&tmp);
+
+	mpz_init(tmp);        // tmp = 0
+	mpz_set_ui(tmp, exp); // tmp = exp
 	if (!mpz_probab_prime_p(tmp, NUM_WITNESSES))
 	{
 		mpz_clear(tmp);
@@ -555,21 +558,36 @@ int llt(uint32 exp)
 		return 0;
 	}
 
+	if (exp <= 7)
+		return 1;  // smallest composite mersenne is 2^11-1
+
 	start = clock();
 	mpz_init(n);
-	mpz_set_ui(tmp, 4); //sp2z(4,&tmp);
 	mpz_set_ui(n, 1);
-	mpz_mul_2exp(n, n, exp); //zShiftLeft(&n,&zOne,exp);
-	mpz_sub_ui(n, n, 1); //zShortSub(&n,1,&n);
-	//should vary the depth depending on the size of p
+	mpz_mul_2exp(n, n, exp);   // n = 2^exp
+	mpz_sub_ui(n, n, 1);       // n = 2^exp-1
+
+
+	/*  n is a mersenne number calculated as (2^p)-1 and p is a prime number.
+	    The factors of n must be in the form of q = 2ip+1, where q < sqrt(n) */
+	// should vary the depth depending on the size of p
+	if (exp <= 127 ) {
+		nsqrt = 1LL << (exp / 2);   // get approx square root
+		/* multiply by sqrt(2) to make it more accurate */ 
+		nsqrt /= 16;
+		nsqrt *= 22;  // 22/16 = 1.375, sqrt(2) = 1.414 - close enough
+	}
+	else nsqrt = UINT_MAX;
 	for (i = 1; i< 1000000; i++)
 	{
-		d = 2*i*(fp_digit)exp + 1;
-		if (mpz_tdiv_ui(n,d) == 0)
+		d = 2LL*i*exp + 1;
+		if (d > nsqrt)
+			break;
+		if (mpz_tdiv_ui(n, d) == 0)
 		{
 			mpz_clear(n);
 			mpz_clear(tmp);
-			printf("2*%d*p+1 is a factor\n",i);
+			printf("2*%d*p+1 (= %lld) is a factor\n", i, d);
 			return 0;
 		}
 	}
@@ -596,18 +614,19 @@ int llt(uint32 exp)
 	}
 	*/
 	
-	mpz_init(tmp2);
+	//mpz_init(tmp2);
+	mpz_set_ui(tmp, 4);        // tmp = 4
 	nchars=0;
 	//else do the ll test
-	for (i=0;i<exp-2;i++)
+	for (i=0; i<exp-2; i++)
 	{
-		mpz_mul(tmp, tmp, tmp); //zSqr(&tmp,&tmp);
-		mpz_sub_ui(tmp, tmp, 2); //zShortSub(&tmp,2,&tmp);
-		mpz_tdiv_r(tmp, tmp, n); //zDiv(&tmp,&n,&tmp2,&tmp);
+		mpz_mul(tmp, tmp, tmp);  // tmp = tmp^2
+		mpz_sub_ui(tmp, tmp, 2); // tmp -= 2;
+		mpz_tdiv_r(tmp, tmp, n); // tmp %= n
 		if ((i & 511) == 0)
 		{
-			for (j=0;j<nchars;j++)
-				printf("\b");
+			for (j=0; j<nchars; j++)
+				printf("\b");    // erase previous output
 			nchars = printf("llt iteration %d",i);
 			fflush(stdout);
 		}
@@ -618,17 +637,17 @@ int llt(uint32 exp)
 	t = (double)(stop - start)/(double)CLOCKS_PER_SEC;
 	printf("elapsed time = %6.4f\n",t);
 
-	mpz_clear(tmp2);
+	//mpz_clear(tmp2);
 	mpz_clear(n);
 
 	if (mpz_cmp_ui(tmp, 0) == 0)
 	{
 		mpz_clear(tmp);
-		return 1;
+		return 1;   // prime
 	}
 	else
 	{
 		mpz_clear(tmp);
-		return 0;
+		return 0;    // composite
 	}
 }
