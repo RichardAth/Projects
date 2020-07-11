@@ -601,7 +601,7 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 			m = 2;
 		}
 		else { // k Odd
-			r = (int)MulPrToLong((k + nbr)& 3) ;
+			r = (int)MulPrToLong((k + nbr)& 3) ;  // r = (k+nbr)%4 i.e. 0 or 2 ?
 			m = 4;
 		}
 	}

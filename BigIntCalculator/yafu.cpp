@@ -214,7 +214,7 @@ bool callYafu(const Znum &num, std::vector<zFactors>&Factors) {
 		fcount++;                        // increase count of factors found
 		if (pos2 == std::string::npos)
 			break;       // pos2 at end of buffer; no more factors
-		if (pos2 != std::string::npos && factors[pos2] != '/')
+		if (factors[pos2] != '/')
 			pos2 = factors.find("/");  // move pos2 past exponent following factor
 		if (pos2 != std::string::npos)
 			factors = factors.substr(pos2 + 1);  // remove factor just processed
