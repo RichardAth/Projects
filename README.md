@@ -53,3 +53,5 @@ Turning YAFU on turns Msieve off and vice versa. If both are off the original EC
 To build Msieve requires some components of GMP-ECM, as well as Pthreads
 
 To build YAFU requires components of Msieve, GMP-ECM and Pthreads.
+
+For more information see readme.txt file

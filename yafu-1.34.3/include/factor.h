@@ -309,9 +309,9 @@ typedef struct
 
 typedef struct
 {
-	mpz_t gmp_n;
+	mpz_t gmp_n;     // number to be factored
 	mpz_t gmp_f;
-	uint32 iterations;
+	uint32 iterations;   // number of iterations
 	uint32 num_poly;
 	uint32 *polynomials;
 	uint32 curr_poly;			//current polynomial in the list of polynomials

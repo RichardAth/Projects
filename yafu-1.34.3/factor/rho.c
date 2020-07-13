@@ -27,20 +27,21 @@ code to the public domain.
 
 static int mbrent(fact_obj_t *fobj);
 
+//repeatedly use brent's rho on n
+//we always use three constants 'c'.
+//it may be desirable to make the number of different
+//polynomials, and their values, configurable, but for 
+//now it is hardcoded.
 void brent_loop(fact_obj_t *fobj)
 {
-	//repeatedly use brent's rho on n
-	//we always use three constants 'c'.
-	//it may be desirable to make the number of different
-	//polynomials, and their values, configurable, but for 
-	//now it is hardcoded.
-	mpz_t d,t;
+	mpz_t d, t;
 	FILE *flog;
 	clock_t start, stop;
 	double tt;
 		
-	//check for trivial cases
-	if ((mpz_cmp_ui(fobj->rho_obj.gmp_n, 1) == 0) || (mpz_cmp_ui(fobj->rho_obj.gmp_n, 0) == 0))
+	//check for trivial cases, n = 0, 1 or 2
+	if ((mpz_cmp_ui(fobj->rho_obj.gmp_n, 1) == 0) || 
+		(mpz_cmp_ui(fobj->rho_obj.gmp_n, 0) == 0))
 		return;
 
 	if (mpz_cmp_ui(fobj->rho_obj.gmp_n, 2) == 0)
@@ -149,32 +150,25 @@ void brent_loop(fact_obj_t *fobj)
 	return;
 }
 
-
+/*
+run pollard's rho algorithm on n with Brent's modification,
+returning the first factor found in f, or else 0 for failure.
+use f(x) = x^2 + c
+see, for example, bressoud's book.
+use montgomery arithmetic.
+*/
 static int mbrent(fact_obj_t *fobj)
 {
-	/*
-	run pollard's rho algorithm on n with Brent's modification, 
-	returning the first factor found in f, or else 0 for failure.
-	use f(x) = x^2 + c
-	see, for example, bressoud's book.
-	use montgomery arithmetic. 
-	*/
+	
 
-	mpz_t x,y,q,g,ys,t1,t2,cc;
+	mpz_t x, y, q, gcd, ys, t1, t2, cc;
 
-	uint32 i=0,k,r,m,c;
-	int it;
-	int imax = fobj->rho_obj.iterations;
+	uint32 i=0, k, r, m, c;
+	int it;                  // count number of iterations
+	int imax = fobj->rho_obj.iterations;  // set maximum number of iterations
 
 	//initialize local arbs
-	mpz_init(x);
-	mpz_init(y);
-	mpz_init(q);
-	mpz_init(g);
-	mpz_init(ys);
-	mpz_init(t1);
-	mpz_init(t2);
-	mpz_init(cc);
+	mpz_inits(x, y, q, gcd, ys, t1, t2, cc, NULL);
 
 	//starting state of algorithm.  
 	r = 1;
@@ -182,58 +176,61 @@ static int mbrent(fact_obj_t *fobj)
 	i = 0;
 	it = 0;
 	c = fobj->rho_obj.curr_poly;
-	mpz_set_ui(cc, fobj->rho_obj.polynomials[c]);
+	mpz_set_ui(cc, fobj->rho_obj.polynomials[c]);  // value in cc is never actually used!
 	mpz_set_ui(q, 1);
 	mpz_set_ui(y, 0);
-	mpz_set_ui(g, 1); 
+	mpz_set_ui(gcd, 1); 
 
-	do
-	{
-		mpz_set(x,y);
-		for(i=0;i<=r;i++)
+	do 	{
+		mpz_set(x, y);             // x = y
+		for(i=0; i<=r; i++)
 		{
-			mpz_mul(t1,y,y);		//y = (y*y + c) mod n
+			mpz_mul(t1, y, y);		//y = (y*y + c) mod n
 			mpz_add_ui(t1, t1, c);
-			mpz_tdiv_r(t1, t1, fobj->rho_obj.gmp_n);			
+			//mpz_tdiv_r(t1, t1, fobj->rho_obj.gmp_n);	
+			/* error? result in t1, but should be in y?	
+			loop just repeats same calculation r times and result in t2 is 
+			never used! Putting result into y seems to make more sense, but
+			old version did in fact seem to work anyway!*/
+			mpz_tdiv_r(y, t1, fobj->rho_obj.gmp_n);
 		}
 
 		k=0;
-		do
-		{
+		do 	{
 			mpz_set(ys, y);
-			for(i=1;i<=MIN(m,r-k);i++)
+			for(i=1; i <= MIN(m, r-k); i++)
 			{
-				mpz_mul(t1,y,y); //y=(y*y + c)%n
+				mpz_mul(t1, y, y);            //y=(y*y + c)%n
 				mpz_add_ui(t1, t1, c);
 				mpz_tdiv_r(y, t1, fobj->rho_obj.gmp_n);	
 
-				mpz_sub(t1, x, y); //q = q*abs(x-y) mod n
+				mpz_sub(t1, x, y);       // q = q*abs(x-y) mod n
 				if (mpz_sgn(t1) < 0)
 					mpz_add(t1, t1, fobj->rho_obj.gmp_n);
 				mpz_mul(q, t1, q); 
 				mpz_tdiv_r(q, q, fobj->rho_obj.gmp_n);	
 			}
-			mpz_gcd(g, q, fobj->rho_obj.gmp_n);
-			k+=m;
+			mpz_gcd(gcd, q, fobj->rho_obj.gmp_n);
+			k += m;
 			it++;
 
-			if (it>imax)
+			if (it > imax)
 			{
 				mpz_set_ui(fobj->rho_obj.gmp_f, 0);
 				goto free;
 			}
-			if (mpz_sgn(g) < 0)
-				mpz_neg(g, g); 
-		} while (k<r && (mpz_get_ui(g) == 1));
-		r*=2;
-	} while (mpz_get_ui(g) == 1);
+			if (mpz_sgn(gcd) < 0)
+				mpz_neg(gcd, gcd); 
+		} while (k < r && (mpz_get_ui(gcd) == 1));
 
-	if (mpz_cmp(g,fobj->rho_obj.gmp_n) == 0)
+		r *= 2;
+	} while (mpz_get_ui(gcd) == 1);
+
+	if (mpz_cmp(gcd, fobj->rho_obj.gmp_n) == 0)
 	{
-		//back track
-		it=0;
-		do
-		{
+		//back track; gcd = n
+		it = 0;
+		do 	{
 			mpz_mul(t1, ys, ys); //ys = (ys*ys + c) mod n
 			mpz_add_ui(t1, t1, c);
 			mpz_tdiv_r(ys, t1, fobj->rho_obj.gmp_n); 
@@ -241,45 +238,37 @@ static int mbrent(fact_obj_t *fobj)
 			mpz_sub(t1, ys, x);
 			if (mpz_sgn(t1) < 0)
 				mpz_add(t1, t1, fobj->rho_obj.gmp_n);
-			mpz_gcd(g, t1, fobj->rho_obj.gmp_n);
+			mpz_gcd(gcd, t1, fobj->rho_obj.gmp_n);
 			it++;
-			if (it>imax)
+			if (it > imax)
 			{
 				mpz_set_ui(fobj->rho_obj.gmp_f, 0);
 				goto free;
 			}
-			if (mpz_sgn(g) < 0)
-				mpz_neg(g, g); 
-		} while ((mpz_size(g) == 1) && (mpz_get_ui(g) == 1));
-		if (mpz_cmp(g,fobj->rho_obj.gmp_n) == 0)
+			if (mpz_sgn(gcd) < 0)
+				mpz_neg(gcd, gcd); 
+		} while ((mpz_size(gcd) == 1) && (mpz_get_ui(gcd) == 1));
+		if (mpz_cmp(gcd,fobj->rho_obj.gmp_n) == 0)
 		{
 			mpz_set_ui(fobj->rho_obj.gmp_f, 0);
 			goto free;
 		}
 		else
 		{
-			mpz_set(fobj->rho_obj.gmp_f, g);
+			mpz_set(fobj->rho_obj.gmp_f, gcd);
 			goto free;
 		}
 	}
 	else
 	{
-		mpz_set(fobj->rho_obj.gmp_f, g);
+		mpz_set(fobj->rho_obj.gmp_f, gcd);  // store factor found
 		goto free;
 	}
 
 free:
 	//if (Vflag >= 0)
 	//	printf("\n");
-
-	mpz_clear(x);
-	mpz_clear(y);
-	mpz_clear(q);
-	mpz_clear(g);
-	mpz_clear(ys);
-	mpz_clear(t1);
-	mpz_clear(t2);
-	mpz_clear(cc);
+	mpz_clears(x, y, q, gcd, ys, t1, t2, NULL);
 	
 	return it;
 }

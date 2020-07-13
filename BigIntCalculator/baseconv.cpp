@@ -13,9 +13,10 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define _CRT_SECURE_NO_WARNINGS
-#include <string>
-#include <iostream>
+
+#include "pch.h"
+#pragma warning(disable : 4996)
+
 #include "bignbr.h"
 #include "bigint.h"
 

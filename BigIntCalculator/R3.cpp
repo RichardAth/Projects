@@ -1,12 +1,4 @@
-﻿#include <iostream>
-#include <cstdio>
-#include <string>
-#include <mpir.h>
-#include <time.h>
-#include<assert.h>
-#include <random>
-#include <cstdlib>
-#include <stdexcept>
+﻿#include "pch.h"
 
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
 #ifdef _M_AMD64

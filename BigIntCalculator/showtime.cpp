@@ -13,12 +13,9 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define  _CRT_SECURE_NO_DEPRECATE
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctime>
+#include "pch.h"
 #include "showtime.h"
+#pragma warning(disable : 4996)
 
 extern int lang;
 

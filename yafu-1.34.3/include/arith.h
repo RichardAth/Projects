@@ -140,7 +140,7 @@ void fib(uint32 n, z *F);
 //utilities for init/free/print/compare/convert 
 //of arbitrary precision structures
 //basically, the contents of arith0.c
-void mp2gmp(const z *src, mpz_t dest);
+void mp2gmp(const z *src, mpz_t dest);   // dest = src
 void gmp2mp(const mpz_t src, z *dest);
 void zInit(z *num);
 void zInit32(z32 *num);

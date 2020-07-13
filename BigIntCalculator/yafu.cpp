@@ -1,10 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <cstdio>
-#include <cassert>
-#include <mpir.h>
+#include "pch.h"
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
 

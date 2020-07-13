@@ -14,13 +14,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* Perform Karatsuba multiplication in little endian order */
+#include "pch.h"
 
-#include <string>
 #include "bignbr.h"
-#include <cmath>
-#include <cstdint>
-#include <cassert>
-#include <stdexcept>
+
 
 #define KARATSUBA_CUTOFF 16   /* n.b. cannot increase this unless modifying 
 						ClassicalMult as well */

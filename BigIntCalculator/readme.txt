@@ -155,8 +155,8 @@ to increase the use of ECM still further. The code change is:
 
 Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
 Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
-numbers up to about 95 digits YAFU is generally significantly faster than Msieve 
-but for larger numbers it relies on ggnfs.
+numbers over about 60 digits YAFU is generally significantly faster than Msieve 
+but for larger numbers > about 95 digits it relies on ggnfs.
 
 The source for YAFU was obtained from https://sourceforge.net/projects/yafu/files/1.24/
 (use green button to download version 1.34)
@@ -319,7 +319,7 @@ TEST3    Tests for the built-in bigintegers. These are based on DA's biginteger
          normally used, so this test is not normally included.
 
 TEST4     test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
-          this test will take aover an hour.
+          this test will take over an hour.
 
 TEST5     tests using only YAFU for factorisation. Note that these tests bypass the
           trial division etc normally used and rely on YAFU for all the factorisation.
@@ -359,7 +359,7 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
              where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
              These correspond to the -plan options documented in YAFU's
              docfile.txt file. The default is NORMAL. This is a convenient way
-             to control the amount of tesing using ECM before switching to SIQS 
+             to control the amount of testing using ECM before switching to SIQS 
              or NFS.
 
    The MSIEVE command controls factorisation using Msieve:

@@ -1,5 +1,4 @@
-#include <stdlib.h>
-#include <assert.h>
+#include "pch.h"
 
 #ifdef __GNUC__
 #include "gmp.h"

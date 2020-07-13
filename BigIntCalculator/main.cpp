@@ -13,16 +13,7 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <cstdio>
-#include <string>
-#include <vector>
-#include <cctype>
-#include <ctime>
-#include <stdexcept>
-#include <climits>
-#include <locale>
-#include <cassert>
+#include "pch.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
@@ -2715,7 +2706,7 @@ static void doTests4(void) {
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "tests completed time used = ");
-	printSummary();           // pritnt summary 1 line per test
+	printSummary();           // print summary 1 line per test
 }
 
 /* tests using only YAFU for factorisation */
@@ -2726,6 +2717,7 @@ static void doTests5(void) {
 	Znum num = 49728103; // 7001 * 7103
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 1
 
 	// factorise 127 digit number
 	/*  =                               280673 
@@ -2739,6 +2731,7 @@ static void doTests5(void) {
 	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 2
 
 	//factorise 57 digit number
 	/* P6 = 280673
@@ -2750,6 +2743,7 @@ static void doTests5(void) {
 	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 3
 
 	//factorise 80 digit number (about 3 minutes)
 	/* P49 = 2412329883909990626764837681505523221799246895133
@@ -2758,6 +2752,7 @@ static void doTests5(void) {
 	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";   // test 4
 
 	//factorise 85 digit number (about 7 mins)
 	/* factors are 1485325304578290487744454354798448608807999 and 
@@ -2765,6 +2760,7 @@ static void doTests5(void) {
 	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 5
 
 	// factorise 94 digit number (about 60 mins)
 	/* factors are 10910042366770069935194172108679294830357131379375349 and 
@@ -2772,6 +2768,7 @@ static void doTests5(void) {
 	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 6
 
 	//factorise 100 digit number - takes many hours
 	/* factor are 618162834186865969389336374155487198277265679 and
@@ -2779,6 +2776,7 @@ static void doTests5(void) {
 	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
+	std::cout << "test " << testcnt << " completed \n";  // test 7
 
 	printSummary();    // print summary - 1 line per test
 

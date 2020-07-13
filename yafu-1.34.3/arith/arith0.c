@@ -22,6 +22,7 @@ code to the public domain.
 #include "yafu.h"
 #include "arith.h"
 
+// dest = src
 void mp2gmp(const z *src, mpz_t dest) {
 
 	mpz_import(dest, (size_t)(abs(src->size)), -1, sizeof(fp_digit), 

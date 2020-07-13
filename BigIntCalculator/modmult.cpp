@@ -15,11 +15,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <iostream>
-//#include <string>
-//#include <cmath>
-#include <cstdint>
-#include <cstdlib>
+
+#include "pch.h"
 
 #include "bignbr.h"
 #include "bigint.h"

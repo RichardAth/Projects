@@ -28,20 +28,23 @@ DoTrialDivision	 3.10%
 For numbers > 100 digits, SIQS may not be used at all, in which case
 the results would look completely different.
 *****************************************************************/
-#define  _CRT_SECURE_NO_DEPRECATE
 
-#include <iostream>
-#include <cstdio>
-#include <cstring>
-#include <cmath>
-#include <cstdint>
-#include <cassert>
-#include <vector>
+
+//#include <iostream>
+//#include <cstdio>
+//#include <cstring>
+//#include <cmath>
+//#include <cstdint>
+//#include <cassert>
+//#include <vector>
+#include "pch.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "bignbr.h"
 #include "factor.h"
 #include "showtime.h"
+
+#pragma warning(disable : 4996)
 
 extern HANDLE hConsole;
 static bool first = true;   /* set true for 1st message of set, then false for the 

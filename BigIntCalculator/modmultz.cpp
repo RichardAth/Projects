@@ -1,6 +1,4 @@
-﻿#include <cstdint>
-#include <cstdlib>
-#include <iostream>
+﻿#include "pch.h"
 
 #include "bignbr.h"
 

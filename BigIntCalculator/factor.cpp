@@ -12,18 +12,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-#define  _CRT_SECURE_NO_DEPRECATE
 
-#define __EMSCRIPTEN__
 
-#include <iostream>
-#include <cstdio>
-//#include <string>
-#include <vector>
-#include <algorithm>
-#include <cstdint>
-#include <cmath>
-#include <cassert>
+#include "pch.h"
 #define WIN32_LEAN_AND_MEAN
 //#include <windows.h>
 #include <intrin.h>

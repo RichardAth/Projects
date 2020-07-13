@@ -1,10 +1,5 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <cstdio>
-//#define WIN32_LEAN_AND_MEAN
-//#include <Windows.h>
+#include "pch.h"
+
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
 

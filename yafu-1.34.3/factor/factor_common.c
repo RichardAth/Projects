@@ -913,6 +913,7 @@ double get_gnfs_time_estimate(fact_obj_t *fobj, mpz_t b)
 	return estimate;
 }
 
+// look for factor(s) of b
 void do_work(enum factorization_state method, factor_work_t *fwork, 
 	mpz_t b, fact_obj_t *fobj)
 {
@@ -927,7 +928,7 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 
 	switch (method)
 	{
-	case state_trialdiv:
+	case state_trialdiv: {
 		// do all of the tdiv work requested
 		if (Vflag > 0)
 			printf("div: primes less than %d\n", fwork->tdiv_max_limit);
@@ -940,10 +941,10 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 
 		// record the work done
 		fwork->tdiv_limit = fwork->tdiv_max_limit;
-		
+
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
@@ -951,49 +952,48 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 		fwork->total_time += t_time;
 
 		break;
-
-	case state_rho:
+	}
+	case state_rho: {
 		// do all of the rho work requested
-		mpz_set(fobj->rho_obj.gmp_n,b);
+		mpz_set(fobj->rho_obj.gmp_n, b);
 		brent_loop(fobj);
-		mpz_set(b,fobj->rho_obj.gmp_n);
+		mpz_set(b, fobj->rho_obj.gmp_n);
 
 		// record the work done
 		fwork->rho_bases = fwork->rho_max_bases;
 		fwork->rho_iterations = fwork->rho_max_iterations;
 
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->rho_time = t_time;
 		fwork->total_time += t_time;
 		break;
-
-	case state_fermat:
+	}
+	case state_fermat: {
 		// do all of the fermat work requested
 		if (Vflag > 0)
 			printf("fmt: %d iterations\n", fwork->fermat_max_iterations);
-		mpz_set(fobj->div_obj.gmp_n,b);
+		mpz_set(fobj->div_obj.gmp_n, b);
 		zFermat(fwork->fermat_max_iterations, 1, fobj);
-		mpz_set(b,fobj->div_obj.gmp_n);
+		mpz_set(b, fobj->div_obj.gmp_n);
 
 		// record the work done
 		fwork->fermat_iterations = fwork->fermat_max_iterations;
 
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->fermat_time = t_time;
 		fwork->total_time += t_time;
-
 		break;
-
+	}
 	case state_ecm_15digit:
 	case state_ecm_20digit:
 	case state_ecm_25digit:
@@ -1004,7 +1004,7 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 	case state_ecm_50digit:
 	case state_ecm_55digit:
 	case state_ecm_60digit:
-	case state_ecm_65digit:
+	case state_ecm_65digit: {
 		tmp1 = fobj->ecm_obj.B1;
 		tmp2 = fobj->ecm_obj.B2;
 		fobj->ecm_obj.B1 = fwork->B1;
@@ -1017,30 +1017,30 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 		fobj->ecm_obj.B2 = tmp2;
 
 		// record the work done
-		set_ecm_curves_done(fwork, method, 
+		set_ecm_curves_done(fwork, method,
 			get_ecm_curves_done(fwork, method) + curves_done);
-		
+
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->ecm_time += t_time;
 		fwork->total_time += t_time;
 		break;
-
+	}
 	case state_pp1_lvl1:
 	case state_pp1_lvl2:
-	case state_pp1_lvl3:
+	case state_pp1_lvl3: {
 		tmp1 = fobj->pp1_obj.B1;
 		tmp2 = fobj->pp1_obj.B2;
 		fobj->pp1_obj.B1 = fwork->B1;
 		fobj->pp1_obj.B2 = fwork->B2;
-		mpz_set(fobj->pp1_obj.gmp_n,b);
+		mpz_set(fobj->pp1_obj.gmp_n, b);
 		fobj->pp1_obj.numbases = fwork->curves;
 		williams_loop(fobj);
-		mpz_set(b,fobj->pp1_obj.gmp_n);
+		mpz_set(b, fobj->pp1_obj.gmp_n);
 		fobj->pp1_obj.B1 = tmp1;
 		fobj->pp1_obj.B2 = tmp2;
 
@@ -1053,25 +1053,25 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 			fwork->pp1_lvl3_curves = fwork->curves;
 
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->pp1_time += t_time;
 		fwork->total_time += t_time;
 		break;
-
+	}
 	case state_pm1_lvl1:
 	case state_pm1_lvl2:
-	case state_pm1_lvl3:
+	case state_pm1_lvl3: {
 		tmp1 = fobj->pm1_obj.B1;
 		tmp2 = fobj->pm1_obj.B2;
 		fobj->pm1_obj.B1 = fwork->B1;
 		fobj->pm1_obj.B2 = fwork->B2;
-		mpz_set(fobj->pm1_obj.gmp_n,b);
+		mpz_set(fobj->pm1_obj.gmp_n, b);
 		pollard_loop(fobj);
-		mpz_set(b,fobj->pm1_obj.gmp_n);
+		mpz_set(b, fobj->pm1_obj.gmp_n);
 		fobj->pm1_obj.B1 = tmp1;
 		fobj->pm1_obj.B2 = tmp2;
 
@@ -1082,51 +1082,51 @@ void do_work(enum factorization_state method, factor_work_t *fwork,
 			fwork->pm1_lvl2_curves = fwork->curves;
 		else if (method == state_pm1_lvl3)
 			fwork->pm1_lvl3_curves = fwork->curves;
-		
+
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->pm1_time += t_time;
 		fwork->total_time += t_time;
 		break;
-
-	case state_qs:
-		mpz_set(fobj->qs_obj.gmp_n,b);
+	}
+	case state_qs: {
+		mpz_set(fobj->qs_obj.gmp_n, b);
 		SIQS(fobj);
-		mpz_set(b,fobj->qs_obj.gmp_n);
+		mpz_set(b, fobj->qs_obj.gmp_n);
 
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->qs_time = t_time;
 		if (Vflag > 0)
-			printf("pretesting / qs ratio was %1.2f\n", 
-				fwork->total_time / t_time); 
+			printf("pretesting / qs ratio was %1.2f\n",
+				fwork->total_time / t_time);
 		break;
-
-	case state_nfs:
-		mpz_set(fobj->nfs_obj.gmp_n,b);
+	}
+	case state_nfs: {
+		mpz_set(fobj->nfs_obj.gmp_n, b);
 		nfs(fobj);
-		mpz_set(b,fobj->nfs_obj.gmp_n);
+		mpz_set(b, fobj->nfs_obj.gmp_n);
 
 		// measure time for this completed work
-		gettimeofday (&tstop, NULL);
-		difference = my_difftime (&tstart, &tstop);
+		gettimeofday(&tstop, NULL);
+		difference = my_difftime(&tstart, &tstop);
 		t_time = ((double)difference->secs + (double)difference->usecs / 1000000);
 		free(difference);
 
 		fwork->nfs_time = t_time;
 		if (Vflag > 0)
-			printf("pretesting / nfs ratio was %1.2f\n", 
-				fwork->total_time / t_time); 
+			printf("pretesting / nfs ratio was %1.2f\n",
+				fwork->total_time / t_time);
 		break;
-
+	}
 	default:
 		printf("nothing to do for method %d\n", method);
 		break;
@@ -1222,18 +1222,19 @@ int check_if_done(fact_obj_t *fobj, mpz_t N)
 	return done;
 }
 
+// check each state's completed work against the maximum.
+// return the first one not complete.
 enum factorization_state get_next_state(factor_work_t *fwork, fact_obj_t *fobj)
 {
 	enum factorization_state next_state;
 
-	// check each state's completed work against the maximum.
-	// return the first one not complete.
 	if (fwork->tdiv_limit < fwork->tdiv_max_limit)
 		return state_trialdiv;	// always do this state if not done
 	else if (fwork->fermat_iterations < fwork->fermat_max_iterations)
 		return state_fermat;	// always do this state if not done
 	else if (fwork->rho_bases < fwork->rho_max_bases)
 		return state_rho;		// always do this state if not done
+
 	else if (fwork->pp1_lvl1_curves < fwork->pp1_max_lvl1_curves)
 		next_state = state_pp1_lvl1;
 	else if (fwork->pm1_lvl1_curves < fwork->pm1_max_lvl1_curves)
@@ -2043,9 +2044,9 @@ void factor(fact_obj_t *fobj)
 	mpz_init(copyN);
 	mpz_init(b);
 
-	mp2gmp(&fobj->N, origN);
-	mpz_set(copyN, origN);
-	mpz_set(b, origN);
+	mp2gmp(&fobj->N, origN);    // origN = N
+	mpz_set(copyN, origN);      // copyN = N
+	mpz_set(b, origN);          // b = N
 
 	if (mpz_cmp_ui(b,1) <= 0)
 	{
@@ -2243,7 +2244,7 @@ void factor(fact_obj_t *fobj)
 	// state machine to factor the number using a variety of methods
 	while (fact_state != state_done)
 	{	
-		do_work(fact_state, &fwork, b, fobj);
+		do_work(fact_state, &fwork, b, fobj);  // look for factor of b
 
 		if (check_if_done(fobj, origN) || 
 			(quit_after_sieve_method && 
