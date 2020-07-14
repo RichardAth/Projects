@@ -131,7 +131,7 @@ static void genfile(const std::string &numStr) {
 	fclose(batfile);
 }
 
-bool callYafu(const Znum &num, std::vector<zFactors>&Factors) {
+bool callYafu(const Znum &num, fList &Factors) {
 	int rv;
 	std::string command = Path + yafuprog;
 	std::string numStr;

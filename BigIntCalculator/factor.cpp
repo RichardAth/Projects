@@ -121,20 +121,11 @@ static int Moebius(int N) {
 	return moebius;
 }
 
-static void printfactors(const std::vector <zFactors> &Factors) {
-	for (int i = 0; i < Factors.size(); i++) {
-		std::cout << Factors[i].Factor << "^" << Factors[i].exponent << " ("
-			<< Factors[i].upperBound << ")  * " ;
-	}
-	std::cout << '\n';
-}
-
-
 static void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
 
-static void GetAurifeuilleFactor(std::vector<zFactors> &Factors, int L, const Znum &BigBase,
+static void GetAurifeuilleFactor(fList &Factors, int L, const Znum &BigBase,
 	const int DegreeAurif) {
 	Znum x, Csal, Dsal, Nbr1;  
 	int k;
@@ -166,7 +157,7 @@ static void GetAurifeuilleFactor(std::vector<zFactors> &Factors, int L, const Zn
 
 /* Get Aurifeuille factors.
  see https://en.wikipedia.org/wiki/Aurifeuillean_factorization */
-static void InsertAurifFactors(std::vector<zFactors> &Factors, const Znum &BigBase,
+static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
 	int Expon, int Incre)
 {
 	int DegreeAurif;
@@ -257,7 +248,7 @@ static void InsertAurifFactors(std::vector<zFactors> &Factors, const Znum &BigBa
 }
 
 
-static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int Expon,
+static void Cunningham(fList &Factors, const Znum &BigBase, int Expon,
 	int increment, const Znum &BigOriginal) {
 	int Expon2, k;
 	Znum Nbr1, Nbr2, Temp1;      
@@ -304,7 +295,7 @@ static void Cunningham(std::vector<zFactors> &Factors, const Znum &BigBase, int 
 
 
 /* check whether the number +/- 1 is a perfect power*/
-static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFactor,
+static void PowerPM1Check(fList &Factors, const Znum &nbrToFactor,
 	long long MaxP) {
 
 	int Exponent = 0;
@@ -337,8 +328,8 @@ static void PowerPM1Check(std::vector<zFactors> &Factors, const Znum &nbrToFacto
 /* sort factors into ascending order. If two factors are equal, merge them by adding
 the 2nd exponent to the 1st then removing the second entry by moving any following entries
 up 1 position and adjusting the count of the total mumber of entries. */
-static void SortFactors(std::vector<zFactors> &Factors) {
-	ptrdiff_t lastfactor = Factors.size();
+static void SortFactors(fList &Factors) {
+	ptrdiff_t lastfactor = Factors.f.size();
 	zFactors temp;
 	bool swap = false;
 /* this is a bubble sort, with the added twist that if two factors have the same 
@@ -348,25 +339,25 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 	for (ptrdiff_t i = lastfactor - 1; i > 0 ; i--) {
 		swap = false;
 		for (ptrdiff_t j = 0; j < i; j++) {
-			if (Factors[j + 1].Factor < Factors[j].Factor) {
+			if (Factors.f[j + 1].Factor < Factors.f[j].Factor) {
 				/* factors out of sequence so swap them*/
-				temp = Factors[j + 1];        // shallow copy is OK for swap
-				Factors[j + 1] = Factors[j];
-				Factors[j] = temp;
+				temp = Factors.f[j + 1];        // shallow copy is OK for swap
+				Factors.f[j + 1] = Factors.f[j];
+				Factors.f[j] = temp;
 				swap = true;
 			}
-			else if (Factors[j + 1].Factor == Factors[j].Factor) {
+			else if (Factors.f[j + 1].Factor == Factors.f[j].Factor) {
 				/* factors j and j+1 are equal so merge them */
-				Factors[j].exponent += Factors[j+1].exponent;  // combine the exponents
-				if (Factors[j+1].upperBound == -1)  
-					Factors[j].upperBound = -1; // set upperbound to show factor is prime
-				else if (Factors[j].upperBound != -1
-					&& Factors[j].upperBound < Factors[j+1].upperBound)
+				Factors.f[j].exponent += Factors.f[j+1].exponent;  // combine the exponents
+				if (Factors.f[j+1].upperBound == -1)  
+					Factors.f[j].upperBound = -1; // set upperbound to show factor is prime
+				else if (Factors.f[j].upperBound != -1
+					&& Factors.f[j].upperBound < Factors.f[j+1].upperBound)
 					/* use higher value of upperbound. */
-					Factors[j].upperBound = Factors[j+1].upperBound;
+					Factors.f[j].upperBound = Factors.f[j+1].upperBound;
 
 				/* now move index entries higher than j+1 down 1, overwrite index entry j+1 */
-				Factors.erase(Factors.begin() + j + 1);
+				Factors.f.erase(Factors.f.begin() + j + 1);
 
 				/* now adjust counters */
 				j--;
@@ -381,12 +372,12 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 	/* for certain numbers it is possible that a spurious factor 1 is generated. 
 	In a way this is valid, but 1 is not considered a prime number so it is
 	removed */
-	if (Factors[0].Factor == 1) {
-		Factors.erase(Factors.begin());
+	if (Factors.f[0].Factor == 1) {
+		Factors.f.erase(Factors.f.begin());
 	}
 	if (verbose > 0) {
 		std::cout << "result after sort" << '\n';
-		printfactors(Factors);
+		Factors.print();
 	}
 }
 
@@ -394,8 +385,8 @@ If, on any pass, no swaps are needed, all elements are in sequence and the sort 
 /* assume divisor is prime. ix is index of non-prime factor which is a multiple 
 of divisor. either pi is the index into the prime list of the divisor, or the  
 divisor is in div */
-static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long div, ptrdiff_t ix) {
-	auto lastfactor = Factors.size();
+static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix) {
+	auto lastfactor = Factors.f.size();
 	Znum quot, qnew;
 	Znum divisor;
 	if (pi >= 0)
@@ -403,65 +394,65 @@ static void insertIntFactor(std::vector<zFactors> &Factors, int pi, long long di
 	else
 		divisor = div;
 
-	quot = Factors[ix].Factor;
+	quot = Factors.f[ix].Factor;
 	/* divide quot by divisor as many times as possible */
 	auto exp = mpz_remove(ZT(qnew), ZT(quot), ZT(divisor));
 	if (qnew != 1) {
 		/* add new factor */
-		Factors.resize(lastfactor + 1);  // increase size of factor list
-		Factors[lastfactor].exponent = (int)exp * Factors[ix].exponent;
-		Factors[lastfactor].Factor = divisor;
-		Factors[lastfactor].upperBound = -1; // show that new factor is prime
+		Factors.f.resize(lastfactor + 1);  // increase size of factor list
+		Factors.f[lastfactor].exponent = (int)exp * Factors.f[ix].exponent;
+		Factors.f[lastfactor].Factor = divisor;
+		Factors.f[lastfactor].upperBound = -1; // show that new factor is prime
 
-		Factors[ix].Factor = qnew;  // adjust value of original factor
-		Factors[ix].upperBound = pi;
+		Factors.f[ix].Factor = qnew;  // adjust value of original factor
+		Factors.f[ix].upperBound = pi;
 	}
 	else {
 		/* replace residue of 1 with new factor */
-		Factors[ix].Factor = divisor;
-		Factors[ix].exponent *= (int)exp;
-		Factors[ix].upperBound = -1;
+		Factors.f[ix].Factor = divisor;
+		Factors.f[ix].exponent *= (int)exp;
+		Factors.f[ix].upperBound = -1;
 	}
 	SortFactors(Factors);
 	if (verbose > 0) {
 		/*std::cout << "result after adding factor " << divisor << '\n';
-		printfactors(Factors);*/
+		printfactors(Factors.f);*/
 	}
 }
 
 /* Insert new factor found into factor array. Every current factor is checked 
 against the divisor. If their gcd is not 1 the existing factor is divided by 
 the gcd and a new factor equal to the gcd is created. */
-void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
-	auto lastfactor = Factors.size();
+void insertBigFactor(fList &Factors, Znum &divisor) {
+	auto lastfactor = Factors.f.size();
 	auto ipoint = lastfactor;
 	zFactors temp;
 	Znum g;
 	if (verbose > 0) {
 		/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
-		printfactors(Factors);*/
+		Factors.printfactors();*/
 	}
 	for (int i = 0; i < lastfactor; i++) {
-		if (Factors[i].Factor == divisor)
+		if (Factors.f[i].Factor == divisor)
 			continue;  // factor already found, but continue checking 
-		g = gcd(Factors[i].Factor, divisor);
-		if (g != 1 && g < Factors[i].Factor) {
+		g = gcd(Factors.f[i].Factor, divisor);
+		if (g != 1 && g < Factors.f[i].Factor) {
 			Znum qnew;
-			Factors.resize(lastfactor + 1);  // increase size of factor list
+			Factors.f.resize(lastfactor + 1);  // increase size of factor list
 			/* we can replace Factor with 2 factors, Factor/g and g 
 			(if Factor is a multiple of divisor, g = divisor) */
-			mp_bitcnt_t fexp = mpz_remove(ZT(qnew), ZT(Factors[i].Factor), ZT(g));
-			Factors[i].Factor = qnew;   //Factors[i].Factor /= g^fexp;
-			Factors[ipoint].Factor = g;
-			Factors[ipoint].exponent = Factors[i].exponent*(int)fexp;
-			Factors[ipoint].upperBound = Factors[i].upperBound;
+			mp_bitcnt_t fexp = mpz_remove(ZT(qnew), ZT(Factors.f[i].Factor), ZT(g));
+			Factors.f[i].Factor = qnew;   //Factors[i].Factor /= g^fexp;
+			Factors.f[ipoint].Factor = g;
+			Factors.f[ipoint].exponent = Factors.f[i].exponent*(int)fexp;
+			Factors.f[ipoint].upperBound = Factors.f[i].upperBound;
 			ipoint++;
 			lastfactor++;
 		}
 	}
 	if (verbose > 0) {
 		//std::cout << "result before sort" << '\n';
-		//printfactors(Factors);
+		//Factors.printfactors();
 	}
 	SortFactors(Factors);
 }
@@ -470,7 +461,7 @@ void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor) {
 Return: false = No factors found, true = factors found.
  Use: Xaux for square root of -1.
       Zaux for square root of 1. */
-static bool factorCarmichael(const Znum &pValue, std::vector<zFactors> &Factors)
+static bool factorCarmichael(const Znum &pValue, fList &Factors)
 {
 	Znum randomBase = 0;  // pseudo-random number
 	bool factorsFound = false;
@@ -615,26 +606,79 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 	return;
 }
 
+/* trial division & Pollard-Rho. Uses first 33333 primes */
+static void TrialDiv(fList &Factors, long long LehmanLimit) {
+	bool restart = false;  // set true if trial division has to restart
+	int upperBound;
+	long long testP;
+	do {  /* use trial division */
+		restart = false;    // change to true if any factor found
+		for (int i = 0; i < Factors.f.size(); i++) {
+			upperBound = Factors.f[i].upperBound;  // resume from where we left off
+			if (upperBound == -1)
+				continue;  // factor is prime
+			/* trial division. Uses first 33333 primes */
+			while (upperBound < std::min((int)prime_list_count, 33333)) {
+				testP = primeList[upperBound];
+				if (testP*testP > Factors.f[i].Factor) {
+					Factors.f[i].upperBound = -1; // show that residue is prime
+					break;
+				}
+				if (Factors.f[i].Factor%testP == 0) {
+					insertIntFactor(Factors, upperBound, 0, i);
+					restart = true;  // factor found; keep looking for more
+					counters.tdiv++;
+					break;
+				}
+				Factors.f[i].upperBound = upperBound;
+				upperBound++;
+			}
+			if (!restart && (Factors.f[i].upperBound != -1)
+				&& Factors.f[i].Factor <= LehmanLimit) {
+				long long f;
+				if (PrimalityTest(Factors.f[i].Factor, primeList[Factors.f[i].upperBound]) == 0)
+					/* if factor is prime calling PollardFactor would waste a LOT of time*/
+					Factors.f[i].upperBound = -1; // Indicate that number is prime.
+				else {
+					/* as factor is not prime, and it has no factors < MaxP, it must have
+					just two prime factors. */
+					if (verbose > 0) {
+						std::cout << "factors before Pollard factorisation: ";
+						Factors.print();
+					}
+					f = PollardRho(MulPrToLong(Factors.f[i].Factor));
+					/* there is a small possibility that PollardFactor won't work,
+					even when factor is not prime*/
+					if (f != 1) {
+						insertIntFactor(Factors, -1, f, i);
+						counters.prho++;
+					}
+				}
+			}
+		}
+	} while (restart);  // keep looping until no more factors found.
+
+	if (verbose > 0) {
+		std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
+		if (Factors.f.size() > 1) {
+			std::cout << "result after trial division ";
+			Factors.print();
+		}
+	}
+}
+
 /* factorise toFactor; factor list returned in Factors. */
-static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
-	int upperBound;  
+static bool factor(const Znum &toFactor, fList &Factors) {
 	long long testP;
 	long long MaxP = 393'203;  // use 1st  33333 primes
 	/* larger value seems to slow down factorisation overall. */
-	//long long MaxP = 2'097'143;  // use 1st 155611 primes
 	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
-
-	// If toFactor is < LehmanLimit it will be factorised completely using 
-	// trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
 	long long LehmanLimit = MaxP*MaxP*MaxP;
-	bool restart = false;  // set true if trial division has to restart
+
 	memset(&counters, 0, sizeof(counters));    // reset counters to 0
 
-	/* initialise factor list */
-	Factors.resize(1);  // change size of factor list to 1
-	Factors[0].exponent = 1;
-	Factors[0].Factor = toFactor;
-	Factors[0].upperBound = 0;  // assume it's not prime
+	Factors.set(toFactor);   /* initialise factor list */
+
 	if ((long long)primeListMax <MaxP) {  // get primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 	}
@@ -645,107 +689,55 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
-		counters.pm1 = (int)Factors.size() - 1;  // number of factors just found, if any
-		if (Factors.size() > 1 && verbose > 0) {
+		counters.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
+		if (Factors.f.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
-			printfactors(Factors);
+			Factors.print();
 		}
 	}
 
-	do {  /* use trial division */
-		restart = false;
-		for (int i = 0; i < Factors.size(); i++) {
-			upperBound = Factors[i].upperBound;  // resume from where we left off
-			if (upperBound == -1)
-				continue;  // factor is prime
-			/* trial division. Uses first 33333 primes */
-			while (upperBound < std::min((int)prime_list_count, 155611)) {
-				testP = primeList[upperBound];
-				if (testP*testP > Factors[i].Factor) {
-					Factors[i].upperBound = -1; // show that residue is prime
-					break;
-				}
-				if (Factors[i].Factor%testP == 0) {
-					insertIntFactor(Factors, upperBound, 0, i);
-					restart = true;
-					counters.tdiv++;
-					break;
-				}
-				Factors[i].upperBound = upperBound;
-				upperBound++;
-			}
-			if (!restart && (Factors[i].upperBound != -1) 
-				&& Factors[i].Factor <= LehmanLimit) {
-				long long f;
-				if (PrimalityTest(Factors[i].Factor, primeList[Factors[i].upperBound]) == 0)
-					/* if factor is prime calling PollardFactor would waste a LOT of time*/
-					Factors[i].upperBound = -1; // Indicate that number is prime.
-				else {
-					/* as factor is not prime, and it has no factors < MaxP, it must have
-					just two prime factors. */
-					if (verbose > 0) {
-						std::cout << "factors before Pollard factorisation: ";
-						printfactors(Factors);
-					}
-					//PollardFactor(MulPrToLong(Factors[i].Factor), f);
-					f = PollardRho(MulPrToLong(Factors[i].Factor));
-					if (f != 1) {
-						insertIntFactor(Factors, -1, f, i);
-						counters.prho++;
-						/* there is a small possibility that PollardFactor won't work,
-						 even when factor is not prime*/
-					}
-				}
-			}
-		}
-	} while (restart);  // keep looping until no more factors found.
-
-	if (verbose > 0) {
-		std::cout << "End Trial division. " << Factors.size() - 1 << " factors found so far \n";
-		if (Factors.size() > 1) {
-			std::cout << "result after trial division ";
-			printfactors(Factors);
-		}
-	}
-
+	// If toFactor is < LehmanLimit it will be factorised completely using 
+    // trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
+	TrialDiv(Factors, LehmanLimit);
 	/* Any small factors (up to 393,203) have now been found by trial division */
-	/* Check whether the residue is prime or prime power.
-	Given that the residue is less than about 10^10,000 the maximum exponent is 
-	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
-	Znum Zpower, Zprime;
+
+
 	int expon;
 	ElipCurvNo = 1;  // start with 1st curve
 	modmultCallback = showECMStatus;   // Set callback function pointer
 	lModularMult = 0;   // reset counter
 	
-	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.size(); i++) {
-		if (Factors[i].upperBound == -1)
+	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.f.size(); i++) {
+	/* Check whether the residue is a prime or prime power.
+	Given that the residue is less than about 10^10,000 the maximum exponent is
+	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
+		Znum Zpower, Zfactor;
+		if (Factors.f[i].upperBound == -1)
 			continue;         // skip if factor is known to be prime
-		Zprime = Factors[i].Factor;
-		testP = primeList[Factors[i].upperBound]; // get largest number used in trial division
-		expon = (int)PowerCheck(Zprime, Zpower,  testP - 1); // on return; Zpower^expon = Zprime
+		Zfactor = Factors.f[i].Factor;
+		testP = primeList[Factors.f[i].upperBound]; // get largest number used in trial division
+		expon = (int)PowerCheck(Zfactor, Zpower,  testP - 1); // on return; Zpower^expon = Zfactor
 		if (expon > 1) {    /* if power is a perfect power*/
-			Factors[i].Factor = Zpower;
-			Factors[i].exponent *= expon;
+			Factors.f[i].Factor = Zpower;
+			Factors.f[i].exponent *= expon;
 			counters.power++;
 		}
 		
 		int result = PrimalityTest(Zpower, testP- 1);
 		if (result == 0) {   // Number is prime.
-			Factors[i].upperBound = -1; // Indicate that number is prime.
+			Factors.f[i].upperBound = -1; // Indicate that number is prime.
 			continue;
 		}
 		if (result > 1) {  /* number is a pseudo-prime */
-			size_t fsave = Factors.size();
+			size_t fsave = Factors.f.size();
 			if (factorCarmichael(Zpower, Factors)) {
-				counters.carm += (int)(Factors.size() - fsave); // record any increase in number of factors;
+				counters.carm += (int)(Factors.f.size() - fsave); // record any increase in number of factors;
 				i = -1;			// restart loop at beginning!!
 				continue;
 			}
 		}
 		if (Zpower <= LehmanLimit) {
 			long long f;
-			//PollardFactor(MulPrToLong(Zpower), f);
 			f = PollardRho(MulPrToLong(Zpower));
 			if (f != 1) {
 				insertIntFactor(Factors, -1, f, i);
@@ -787,9 +779,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				}
 			}
 			if (i == -1)
-				continue;
+				continue;   // restart loop from beginning
 
-			size_t fsave = Factors.size();
+			size_t fsave = Factors.f.size();
 			bool rv; 
 			/* msieve and yafu should never both be set. At this point one of them 
 			should be set. */
@@ -801,9 +793,9 @@ static bool factor(const Znum &toFactor, std::vector<zFactors> &Factors) {
 				i = -1;   // success; restart loop at beginning to tidy up!
 				// record any increase in number of factors
 				if (msieve)
-					counters.msieve += (int)(Factors.size() - fsave); 
+					counters.msieve += (int)(Factors.f.size() - fsave); 
 				else
-					counters.yafu += (int)(Factors.size() - fsave); 
+					counters.yafu += (int)(Factors.f.size() - fsave); 
 			}
 			else {
 				msieve = false;   // failed once, don't try again
@@ -1133,13 +1125,13 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4
 		}
 	}
 
-	for (int FactorIx = 0; FactorIx < factorlist.size(); FactorIx++) {
-		if (factorlist[FactorIx].exponent % 2 == 0) {
+	for (auto Factorx : factorlist) {
+		if (Factorx.exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
 					  process it in this for loop */
 		}
 		
-		pr = factorlist[FactorIx].Factor;
+		pr = Factorx.Factor;
 
 		/* compute 4 or less values the squares of which add up to prime pr,
 		return values in Mult1, Mult2, Mult3 and Mult4 */
@@ -1164,10 +1156,10 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4
 	} /* end for indexPrimes */
 
 	 /* for factors that are perfect squares, multiply quads[0]-3 by sqrt(factor) */
-	for (int FactorIx = 0; FactorIx < factorlist.size(); FactorIx++) {
-		if (factorlist[FactorIx].Factor >= 2) {
-			mpz_pow_ui(ZT(Tmp1), ZT(factorlist[FactorIx].Factor), 
-				factorlist[FactorIx].exponent / 2);
+	for (auto Factorx : factorlist) {
+		if (Factorx.Factor >= 2) {
+			mpz_pow_ui(ZT(Tmp1), ZT(Factorx.Factor), 
+				Factorx.exponent / 2);
 			quads[0] *= Tmp1;
 			quads[1] *= Tmp1;
 			quads[2] *= Tmp1;
@@ -1230,7 +1222,7 @@ to be used pretty much like normal integers.
 **********************************************************************************/
 
 /* factorise number. Returns false if unable to factorise it */
-bool factorise(Znum numberZ, std::vector <zFactors> &vfactors,
+bool factorise(Znum numberZ, fList &vfactors,
 	 Znum quads[]) {
 
 	try {
@@ -1245,7 +1237,7 @@ bool factorise(Znum numberZ, std::vector <zFactors> &vfactors,
 		if (!rv)
 			return false;  // failed to factorise number
 		if (quads != nullptr) {
-			ComputeFourSquares(vfactors, quads, numberZ); 
+			ComputeFourSquares(vfactors.f, quads, numberZ); 
 			// get a, b, c, d such that sum of their squares = numberZ
 		}
 		return true;

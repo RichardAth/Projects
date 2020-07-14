@@ -195,7 +195,7 @@ and 193707721 is the factor itself in decimal.
 The whole interface to Msieve is a bit of a kludge but it works. Integrating them
 properly would be so tedious it's not worth it. I had to make several kludges
 to build msieve, and the prebuilt msieve wouldn't work */
-bool callMsieve(const Znum &num, std::vector<zFactors>&Factors) {
+bool callMsieve(const Znum &num, fList &Factors) {
 	/* set up command to invoke Msieve */
 	std::string command = callPath;
 	std::string numStr;

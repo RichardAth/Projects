@@ -31,6 +31,39 @@ public:
 	Znum Factor;
 	int exponent;
 	int upperBound;
+	
+};
+
+class fList {
+public:
+	std::vector <zFactors> f;
+
+	friend Znum SumOfDivisors(const fList &primes);
+	friend Znum Totient(const fList &primes);
+	friend int mobius(const fList &exponents);
+	Znum DivisorSum() const {
+		return SumOfDivisors(*this);
+	}
+	Znum totient() const {
+		return Totient(*this);
+	}
+	int mob() const {
+		return mobius (*this);
+	}
+	/* initialise factor list */
+	void set(const Znum &toFactor) {
+		this->f.resize(1);          // change size of factor list to 1
+		this->f[0].exponent = 1;
+		this->f[0].Factor = toFactor; 
+		this->f[0].upperBound = 0;  // assume toFactor's not prime
+	}
+	void print() const {
+		for (auto i : this->f) {
+			std::cout << i.Factor << "^" << i.exponent << " ("
+				<< i.upperBound << ")  * ";
+		}
+		std::cout << '\n';
+	}
 };
 
 
@@ -42,8 +75,7 @@ extern Znum Zfactor, Zfactor2;
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
-bool factorise(const Znum numberZ, std::vector <zFactors> &factorlist,
-	Znum Quad[]);
+bool factorise(Znum numberZ,fList &factorlist, Znum Quad[]);
 
 long long MulPrToLong(const Znum &x);
 
@@ -71,8 +103,8 @@ extern unsigned long long int primeListMax;
 extern bool msieve;
 extern bool yafu;
 extern int verbose;
-bool callMsieve(const Znum &num, std::vector<zFactors>&Factors);
-bool callYafu(const Znum &num, std::vector<zFactors>&Factors);
-void insertBigFactor(std::vector<zFactors> &Factors, Znum &divisor);
+bool callMsieve(const Znum &num, fList&Factors);
+bool callYafu(const Znum &num, fList&Factors);
+void insertBigFactor(fList &Factors, Znum &divisor);
 void generatePrimes(unsigned long long int max_val);
 void LehmanZ(const Znum &nbr, int k, Znum &factor);

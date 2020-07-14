@@ -453,61 +453,8 @@ static void GenerateSieve(int initial) {
 #endif
 }
 
-/* see https://en.wikipedia.org/wiki/Fermat%27s_factorization_method */
-/* use Lehman's algorithm to factorise n, knowing that there are no factors
- less than n^1/3 and that n is not prime. It follows that n has exactly two 
- prime factors. This algorithm works faster when both factors are close to
- sqrt(n). */
-//static void LehmanNew(const Znum &n, Znum &factor) {
-//	const double logn = logBigNbr(n);  // get log(n)
-//	const double endLog = (logn / 6);     // log(n^(1/6))
-//	
-//	/* calculate n^(1/3). note that using a 64-bit integer restricts the maximum 
-//	value of n to about 2^189 (7.84e56), but this algorithm is too slow anyway for very 
-//	large numbers. This is used as the maximum value for k*/
-//	const long long Kmax = (long long)std::ceil(std::exp(logn / 3.0));  
-//	Znum a, b, start, end, temp;
-//
-//	/* We need to find integers k, a and b such that 4kn = a^2 – b^2. 
-//	It can be shown that 1 <= k <= n^(1/3) and
-//	sqrt(4kn) <= a <= sqrt(4kn) + (n^(1/6)/(4.sqrt(k))*/
-//
-//	for (long long k = 1; k <= Kmax; k++) {
-//		/* calculate lowest value for a */
-//		start = (Znum)4 * k*n;
-//		if (!isPerfectSquare(start, start))
-//			start++;  // start = (ceil)sqrt(4kn)
-//
-//		/* calculate highest value for a */
-//		double endd = std::exp(endLog) / (4 * sqrt(k));  // endd = (n^(1/6)/(4.sqrt(k))
-//		end = start + (long long)ceil(endd);
-//		// end = sqrt(4kn)+ (n^(1/6))/(4k^(1/2))
-//
-//		for (Znum a = start; a <= end; a++) {
-//			temp = a*a - 4 * k*n;
-//			if (temp < 0)
-//				continue;  // due to rounding error start might be too small 
-//			if (isPerfectSquare(temp, b)) { // b = sqrt(a^2 -4kn)
-//#ifdef _DEBUG
-//				std::cout << "Lehman n = " << n << " start= " << start
-//					<< " a= " << a << " b= " << b
-//					<< " k= " << k << '\n';
-//#endif
-//				factor = gcd(a + b, n);  // one factor of n
-//#ifdef _DEBUG
-//				temp = gcd(a - b, n);    // other factor of n
-//				std::cout << "factors are: " << factor << " & " << temp << '\n';
-//#endif
-//				return;
-//			}
-//		}
-//	}
-//
-//	/* logic failure; did'nt find factor */
-//	std::cerr << "Lehman failed to factorise " << n << '\n';
-//	factor = 1;     // no factor found (should not happen)
-//	return;
-//}
+
+
 #pragma warning(disable : 4996)
 #ifdef __EMSCRIPTEN__
 void showECMStatus(void) {
@@ -553,6 +500,7 @@ void showECMStatus(void) {
 
 #endif
 
+/* see https://en.wikipedia.org/wiki/Fermat%27s_factorization_method */
 /* Perform (modified) Lehman algorithm. Try to factorise nbr.
 This produces a result when nbr is a product of two factors which are not
 too far apart in value. e.g larger factor is less than k times the smaller.

@@ -250,36 +250,36 @@ long long MulPrToLong(const Znum &x) {
 /* calculate number of divisors of n, given its list of prime factors.
 NB for n=1 function returns 2, but correct value would be 1. 
 From just the list of exponents we can't distinguish n=1 from n=prime */
-static Znum NoOfDivisorsF(const std::vector <zFactors> exponents) {
+static Znum NoOfDivisorsF(const fList &exponents) {
 	Znum result = 1;
 
-	for (auto i: exponents) {
+	for (auto i: exponents.f) {
 		result *= i.exponent + 1;
 	}
 	return result;
 }
 
 // sum of divisors is the product of (p^(e+1)-1)/(p-1) where p=prime factor and e=exponent.
-static Znum SumOfDivisors( const std::vector <zFactors> primes) {
+Znum SumOfDivisors( const fList &primes) {
 	Znum result = 1, term;
 
-	if (primes[0].Factor == 1)
+	if (primes.f[0].Factor == 1)
 		return 1;		// special case: if original number is 1
-	for (size_t i = 0; i < primes.size(); i++) {
-		mpz_pow_ui(ZT(term), ZT(primes[i].Factor), primes[i].exponent + 1);  // p^(e+1)
-		term = (term-1)/(primes[i].Factor-1);	                        // (p^(e+1)-1)/(p-1)
+	for (size_t i = 0; i < primes.f.size(); i++) {
+		mpz_pow_ui(ZT(term), ZT(primes.f[i].Factor), primes.f[i].exponent + 1);  // p^(e+1)
+		term = (term-1)/(primes.f[i].Factor-1);	                        // (p^(e+1)-1)/(p-1)
 		result *= term;
 	}
 	return result;
 }
 
 // Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent.
-static Znum Totient(const std::vector <zFactors> primes) {
+Znum Totient(const fList &primes) {
 	Znum result = 1, term;
 
-	for (size_t i = 0; i < primes.size(); i++) {
-		mpz_pow_ui(ZT(term), ZT(primes[i].Factor), primes[i].exponent - 1);  // p^(e-1)
-		term = term* (primes[i].Factor- 1);	                        // (p^(e-1)-1)*(p-1)
+	for (auto i : primes.f) {
+		mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+		term = term* (i.Factor- 1);	                        // (p^(e-1)-1)*(p-1)
 		result *= term;
 	}
 	return result;
@@ -290,13 +290,13 @@ static Znum Totient(const std::vector <zFactors> primes) {
    μ(n) = 1 if n is a square-free positive integer with an even number of prime factors.
    μ(n) = −1 if n is a square-free positive integer with an odd number of prime factors.
    μ(n) = 0 if n has a squared prime factor. */
-static int mobius(const std::vector <zFactors> exponents) {
+int mobius(const fList &exponents) {
 	
-	for (auto ex : exponents) {
+	for (auto ex : exponents.f) {
 		if (ex.exponent > 1)
 			return 0;		// n is not square-free
 	}
-	auto result = exponents.size();
+	auto result = exponents.f.size();
 	if ((result & 1) == 1)
 		return -1;  // odd nuber of  prime factors
 	else
@@ -306,13 +306,13 @@ static int mobius(const std::vector <zFactors> exponents) {
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1) 
 where p=prime factor and e=exponent.*/
 static Znum ComputeTotient(const Znum &n) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 
 	if (n == 1)
 		return 1;
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.empty()) {
-		auto divisors = Totient(factorlist);
+	if (rv && !factorlist.f.empty()) {
+		auto divisors = factorlist.totient();
 		return divisors;
 	}
 	else return 0;
@@ -320,12 +320,12 @@ static Znum ComputeTotient(const Znum &n) {
 
 /* calculate number of divisors of n, from its list of prime factors. */
 static Znum ComputeNumDivs(const Znum &n) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 
 	if (n == 1)
 		return 1;  // 1 only has one divisor. NoOfDivisors can't handle that case
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.empty()) {
+	if (rv && !factorlist.f.empty()) {
 		auto divisors = NoOfDivisorsF(factorlist);
 		return divisors;
 	}
@@ -335,13 +335,13 @@ static Znum ComputeNumDivs(const Znum &n) {
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1) 
  where p=prime factor and e=exponent. */
 static Znum ComputeSumDivs(const Znum &n) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 
 	if (n == 1)
 		return 1;   // 1 only has 1 divisor. 
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.empty()) {
-		auto divisors = SumOfDivisors(factorlist);
+	if (rv && !factorlist.f.empty()) {
+		auto divisors = factorlist.DivisorSum();
 		return divisors;
 	}
 	else return 0;
@@ -486,7 +486,7 @@ mode	Order of factors	Repeated factors
 3		Descending			Yes
 */
 static Znum  concatFact(const Znum &mode, const Znum &num) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 	std::string result;
 	Znum rvalue = 0;
 	const bool descending = ((mode & 1) == 1);
@@ -495,25 +495,25 @@ static Znum  concatFact(const Znum &mode, const Znum &num) {
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
-	if (rv && !factorlist.empty()) {
+	if (rv && !factorlist.f.empty()) {
 		if (descending)   /* start with largest factor */
-			for (ptrdiff_t i = factorlist.size()-1; i >=0; i--) {
-				buffer = mpz_get_str(NULL, 10, ZT(factorlist[i].Factor));
+			for (ptrdiff_t i = factorlist.f.size()-1; i >=0; i--) {
+				buffer = mpz_get_str(NULL, 10, ZT(factorlist.f[i].Factor));
 				if (!repeat)
 					result += buffer; // concatenate factor
 				else
-					for (int j = 1; j <= factorlist[i].exponent; j++)
+					for (int j = 1; j <= factorlist.f[i].exponent; j++)
 						result += buffer; // concatenate factor
 				free(buffer);
 				buffer = NULL;
 			}
 		else  /* start with smallest factor */
-			for (size_t i = 0; i < factorlist.size(); i++) {
-				buffer = mpz_get_str(NULL, 10, ZT(factorlist[i].Factor));
+			for (size_t i = 0; i < factorlist.f.size(); i++) {
+				buffer = mpz_get_str(NULL, 10, ZT(factorlist.f[i].Factor));
 				if (!repeat)
 					result += buffer;  // concatenate factor
 				else
-					for (int j = 1; j <= factorlist[i].exponent; j++)
+					for (int j = 1; j <= factorlist.f[i].exponent; j++)
 						result += buffer;  // concatenate factor
 				free(buffer);
 				buffer = NULL;
@@ -535,20 +535,20 @@ static Znum R2(const Znum &num) {
 	if (num % 4 == 3)
 		return 0;   // at least 1 4k+3 factor has an odd exponent
 
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 	Znum b = 1;
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
-	for (size_t i = 0; i < factorlist.size(); i++) {
-		if (factorlist[i].Factor <= 2)
+	for (size_t i = 0; i < factorlist.f.size(); i++) {
+		if (factorlist.f[i].Factor <= 2)
 			continue; // ignore factor 1 or 2
-		if (factorlist[i].Factor % 4 == 3) { /* p = 4k+3? */
-			if (factorlist[i].exponent % 2 == 1) /* exponent is odd?*/
+		if (factorlist.f[i].Factor % 4 == 3) { /* p = 4k+3? */
+			if (factorlist.f[i].exponent % 2 == 1) /* exponent is odd?*/
 				return 0;
 		}
 		else { 		/* p = 4k + 1 */
-				b *= (factorlist[i].exponent + 1);
+				b *= (factorlist.f[i].exponent + 1);
 			}
 	}
 	return b * 4;
@@ -569,18 +569,18 @@ static Znum powerBi(const Znum &x, unsigned __int64 n) {
 /* Calculate maximum square divisor of num and divide num by this.
 return adjusted num, square divisor, and factor list of divisor.*/
 static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 	zFactors temp;
 	auto rv = factorise(num, factorlist, nullptr);
 	sqf.clear();
 
-	for (size_t i = 0; i < factorlist.size(); i++) {
-		if (factorlist[i].exponent >= 2) {
+	for (auto i : factorlist.f) {
+		if (i.exponent >= 2) {
 			/* copy exponent value, rounded down to multiple of 2*/
-			temp.exponent = factorlist[i].exponent - (factorlist[i].exponent & 1);
-			temp.Factor = factorlist[i].Factor;
+			temp.exponent = i.exponent - (i.exponent & 1);
+			temp.Factor = i.Factor;
 			sqf.push_back(temp);
-			factorlist[i].exponent -= temp.exponent;
+			i.exponent -= temp.exponent;
 		}
 	}
 	
@@ -608,7 +608,7 @@ static Znum R3(Znum num) {
 		return R3(llnum);
 	}
 	Znum sum = 0, sq, multiplier = 1;
-	std::vector <zFactors> sqf;
+	std::vector <zFactors> sqf;   // factor list for square factor of num
 
 	if (num < 0)
 		return 0;
@@ -1885,7 +1885,7 @@ static void printSummary(void) {
 
 /* factorise Result, calculate number of divisors etc and print results */
 static void doFactors(const Znum &Result, bool test) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 	Znum Quad[4];
 	clock_t start;
 	summary sum;    // save summary of factorisation
@@ -1895,18 +1895,18 @@ static void doFactors(const Znum &Result, bool test) {
 
 	/* call DA´s magic function to factorise Result */
 	bool rv = factorise(Result, factorlist, Quad);
-	if (rv && !factorlist.empty()) {
-		if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
+	if (rv && !factorlist.f.empty()) {
+		if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
 			/* print factor list */
 			std::cout << " = ";
 			if (Result < 0)
 				std::cout << "-";
-			for (size_t i = 0; i < factorlist.size(); i++) {
+			for (size_t i = 0; i < factorlist.f.size(); i++) {
 				if (i > 0)
 					std::cout << " * ";
-				ShowLargeNumber(factorlist[i].Factor, 6, false, false);
-				if (factorlist[i].exponent > 1)
-					std::cout << "^" << factorlist[i].exponent;
+				ShowLargeNumber(factorlist.f[i].Factor, 6, false, false);
+				if (factorlist.f[i].exponent > 1)
+					std::cout << "^" << factorlist.f[i].exponent;
 			}
 		}
 		else
@@ -1920,14 +1920,14 @@ static void doFactors(const Znum &Result, bool test) {
 		else 
 			std::cout << "\nNumber of Divisors = 1";   // treat n=1 as special case
 
-		auto divisors = SumOfDivisors(factorlist);
+		auto divisors = factorlist.DivisorSum();
 		std::cout << "\nSum of Divisors    = ";
 		ShowLargeNumber(divisors, 6, false, false);
-		divisors = Totient(factorlist);
+		divisors = factorlist.totient();
 		std::cout << "\nTotient            = ";
 		ShowLargeNumber(divisors, 6, false, false);
 		if (Result > 0) {
-			auto mob = mobius(factorlist);  // mobius only defined for +ve integers
+			auto mob = factorlist.mob();  // mobius only defined for +ve integers
 			std::cout << "\nMöbius             = " << mob;
 		}
 
@@ -1953,16 +1953,16 @@ static void doFactors(const Znum &Result, bool test) {
 			c++;  // change a to b, b to c, etc
 		}
 		std::cout << "\n";
-		if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
+		if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
 			printCounts();  // print if not prime
 		}
 		if (test) {
 			Znum result = 1;
 			sum.totalFacs = 0;
-			for (size_t i = 0; i < factorlist.size(); i++) {
-				for (int j = 1; j <= factorlist[i].exponent; j++)
-					result *= factorlist[i].Factor;
-				sum.totalFacs += factorlist[i].exponent;
+			for (size_t i = 0; i < factorlist.f.size(); i++) {
+				for (int j = 1; j <= factorlist.f[i].exponent; j++)
+					result *= factorlist.f[i].Factor;
+				sum.totalFacs += factorlist.f[i].exponent;
 			}
 			if (result != Result) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
@@ -1978,10 +1978,10 @@ static void doFactors(const Znum &Result, bool test) {
 			PrintTimeUsed(elapsed, "time used = ");
 			sum.time = elapsed / CLOCKS_PER_SEC;
 			sum.numsize = (int)ComputeNumDigits(result, 10);
-			sum.NumFacs = (int)factorlist.size();
-			if (factorlist.size() > 1)
+			sum.NumFacs = (int)factorlist.f.size();
+			if (factorlist.f.size() > 1)
 				/* get number of digits in 2nd largest factor */
-				sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+				sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 			else sum.sndFac = 0;
 			results.push_back(sum);
 		}
@@ -1993,7 +1993,7 @@ static void doFactors(const Znum &Result, bool test) {
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
 static bool factortest(const Znum x3, const int method = 0) {
-	std::vector <zFactors> factorlist;
+	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
 	summary sum;    // save summary of test
@@ -2010,20 +2010,17 @@ static bool factortest(const Znum x3, const int method = 0) {
 		factorise(x3, factorlist, Quad);  // get factors
 	}
 	if (method != 0) {
-		factorlist.resize(1);
-		factorlist[0].exponent = 1;
-		factorlist[0].upperBound = 0;
-		factorlist[0].Factor = x3;
+		factorlist.set(x3);
 		callYafu(x3, factorlist);
 	}
 	result = 1;
-	for (size_t i = 0; i < factorlist.size(); i++) {
-		for (int j = 1; j <= factorlist[i].exponent; j++)
-			result *= factorlist[i].Factor;  // get product of all factors
+	for (size_t i = 0; i < factorlist.f.size(); i++) {
+		for (int j = 1; j <= factorlist.f[i].exponent; j++)
+			result *= factorlist.f[i].Factor;  // get product of all factors
 	}
-	if (factorlist.size() > 1)
+	if (factorlist.f.size() > 1)
 		/* get number of digits in 2nd largest factor */
-		sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+		sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 	else sum.sndFac = 0;
 	if (result != x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
@@ -2037,17 +2034,17 @@ static bool factortest(const Znum x3, const int method = 0) {
 			Beep(750, 1000);
 		}
 	}
-	if (factorlist.size() > 1 || factorlist[0].exponent > 1) {
+	if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
 		/* x3 is not prime */
-		for (auto f : factorlist) {
+		for (auto f : factorlist.f) {
 			totalFactors += f.exponent;
 		}
-		std::cout << "found " << factorlist.size() << " unique factors, total "
+		std::cout << "found " << factorlist.f.size() << " unique factors, total "
 			<< totalFactors << " factors\n";
 		sum.totalFacs = (int)totalFactors;
-		if (factorlist.size() > 1)
+		if (factorlist.f.size() > 1)
 			/* get number of digits in 2nd largest factor */
-			sum.sndFac = (int)ComputeNumDigits((factorlist.end() - 2)->Factor, 10);
+			sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 		else sum.sndFac = 0;
 		if (method == 0)
 			printCounts();
@@ -2056,7 +2053,7 @@ static bool factortest(const Znum x3, const int method = 0) {
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
-		sum.NumFacs = (int)factorlist.size();
+		sum.NumFacs = (int)factorlist.f.size();
 		results.push_back(sum);
 		return false;   // not prime
 	}
