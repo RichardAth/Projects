@@ -1336,7 +1336,7 @@ static void ecminit(Znum zN) {
 }
 
 /* returns true if successful. The factor found is returned in global Znum Zfactor */
-bool ecm(Znum &zN, long long maxdivisor) {
+bool ecm(Znum &zN, long long maxdivisor, fList &Factors) {
 
 #ifdef log
 	std::string name1 = std::tmpnam(nullptr);
@@ -1355,14 +1355,14 @@ bool ecm(Znum &zN, long long maxdivisor) {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
 			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor
-			counters.siqs++;
+			Factors.siqs++;
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
 			if (foundByLehman)
-				counters.leh++;
+				Factors.leh++;
 			else
-				counters.ecm++;
+				Factors.ecm++;
 			break;
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 

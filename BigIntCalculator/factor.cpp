@@ -32,7 +32,6 @@ static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
 Znum Zfactor, Zfactor2;
-struct ctrs counters;
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -423,7 +422,7 @@ static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix)
 /* Insert new factor found into factor array. Every current factor is checked 
 against the divisor. If their gcd is not 1 the existing factor is divided by 
 the gcd and a new factor equal to the gcd is created. */
-void insertBigFactor(fList &Factors, Znum &divisor) {
+void insertBigFactor(fList &Factors, const Znum &divisor) {
 	auto lastfactor = Factors.f.size();
 	auto ipoint = lastfactor;
 	zFactors temp;
@@ -627,7 +626,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 				if (Factors.f[i].Factor%testP == 0) {
 					insertIntFactor(Factors, upperBound, 0, i);
 					restart = true;  // factor found; keep looking for more
-					counters.tdiv++;
+					Factors.tdiv++;
 					break;
 				}
 				Factors.f[i].upperBound = upperBound;
@@ -651,7 +650,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 					even when factor is not prime*/
 					if (f != 1) {
 						insertIntFactor(Factors, -1, f, i);
-						counters.prho++;
+						Factors.prho++;
 					}
 				}
 			}
@@ -675,8 +674,6 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
 	long long LehmanLimit = MaxP*MaxP*MaxP;
 
-	memset(&counters, 0, sizeof(counters));    // reset counters to 0
-
 	Factors.set(toFactor);   /* initialise factor list */
 
 	if ((long long)primeListMax <MaxP) {  // get primes
@@ -689,7 +686,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
 		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
-		counters.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
+		Factors.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
 		if (Factors.f.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
 			Factors.print();
@@ -720,7 +717,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		if (expon > 1) {    /* if power is a perfect power*/
 			Factors.f[i].Factor = Zpower;
 			Factors.f[i].exponent *= expon;
-			counters.power++;
+			Factors.power++;
 		}
 		
 		int result = PrimalityTest(Zpower, testP- 1);
@@ -731,7 +728,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		if (result > 1) {  /* number is a pseudo-prime */
 			size_t fsave = Factors.f.size();
 			if (factorCarmichael(Zpower, Factors)) {
-				counters.carm += (int)(Factors.f.size() - fsave); // record any increase in number of factors;
+				Factors.carm += (int)(Factors.f.size() - fsave); // record any increase in number of factors;
 				i = -1;			// restart loop at beginning!!
 				continue;
 			}
@@ -741,7 +738,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			f = PollardRho(MulPrToLong(Zpower));
 			if (f != 1) {
 				insertIntFactor(Factors, -1, f, i);
-				counters.prho++;
+				Factors.prho++;
 				/* there is a small possibility that PollardFactor won't work,
 				even when factor is not prime*/
 				continue;
@@ -749,7 +746,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		}
 		if (!msieve && !yafu) {
 			ElipCurvNo = 1;  // start with 1st curve
-			auto rv = ecm(Zpower, testP);          // get a factor of number. result in Zfactor
+			auto rv = ecm(Zpower, testP, Factors);          // get a factor of number. result in Zfactor
 			if (!rv)
 				return false;  // failed to factorise number
 			 //Check whether factor is not one. In this case we found a proper factor.
@@ -768,7 +765,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			for (int k = 1; k <= 10; k++) {
 				LehmanZ(Zpower, k, Zfactor);
 				if (Zfactor > 1) {
-					counters.leh++;     // Factor found.
+					Factors.leh++;     // Factor found.
 					if (verbose > 0) {
 						std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
 							<< " factor = " << Zfactor << '\n';
@@ -793,9 +790,9 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 				i = -1;   // success; restart loop at beginning to tidy up!
 				// record any increase in number of factors
 				if (msieve)
-					counters.msieve += (int)(Factors.f.size() - fsave); 
+					Factors.msieve += (int)(Factors.f.size() - fsave); 
 				else
-					counters.yafu += (int)(Factors.f.size() - fsave); 
+					Factors.yafu += (int)(Factors.f.size() - fsave); 
 			}
 			else {
 				msieve = false;   // failed once, don't try again

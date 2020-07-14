@@ -31,24 +31,35 @@ public:
 	Znum Factor;
 	int exponent;
 	int upperBound;
-	
 };
 
 class fList {
 public:
 	std::vector <zFactors> f;
+	/* counters showing how the factors were found */
+	int pm1 = 0;           // power + / -1
+	int tdiv = 0;          // trial division
+	int prho = 0;          // Pollard-rho
+	int ecm = 0;           // elliptic curve
+	int siqs = 0;          // SIQS
+	int msieve = 0;        // Msieve
+	int yafu = 0;          // YAFU
+	int carm = 0;          // Carmichael
+	int leh = 0;           // Lehman:
+	int power = 0;		   // perfect power
 
 	friend Znum SumOfDivisors(const fList &primes);
 	friend Znum Totient(const fList &primes);
 	friend int mobius(const fList &exponents);
+	friend void printCounts(const fList &Factors);
 	Znum DivisorSum() const {
-		return SumOfDivisors(*this);
+		return SumOfDivisors(*this);   // this only works if factorisation is complete!
 	}
 	Znum totient() const {
-		return Totient(*this);
+		return Totient(*this);   // this only works if factorisation is complete!
 	}
 	int mob() const {
-		return mobius (*this);
+		return mobius (*this);  // this only works if factorisation is complete!
 	}
 	/* initialise factor list */
 	void set(const Znum &toFactor) {
@@ -64,11 +75,14 @@ public:
 		}
 		std::cout << '\n';
 	}
+	void prCounts() const {
+		printCounts(*this);
+	}
 };
 
 
 void showECMStatus(void);
-bool ecm(Znum &Nz, long long maxdivisor);
+bool ecm(Znum &Nz, long long maxdivisor, fList &factors);
 extern int lang;
 extern Znum Zfactor, Zfactor2;
 
@@ -95,7 +109,6 @@ struct ctrs{
 	int leh;           // Lehman:
 	int power;		   // perfect power
 };
-extern struct ctrs counters;
 
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
@@ -105,6 +118,6 @@ extern bool yafu;
 extern int verbose;
 bool callMsieve(const Znum &num, fList&Factors);
 bool callYafu(const Znum &num, fList&Factors);
-void insertBigFactor(fList &Factors, Znum &divisor);
+void insertBigFactor(fList &Factors, const Znum &divisor);
 void generatePrimes(unsigned long long int max_val);
 void LehmanZ(const Znum &nbr, int k, Znum &factor);

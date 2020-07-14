@@ -291,7 +291,7 @@ Znum Totient(const fList &primes) {
    μ(n) = −1 if n is a square-free positive integer with an odd number of prime factors.
    μ(n) = 0 if n has a squared prime factor. */
 int mobius(const fList &exponents) {
-	
+	// this only works if factorisation is complete!
 	for (auto ex : exponents.f) {
 		if (ex.exponent > 1)
 			return 0;		// n is not square-free
@@ -644,7 +644,7 @@ static Znum R3(Znum num) {
 }
 
 /* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime */
-static Znum llt(Znum p) {
+static Znum llt(const Znum &p) {
 	int rv;
 	Znum n, tmp, ncopy, limit, i, d;
 	long long exp = MulPrToLong(p);
@@ -1015,7 +1015,7 @@ static retCode func(const std::string &expr, const bool leftNumberFlag,
 /* SHL: Shift left the number of bits specified on the right operand. If the
 number of bits to shift is negative, this is actually a right shift. If result would
 be too large an error is reported. */
-static retCode ShiftLeft(const Znum first, const Znum bits, Znum &result) {
+static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
 	if (bits > LLONG_MAX || bits < LLONG_MIN)
 		return retCode::EXPR_INVALID_PARAM;
 
@@ -1824,28 +1824,28 @@ static void removeBlanks(std::string &msg) {
 
 /* indicate how the number's factors were found. No detailed breakdown 
 for factors found by YAFU or Msieve */
-static void printCounts(void) {
+void printCounts(const fList &Factors) {
 	std::cout << "found by";
-	if (counters.tdiv > 0)
-		std::cout << " trial division: " << counters.tdiv;
-	if (counters.prho > 0)
-		std::cout << " Pollard-rho: " << counters.prho;
-	if (counters.pm1 > 0)
-		std::cout << " power +/- 1: " << counters.pm1;
-	if (counters.ecm > 0)
-		std::cout << " elliptic curve: " << counters.ecm;
-	if (counters.siqs > 0)
-		std::cout << " SIQS: " << counters.siqs;
-	if (counters.msieve > 0)
-		std::cout << " Msieve: " << counters.msieve;
-	if (counters.yafu > 0)
-		std::cout << " YAFU:   " << counters.yafu;
-	if (counters.carm > 0)
-		std::cout << " Carmichael: " << counters.carm;
-	if (counters.leh > 0)
-		std::cout << " Lehman: " << counters.leh;
-	if (counters.power > 0)
-		std::cout << " Perfect Power: " << counters.power;
+	if (Factors.tdiv > 0)
+		std::cout << " trial division: " << Factors.tdiv;
+	if (Factors.prho > 0)
+		std::cout << " Pollard-rho: " << Factors.prho;
+	if (Factors.pm1 > 0)
+		std::cout << " power +/- 1: " << Factors.pm1;
+	if (Factors.ecm > 0)
+		std::cout << " elliptic curve: " << Factors.ecm;
+	if (Factors.siqs > 0)
+		std::cout << " SIQS: " << Factors.siqs;
+	if (Factors.msieve > 0)
+		std::cout << " Msieve: " << Factors.msieve;
+	if (Factors.yafu > 0)
+		std::cout << " YAFU:   " << Factors.yafu;
+	if (Factors.carm > 0)
+		std::cout << " Carmichael: " << Factors.carm;
+	if (Factors.leh > 0)
+		std::cout << " Lehman: " << Factors.leh;
+	if (Factors.power > 0)
+		std::cout << " Perfect Power: " << Factors.power;
 	std::cout << '\n';
 }
 
@@ -1954,7 +1954,7 @@ static void doFactors(const Znum &Result, bool test) {
 		}
 		std::cout << "\n";
 		if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
-			printCounts();  // print if not prime
+			factorlist.prCounts();
 		}
 		if (test) {
 			Znum result = 1;
@@ -1992,7 +1992,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum x3, const int method = 0) {
+static bool factortest(const Znum &x3, const int method = 0) {
 	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -2047,7 +2047,7 @@ static bool factortest(const Znum x3, const int method = 0) {
 			sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 		else sum.sndFac = 0;
 		if (method == 0)
-			printCounts();
+			factorlist.prCounts();
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
@@ -2132,6 +2132,7 @@ static void doTests(void) {
 		"5 < 6 == 7 < 8",                  -1,   // returns true (== has lower priority)
 		"5 < 6 != 7 < 8",                   0,   // returns false (!= has lower priority)
 		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
+		"R3(49)",                          54,
 	};
 
 	results.clear();
@@ -2840,7 +2841,7 @@ static void doTests6(void) {
 }
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
-int processCmd(const std::string &command) {
+static int processCmd(const std::string &command) {
 	const static char helpmsg[] =
 		"You can enter expressions that use the following operators, functions and parentheses:\n"
 		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
