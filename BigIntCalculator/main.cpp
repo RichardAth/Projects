@@ -247,61 +247,6 @@ long long MulPrToLong(const Znum &x) {
 	return 0;
 }
 
-/* calculate number of divisors of n, given its list of prime factors.
-NB for n=1 function returns 2, but correct value would be 1. 
-From just the list of exponents we can't distinguish n=1 from n=prime */
-static Znum NoOfDivisorsF(const fList &exponents) {
-	Znum result = 1;
-
-	for (auto i: exponents.f) {
-		result *= i.exponent + 1;
-	}
-	return result;
-}
-
-// sum of divisors is the product of (p^(e+1)-1)/(p-1) where p=prime factor and e=exponent.
-Znum SumOfDivisors( const fList &primes) {
-	Znum result = 1, term;
-
-	if (primes.f[0].Factor == 1)
-		return 1;		// special case: if original number is 1
-	for (size_t i = 0; i < primes.f.size(); i++) {
-		mpz_pow_ui(ZT(term), ZT(primes.f[i].Factor), primes.f[i].exponent + 1);  // p^(e+1)
-		term = (term-1)/(primes.f[i].Factor-1);	                        // (p^(e+1)-1)/(p-1)
-		result *= term;
-	}
-	return result;
-}
-
-// Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent.
-Znum Totient(const fList &primes) {
-	Znum result = 1, term;
-
-	for (auto i : primes.f) {
-		mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
-		term = term* (i.Factor- 1);	                        // (p^(e-1)-1)*(p-1)
-		result *= term;
-	}
-	return result;
-}
-
-/* For any positive integer n, define μ(n) as the sum of the primitive nth roots of unity. 
-   It has values in {−1, 0, 1} depending on the factorization of n into prime factors:
-   μ(n) = 1 if n is a square-free positive integer with an even number of prime factors.
-   μ(n) = −1 if n is a square-free positive integer with an odd number of prime factors.
-   μ(n) = 0 if n has a squared prime factor. */
-int mobius(const fList &exponents) {
-	// this only works if factorisation is complete!
-	for (auto ex : exponents.f) {
-		if (ex.exponent > 1)
-			return 0;		// n is not square-free
-	}
-	auto result = exponents.f.size();
-	if ((result & 1) == 1)
-		return -1;  // odd nuber of  prime factors
-	else
-		return 1;    // even number of prime factors 
-}
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1) 
 where p=prime factor and e=exponent.*/
@@ -311,9 +256,9 @@ static Znum ComputeTotient(const Znum &n) {
 	if (n == 1)
 		return 1;
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.f.empty()) {
-		auto divisors = factorlist.totient();
-		return divisors;
+	if (rv) {
+		auto tot = factorlist.totient();
+		return tot;
 	}
 	else return 0;
 }
@@ -323,10 +268,10 @@ static Znum ComputeNumDivs(const Znum &n) {
 	fList factorlist;
 
 	if (n == 1)
-		return 1;  // 1 only has one divisor. NoOfDivisors can't handle that case
+		return 1;  // 1 only has one divisor. NoOfDivs can't handle that case
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.f.empty()) {
-		auto divisors = NoOfDivisorsF(factorlist);
+	if (rv) {
+		auto divisors = factorlist.NoOfDivs();
 		return divisors;
 	}
 	else return 0;
@@ -340,7 +285,7 @@ static Znum ComputeSumDivs(const Znum &n) {
 	if (n == 1)
 		return 1;   // 1 only has 1 divisor. 
 	auto rv = factorise(n, factorlist, nullptr);
-	if (rv && !factorlist.f.empty()) {
+	if (rv) {
 		auto divisors = factorlist.DivisorSum();
 		return divisors;
 	}
@@ -478,14 +423,14 @@ static long long primePi(const Znum &n) {
 	return rv;
 }
 
-/* ConcatFact(m,n): Concatenates the prime factors (base 10) of num according to the mode
+/* FactConcat(m,n): Concatenates the prime factors (base 10) of num according to the mode
 mode	Order of factors	Repeated factors
 0		Ascending			No
 1		Descending			No
 2		Ascending			Yes
 3		Descending			Yes
 */
-static Znum  concatFact(const Znum &mode, const Znum &num) {
+static Znum  FactConcat(const Znum &mode, const Znum &num) {
 	fList factorlist;
 	std::string result;
 	Znum rvalue = 0;
@@ -495,33 +440,10 @@ static Znum  concatFact(const Znum &mode, const Znum &num) {
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
-	if (rv && !factorlist.f.empty()) {
-		if (descending)   /* start with largest factor */
-			for (ptrdiff_t i = factorlist.f.size()-1; i >=0; i--) {
-				buffer = mpz_get_str(NULL, 10, ZT(factorlist.f[i].Factor));
-				if (!repeat)
-					result += buffer; // concatenate factor
-				else
-					for (int j = 1; j <= factorlist.f[i].exponent; j++)
-						result += buffer; // concatenate factor
-				free(buffer);
-				buffer = NULL;
-			}
-		else  /* start with smallest factor */
-			for (size_t i = 0; i < factorlist.f.size(); i++) {
-				buffer = mpz_get_str(NULL, 10, ZT(factorlist.f[i].Factor));
-				if (!repeat)
-					result += buffer;  // concatenate factor
-				else
-					for (int j = 1; j <= factorlist.f[i].exponent; j++)
-						result += buffer;  // concatenate factor
-				free(buffer);
-				buffer = NULL;
-			}
-		mpz_set_str(ZT(rvalue), result.data(), 10); /* convert back from a string to a number */
-		return rvalue;
-	}
-	return 0;  // unable to factorise number
+	if (rv)
+		return factorlist.ConcatFact(descending, repeat);
+	else
+		return 0;  // unable to factorise number
 }
 
 /* calculate the number of ways an integer n can be expressed as the sum of 2
@@ -540,18 +462,7 @@ static Znum R2(const Znum &num) {
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
-	for (size_t i = 0; i < factorlist.f.size(); i++) {
-		if (factorlist.f[i].Factor <= 2)
-			continue; // ignore factor 1 or 2
-		if (factorlist.f[i].Factor % 4 == 3) { /* p = 4k+3? */
-			if (factorlist.f[i].exponent % 2 == 1) /* exponent is odd?*/
-				return 0;
-		}
-		else { 		/* p = 4k + 1 */
-				b *= (factorlist.f[i].exponent + 1);
-			}
-	}
-	return b * 4;
+	return factorlist.R2();
 }
 
 /* return x^n */
@@ -902,7 +813,7 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		if (p1 < 0 || p1 > 3) {
 			return retCode::EXPR_INVALID_PARAM;  // mode value invalid
 		}
-		result = concatFact(p1, p2);
+		result = FactConcat(p1, p2);
 		break;
 	}
 	case fn_Code::fn_r2: {
@@ -1822,33 +1733,6 @@ static void removeBlanks(std::string &msg) {
 	}
 }
 
-/* indicate how the number's factors were found. No detailed breakdown 
-for factors found by YAFU or Msieve */
-void printCounts(const fList &Factors) {
-	std::cout << "found by";
-	if (Factors.tdiv > 0)
-		std::cout << " trial division: " << Factors.tdiv;
-	if (Factors.prho > 0)
-		std::cout << " Pollard-rho: " << Factors.prho;
-	if (Factors.pm1 > 0)
-		std::cout << " power +/- 1: " << Factors.pm1;
-	if (Factors.ecm > 0)
-		std::cout << " elliptic curve: " << Factors.ecm;
-	if (Factors.siqs > 0)
-		std::cout << " SIQS: " << Factors.siqs;
-	if (Factors.msieve > 0)
-		std::cout << " Msieve: " << Factors.msieve;
-	if (Factors.yafu > 0)
-		std::cout << " YAFU:   " << Factors.yafu;
-	if (Factors.carm > 0)
-		std::cout << " Carmichael: " << Factors.carm;
-	if (Factors.leh > 0)
-		std::cout << " Lehman: " << Factors.leh;
-	if (Factors.power > 0)
-		std::cout << " Perfect Power: " << Factors.power;
-	std::cout << '\n';
-}
-
 struct summary {
 	int numsize;		// number of decimal digits in number
 	double time;		// time used in seconds
@@ -1913,7 +1797,7 @@ static void doFactors(const Znum &Result, bool test) {
 			std::cout << " is prime";  //number has only 1 factor
 
 		if (abs(Result) != 1) {
-			auto divisors = NoOfDivisorsF(factorlist);
+			auto divisors = factorlist.NoOfDivs();
 			std::cout << "\nNumber of Divisors = ";
 			ShowLargeNumber(divisors, 6, false, false);
 		}
@@ -1953,9 +1837,8 @@ static void doFactors(const Znum &Result, bool test) {
 			c++;  // change a to b, b to c, etc
 		}
 		std::cout << "\n";
-		if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
-			factorlist.prCounts();
-		}
+		factorlist.prCounts();  // print counts
+
 		if (test) {
 			Znum result = 1;
 			sum.totalFacs = 0;
@@ -1992,7 +1875,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int method = 0) {
+static bool factortest(const Znum &x3, const int method) {
 	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -2133,6 +2016,7 @@ static void doTests(void) {
 		"5 < 6 != 7 < 8",                   0,   // returns false (!= has lower priority)
 		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
 		"R3(49)",                          54,
+		"R2(585)",                         16,
 	};
 
 	results.clear();
@@ -2875,7 +2759,7 @@ static int processCmd(const std::string &command) {
 		"NumDigits(n, r) : Number of digits of n in base r.\n"
 		"SumDigits(n, r) : Sum of digits of n in base r.\n"
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
-		"ConcatFact(m,n) : Concatenates the prime factors of n according to the mode m\n"
+		"FactConcat(m,n) : Concatenates the prime factors of n according to the mode m\n"
 		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
 		"LE(a,p) : Legendre value for (a/p) \n"
 		"JA(a,p) : Jacobi value for (a/p) \n"

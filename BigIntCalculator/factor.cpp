@@ -415,7 +415,7 @@ static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix)
 	SortFactors(Factors);
 	if (verbose > 0) {
 		/*std::cout << "result after adding factor " << divisor << '\n';
-		printfactors(Factors.f);*/
+		Factors.print();*/
 	}
 }
 
@@ -429,7 +429,7 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 	Znum g;
 	if (verbose > 0) {
 		/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
-		Factors.printfactors();*/
+		Factors.print();*/
 	}
 	for (int i = 0; i < lastfactor; i++) {
 		if (Factors.f[i].Factor == divisor)
@@ -450,8 +450,8 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 		}
 	}
 	if (verbose > 0) {
-		//std::cout << "result before sort" << '\n';
-		//Factors.printfactors();
+		/*std::cout << "result before sort" << '\n';
+		Factors.print();*/
 	}
 	SortFactors(Factors);
 }
@@ -1219,8 +1219,7 @@ to be used pretty much like normal integers.
 **********************************************************************************/
 
 /* factorise number. Returns false if unable to factorise it */
-bool factorise(Znum numberZ, fList &vfactors,
-	 Znum quads[]) {
+bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 
 	try {
 		bool pos = true;
