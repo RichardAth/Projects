@@ -636,10 +636,6 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 	static limb Zaux[MAX_LEN];     // copy of Z
 	static limb root[GROUP_SIZE][MAX_LEN];
 
-#ifdef __EMSCRIPTEN__
-	//char text[20];
-#endif
-
 	for (;;) {  // only exit from this loop is by a return statement
 #ifdef __EMSCRIPTEN__
 		char *ptrText;
@@ -651,12 +647,6 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		ElipCurvNo++;   // increment curve number
 		oldTimeElapsed = (int)(tenths() - originalTenthSecond);
 
-#ifdef __EMSCRIPTEN__
-		//			text[0] = '7';
-		//ptrText = &text[1];
-		//			int2dec(&ptrText, ElipCurvNo);
-		//			printf ("%s\n", text);
-#endif
 		L2 = mpz_sizeinbase(ZT(zN),10);   // Get number of digits.
 		if (L2 > 30 && L2 <= 95)          // If between 31 and 95 digits...
 		{                                 // switch to SIQS when curve No reaches limit
@@ -1286,34 +1276,7 @@ static void ecminit(Znum zN) {
 	memset(W3, 0, NumberLength * sizeof(limb));
 	memset(W4, 0, NumberLength * sizeof(limb));
 	ptrLowerText = lowerText;
-#ifdef __EMSCRIPTEN__ 
-	//	*ptrLowerText++ = '3';
-	//if (pstFactors[0].multiplicity > 1)
-	//{    // Some factorization known.
-	//	int NumberLengthBak = NumberLength;
-	//	strcpy(ptrLowerText, "\n");
-	//	ptrLowerText += strlen(ptrLowerText);
-	//	SendFactorizationToOutput(pstFactors, ptrLowerText, N->sign == SIGN_POSITIVE);
-	//	strcpy(ptrLowerText, "\n");
-	//	ptrLowerText += strlen(ptrLowerText);
-	//	NumberLength = NumberLengthBak;
-	//}
-	//strcpy(ptrLowerText, lang ? "\nFactorizando " : 
-	//	"\nFactorizing using Lenstra elliptic-curve factorization (ECM) ");
-	//ptrLowerText += strlen(ptrLowerText);
-	//if (hexadecimal)
-	//{
-	//	Bin2Hex(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
-	//}
-	//else
-	//{
-	//	Bin2Dec(N->limbs, ptrLowerText, N->nbrLimbs, groupLen);
-	//}
-	//ptrLowerText += strlen(ptrLowerText);
-	//strcpy(ptrLowerText, "\n");
-	//ptrLowerText += strlen(ptrLowerText);
-	//printf("%s", lowerText);
-#endif
+
 	ElipCurvNo--;  // decrement curve number
 	/* fill SmallPrime array unless it's already set up */
 	if (SmallPrime[0] != 2) {

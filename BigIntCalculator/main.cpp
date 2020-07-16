@@ -483,28 +483,16 @@ static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
 	fList factorlist;
 	zFactors temp;
 	auto rv = factorise(num, factorlist, nullptr);
-	sqf.clear();
 
-	for (auto i : factorlist.f) {
-		if (i.exponent >= 2) {
-			/* copy exponent value, rounded down to multiple of 2*/
-			temp.exponent = i.exponent - (i.exponent & 1);
-			temp.Factor = i.Factor;
-			sqf.push_back(temp);
-			i.exponent -= temp.exponent;
-		}
-	}
+	factorlist.sqfree(sqf);  // get factors of square in sqf
 	
-
 	sq = 1;
 	Znum x;
-	for (size_t i = 0; i < sqf.size(); i++) {
-		mpz_pow_ui(ZT(x), ZT(sqf[i].Factor), sqf[i].exponent);
+	for (auto i:  sqf) {  /* calculate value of square */
+		mpz_pow_ui(ZT(x), ZT(i.Factor), i.exponent);
 		sq *= x;
-			/*for (int j = 1; j <= sqf[i].exponent; j++)
-				sq *= sqf[i].Factor;*/
 	}
-	num /= sq;
+	num /= sq;  // adjust value of num
 }
 
 
@@ -1779,13 +1767,13 @@ static void doFactors(const Znum &Result, bool test) {
 
 	/* call DA´s magic function to factorise Result */
 	bool rv = factorise(Result, factorlist, Quad);
-	if (rv && !factorlist.f.empty()) {
-		if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
+	if (rv && factorlist.fsize() > 0) {
+		if (!factorlist.isPrime()) {
 			/* print factor list */
 			std::cout << " = ";
 			if (Result < 0)
 				std::cout << "-";
-			for (size_t i = 0; i < factorlist.f.size(); i++) {
+			for (size_t i = 0; i < factorlist.fsize(); i++) {
 				if (i > 0)
 					std::cout << " * ";
 				ShowLargeNumber(factorlist.f[i].Factor, 6, false, false);
@@ -1842,10 +1830,10 @@ static void doFactors(const Znum &Result, bool test) {
 		if (test) {
 			Znum result = 1;
 			sum.totalFacs = 0;
-			for (size_t i = 0; i < factorlist.f.size(); i++) {
-				for (int j = 1; j <= factorlist.f[i].exponent; j++)
-					result *= factorlist.f[i].Factor;
-				sum.totalFacs += factorlist.f[i].exponent;
+			for (auto i: factorlist.f) {
+				for (int j = 1; j <= i.exponent; j++)
+					result *= i.Factor;
+				sum.totalFacs += i.exponent;
 			}
 			if (result != Result) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
@@ -1861,8 +1849,8 @@ static void doFactors(const Znum &Result, bool test) {
 			PrintTimeUsed(elapsed, "time used = ");
 			sum.time = elapsed / CLOCKS_PER_SEC;
 			sum.numsize = (int)ComputeNumDigits(result, 10);
-			sum.NumFacs = (int)factorlist.f.size();
-			if (factorlist.f.size() > 1)
+			sum.NumFacs = (int)factorlist.fsize();
+			if (factorlist.fsize() > 1)
 				/* get number of digits in 2nd largest factor */
 				sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 			else sum.sndFac = 0;
@@ -1897,11 +1885,11 @@ static bool factortest(const Znum &x3, const int method) {
 		callYafu(x3, factorlist);
 	}
 	result = 1;
-	for (size_t i = 0; i < factorlist.f.size(); i++) {
+	for (size_t i = 0; i < factorlist.fsize(); i++) {
 		for (int j = 1; j <= factorlist.f[i].exponent; j++)
 			result *= factorlist.f[i].Factor;  // get product of all factors
 	}
-	if (factorlist.f.size() > 1)
+	if (factorlist.fsize() > 1)
 		/* get number of digits in 2nd largest factor */
 		sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 	else sum.sndFac = 0;
@@ -1917,26 +1905,26 @@ static bool factortest(const Znum &x3, const int method) {
 			Beep(750, 1000);
 		}
 	}
-	if (factorlist.f.size() > 1 || factorlist.f[0].exponent > 1) {
+	if (!factorlist.isPrime() ) {
 		/* x3 is not prime */
 		for (auto f : factorlist.f) {
 			totalFactors += f.exponent;
 		}
-		std::cout << "found " << factorlist.f.size() << " unique factors, total "
+		std::cout << "found " << factorlist.fsize() << " unique factors, total "
 			<< totalFactors << " factors\n";
 		sum.totalFacs = (int)totalFactors;
-		if (factorlist.f.size() > 1)
+		if (factorlist.fsize() > 1)
 			/* get number of digits in 2nd largest factor */
 			sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
 		else sum.sndFac = 0;
 		if (method == 0)
-			factorlist.prCounts();
+			factorlist.prCounts();   // print counts
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
-		sum.NumFacs = (int)factorlist.f.size();
+		sum.NumFacs = (int)factorlist.fsize();
 		results.push_back(sum);
 		return false;   // not prime
 	}

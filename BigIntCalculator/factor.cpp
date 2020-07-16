@@ -324,48 +324,26 @@ static void PowerPM1Check(fList &Factors, const Znum &nbrToFactor,
 }
 
 
-/* sort factors into ascending order. If two factors are equal, merge them by adding
-the 2nd exponent to the 1st then removing the second entry by moving any following entries
-up 1 position and adjusting the count of the total mumber of entries. */
+/* sort factors into ascending order. If two factors are equal, merge them by 
+adding the 2nd exponent to the 1st then removing the second entry and moving any 
+following entries up 1 position */
 static void SortFactors(fList &Factors) {
-	ptrdiff_t lastfactor = Factors.f.size();
-	zFactors temp;
-	bool swap = false;
-/* this is a bubble sort, with the added twist that if two factors have the same 
-value they are merged. The 1st pass moves the largest element to the last position,
-2nd pass moves the next largest to the next-to-last position and so on. 
-If, on any pass, no swaps are needed, all elements are in sequence and the sort exits. */
-	for (ptrdiff_t i = lastfactor - 1; i > 0 ; i--) {
-		swap = false;
-		for (ptrdiff_t j = 0; j < i; j++) {
-			if (Factors.f[j + 1].Factor < Factors.f[j].Factor) {
-				/* factors out of sequence so swap them*/
-				temp = Factors.f[j + 1];        // shallow copy is OK for swap
-				Factors.f[j + 1] = Factors.f[j];
-				Factors.f[j] = temp;
-				swap = true;
-			}
-			else if (Factors.f[j + 1].Factor == Factors.f[j].Factor) {
-				/* factors j and j+1 are equal so merge them */
-				Factors.f[j].exponent += Factors.f[j+1].exponent;  // combine the exponents
-				if (Factors.f[j+1].upperBound == -1)  
-					Factors.f[j].upperBound = -1; // set upperbound to show factor is prime
-				else if (Factors.f[j].upperBound != -1
-					&& Factors.f[j].upperBound < Factors.f[j+1].upperBound)
-					/* use higher value of upperbound. */
-					Factors.f[j].upperBound = Factors.f[j+1].upperBound;
+	std::sort(Factors.f.begin(), Factors.f.end());
+/* if two factors have the same value they are merged.  */
+	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.f.size()-1; i++) {
+		if (Factors.f[i + 1] == Factors.f[i]) {
+				/* factors i and i+1 are equal so merge them */
+			Factors.f[i].exponent += Factors.f[i+1].exponent;  // combine the exponents
+			if (Factors.f[i+1].upperBound == -1)  
+				Factors.f[i].upperBound = -1; // set upperbound to show factor is prime
+			else if (Factors.f[i].upperBound != -1
+				&& Factors.f[i].upperBound < Factors.f[i+1].upperBound)
+				/* use higher value of upperbound. */
+				Factors.f[i].upperBound = Factors.f[i+1].upperBound;
 
-				/* now move index entries higher than j+1 down 1, overwrite index entry j+1 */
-				Factors.f.erase(Factors.f.begin() + j + 1);
-
-				/* now adjust counters */
-				j--;
-				i--;
-				lastfactor--;
-			}
+			/* now remove entry i+1 & move any entries higher than i+1 down 1. */
+			Factors.f.erase(Factors.f.begin() + i + 1);
 		}
-		if (!swap)
-			break;  // exit loop early if we know all factors are already in ascending order
 	}
 
 	/* for certain numbers it is possible that a spurious factor 1 is generated. 
@@ -708,7 +686,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	/* Check whether the residue is a prime or prime power.
 	Given that the residue is less than about 10^10,000 the maximum exponent is
 	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
-		Znum Zpower, Zfactor;
+		Znum Zpower;
 		if (Factors.f[i].upperBound == -1)
 			continue;         // skip if factor is known to be prime
 		Zfactor = Factors.f[i].Factor;
@@ -746,7 +724,8 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		}
 		if (!msieve && !yafu) {
 			ElipCurvNo = 1;  // start with 1st curve
-			auto rv = ecm(Zpower, testP, Factors);          // get a factor of number. result in Zfactor
+			auto rv = ecm(Zpower, testP, Factors);          
+			// get a factor of number. result in global variable Zfactor
 			if (!rv)
 				return false;  // failed to factorise number
 			 //Check whether factor is not one. In this case we found a proper factor.
@@ -1077,8 +1056,7 @@ https://www.alpertron.com.ar/4SQUARES.HTM */
 (a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
                                     + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
 This allows us to find the sum of squares for each factor separately then combine them */
-static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4],
-	Znum num) {
+static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
 	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
 	Znum pr;
 	bool twoSq = true;
@@ -1088,18 +1066,18 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4
 	quads[2] = 0;
 	quads[3] = 0;
 
-	if (factorlist.size() == 1) {/* only 1 factor? */
-		if (factorlist[0].Factor == 1) {   // Number to factor is 1.
+	if (factorlist.f.size() == 1) {/* only 1 factor? */
+		if (factorlist.f[0].Factor == 1) {   // Number to factor is 1.
 			return;
 		}
-		if (factorlist[0].Factor == 0) {    // Number to factor is 0.
+		if (factorlist.f[0].Factor == 0) {    // Number to factor is 0.
 			quads[0] = 0;      // 0 = 0^2 + 0^2 + 0^2 + 0^2
 			return;
 		}
 	}
 
 	/* check whether number can be formed as sum of 1 or 2 squares */
-	for (auto f: factorlist) {
+	for (auto f: factorlist.f) {
 		if ((f.Factor & 3) == 3) {  // is factor of form 4k+3?
 			if ((f.exponent & 1) == 1)   // and is the exponent of that factor odd?
 			twoSq = false;    // if yes, number cannot be expressed as sum of 1 or 2 squares
@@ -1122,7 +1100,7 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4
 		}
 	}
 
-	for (auto Factorx : factorlist) {
+	for (auto Factorx : factorlist.f) {
 		if (Factorx.exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
 					  process it in this for loop */
@@ -1150,10 +1128,10 @@ static void ComputeFourSquares(std::vector <zFactors> &factorlist, 	Znum quads[4
 		quads[2] = Tmp3;
 		quads[1] = Tmp2;
 		quads[0] = Tmp1;
-	} /* end for indexPrimes */
+	} 
 
 	 /* for factors that are perfect squares, multiply quads[0]-3 by sqrt(factor) */
-	for (auto Factorx : factorlist) {
+	for (auto Factorx : factorlist.f) {
 		if (Factorx.Factor >= 2) {
 			mpz_pow_ui(ZT(Tmp1), ZT(Factorx.Factor), 
 				Factorx.exponent / 2);
@@ -1233,7 +1211,7 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 		if (!rv)
 			return false;  // failed to factorise number
 		if (quads != nullptr) {
-			ComputeFourSquares(vfactors.f, quads, numberZ); 
+			ComputeFourSquares(vfactors, quads, numberZ); 
 			// get a, b, c, d such that sum of their squares = numberZ
 		}
 		return true;

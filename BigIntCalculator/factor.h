@@ -30,13 +30,33 @@ class zFactors {
 public:
 	Znum Factor;
 	int exponent;
-	int upperBound;
+	int upperBound;    /* used during trial division to show how far we've got. 
+						-1 indicats that Factor is prime */
+	/* define all comparison operators */
+	bool operator == (const zFactors &b) const {
+		return this->Factor == b.Factor;
+	}
+	bool operator != (const zFactors &b) const {
+		return this->Factor != b.Factor;
+	}
+	bool operator < (const zFactors &b) const {
+		return this->Factor < b.Factor;
+	}
+	bool operator <= (const zFactors &b) const {
+		return this->Factor <= b.Factor;
+	}
+	bool operator > (const zFactors &b) const {
+		return this->Factor > b.Factor;
+	}
+	bool operator >= (const zFactors &b) const {
+		return this->Factor >= b.Factor;
+	}
 };
 
 class fList {
 private:
 	std::vector <zFactors> f;
-public:
+
 	/* counters showing how the factors were found */
 	int pm1 = 0;           // power + / -1
 	int tdiv = 0;          // trial division
@@ -48,16 +68,17 @@ public:
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int power = 0;		   // perfect power
-
+public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
 	friend void insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
 	friend void TrialDiv(fList &Factors, long long LehmanLimit);
 	friend bool factor(const Znum &toFactor, fList &Factors);
-	friend bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-	friend void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf);
+	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
+
 	friend void doFactors(const Znum &Result, bool test);
 	friend bool factortest(const Znum &x3, const int method = 0);
+	friend bool ecm(Znum &zN, long long maxdivisor, fList &Factors);
 
 	/* methods that are in the class */
 
@@ -199,7 +220,6 @@ Repeated factors: No or Yes
 		if (this->f.empty())
 			return 0;
 		if (descending)   /* start with largest factor */
-			//for (ptrdiff_t i = this->f.size()-1; i >=0; i--) {
 			for (auto i = this->f.rbegin(); i != this->f.rend(); i++) {
 				buffer = mpz_get_str(NULL, 10, ZT((*i).Factor));
 				if (!repeat)
@@ -224,11 +244,36 @@ Repeated factors: No or Yes
 		mpz_set_str(ZT(rvalue), result.data(), 10); /* convert back from a string to a number */
 		return rvalue;
 	}
+
+	/* remove any square factors. Return removed factors in sqf*/
+	void sqfree(std::vector<zFactors> &sqf) const {
+		zFactors temp;
+		sqf.clear();
+		for (auto i : this->f) {
+			if (i.exponent >= 2) {
+				/* copy exponent value, rounded down to multiple of 2*/
+				temp.exponent = i.exponent - (i.exponent & 1);
+				temp.Factor = i.Factor;
+				sqf.push_back(temp);
+				i.exponent -= temp.exponent;
+			}
+		}
+	}
+
+	/* checks whether the original number was prime */
+	bool isPrime() const {
+		// this only works if factorisation is complete!
+		return (this->f.size() == 1 && this->f[0].exponent == 1);
+	}
+
+	size_t fsize() const {
+		return this->f.size();
+	}
 };
 
 
 void showECMStatus(void);
-bool ecm(Znum &Nz, long long maxdivisor, fList &factors);
+
 extern int lang;
 extern Znum Zfactor, Zfactor2;
 
@@ -236,6 +281,7 @@ extern Znum Zfactor, Zfactor2;
 #define ZT(a) a.backend().data()
 
 long long MulPrToLong(const Znum &x);
+bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
 
 unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n);
