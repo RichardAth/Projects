@@ -25,7 +25,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
 
-
+/* ComputeNumDigits(n,r): Number of digits of n in base r. */
+long long ComputeNumDigits(const Znum &n, const Znum &radix);
+void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex);
 class zFactors {
 public:
 	Znum Factor;
@@ -76,9 +78,7 @@ public:
 	friend bool factor(const Znum &toFactor, fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 
-	friend void doFactors(const Znum &Result, bool test);
-	friend bool factortest(const Znum &x3, const int method = 0);
-	friend bool ecm(Znum &zN, long long maxdivisor, fList &Factors);
+	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
 
 	/* methods that are in the class */
 
@@ -113,6 +113,7 @@ It has values in {−1, 0, 1} depending on the factorization of n into prime fac
 		else
 			return 1;    // even number of prime factors 
 	}
+
 	/* initialise factor list */
 	void set(const Znum &toFactor) {
 		this->f.resize(1);          // change size of factor list to 1
@@ -120,12 +121,33 @@ It has values in {−1, 0, 1} depending on the factorization of n into prime fac
 		this->f[0].Factor = toFactor; 
 		this->f[0].upperBound = 0;  // assume toFactor's not prime
 	}
-	void print() const {
+
+	/* print factors */
+	void Xprint() const {
 		for (auto i : this->f) {
 			std::cout << i.Factor << "^" << i.exponent << " ("
 				<< i.upperBound << ")  * ";
 		}
 		std::cout << '\n';
+	}
+
+	/* print factors */
+	void print(bool neg) const {
+		if (!this->isPrime()) {
+			/* print factor list */
+			std::cout << " = ";
+			if (neg)
+				std::cout << "-";
+			for (size_t i = 0; i < this->fsize(); i++) {
+				if (i > 0)
+					std::cout << " * ";
+				ShowLargeNumber(this->f[i].Factor, 6, false, false);
+				if (this->f[i].exponent > 1)
+					std::cout << "^" << this->f[i].exponent;
+			}
+		}
+		else
+			std::cout << " is prime";  //number has only 1 factor
 	}
 
 /* indicate how the number's factors were found. No detailed breakdown
@@ -269,13 +291,31 @@ Repeated factors: No or Yes
 	size_t fsize() const {
 		return this->f.size();
 	}
+
+	/* get number of digits in 2nd largest factor */
+	int sndFac() const {
+		if (this->f.size() > 1)
+			return (int)ComputeNumDigits((this->f.end() - 2)->Factor, 10);
+		else return 0;  /* return 0 if only 1 factor */
+	}
+
+	/* recheck value of product of factors, and also get total number of factors */
+	Znum recheck(int &totalfacs) const {
+		Znum result = 1;
+		totalfacs = 0;
+		for (auto i : this->f) {
+			totalfacs += i.exponent;
+			for (int j = 1; j <= i.exponent; j++)
+				result *= i.Factor;
+		}
+		return result;
+	}
 };
 
 
 void showECMStatus(void);
 
-extern int lang;
-extern Znum Zfactor, Zfactor2;
+extern int lang;    // 0 English, 1 = Spanish
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()

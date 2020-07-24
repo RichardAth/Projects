@@ -193,7 +193,7 @@ static char* getHex(Znum Bi_Nbr) {
 }
 
 /* output value of Nbr as ascii text to stdout */
-static void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex) {
+void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex) {
 	std::string nbrOutput = "";
 	char* buffer = NULL;
 	size_t msglen, index = 0;
@@ -324,7 +324,7 @@ static Znum ComputeRevDigits(const Znum &n, const Znum &radix) {
 }
 
 /* NumDigits(n,r): Number of digits of n in base r. Leading zeros are not counted  */
-static long long ComputeNumDigits(const Znum &n, const Znum &radix)
+long long ComputeNumDigits(const Znum &n, const Znum &radix)
 {
 	Znum result = n;
 	long long digits = 0;
@@ -850,7 +850,7 @@ static retCode func(const std::string &expr, const bool leftNumberFlag,
 	Znum args[4];     // parameter values (only up to 3 values used)
 	const char *ptrExpr = expr.data() + exprIndexLocal;
 
-	/* try to match function name */
+	/* try to match function name. Names are not case-sensitive */
 	for (ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
 		if (_strnicmp(ptrExpr, functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
 			fnCode = functionList[ix].fCode;
@@ -1673,14 +1673,13 @@ static void textError(retCode rc)
 	}
 }
 
-/* convert s to UPPER CASE in d. s and d must not be the same i.e. will
-not do in-place conversion */
+/* convert s to UPPER CASE in d.  d could be the same string as s 
+similar to _strupr in c */
 static void strToUpper(const std::string &s, std::string &d) {
-	d.clear();
-	d.reserve(s.size());  // may be more efficient if s is very large
-	for (auto c : s) {
-		d.push_back(toupper(c));
-	}
+	if (&d != &s)
+		d.resize(s.size());  // resize d unless it's the same string as s
+	for (size_t ix = 0; ix < s.size(); ix++)
+		d[ix] = toupper(s[ix]);
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format */
@@ -1768,21 +1767,7 @@ static void doFactors(const Znum &Result, bool test) {
 	/* call DA´s magic function to factorise Result */
 	bool rv = factorise(Result, factorlist, Quad);
 	if (rv && factorlist.fsize() > 0) {
-		if (!factorlist.isPrime()) {
-			/* print factor list */
-			std::cout << " = ";
-			if (Result < 0)
-				std::cout << "-";
-			for (size_t i = 0; i < factorlist.fsize(); i++) {
-				if (i > 0)
-					std::cout << " * ";
-				ShowLargeNumber(factorlist.f[i].Factor, 6, false, false);
-				if (factorlist.f[i].exponent > 1)
-					std::cout << "^" << factorlist.f[i].exponent;
-			}
-		}
-		else
-			std::cout << " is prime";  //number has only 1 factor
+		factorlist.print(Result < 0);   /* print factors */
 
 		if (abs(Result) != 1) {
 			auto divisors = factorlist.NoOfDivs();
@@ -1828,13 +1813,8 @@ static void doFactors(const Znum &Result, bool test) {
 		factorlist.prCounts();  // print counts
 
 		if (test) {
-			Znum result = 1;
-			sum.totalFacs = 0;
-			for (auto i: factorlist.f) {
-				for (int j = 1; j <= i.exponent; j++)
-					result *= i.Factor;
-				sum.totalFacs += i.exponent;
-			}
+			/* recalculate result & get total number of factors */
+			Znum result = factorlist.recheck(sum.totalFacs);
 			if (result != Result) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
 				Beep(750, 1000);
@@ -1847,13 +1827,13 @@ static void doFactors(const Znum &Result, bool test) {
 			auto end = clock(); 
 			double elapsed = (double)end - start;
 			PrintTimeUsed(elapsed, "time used = ");
+
+			/* store info for summary */
 			sum.time = elapsed / CLOCKS_PER_SEC;
 			sum.numsize = (int)ComputeNumDigits(result, 10);
 			sum.NumFacs = (int)factorlist.fsize();
-			if (factorlist.fsize() > 1)
-				/* get number of digits in 2nd largest factor */
-				sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
-			else sum.sndFac = 0;
+			/* get number of digits in 2nd largest factor */
+			sum.sndFac = factorlist.sndFac();
 			results.push_back(sum);
 		}
 	}
@@ -1863,7 +1843,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int method) {
+static bool factortest(const Znum &x3, const int method=0) {
 	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -1884,19 +1864,16 @@ static bool factortest(const Znum &x3, const int method) {
 		factorlist.set(x3);
 		callYafu(x3, factorlist);
 	}
-	result = 1;
-	for (size_t i = 0; i < factorlist.fsize(); i++) {
-		for (int j = 1; j <= factorlist.f[i].exponent; j++)
-			result *= factorlist.f[i].Factor;  // get product of all factors
-	}
-	if (factorlist.fsize() > 1)
-		/* get number of digits in 2nd largest factor */
-		sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
-	else sum.sndFac = 0;
+
+	/* recalculate result & get total number of factors */
+	result = factorlist.recheck(sum.totalFacs);
 	if (result != x3) {
 		std::cout << "Factors expected value " << x3 << " actual value " << result << '\n';
 		Beep(750, 1000);
 	}
+	
+	/* get number of digits in 2nd largest factor */
+	sum.sndFac = factorlist.sndFac();
 	if (method == 0) {
 		/* check that sum of squares is correct */
 		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
@@ -1905,18 +1882,15 @@ static bool factortest(const Znum &x3, const int method) {
 			Beep(750, 1000);
 		}
 	}
+
 	if (!factorlist.isPrime() ) {
 		/* x3 is not prime */
-		for (auto f : factorlist.f) {
-			totalFactors += f.exponent;
-		}
+
 		std::cout << "found " << factorlist.fsize() << " unique factors, total "
-			<< totalFactors << " factors\n";
-		sum.totalFacs = (int)totalFactors;
-		if (factorlist.fsize() > 1)
-			/* get number of digits in 2nd largest factor */
-			sum.sndFac = (int)ComputeNumDigits((factorlist.f.end() - 2)->Factor, 10);
-		else sum.sndFac = 0;
+			<< sum.totalFacs << " factors\n";
+
+		/* get number of digits in 2nd largest factor */
+		sum.sndFac = factorlist.sndFac();
 		if (method == 0)
 			factorlist.prCounts();   // print counts
 
@@ -2104,6 +2078,10 @@ static void doTests(void) {
 	std::cout << "factorised 397-digit Carmichael number \n";
 
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
+	factortest(x3);
+	results.back().testNum = ++testcnt;
+
+	ComputeExpr("n(2^97)*n(2^105)", x3);
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
@@ -2853,7 +2831,7 @@ static int processCmd(const std::string &command) {
 }
 
 int main(int argc, char *argv[]) {
-	std::string expr, expupper;
+	std::string expr;
 	Znum Result;
 	retCode rv;
 
@@ -2904,9 +2882,9 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 			getline(std::cin, expr);  // expression may include spaces
 
-			strToUpper(expr, expupper);		// convert to UPPER CASE 
+			strToUpper(expr, expr);		// convert to UPPER CASE 
 
-			int cmdCode = processCmd(expupper);
+			int cmdCode = processCmd(expr);
 			if (cmdCode == 2) break;    // EXIT command
 			if (cmdCode == 1) continue; // command has been fully processed
 

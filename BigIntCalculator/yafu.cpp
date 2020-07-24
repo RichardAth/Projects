@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <windows.h>
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
 
@@ -9,23 +10,172 @@ static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projec
 static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Debug";
 #endif
-//static std::string Path = "C:\\Users\\admin99\\Documents\\Downloads_long_term_storage"
-//"\\yafu-1.34-src\\yafu-1.34.3\\bin\\x64\\release";
-static std::string yafuprog = "yafu-x64.exe ";
+
+static std::string yafuprog = "yafu-x64.exe";
 static std::string logPath = "C:/users/admin99/factors.txt";
-//static std::string logPath = "factors.txt";
+
 std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
+
+static void delfile(const char * FileName)
+{
+	std::string fname = Path + "\\" + FileName;
+	struct __stat64 fileStat;
+
+	int err = _stat64(fname.data(), &fileStat);
+	if (0 != err) 
+		return;
+
+	auto  fsize = fileStat.st_size/1024 ;
+	std::cout << FileName << " size is " << fsize << " KB \n";
+
+	int rc = remove(fname.data());
+	if (rc != 0 && errno != ENOENT) {
+		perror("could not remove file ");
+	}
+	else std::cout << "removed file: " << FileName << '\n';
+}
+
+/* use windows explorer-type dialogue box to select file */
+char * getFileName(const char *filter, HWND owner) {
+
+	OPENFILENAMEA ofn;
+	static char * fileNameStr = NULL;
+	static char afilename[MAX_PATH] = "";
+	static char fileName[MAX_PATH] = "";
+
+	fileNameStr = NULL;
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(OPENFILENAMEA);	// length of the structure
+	ofn.hwndOwner = owner;						// handle of owner window
+	ofn.lpstrFilter = filter;					// filters to select specific file types
+	ofn.lpstrFile = fileName;					// on return, fileName contains the name of the file
+	ofn.nMaxFile = MAX_PATH;					// length of buffer to contain the file name
+	ofn.nMaxFileTitle = 0;						// length of lpstrFileTitle buffer
+	ofn.lpstrFileTitle = NULL;					// file name and extension (without path) of selected file
+	ofn.lpstrInitialDir = NULL;					// initial directory
+	ofn.nFilterIndex = 1;						// do not use the custom filter
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_EXPLORER;
+	ofn.lpstrDefExt = "";						// default file extension
+
+
+	if (GetOpenFileNameA(&ofn)) {
+		fileNameStr = afilename;
+		strcpy_s(afilename, sizeof(afilename), fileName);
+	}
+
+	return fileNameStr;
+}
+
+/* replace path and/or program name*/
+void changepath(std::string &path, std::string &prog) {
+	char * newpathC;
+	std::string newpath;
+	std::string newprog;
+	std::string::size_type n;
+
+	newpathC = getFileName("Program Files\0*.exe\0\0", NULL);
+	if (newpathC == NULL) {
+		std::cout << "command cancelled \n";
+		return;
+	}
+	newpath = newpathC;
+	n = newpath.rfind('\\');   // look for '\'
+	if (n == std::string::npos) {
+		std::cout << "command cancelled \n";
+		return;
+	}
+	else {
+		newprog = newpath.substr(n + 1);  // copy characters after last '\' 
+		newpath.erase(n);  // erase last \ and any following characters
+		if (newpath != path) {
+			std::cout << "old path: " << path << '\n';
+			std::cout << "new path: " << newpath << '\n';
+			path = newpath;
+		}
+		if (newprog != prog) {
+			std::cout << "old prog: " << prog << '\n';
+			std::cout << "new prog: " << newprog << '\n';
+			prog = newprog;
+		}
+	}
+}
+
+/* check file status */
+void fileStatus(const std::string &progname) {
+	struct __stat64 fileStat;
+	struct tm ftimetm;
+	char timestamp[23];   // date & time in format "dd/mm/yyyy at hh:mm:ss"
+	int err = _stat64(progname.data(), &fileStat);
+	if (err == 0) {
+		auto ftime = fileStat.st_mtime;  // time last modified in time_t format
+		localtime_s(&ftimetm, &ftime);   // convert to tm format
+		/* convert to dd/mm/yyyy hh:mm:ss */
+		strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &ftimetm);
+		std::cout << progname << "  modified on ";
+		std::cout << timestamp << '\n';
+	}
+	else
+		std::cout << progname << " not found \n";
+}
+
+/* check yafu.ini file */
+static void inifile(std::string &param) {
+	std::string iniFname = Path + "\\" + "yafu.ini";
+	std::string buffer;
+	std::string ggnfsPath;
+	int lineNo = 1;
+	int ggnfsLine = -1;
+	std::vector<std::string> inifile;  // copy contents of yafu.ini here
+
+	std::ifstream iniStr(iniFname, std::ios::in);  // open yafu.ini file
+	if (!iniStr.is_open()) {
+		std::cout << " cannot open yafu.ini \n";
+		return;
+	}
+
+	while (std::getline(iniStr, buffer)) {
+		if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
+			ggnfsLine = lineNo;
+			ggnfsPath = buffer.substr(10); // copy path following '=' character
+		}
+
+		if (_strnicmp("%print", buffer.c_str(), 6) == 0)
+			std::cout << lineNo << ": " << buffer << '\n';
+
+		inifile.push_back(buffer);
+		lineNo++;
+	}
+
+	if (ggnfsLine > 0) {
+		/* ggnfs_dir was found */
+		std::cout << ggnfsLine << ": " << inifile[ggnfsLine - 1] << '\n';
+		for (int i = 11; i <= 16; i++) {
+			char ia[3];  /* 11 to 16 as ascii text */
+
+			_itoa_s(i, ia, sizeof(ia), 10);  
+			std::string progname = ggnfsPath;
+			progname += "gnfs-lasieve4i";
+			progname += +ia;
+			progname += "e.exe";
+			fileStatus(progname);
+		}
+	}
+	else
+		std::cout << "ggnfs_dir not found \n";
+
+	iniStr.close();
+}
 
 /*process YAFU commands */
 void yafuParam(const std::string &command) {
 	std::string param = command.substr(4);  /* remove "YAFU" */
 	const std::vector<std::string> paramList = {
-		"ON", "OFF", "PATH", "LOG", "PLAN"
+		"ON", "OFF", "PATH", "LOG", "PLAN", "TIDY", "INI"
 	};
 
-	ptrdiff_t ix = 0;
+	size_t ix = 0;
 
 	while (param[0] == ' ')
 		param.erase(0, 1);              /* remove leading space(s) */
@@ -38,26 +188,37 @@ void yafuParam(const std::string &command) {
 	}
 
 	switch (ix) {
-	case 0:{    // YAFU ON
+	case 0: /* YAFU ON   */ {   
 			yafu = true;
 			msieve = false;
 			break;
 		}
-	case 1: {    // YAFU OFF
+	case 1: /* YAFU OFF  */ {    
 			yafu = false;
 			break;
 		}
-	case 2: {     // YAFU PATH
+	case 2: /* YAFU PATH */ { 
+		param.erase(0, 4);  // get rid of "PATH"
+		while (param[0] == ' ')
+			param.erase(0, 1);              /* remove leading space(s) */
+		if (param != "SET") {
 			std::cout << "path = " << Path << '\n';
-			/* todo; allow command to change path */
+			fileStatus(Path + '\\' + yafuprog);
 			break;
 		}
-	case 3: {     // YAFU LOG
+		else {
+			changepath(Path, yafuprog);
+			fileStatus(Path + '\\' + yafuprog);
+			break;
+		}
+
+	}
+	case 3: /* YAFU LOG  */ {  
 			std::cout << "log file = " << logPath << '\n';
 			/* todo; allow command to change log file name */
 			break;
 		}
-	case 4: {   // YAFU PLAN
+	case 4: /* YAFU PLAN */ { 
 		// plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
 		// CUSTOM is not supported, NORMAL is default
 		param.erase(0, 4);  // get rid of "PLAN"
@@ -72,13 +233,29 @@ void yafuParam(const std::string &command) {
 			<< "YAFU PLAN value invalid; use NONE, NOECM, LIGHT, NORMAL, or DEEP\n";
 		break;
 	}
+	case 5: /* YAFU TIDY */ {
+		delfile("factor.log");
+		delfile("session.log");
+		delfile("siqs.dat");
+		delfile("nfs.log");
+		delfile("nfs.job");
+		delfile("ggnfs.log");
+		delfile("YAFU_get_poly_score.out");
+		break;
+	}
+	case 6: /* YAFU INI  */ {
+		param.erase(0, 3);  // get rid of "INI"
+		while (param[0] == ' ')
+			param.erase(0, 1);              /* remove leading space(s) */
+		inifile(param);
+		break;
+	}
 
 	default: {
-			std::cout << "invalid YAFU command (use ON, OFF, PATH, LOG or PLAN \n";
+			std::cout << "invalid YAFU command (use ON, OFF, PATH, LOG, PLAN, TIDY or INI \n";
 			break;
 		}
 	}
-	/* to be completed */
 }
 
 /* generate short batch file to run YAFU */
@@ -144,7 +321,7 @@ bool callYafu(const Znum &num, fList &Factors) {
 	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 	numStr.resize(numdigits + 5);             // resize buffer
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
-	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
+	numStr.resize(strlen(&numStr[0]));        // get exact size of string in buffer
 	genfile(numStr);
 
 	int rc = remove(logfile.data());

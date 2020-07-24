@@ -159,34 +159,6 @@ bool isPrime2(unsigned __int64 num) {
 	//return (((primeFlags[index] >> bit) & 1) == 0);
 }
 
-/* factorise number where we know that it only has 2 prime factors.
-see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm */
-//static void PollardFactor(const unsigned long long num, long long &factor) {
-//	long long x_fixed = 2, cycle_size = 2, x = 2;
-//	factor = 1;
-//	while (factor == 1) {
-//		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
-//			/* even if x*x overflows, the function as a whole still works OK */
-//			x = (x*x + 1) % num;
-//			factor = gcd(abs(x - x_fixed), num);
-//		}
-//		if (factor == num) {
-//			/* there is a small possibility that PollardFactor won't work,
-//			even when factor is not prime */
-//			std::cout << "Pollard factorisation failed for num = " << num
-//				<< " cycle_size = " << cycle_size << " x = " << x << " !!\n";
-//			factor = 1;
-//			return;   // factorisation failed!! 	
-//		}
-//		cycle_size *= 2;
-//		x_fixed = x;
-//	}
-//#ifdef _DEBUG
-//	std::cout << "Pollard Factor. num = " << num << " factor = " << factor
-//		<< " cycle_size = " << cycle_size << " x = " << x << '\n';
-//#endif
-//	return;
-//}
 
 /*
 * calculates (a * b) % c taking into account that a * b might overflow
@@ -306,7 +278,7 @@ check whether n is prime
 * if n < 18,446,744,073,709,551,616 = 2^64, it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23,
 *                                           29, 31, and 37
 */
-bool isPrimeMR(unsigned __int64 n)
+static bool isPrimeMR(unsigned __int64 n)
 {
 	if (((!(n & 1)) && n != 2)          // if n is even & > 2 return false
 		|| (n < 2) 						// if n < 2 return false (i.e  if n=0 or 1)
@@ -416,7 +388,7 @@ long long int PollardRho(long long int n)
 	return d;
 }
 
-unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
+static unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 	unsigned  int count = 0, i = 0;
 
 	while (tnum > 1) {
@@ -516,7 +488,7 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 
 /* Calculate maximum square divisor of n and divide n by this.
 return adjusted n, square divisor, and factor list of divisor.*/
-void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
+static void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
 	factorsS factorlist;
 
 	primeFactors(n, factorlist);
@@ -543,7 +515,7 @@ also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
 >= sqrt(n).
 example: R2(4) = 4; 2^2+0, 0+2^2, (-2)^2+0, 0+(-2)^2 */
-unsigned __int64 R2(const unsigned __int64 n) {
+static unsigned __int64 R2(const unsigned __int64 n) {
 	if (n == 0)
 		return 1;
 	if (n % 4 == 3)

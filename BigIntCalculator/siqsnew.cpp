@@ -29,14 +29,6 @@ For numbers > 100 digits, SIQS may not be used at all, in which case
 the results would look completely different.
 *****************************************************************/
 
-
-//#include <iostream>
-//#include <cstdio>
-//#include <cstring>
-//#include <cmath>
-//#include <cstdint>
-//#include <cassert>
-//#include <vector>
 #include "pch.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>

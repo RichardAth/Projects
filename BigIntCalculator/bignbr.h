@@ -23,6 +23,8 @@ typedef unsigned long mpir_ui;  // for compatibility with MPIR
 #include "boost/multiprecision/gmp.hpp"
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
+/*  get approximate size (1 limb = 64 bits) */
+#define numLimbs(a) abs(ZT(a)->_mp_size)
 typedef boost::multiprecision::mpz_int Znum;
 
 long long MulPrToLong(const Znum &x);
@@ -48,7 +50,7 @@ struct limb
 };
 #define MAX_VALUE_LIMB (LIMB_RANGE-1)
 
-extern long long lModularMult;  // count of number of modular multiplications
+extern long long lModularMult;  // count of number of modular multiplications used to control status display
 bool BigNbrIsZero(const limb *value, int nbrLength);
 //void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);

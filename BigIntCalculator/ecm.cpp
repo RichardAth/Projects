@@ -28,6 +28,10 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 //#define log 1              // remove this line to generate code without logging
 
 extern HANDLE hConsole;
+typedef void(*mmCback)(void);
+extern mmCback modmultCallback;   // function pointer
+
+
 static bool first = true;
 static COORD coordScreen = { 0, 0 };    // home for the cursor 
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -618,6 +622,7 @@ static void upOneLine(void) {
 FACTOR_NOT_FOUND   (not used??)
 CHANGE_TO_SIQS
 FACTOR_FOUND   - value of factor is returned in global variable BiGD
+                 and in Zfactor
 ERROR              (not used??)  
 uses work variables UX, UZ, TX, TZ */
 static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
@@ -1296,10 +1301,14 @@ static void ecminit(Znum zN) {
 			} while (Q * Q <= P);
 		}
 	}
+
+	modmultCallback = showECMStatus;   // Set callback function pointer
+	lModularMult = 0;   // reset counter used to control status display
 }
 
-/* returns true if successful. The factor found is returned in global Znum Zfactor */
-bool ecm(Znum &zN, long long maxdivisor, fList &Factors) {
+/* find factor of zN. returns true if successful. The factor found is returned 
+   in Zfactor */
+bool ecm(Znum &zN, fList &Factors, Znum &Zfactor) {
 
 #ifdef log
 	std::string name1 = std::tmpnam(nullptr);

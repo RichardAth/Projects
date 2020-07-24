@@ -2,6 +2,7 @@
 
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
+void changepath(std::string &path, std::string &prog);
 
 /* output from Msieve -h option:
 
@@ -99,22 +100,46 @@ options:
 
 */
 
+/* check file status */
+void fileStatus(const std::string &progname);
+
 bool msieve = false;  // true: use Msieve. false: use YAFU or built-in ECM and SIQS
 bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
 
-static std::string callPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
-"bin\\x64\\Release\\msieve.exe ";
+static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Release";
 #else
 
-static std::string callPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
-"bin\\x64\\Debug\\msieve.exe ";
+static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+"bin\\x64\\Debug";
 #endif
+static std::string Prog = "msieve.exe";
 static std::string logPath = "C:\\users\\admin99\\msieve.log ";
 static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
 //static std::string redirectOP = " >\\.\\pipe\\StdOutPipe 2>\\.\\pipe\\StdErrPipe ";
+
+static void delfile(const char * FileName)
+{
+	std::string fname = Path + "\\" + FileName;
+	struct __stat64 fileStat;
+
+	int err = _stat64(fname.data(), &fileStat);
+	if (0 != err)
+		return;
+
+	auto  fsize = fileStat.st_size / 1024;
+	std::cout << FileName << " size is " << fsize << " KB \n";
+
+	int rc = remove(fname.data());
+	if (rc != 0 && errno != ENOENT) {
+		perror("could not remove file ");
+	}
+	else std::cout << "removed file: " << FileName << '\n';
+}
+
 
 /* process MSIEVE commands */
 void msieveParam(const std::string &command) {
@@ -128,10 +153,21 @@ void msieveParam(const std::string &command) {
 	}
 	else if (param == "OFF")
 		msieve = false;
-	else if (param == "PATH") {
-		std::cout << "path = " << callPath << '\n';
-		/* todo; allow command to change path */
+
+	else if (param.substr(0,4) == "PATH") {
+		param.erase(0, 4);  // get rid of "PATH"
+		while (param[0] == ' ')
+			param.erase(0, 1);              /* remove leading space(s) */
+		if (param != "SET") {
+			std::cout << "path = " << Path << '\n';
+			fileStatus(Path + '\\' + Prog);
+		}
+		else {
+			changepath(Path, Prog);
+			fileStatus(Path + '\\' + Prog);
+		}
 	}
+
 	else if (param == "LOG") {
 		std::cout << "log file = " << logPath << '\n';
 		/* todo; allow command to change log file name */
@@ -152,40 +188,6 @@ void msieveParam(const std::string &command) {
 }
 
 
-//int openPipe(const char PipeName[], HANDLE *hPipe) {
-//
-//	while (1) {
-//		*hPipe = CreateNamedPipeA(PipeName,                     // name
-//			PIPE_ACCESS_DUPLEX,                                // open mode
-//			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,   // pipe mode 
-//			// FILE_FLAG_FIRST_PIPE_INSTANCE is not needed but forces CreateNamedPipe(..) 
-//			// to fail if the pipe already exists...
-//			1,                                             // maximum number of instances             
-//			1024 * 16,                                     // out buffer size
-//			1024 * 16,                                     // in buffer size
-//			NMPWAIT_USE_DEFAULT_WAIT,                      // default timeout
-//			NULL);                                         // security attributes
-//
-//	    // Break if the pipe handle is valid. 
-//		if (hPipe != INVALID_HANDLE_VALUE)
-//			break;
-//
-//		// Exit if an error other than ERROR_PIPE_BUSY occurs. 
-//		if (GetLastError() != ERROR_PIPE_BUSY) 	{
-//			printf("Could not open pipe. GLE=%d\n", GetLastError());
-//			return -1;
-//		}
-//
-//		// All pipe instances are busy, so wait for 20 seconds. 
-//		if (!WaitNamedPipeA(PipeName, 20000)) {
-//			printf("Could not open pipe: 20 second wait timed out.");
-//			return -1;
-//		}
-//	}
-//
-//	return 0;
-//}
-
 /* use Msieve to factorise num. Msieve places its results in a log file.
 All entries in the log file start with a time stamp such as "Sun Jun 30 16:07:40 2019". 
 For prime factors this is followed by text such as "p9 factor: 193707721" 
@@ -197,7 +199,7 @@ properly would be so tedious it's not worth it. I had to make several kludges
 to build msieve, and the prebuilt msieve wouldn't work */
 bool callMsieve(const Znum &num, fList &Factors) {
 	/* set up command to invoke Msieve */
-	std::string command = callPath;
+	std::string command = Path + "\\" + Prog;
 	std::string numStr;
 	int rv, fcount = 0;
 	std::string buffer;
@@ -217,8 +219,6 @@ bool callMsieve(const Znum &num, fList &Factors) {
 	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
 	if (verbose > 0) {
-		//static char time[10];
-		//_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
 		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
 	}
 
@@ -226,6 +226,8 @@ bool callMsieve(const Znum &num, fList &Factors) {
 	if (rc != 0 && errno != ENOENT) {
 		perror("could not remove old Mseive log file ");
 	}
+	delfile("msieve.log");
+	delfile("msieve.dat");
 
 	rv = system(command.data());             // start msieve;
 

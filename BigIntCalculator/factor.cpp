@@ -23,15 +23,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "bignbr.h"
 #undef min                 // use std::min
 
-typedef void(*mmCback)(void);
-extern mmCback modmultCallback;   // function pointer
-extern
-long long lModularMult;    // count of number of modular multiplications
-
 static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
-Znum Zfactor, Zfactor2;
+static Znum Zfactor;
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -343,6 +338,8 @@ static void SortFactors(fList &Factors) {
 
 			/* now remove entry i+1 & move any entries higher than i+1 down 1. */
 			Factors.f.erase(Factors.f.begin() + i + 1);
+			i--; /* tweak loop counter so that if there were 3 or more factors
+				  with the same value they would all be merged */
 		}
 	}
 
@@ -354,7 +351,7 @@ static void SortFactors(fList &Factors) {
 	}
 	if (verbose > 0) {
 		std::cout << "result after sort" << '\n';
-		Factors.print();
+		Factors.Xprint();
 	}
 }
 
@@ -393,7 +390,7 @@ static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix)
 	SortFactors(Factors);
 	if (verbose > 0) {
 		/*std::cout << "result after adding factor " << divisor << '\n';
-		Factors.print();*/
+		Factors.Xprint();*/
 	}
 }
 
@@ -407,7 +404,7 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 	Znum g;
 	if (verbose > 0) {
 		/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
-		Factors.print();*/
+		Factors.Xprint();*/
 	}
 	for (int i = 0; i < lastfactor; i++) {
 		if (Factors.f[i].Factor == divisor)
@@ -429,7 +426,7 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 	}
 	if (verbose > 0) {
 		/*std::cout << "result before sort" << '\n';
-		Factors.print();*/
+		Factors.Xprint();*/
 	}
 	SortFactors(Factors);
 }
@@ -610,6 +607,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 				Factors.f[i].upperBound = upperBound;
 				upperBound++;
 			}
+
 			if (!restart && (Factors.f[i].upperBound != -1)
 				&& Factors.f[i].Factor <= LehmanLimit) {
 				long long f;
@@ -621,7 +619,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 					just two prime factors. */
 					if (verbose > 0) {
 						std::cout << "factors before Pollard factorisation: ";
-						Factors.print();
+						Factors.Xprint();
 					}
 					f = PollardRho(MulPrToLong(Factors.f[i].Factor));
 					/* there is a small possibility that PollardFactor won't work,
@@ -639,7 +637,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 		std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
 		if (Factors.f.size() > 1) {
 			std::cout << "result after trial division ";
-			Factors.print();
+			Factors.Xprint();
 		}
 	}
 }
@@ -667,7 +665,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		Factors.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
 		if (Factors.f.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
-			Factors.print();
+			Factors.Xprint();
 		}
 	}
 
@@ -676,23 +674,19 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	TrialDiv(Factors, LehmanLimit);
 	/* Any small factors (up to 393,203) have now been found by trial division */
 
-
-	int expon;
-	ElipCurvNo = 1;  // start with 1st curve
-	modmultCallback = showECMStatus;   // Set callback function pointer
-	lModularMult = 0;   // reset counter
-	
 	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.f.size(); i++) {
 	/* Check whether the residue is a prime or prime power.
 	Given that the residue is less than about 10^10,000 the maximum exponent is
 	less than 2000.  e.g. 3000007^1826 has 10,002 digits */
 		Znum Zpower;
+		int expon;
 		if (Factors.f[i].upperBound == -1)
-			continue;         // skip if factor is known to be prime
+			continue;         // skip if this factor is known to be prime
+
 		Zfactor = Factors.f[i].Factor;
 		testP = primeList[Factors.f[i].upperBound]; // get largest number used in trial division
 		expon = (int)PowerCheck(Zfactor, Zpower,  testP - 1); // on return; Zpower^expon = Zfactor
-		if (expon > 1) {    /* if power is a perfect power*/
+		if (expon > 1) {    /* if factor is a perfect power*/
 			Factors.f[i].Factor = Zpower;
 			Factors.f[i].exponent *= expon;
 			Factors.power++;
@@ -711,6 +705,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 				continue;
 			}
 		}
+
 		if (Zpower <= LehmanLimit) {
 			long long f;
 			f = PollardRho(MulPrToLong(Zpower));
@@ -722,21 +717,27 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 				continue;
 			}
 		}
-		if (!msieve && !yafu) {
+
+		int nooflimbs = numLimbs(Zpower);
+		// get approximate size (1 limb = 64 bits)
+		if (nooflimbs <=3 || (!msieve && !yafu)) {
+			/* use built-in ECM & SIQS;
+			  if number to factor <= 192 bits (58 digits) because this is fastest  
+			  for smaller numbers,
+			  or if both YAFU and Msieve are turned off */
 			ElipCurvNo = 1;  // start with 1st curve
-			auto rv = ecm(Zpower, testP, Factors);          
-			// get a factor of number. result in global variable Zfactor
+			auto rv = ecm(Zpower, Factors, Zfactor);          
+			// get a factor of number. result in Zfactor
 			if (!rv)
 				return false;  // failed to factorise number
 			 //Check whether factor is not one. In this case we found a proper factor.
 			if (Zfactor != 1) {
-				/* factor is not 1 */
 				insertBigFactor(Factors, Zfactor);
 				i = -1;			// restart loop at beginning!!
 			}
 		}
 		else {
-			/* Try to factor N using Lehman algorithm. Result in Zfactor.
+			/* First try to factor N using Lehman algorithm. Result in Zfactor.
 			This seldom achieves anything, but when it does it saves a lot of time.
 			If N has 2 factors and the larger factor is < 10x smaller factor
 			this should find a factor, so this complements the elliptic curve 
@@ -972,18 +973,21 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		quads[3] = 0;
 		return;
 	}
+
+	/* loop till we find a suitable value of s3. */
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;
 		for (s3 = s2, m = 0; ZisEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
+		/* we know s3 is odd, need to check whether s3 mod 4 = 1*/
 		if ((s3 & 3) != 1)
 			continue;
 		/* In general, to establish whether or not s3 can be expressed as the sum of 2 
 		squares, it would be necessary to factorise it and examine all the factors.
 		However, if s3 is prime, we know it can be so expressed, and can easily find
-		two squares. */
+		two squares. If s3 is not prime we keep on looking. */
 #ifdef __MPIR_VERSION
 		static bool first = true;
 		static gmp_randstate_t rstate;
@@ -1092,9 +1096,9 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		}
 		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
 		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem*/
-		if ((abs(ZT(num)->_mp_size) < 4) && (num & 7) < 7) {
+		if ((numLimbs(num) < 4) && (num & 7) < 7) {
 			/* use compute3squares if number is small (<= 57 digits) and can be 
-			formed from 3 squares. (mp_size is the number of limbs. Each limb is 64 bits) */
+			formed from 3 squares. (Each limb is up to 64 bits) */
 			compute3squares(r, num, quads);  
 			return;
 		}
