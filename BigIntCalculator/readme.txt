@@ -116,11 +116,11 @@ the time taken to factorise a large number is unpredictable e.g.
 took 291 seconds (227 seconds using Msieve, 90 seconds using YAFU)
 
 40526 919504 877216 755680 601905 432322 134980 384796 226602 145184 481280 000000 000000 (77 digits)
- = 2^53 * 3^27 * 5^13 * 7^9 * 11^5 * 13^4 * 17^3 * 19^3 * 23^2 * 29 * 31 * 37 * 41 * 43 * 47 * 53
- took 0.054 seconds. The larger number was factorised in about 1/5000 of the time!
+= 2^53 * 3^27 * 5^13 * 7^9 * 11^5 * 13^4 * 17^3 * 19^3 * 23^2 * 29 * 31 * 37 * 41 * 43 * 47 * 53
+took 0.054 seconds. The larger number was factorised in about 1/5000 of the time!
 
- The time required depends mainly on the size of the 2nd largest factor, but you don't
- know what that is in advance.
+The time required depends mainly on the size of the 2nd largest factor, but you don't
+know what that is in advance.
 
 A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
 factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
@@ -128,11 +128,26 @@ is usually significantly faster, provided that the -e option is used with Msieve
 The -e option causes greater use of ECM within Msieve. The default in mseive is 
 to use ECM only for factors < 15 digits. 
 
+   The MSIEVE command controls factorisation using Msieve:
+
+   MSIEVE ON    Turns on factorisation using Msieve (and turns YAFU off)
+   MSIEVE OFF   Turns off factorisation using Msieve (revert to built-in ECM and SIQS)
+   MSIEVE PATH  Displays path used when starting Msieve
+   MSIEVE LOG   Displays path & file name for Msieve output file
+   MSIEVE E ON  Turns on -e option in Msieve; perform 'deep' ECM
+   MSIEVE E OFF Turns off -e option in Msieve
+   MSIEVE N ON  Turns on -n option in Msieve; use NFS instead of SIQS
+   MSIEVE N OFF Turns off -n option in Msieve
+
 The source code for Msieve was downloaded from https://sourceforge.net/projects/msieve/files/
 (use green buton)
 
 To build Msieve from source requires GMP-ECM library functions, which in turn 
 require Pthreads. 
+download GMP-ECM from https://gforge.inria.fr/projects/ecm/. Note that only the
+libecm part is requred for Msieve or YAFU.
+The dll and lib files for pthreads were downloaded from SourceForge.
+
 In addition I modified the function choose_max_digits within the source file gmp_ecm.c 
 to increase the use of ECM still further. The code change is:
 
@@ -152,6 +167,16 @@ to increase the use of ECM still further. The code change is:
 				max_digits = 40;
 		}
 
+Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
+also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
+access msieve should be changed to whatever is appropriate.
+
+The command MSIEVE PATH will display the current path and verify that the msieve.exe 
+file exists.
+The command MSIEVE PATH SET will display a windows explorer style window where 
+you can navigate to the correct folder then click on the Msieve exe file. The new path 
+to the Msieve file will then be saved in the BigIntCalculator.ini file.
+
 
 Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
 Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
@@ -160,19 +185,46 @@ but for larger numbers > about 95 digits it relies on ggnfs.
 
 The source for YAFU was obtained from https://sourceforge.net/projects/yafu/files/1.24/
 (use green button to download version 1.34)
+Also need  GGNFS got precompiled from 
+    https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
 
 To build YAFU from source requires Msieve and GMP-ECM library functions, which in
 turn require Pthreads. 
+
+   The YAFU command controls factorisation using YAFU:
+
+   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
+   YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
+   YAFU PATH Displays path used when starting YAFU
+   YAFU LOG  Displays path & file name for YAFU output file
+   YAFU PLAN <name> 
+             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
+             These correspond to the -plan options documented in YAFU's
+             docfile.txt file. The default is NORMAL. This is a convenient way
+             to control the amount of testing using ECM before switching to SIQS 
+             or NFS.
+
 
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
 back on by the YAFU ON command (which also turns Msieve off). The path to access 
 YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
 
-Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
-also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
-access msieve is hard coded in msieve.cpp and should be changed to whatever 
-is appropriate.
+The command YAFU PATH will display the current path and verify that the yafu-X64.exe 
+file exists.
+The command YAFU PATH SET will display a windows explorer style window where 
+you can navigate to the correct folder then click on the yafu exe file. The new path 
+to the YAFU file will then be saved in the BigIntCalculator.ini file.
 
+The command YAFU INI will check whether the YAFU.ini file exist. If it does it is
+read and any ggnfs_dir parameter is found. If ggnfs_dir is found the path that it 
+contains is checked by checking for the existence of the gnfs-lasieve4iXXe.exe files,
+where XX is between 11 and 16. Note that YAFU INI requires the path to already be
+set correctly (by YAFU PATH or otherwise).
+
+The command YAFU INI I allows the ggnfs_dir parameter to be altered or created. It
+will display a windows explorer style window where you can navigate to the correct 
+folder then click on any file. The new path to the ggnfs files will then be saved
+in the ggnfs_dir parameter of the YAFU.ini file.
 
 
  ALTERNATIVES
@@ -182,17 +234,20 @@ is appropriate.
                 several processors, possible to use any previously known factors.
  Disadvantage:  some bugs in calculator. No way to interface to other programs
 
- Use Msieve
+ Use Msieve directly
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
                  about 30 mins vs 1 hour using DA's code. 
- Disadvantage:   Build is tricky & and I couldn't get prebuilt version to work
-                 Calculator is basic, and result isn't sent to console window.
-				 default is that input & output are from/to files, not console window.
+ Disadvantage:   Build is tricky & Calculator is basic, and result isn't sent to
+                 console window. default is that input & output are from/to files, 
+				 not console window.
 
 Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number 
                  2^311-1 it took about 13 mins
                  needs GGNFS for large numbers > about 95 digits. 
                  try https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
+                 https://www.mersenneforum.org/showthread.php?t=22215&page=5
+                 https://www.mersenneforum.org/attachment.php?attachmentid=22535&d=1591570404
+                 https://mersenneforum.org/showthread.php?t=25304
                  or https://download.mersenne.ca/
 
  Use Python interpreter
@@ -348,27 +403,3 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    which correlates much more closely with time required than the 'Size' does.
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
-
-   The YAFU command controls factorisation using YAFU:
-
-   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
-   YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
-   YAFU PATH Displays path used when starting YAFU
-   YAFU LOG  Displays path & file name for YAFU output file
-   YAFU PLAN <name> 
-             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
-             These correspond to the -plan options documented in YAFU's
-             docfile.txt file. The default is NORMAL. This is a convenient way
-             to control the amount of testing using ECM before switching to SIQS 
-             or NFS.
-
-   The MSIEVE command controls factorisation using Msieve:
-
-   MSIEVE ON    Turns on factorisation using Msieve (and turns YAFU off)
-   MSIEVE OFF   Turns off factorisation using Msieve (revert to built-in ECM and SIQS)
-   MSIEVE PATH  Displays path used when starting Msieve
-   MSIEVE LOG   Displays path & file name for Msieve output file
-   MSIEVE E ON  Turns on -e option in Msieve; perform 'deep' ECM
-   MSIEVE E OFF Turns off -e option in Msieve
-   MSIEVE N ON  Turns on -n option in Msieve; use NFS instead of SIQS
-   MSIEVE N OFF Turns off -n option in Msieve

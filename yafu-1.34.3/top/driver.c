@@ -2190,8 +2190,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 
 
 	switch (ix) {
-		case 0:		 // B1pm1 - 1 integer argument
-		{
+		case 0:		 /* B1pm1 - 1 integer argument */ {
 			fobj->pm1_obj.B1 = (uint32)arg1Int;
 			if (fobj->pm1_obj.stg2_is_default)
 			{
@@ -2203,8 +2202,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break; 
 		}
 
-		case 1:        // B1pp1 - 1 integer argument
-		{
+		case 1:      /* B1pp1 - 1 integer argument */ {
 			fobj->pp1_obj.B1 = (uint32)arg1Int;
 			if (fobj->pp1_obj.stg2_is_default)
 			{
@@ -2216,8 +2214,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 2:        // B1ecm  - 1 integer argument
-		{
+		case 2:      /* B1ecm  - 1 integer argument */ {
 			fobj->ecm_obj.B1 = (uint32)arg1Int;
 			if (fobj->pp1_obj.stg2_is_default)
 			{
@@ -2229,35 +2226,30 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 3:		   // rhomax - 1 integer argument
-		{
+		case 3:		 /* rhomax - 1 integer argument */ {
 			fobj->rho_obj.iterations = (uint32)arg1Int;
 			break;
 		}
 
-		case 4:        // B2pm1  - 1 integer argument
-		{
+		case 4:      /* B2pm1  - 1 integer argument */ {
 			fobj->pm1_obj.B2 = arg1Int;
 			fobj->pm1_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 5:	       // B2pp1 - 1 integer argument
-		{
+		case 5:	     /* B2pp1 - 1 integer argument */ {
 			fobj->pp1_obj.B2 = arg1Int;
 			fobj->pp1_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 6:		   // B2ecm - 1 integer argument
-		{
+		case 6:		 /* B2ecm - 1 integer argument */ {
 			fobj->ecm_obj.B2 = arg1Int;
 			fobj->ecm_obj.stg2_is_default = 0;
 			break;
 		}
 
-		case 7:        // qssave  argument is a string
-		{	
+		case 7:      /* qssave  argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->qs_obj.siqs_savefile))
 				strcpy_s(fobj->qs_obj.siqs_savefile, sizeof(fobj->qs_obj.siqs_savefile),
 					arg);
@@ -2266,50 +2258,43 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 8:	       // siqsB - 1 integer argument
-		{
+		case 8:	     /* siqsB - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_B = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_B_flag = 1;
 			break;
 		}
 
-		case 9:        // siqsTF - 1 integer argument
- 		{
+		case 9:      /* siqsTF - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_tf = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_tf_flag = 1;
 			break;
 		}
 
-		case 10:       // siqsR - 1 integer argument
-		{
+		case 10:     /* siqsR - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_rel = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_rel_flag = 1;
 			break;
 		}
 
-		case 11:       // siqsT - 1 integer argument
-		{
+		case 11:     /* siqsT - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_time = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_time_flag = 1;
 			break;
 		}
 
-		case 12:       // siqsNB - 1 integer argument
-		{
+		case 12:     /* siqsNB - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_blocks = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_blocks_flag = 1;
 			break;
 		}
 
-		case 13:	   // siqsM - 1 integer argument
-		{
+		case 13:	 /* siqsM - 1 integer argument */ {
 			fobj->qs_obj.gbl_override_lpmult = (uint32)arg1Int;
 			fobj->qs_obj.gbl_override_lpmult_flag = 1;
 			break;
 		}
 
-		case 14:       // logfile   argument is a string
-		{	
+		case 14:     /* logfile   argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->flogname))
 				strcpy_s(fobj->flogname, sizeof(fobj->flogname), arg);
 			else
@@ -2317,8 +2302,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 15:       // batchfile   argument is a string
-		{	
+		case 15:     /* batchfile   argument is a string */ {	
 			if (strlen(arg) < 80) {
 				strcpy_s(batchfilename, 80, arg);
 				USEBATCHFILE = 1;
@@ -2328,8 +2312,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 16:	   // seed - needs 2 integer parameters
-		{
+		case 16:	 /* seed - needs 2 integer parameters */ {
 			USERSEED = 1;
 			if (numCount < 2) {
 				printf("expected number,number for option %s\n", opt);
@@ -2340,14 +2323,12 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 17:       // sigma - 1 integer argument
-		{
+		case 17:     /* sigma - 1 integer argument */ {
 			fobj->ecm_obj.sigma = (uint32)arg1Int;
 			break;
 		}
 
-		case 18:       // session. argument is a string
-		{	
+		case 18:     /* session. argument is a string */ {	
 			if (strlen(arg) < sizeof(sessionname))
 			{
 				strcpy_s(sessionname, sizeof(sessionname), arg);
@@ -2357,56 +2338,47 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 19:       // threads - 1 integer argument
-		{
+		case 19:     /* threads - 1 integer argument */ {
 			THREADS = (uint32)arg1Int;
 			break;
 		}
 
-		case 20:       // v option
-		{
+		case 20:     /* v option */ {
 			Vflag++;
 			break;
 		}
 
-		case 21:       // silent
-		{
+		case 21:     /* silent */ {
 			Vflag = -1;
 			break;
 		}
 
-		case 22:	   // pfile
-		{
+		case 22:	 /* pfile */ {
 			PRIMES_TO_FILE = 1;
 			break;
 		}
 
-		case 23:	   // pscreen
-		{
+		case 23:	 /* pscreen */ {
 			PRIMES_TO_SCREEN = 1;
 			break;
 		}
 
-		case 24:	   // forceDLP
-		{
+		case 24:	 /* forceDLP */ {
 			fobj->qs_obj.gbl_force_DLP = 1;
 			break;
 		}
 
-		case 25:	   // fmtmax - 1 integer argument
-		{
+		case 25:	 /* fmtmax - 1 integer argument */ {
 			fobj->div_obj.fmtlimit = (uint32)arg1Int;
 			break;
 		}
 
-		case 26:       // noopt
-   		{
+		case 26:     /* noopt */ {
 			fobj->qs_obj.no_small_cutoff_opt = 1;
 			break;
 		}
 
-		case 27:       // vproc
-		{
+		case 27:     /* vproc */ 	{
 			//#ifdef __APPLE__
 			//		printf("extended cpuid not supported\n");
 			//#else
@@ -2415,14 +2387,12 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 28:       // noecm
-		{
+		case 28:     /* noecm */ {
 			fobj->autofact_obj.yafu_pretest_plan = PRETEST_NOECM;
 			break;
 		}
 
-		case 29:       // ggnfs-dir argument is a string
-		{
+		case 29:     /* ggnfs-dir argument is a string */ {
 			if (strlen(arg) < sizeof(fobj->nfs_obj.ggnfs_dir))
 				strcpy_s(fobj->nfs_obj.ggnfs_dir, sizeof(fobj->nfs_obj.ggnfs_dir),
 					arg);
@@ -2431,36 +2401,31 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 30:       // tune-info
-		{	//parse the tune_info string and if it matches the current OS and CPU, 
-			//set the appropriate globals
+		case 30:     /* tune-info.  parse the tune_info string and if  it 
+			matches the current OS and CPU, set the appropriate globals */ {
 			apply_tuneinfo(fobj, arg);
 			break;
 		}
 
-		case 31:       //option "pretest_ratio" - 1 floating point argument
-		{
+		case 31:     /* option "pretest_ratio" - 1 floating point argument */ {
 			/* convert text to double. Would strtod be better? */
 			//sscanf(arg, "%lf", &fobj->autofact_obj.target_pretest_ratio);
 			fobj->autofact_obj.target_pretest_ratio = arg1F;
 			break;
 		}
 
-		case 32:       //option "xover"- 1 floating point argument
-		{  
+		case 32:     /* option "xover"- 1 floating point argument */ {  
 			fobj->autofact_obj.qs_gnfs_xover = arg1F;
 			fobj->autofact_obj.prefer_xover = 1;
 			break;
 		}
 
-		case 33:	   //argument "one"
-		{
+		case 33:	 /* argument "one" */ {
 			fobj->autofact_obj.want_only_1_factor = 1;
 			break;
 		}
 
-		case 34:      //option  "op".  argument is a string
-		{	
+		case 34:     /* option  "op".  argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->autofact_obj.op_str)) {
 				strcpy_s(fobj->autofact_obj.op_str, sizeof(fobj->autofact_obj.op_str),
 					arg);
@@ -2471,8 +2436,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 35:      //option "of".  argument is a string
-		{	
+		case 35:     /* option "of".  argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->autofact_obj.of_str)) {
 				strcpy_s(fobj->autofact_obj.of_str, sizeof(fobj->autofact_obj.of_str),
 					arg);
@@ -2483,8 +2447,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 36:   //option "ou".  argument is a string
-		{	
+		case 36:     /* option "ou".  argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->autofact_obj.ou_str))
 			{
 				strcpy_s(fobj->autofact_obj.ou_str, sizeof(fobj->autofact_obj.ou_str),
@@ -2496,8 +2459,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 37:     //option "plan".  argument is a string
-		{	
+		case 37:     /* option "plan".  argument is a string */ {	
 			if (strlen(arg) < sizeof(fobj->autofact_obj.plan_str))
 			{
 				strcpy_s(fobj->autofact_obj.plan_str,
@@ -2529,7 +2491,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 38:    //option "pretest" - 1 optional integer argument
+		case 38:     /*option "pretest" - 1 optional integer argument */
 		{
 			if (arg == NULL) {
 				// no argument, use the value "1" to signify doing 
@@ -2546,13 +2508,12 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 39:	//argument "no_expr"
-		{
+		case 39:	 /* argument "no_expr" */ {
 			fobj->autofact_obj.want_output_expressions = 0;
 			break;
 		}
 
-		case 40:   //argument "o".  Indicates output filename ggnfs sieving.
+		case 40:     /*argument "o".  Indicates output filename ggnfs sieving. */
 		{
 			char *cptr;
 
@@ -2585,27 +2546,24 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 41:  //argument "a".  Indicates algebraic side special Q.
+		case 41:     /* argument "a".  Indicates algebraic side special Q. */
 		{
 			fobj->nfs_obj.sq_side = 1;
 			break;
 		}
 
-		case 42:   //argument "r".  Indicates rational side special Q.
-		{
-			//fobj->nfs_obj.sq_side = 0;
+		case 42:     /* argument "r".  Indicates rational side special Q. */ {
 			fobj->nfs_obj.sq_side = -1;
 			break;
 		}
 
-		case 43:  /*argument "ggnfsT".  Indicates timeout (in seconds) for NFS job.
-				 - 1 integer argument */
-		{
+		case 43:     /* argument "ggnfsT".  Indicates timeout (in seconds) for NFS job.
+				     - 1 integer argument */ {
 			fobj->nfs_obj.timeout = (uint32)arg1Int;
 			break;
 		}
 
-		case 44:	//argument "job".  Indicates input .job file automated NFS.
+		case 44:	 /* argument "job".  Indicates input .job file automated NFS. */
 		{
 			if (strlen(arg) < sizeof(fobj->nfs_obj.job_infile))
 			{
@@ -2617,8 +2575,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 45:	//argument "ns".  do nfs sieving
-		{
+		case 45:	 /* argument "ns".  do nfs sieving */ {
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_SIEVE;
 
 			if (arg != NULL) 	{
@@ -2646,7 +2603,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 46://argument "np".  do poly finding. 2 optional integer parameters
+		case 46:     /* argument "np".  do poly finding. 2 optional integer parameters */
 		{		
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_POLY;
 
@@ -2677,7 +2634,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 47:	//argument "nc".  Do post processing, starting with filtering
+		case 47:	 /*argument "nc".  Do post processing, starting with filtering */
 		{
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_FILTER;
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_LA;
@@ -2685,7 +2642,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 48:	//argument "psearch".  modify poly search methodology
+		case 48:	 /* argument "psearch".  modify poly search methodology */
 		{
 			if (strlen(arg) < 1024)
 			{
@@ -2707,15 +2664,14 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 49:	//argument "R".  nfs restart flag
-		{
+		case 49:	 /* argument "R".  nfs restart flag */ {
 			fobj->nfs_obj.restart_flag = 1;		
 			break;
 		}
 
-		case 50: // option "pbatch".  Indicates size of blocks of leading 
-			// coefficients to distribute to each thread in threaded NFS 
-			// poly selection. - 1 integer argument 
+		case 50:     /* option "pbatch".  Indicates size of blocks of leading 
+			         coefficients to distribute to each thread in threaded 
+			         NFS poly selection. - 1 integer argument */
 		{
 			fobj->nfs_obj.polybatch = (uint32)arg1Int;
 			if (fobj->nfs_obj.polybatch == 0)
@@ -2723,8 +2679,7 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 51:   // option "ecm_path" argument is a string
-		{
+		case 51:     /* option "ecm_path" argument is a string */ {
 			if (strlen(arg) < sizeof(fobj->ecm_obj.ecm_path))
 				strcpy_s(fobj->ecm_obj.ecm_path, sizeof(fobj->ecm_obj.ecm_path),
 					arg);
@@ -2733,71 +2688,59 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 52:		//  "siever" - 1 integer argument 
-		{
+		case 52:     /*  "siever" - 1 integer argument */ {
 			fobj->nfs_obj.siever = (uint32)arg1Int;
 			break;
 		}
 
-		case 53:   //parameter  "ncr".  linear algebra restart flag
-		{	
+		case 53:     /* parameter  "ncr".  linear algebra restart flag */	{	
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_LA_RESUME;
 			break;
 		}
 
-		case 54:  // parameter "lathreads" - 1 integer argument 
-		{	
+		case 54:     /* parameter "lathreads" - 1 integer argument */	{	
 			LATHREADS = (int)arg1Int;
 			break;
 		}
 
-		case 55:  //argument "nc2".  do linear algebra.
-		{
+		case 55:     /* argument "nc2".  do linear algebra. */	{
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_LA;
 			break;
 		}
 
-		case 56:	//argument "nc3".  do nfs sqrt
-		{
+		case 56:	 /* argument "nc3".  do nfs sqrt */ {
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_SQRT;
 			break;
 		}
 
-		case 57:   //argument "p".  set to idle priority.
-			//TODO: check to see if ggnfs and ecm binaries called through system
-			//retain idle priority
-		{
+		case 57:     /* argument "p".  set to idle priority.
+			         TODO: check to see if ggnfs and ecm binaries called through 
+			         system retain idle priority */ {
 			yafu_set_idle_priority();
 			break;
 		}
 
-		case 58:	//"work" - 1 floating point argument
-		{
-			//sscanf(arg, "%lf", &fobj->autofact_obj.initial_work);
+		case 58:	 /* "work" - 1 floating point argument */ {
 			fobj->autofact_obj.initial_work = arg1F;
 			break;
 		}
 
-		case 59:	//argument "nprp" - 1 integer argument 
-		{
+		case 59:	 /* argument "nprp" - 1 integer argument */ {
 			NUM_WITNESSES = (uint32)arg1Int;
 			break;
 		}
 
-		case 60:	// parameter "ecm_ext" - 1 integer argument 
-		{
+		case 60:	 /* parameter "ecm_ext" - 1 integer argument */ {
 			fobj->ecm_obj.ecm_ext_xover = (uint32)arg1Int;
 			break;
 		}
 
-		case 61:	//"testsieve" - 1 integer argument 
-		{
+		case 61:	 /* "testsieve" - 1 integer argument */ {
 			fobj->nfs_obj.snfs_testsieve_threshold = (uint32)arg1Int;
 			break;
 		}
 
-		case 62:	// argument "nt"
-		{
+		case 62:	 /* argument "nt" */ {
 			if (arg == NULL) {
 				printf("expected argument for option %s\n", opt);
 				exit(1);
@@ -2808,9 +2751,8 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 63:// argument "aprcl_p", setting the threshold below which numbers
-				// are proved prime using APR-CL
-			// - 1 integer argument 
+		case 63:     /* argument "aprcl_p", setting the threshold below which numbers
+				     are proved prime using APR-CL.  1 integer argument */
 		{
 			fobj->aprcl_prove_cutoff = (uint32)arg1Int;
 			if (fobj->aprcl_prove_cutoff > 6021)
@@ -2822,30 +2764,28 @@ static void applyOpt2(const char *opt, const char *arg, fact_obj_t *fobj,
 			break;
 		}
 
-		case 64:// argument "aprcl_d", setting the threshold above which numbers
-				// that are proved prime using APR-CL have additional verbosity enabled
-				// 1 integer parameter
+		case 64:     /* argument "aprcl_d", setting the threshold above which numbers
+				     that are proved prime using APR-CL have additional verbosity
+				     enabled. 1 integer parameter */
 		{
 			fobj->aprcl_display_cutoff = (int)arg1Int;
 			break;
 		}
 
-		case 65:	// "filt_bump" 1 floating point parameter
-		{
-			//sscanf(arg, "%lf", &fobj->nfs_obj.filter_min_rels_nudge);
+		case 65:	 /* "filt_bump" 1 floating point parameter */ {
 			fobj->nfs_obj.filter_min_rels_nudge = arg1F;
-			fobj->nfs_obj.filter_min_rels_nudge = 1 + fobj->nfs_obj.filter_min_rels_nudge / 100;
+			fobj->nfs_obj.filter_min_rels_nudge = 1 + 
+				fobj->nfs_obj.filter_min_rels_nudge / 100;  // add 1%
 			break;
 		}
 
-		case 66:	//"nc1".  do msieve filtering.
-		{
+		case 66:	 /* "nc1".  do msieve filtering. */ 	{
 			fobj->nfs_obj.nfs_phases |= NFS_PHASE_FILTER;
 			break;		
 		}
 
-		default:
-		{	/* invalid value of ix; indicates a logic error */
+		default:     /* invalid value of ix; indicates a logic error */
+		{	
 			printf("invalid option %s\n", opt);
 			exit(1);
 		}

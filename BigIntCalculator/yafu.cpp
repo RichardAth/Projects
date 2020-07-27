@@ -4,24 +4,28 @@
 const char * myTime(void);  // get time as hh:mm:ss
 
 #ifndef _DEBUG
-static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string YafuPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Release";
 #else
-static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string YafuPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Debug";
 #endif
 
-static std::string yafuprog = "yafu-x64.exe";
+std::string yafuprog = "yafu-x64.exe";
 static std::string logPath = "C:/users/admin99/factors.txt";
 
-std::string batfilename = "YafurunTemp.bat";
+static std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
-static void delfile(const char * FileName)
-{
-	std::string fname = Path + "\\" + FileName;
+void delfile(const std::string &path,  const char * FileName) {
+	std::string fname;
 	struct __stat64 fileStat;
+
+	if (!path.empty())
+		fname = path + "\\" + FileName;
+	else
+		fname = FileName;
 
 	int err = _stat64(fname.data(), &fileStat);
 	if (0 != err) 
@@ -69,7 +73,8 @@ char * getFileName(const char *filter, HWND owner) {
 }
 
 /* replace path and/or program name*/
-void changepath(std::string &path, std::string &prog) {
+bool changepath(std::string &path, std::string &prog) {
+	bool rewrite = false;
 	char * newpathC;
 	std::string newpath;
 	std::string newprog;
@@ -78,13 +83,13 @@ void changepath(std::string &path, std::string &prog) {
 	newpathC = getFileName("Program Files\0*.exe\0\0", NULL);
 	if (newpathC == NULL) {
 		std::cout << "command cancelled \n";
-		return;
+		return false;
 	}
-	newpath = newpathC;
+	newpath = newpathC;  // copy C-style string to std::string
 	n = newpath.rfind('\\');   // look for '\'
 	if (n == std::string::npos) {
 		std::cout << "command cancelled \n";
-		return;
+		return false;
 	}
 	else {
 		newprog = newpath.substr(n + 1);  // copy characters after last '\' 
@@ -93,13 +98,18 @@ void changepath(std::string &path, std::string &prog) {
 			std::cout << "old path: " << path << '\n';
 			std::cout << "new path: " << newpath << '\n';
 			path = newpath;
+			rewrite = true;
 		}
-		if (newprog != prog) {
+		if (!prog.empty() && newprog != prog) {
 			std::cout << "old prog: " << prog << '\n';
 			std::cout << "new prog: " << newprog << '\n';
 			prog = newprog;
+			rewrite = true;
 		}
+		if (rewrite)
+			writeIni();  // write any changes to .ini file
 	}
+	return true;
 }
 
 /* check file status */
@@ -120,9 +130,10 @@ void fileStatus(const std::string &progname) {
 		std::cout << progname << " not found \n";
 }
 
-/* check yafu.ini file */
+/* check or replace yafu.ini file */
 static void inifile(std::string &param) {
-	std::string iniFname = Path + "\\" + "yafu.ini";
+	std::string yafuini = "yafu.ini";
+	std::string iniFname = YafuPath + "\\" + yafuini;
 	std::string buffer;
 	std::string ggnfsPath;
 	int lineNo = 1;
@@ -132,40 +143,78 @@ static void inifile(std::string &param) {
 	std::ifstream iniStr(iniFname, std::ios::in);  // open yafu.ini file
 	if (!iniStr.is_open()) {
 		std::cout << " cannot open yafu.ini \n";
-		return;
+	}
+	else {    /* read in yafu.ini file */
+		while (std::getline(iniStr, buffer)) {
+			if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
+				ggnfsLine = lineNo;
+				ggnfsPath = buffer.substr(10); // copy path following '=' character
+			}
+
+			if (_strnicmp("%print", buffer.c_str(), 6) == 0)
+				std::cout << lineNo << ": " << buffer << '\n';
+
+			inifile.push_back(buffer);
+			lineNo++;
+		}
+		iniStr.close();
+		std::cout << "yafu.ini contains " << lineNo - 1 << " lines \n";
+
+		if (ggnfsLine > 0) {
+			/* ggnfs_dir was found */
+			std::cout << ggnfsLine << ": " << inifile[ggnfsLine - 1] << '\n';
+			for (int i = 11; i <= 16; i++) {
+				char ia[3];  /* 11 to 16 as ascii text */
+
+				_itoa_s(i, ia, sizeof(ia), 10);   /* convert i from binary to ascii */
+				std::string progname = ggnfsPath;
+				progname += "gnfs-lasieve4i";
+				progname += +ia;
+				progname += "e.exe";
+				fileStatus(progname);
+			}
+		}
+		else
+			std::cout << "ggnfs_dir parameter not found \n";
 	}
 
-	while (std::getline(iniStr, buffer)) {
-		if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
-			ggnfsLine = lineNo;
-			ggnfsPath = buffer.substr(10); // copy path following '=' character
+	if (!param.empty() && toupper(param[0]) == 'I') {
+		std::string newFname = YafuPath + "\\" + "yafu.new";
+		std::string oldFname = YafuPath + "\\" + "yafu.old";
+
+		/* replace the ggnfs_dir parameter */
+		std::string newprog;
+		if (!changepath(ggnfsPath, newprog))
+			return;  // bail out if change path cancelled
+
+		buffer = "ggnfs_dir=" + ggnfsPath + '/' + '\n';
+
+		std::ofstream newStr(newFname, std::ios::out);  // open yafu.new file for output
+		if (!newStr.is_open()) {
+			std::cout << "cannot open yafu.new \n";
+			return;
+		}
+		/* copy everything from the yafu.ini to the yafu.new file except 
+		   ggnfs_dir= parameter */
+		for (size_t ix = 0; ix < (lineNo - 1); ix++) {
+			if (ix != (ggnfsLine - 1))
+				newStr << inifile[ix] << '\n';
+			else
+				newStr << buffer;   // replace ggnfs_dir parameter with new value
 		}
 
-		if (_strnicmp("%print", buffer.c_str(), 6) == 0)
-			std::cout << lineNo << ": " << buffer << '\n';
+		if (ggnfsLine <= 0)
+			newStr << buffer;    // append ggnfs_dir parameter at end of file
 
-		inifile.push_back(buffer);
-		lineNo++;
+		newStr.close();
+
+		delfile(YafuPath, oldFname.c_str());  // delete any previous yafu.old
+		int rv = rename(iniFname.c_str(), oldFname.c_str());   // yafu.ini -> yafu.old
+		if (rv == 0)
+			rename(newFname.c_str(), iniFname.c_str());   // yafu.new -> yafu.ini
+		else
+			perror("unable to rename yafu.ini as yafu.old");
 	}
-
-	if (ggnfsLine > 0) {
-		/* ggnfs_dir was found */
-		std::cout << ggnfsLine << ": " << inifile[ggnfsLine - 1] << '\n';
-		for (int i = 11; i <= 16; i++) {
-			char ia[3];  /* 11 to 16 as ascii text */
-
-			_itoa_s(i, ia, sizeof(ia), 10);  
-			std::string progname = ggnfsPath;
-			progname += "gnfs-lasieve4i";
-			progname += +ia;
-			progname += "e.exe";
-			fileStatus(progname);
-		}
-	}
-	else
-		std::cout << "ggnfs_dir not found \n";
-
-	iniStr.close();
 }
 
 /*process YAFU commands */
@@ -187,7 +236,7 @@ void yafuParam(const std::string &command) {
 			break;
 	}
 
-	switch (ix) {
+	switch (ix)  /*  switch according to parameter value */ {
 	case 0: /* YAFU ON   */ {   
 			yafu = true;
 			msieve = false;
@@ -201,16 +250,17 @@ void yafuParam(const std::string &command) {
 		param.erase(0, 4);  // get rid of "PATH"
 		while (param[0] == ' ')
 			param.erase(0, 1);              /* remove leading space(s) */
-		if (param != "SET") {
-			std::cout << "path = " << Path << '\n';
-			fileStatus(Path + '\\' + yafuprog);
-			break;
+
+		if (param   == "SET") {
+			if (changepath(YafuPath, yafuprog))
+				writeIni();  // rewrite .ini file
 		}
 		else {
-			changepath(Path, yafuprog);
-			fileStatus(Path + '\\' + yafuprog);
-			break;
+			std::cout << "path = " << YafuPath << '\n';
 		}
+
+		fileStatus(YafuPath + '\\' + yafuprog);
+		break;
 
 	}
 	case 3: /* YAFU LOG  */ {  
@@ -234,20 +284,21 @@ void yafuParam(const std::string &command) {
 		break;
 	}
 	case 5: /* YAFU TIDY */ {
-		delfile("factor.log");
-		delfile("session.log");
-		delfile("siqs.dat");
-		delfile("nfs.log");
-		delfile("nfs.job");
-		delfile("ggnfs.log");
-		delfile("YAFU_get_poly_score.out");
+		delfile(YafuPath, "factor.log");
+		delfile(YafuPath, "session.log");
+		delfile(YafuPath, "siqs.dat");
+		delfile(YafuPath, "nfs.log");
+		delfile(YafuPath, "nfs.job");
+		delfile(YafuPath, "ggnfs.log");
+		delfile(YafuPath, "YAFU_get_poly_score.out");
 		break;
 	}
 	case 6: /* YAFU INI  */ {
 		param.erase(0, 3);  // get rid of "INI"
 		while (param[0] == ' ')
 			param.erase(0, 1);              /* remove leading space(s) */
-		inifile(param);
+
+		inifile(param);  // process "YAFU INI .... " command
 		break;
 	}
 
@@ -271,7 +322,7 @@ static void genfile(const std::string &numStr) {
 		}
 	}
 
-	buffer = "pushd " + Path + '\n';  // change directory
+	buffer = "pushd " + YafuPath + '\n';  // change directory
 	rv = fputs(buffer.data(), batfile);
 	assert(rv >= 0);
 
@@ -310,7 +361,7 @@ static void genfile(const std::string &numStr) {
 
 bool callYafu(const Znum &num, fList &Factors) {
 	int rv;
-	std::string command = Path + yafuprog;
+	std::string command = YafuPath + yafuprog;
 	std::string numStr;
 	std::string buffer;
 	std::string logfile = logPath;

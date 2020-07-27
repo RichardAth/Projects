@@ -2,7 +2,7 @@
 
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
-void changepath(std::string &path, std::string &prog);
+bool changepath(std::string &path, std::string &prog);
 
 /* output from Msieve -h option:
 
@@ -108,22 +108,20 @@ bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factor
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
-
-static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string MsievePath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Release";
 #else
-
-static std::string Path = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string MsievePath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Debug";
 #endif
-static std::string Prog = "msieve.exe";
+std::string MsieveProg = "msieve.exe";
 static std::string logPath = "C:\\users\\admin99\\msieve.log ";
 static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
-//static std::string redirectOP = " >\\.\\pipe\\StdOutPipe 2>\\.\\pipe\\StdErrPipe ";
+
 
 static void delfile(const char * FileName)
 {
-	std::string fname = Path + "\\" + FileName;
+	std::string fname = MsievePath + "\\" + FileName;
 	struct __stat64 fileStat;
 
 	int err = _stat64(fname.data(), &fileStat);
@@ -159,13 +157,13 @@ void msieveParam(const std::string &command) {
 		while (param[0] == ' ')
 			param.erase(0, 1);              /* remove leading space(s) */
 		if (param != "SET") {
-			std::cout << "path = " << Path << '\n';
-			fileStatus(Path + '\\' + Prog);
+			std::cout << "path = " << MsievePath << '\n';
 		}
 		else {
-			changepath(Path, Prog);
-			fileStatus(Path + '\\' + Prog);
+			if (changepath(MsievePath, MsieveProg))
+				writeIni();  // rewrite .ini file
 		}
+		fileStatus(MsievePath + '\\' + MsieveProg);
 	}
 
 	else if (param == "LOG") {
@@ -199,7 +197,7 @@ properly would be so tedious it's not worth it. I had to make several kludges
 to build msieve, and the prebuilt msieve wouldn't work */
 bool callMsieve(const Znum &num, fList &Factors) {
 	/* set up command to invoke Msieve */
-	std::string command = Path + "\\" + Prog;
+	std::string command = MsievePath + "\\" + MsieveProg;
 	std::string numStr;
 	int rv, fcount = 0;
 	std::string buffer;

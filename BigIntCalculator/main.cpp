@@ -2690,6 +2690,106 @@ static void doTests6(void) {
 	printSummary();           // print 1 line per test
 }
 
+
+std::vector<std::string> inifile;  // copy contents of .ini here
+std::string iniPath;          // path to .ini file
+
+/* (re)write the BigIntCalculator.ini file
+initially a .new file is created, then any .old file is deleted
+then the current .ini if any is renamed as .old,
+then the .new file is renamed as .ini */
+void writeIni(void) {
+	std::string newFname = iniPath + "BigIntCalculator.new";
+	std::string iniFname = iniPath + "BigIntCalculator.ini";
+	std::string oldFname = iniPath + "BigIntCalculator.old";
+
+	std::ofstream newStr(newFname, std::ios::out);  // open .new file for output
+	if (!newStr.is_open()) {
+		std::cout << "cannot open BigIntCalculator.new \n";
+		return;
+	}
+	/* copy from current ini file to new one */
+	for (auto text : inifile) {
+		newStr << text << '\n';
+	}
+	newStr << "yafu-path=" << YafuPath << '\n';
+	newStr << "yafu-prog=" << yafuprog << '\n';
+	newStr << "msieve-path=" << MsievePath << '\n';
+	newStr << "msieve-prog=" << MsieveProg << '\n';
+	newStr.close();
+
+	  // delete any previous .old
+	int rc = remove(oldFname.c_str());
+	if (rc != 0 && errno != ENOENT) {
+		perror("could not remove BigIntCalculator.old file ");
+	}
+    // rename .ini as .old
+	int rv = rename(iniFname.c_str(), oldFname.c_str());   
+	if (rv == 0 || errno == ENOENT)
+		rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+	else
+		perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
+}
+
+/* read the .ini file and update paths. 
+path definitions begin with yafu-path=, yafu-prog=, msieve-path= or msieve-prog= 
+Paths are not case-sensitive. 
+Anything else is saved and copied if the .ini file is updated 
+arg is arg[0] of the call to main, which conveniently contains the full path
+for the .exe file. We use the same path for the .ini file. 
+If the .ini file can't be opened a new one is created */
+static void processIni(const char * arg) {
+	std::string iniFname;
+	std::string buffer;
+
+	iniPath = arg;  // save path in a global variable
+	auto b = iniPath.find_last_of("\\/"); // find last / character
+	if (b != std::string::npos) {
+		iniPath.erase(b + 1);  // remove everything after /
+		iniFname = iniPath + "BigIntCalculator.ini";
+	}
+	else 
+		iniFname = "BigIntCalculator.ini";
+
+	std::ifstream iniStr(iniFname, std::ios::in);  // open .ini file
+	if (!iniStr.is_open()) {
+		/* can't open .ini file - make one from scratch */
+		const time_t currtime = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+		struct tm mytime;
+		char timestamp[23];   // date & time in format "dd/mm/yyyy at hh:mm:ss"
+
+		localtime_s(&mytime, &currtime);  // convert to tm format
+		/* convert to dd/mm/yyyy hh:mm:ss */
+		strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &mytime);
+		buffer = "%file originally created on ";
+		buffer += timestamp;     //  "dd/mm/yyyy at hh:mm:ss"
+		inifile.push_back(buffer);
+		writeIni();  // create a new .ini file using hard coded initial values
+
+		std::cout << " cannot open BigIntCalculator.ini - create new file \n";
+	}
+	else {    /* read in .ini file */
+		while (std::getline(iniStr, buffer)) {
+
+			if (_strnicmp("yafu-path=", buffer.c_str(), 10) == 0) {
+				YafuPath = buffer.substr(10); // copy path following '=' character
+			}
+			else if (_strnicmp("yafu-prog=", buffer.c_str(), 10) == 0) {
+				yafuprog = buffer.substr(10); // copy path following '=' character
+			}
+			else if (_strnicmp("msieve-path=", buffer.c_str(), 12) == 0) {
+				MsievePath = buffer.substr(12); // copy path following '=' character
+			}
+			else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
+				MsieveProg = buffer.substr(12); // copy path following '=' character
+			}
+			else inifile.push_back(buffer);  // save anything not recognised
+		}
+		iniStr.close();
+	}
+}
+
+
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
 static int processCmd(const std::string &command) {
 	const static char helpmsg[] =
@@ -2870,7 +2970,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
 			<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
 #endif
-
+		processIni(argv[0]); // read .ini file if it exists
 		while (true) {
 			if (lang == 0) {
 				printf("enter expression to be processed, or HELP, or EXIT\n");

@@ -316,6 +316,12 @@ Repeated factors: No or Yes
 void showECMStatus(void);
 
 extern int lang;    // 0 English, 1 = Spanish
+extern std::string YafuPath;
+extern std::string yafuprog;
+extern std::string MsievePath;
+extern std::string MsieveProg;
+void delfile(const std::string &path, const char * FileName);
+void writeIni(void);
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
