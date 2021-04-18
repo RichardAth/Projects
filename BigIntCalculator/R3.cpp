@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 
+extern int verbose;
+
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
 #ifdef _M_AMD64
 #ifndef _AMD64_
@@ -382,9 +384,9 @@ long long int PollardRho(long long int n)
 		if (d == n) 
 			return PollardRho(n);
 	}
-#ifdef _DEBUG
-	std::cout << "Pollard Rho n = " << n << " factor = " << d << '\n';
-#endif
+	if (verbose >0)
+		std::cout << "Pollard Rho n = " << n << " factor = " << d << '\n';
+
 	return d;
 }
 

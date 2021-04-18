@@ -746,10 +746,6 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 				LehmanZ(Zpower, k, Zfactor);
 				if (Zfactor > 1) {
 					Factors.leh++;     // Factor found.
-					if (verbose > 0) {
-						std::cout << "Lehman factor found. k = " << k << " N= " << Zpower
-							<< " factor = " << Zfactor << '\n';
-					}
 					insertBigFactor(Factors, Zfactor);
 					i = -1;   // success; restart loop at beginning to tidy up!	
 					break;

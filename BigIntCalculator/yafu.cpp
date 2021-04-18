@@ -72,7 +72,10 @@ char * getFileName(const char *filter, HWND owner) {
 	return fileNameStr;
 }
 
-/* replace path and/or program name*/
+/* replace path and/or program name, 
+return true if change actually made. 
+otherwise return false
+*/
 bool changepath(std::string &path, std::string &prog) {
 	bool rewrite = false;
 	char * newpathC;
@@ -106,10 +109,10 @@ bool changepath(std::string &path, std::string &prog) {
 			prog = newprog;
 			rewrite = true;
 		}
-		if (rewrite)
-			writeIni();  // write any changes to .ini file
+		//if (rewrite)
+		//	writeIni();  // write any changes to .ini file
 	}
-	return true;
+	return rewrite;
 }
 
 /* check file status */

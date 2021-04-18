@@ -1264,22 +1264,7 @@ static void modmultIntExtended(const limb factorBig[], int factorInt, limb resul
 /* result = FactorBig* factorInt (mod TestNbr) 
 note: result & factorBig may be the same variable */
 void modmultInt(const limb *factorBig, int factorInt, limb *result) {
-#ifdef _DEBUG
-	Znum fb, res, tstNbr, r2, prod, quot;
-	LimbstoZ(factorBig, fb, NumberLength);
-#endif
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
-#ifdef _DEBUG
-	LimbstoZ(result, res, NumberLength);
-	BigtoZ(tstNbr, TestNbrBI);
-	prod = fb * factorInt;
-	quot = prod / tstNbr;
-	r2 = prod%tstNbr;
-	if (r2 != res) {
-		std::cout << '(' << fb << '*' << factorInt << ") % " << tstNbr
-			<< " = " << res << " expected " << r2 << " quot = " << quot << '\n';
-	}
-#endif
 }
 
 
@@ -1465,10 +1450,7 @@ static int modInv(int NbrMod, int currentPrime)
 // note: both num and mod are modified (but the value is not changed)
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 {
-#ifdef _DEBUG
-	Znum znum, zinv, zmod, zinv2;
-	LimbstoZ(num, znum, nbrLen);
-#endif
+
 	int len;
 	int k, steps;
 	int a, b, c, d;  // Coefficients used to update variables R, S, U, V.
@@ -1486,17 +1468,6 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 	if (powerOf2Exponent != 0) {    // TestNbr is a power of 2.
 		ComputeInversePower2(num, inv, aux);
 		(inv + powerOf2Exponent / BITS_PER_GROUP)->x &= (1 << (powerOf2Exponent % BITS_PER_GROUP)) - 1;
-#ifdef _DEBUG
-		{
-			LimbstoZ(inv, zinv, nbrLen);
-			LimbstoZ(mod, zmod, nbrLen);
-			auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
-			if (rv == 0 || zinv2 != zinv) {
-				std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';
-				std::cout << " should be " << zinv2 << '\n';
-			}
-		}
-#endif
 		return;
 	}
 	//  1. U <- M, V <- X, R <- 0, S <- 1, k <- 0
@@ -1809,15 +1780,6 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
 		modmult(R, S, inv);
 		modmult(inv, MontgomeryMultR2, inv);
 	}
-#ifdef _DEBUG
-	{
-		/*LimbstoZ(inv, zinv, nbrLen);
-		LimbstoZ(mod, zmod, nbrLen);
-		std::cout << "Mod Inverse num = " << znum << " inv = " << zinv << " mod = " << zmod << '\n';
-		auto rv = mpz_invert(ZT(zinv2), ZT(znum), ZT(zmod));
-		if (rv == 0 || zinv2 != zinv)
-			std::cout << " should be " << zinv2 << '\n';*/
-	}
-#endif
+
 }
 

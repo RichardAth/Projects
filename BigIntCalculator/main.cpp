@@ -2055,7 +2055,7 @@ static void doTests(void) {
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 	x3 = 0;
-	ComputeExpr("n(10^9)^3*n(10^10)", x3);  // test Lehman factorisation
+	ComputeExpr("n(10^15)^3*n(10^14)", x3);  // test Lehman factorisation
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 

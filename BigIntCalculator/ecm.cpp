@@ -599,6 +599,10 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 			c = gcd(sqrRoot, nbr); // Get GCD(sqrRoot + val, nbr)
 			if (c > 1) {       // factor has been found.
 				factor = c;
+				if (verbose > 0) {
+					std::cout << "Lehman factor found. k = " << k << " N= " << nbr
+						<< " factor = " << factor << '\n';
+				}
 				return;
 			}
 		}
@@ -675,16 +679,15 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			LehmanZ(zN, k, Zfactor);
 			if (Zfactor > LIMB_RANGE) {
 				foundByLehman = true;     // Factor found.
-				if (verbose > 0) {
-					std::cout << "Lehman factor found. k = " << k << " N= " << zN
-						<< " factor = " << Zfactor << '\n';
-				}
 #ifdef log
 				gmp_fprintf(logfile, "Lehman factor found. k = %d  N=  %Zd factor = %Zd \n",
 					k, ZT(zN), ZT(Zfactor));
 #endif
 				return FACTOR_FOUND;
 			}
+			else if (Zfactor > 1)
+				std::cout << "Ignored small Lehman factor found. k = " << k << " N= " << zN
+				<< " factor = " << Zfactor << '\n';
 		}
 
 		/* set L1, L2, LS, Paux and nbrPrimes according to value of ElipCurvNo */

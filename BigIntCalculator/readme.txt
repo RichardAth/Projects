@@ -133,6 +133,7 @@ to use ECM only for factors < 15 digits.
    MSIEVE ON    Turns on factorisation using Msieve (and turns YAFU off)
    MSIEVE OFF   Turns off factorisation using Msieve (revert to built-in ECM and SIQS)
    MSIEVE PATH  Displays path used when starting Msieve
+   MSIEVE PATH SET Change pathe used when starting Msieve
    MSIEVE LOG   Displays path & file name for Msieve output file
    MSIEVE E ON  Turns on -e option in Msieve; perform 'deep' ECM
    MSIEVE E OFF Turns off -e option in Msieve
@@ -141,6 +142,8 @@ to use ECM only for factors < 15 digits.
 
 The source code for Msieve was downloaded from https://sourceforge.net/projects/msieve/files/
 (use green buton)
+
+For a precompiled version try https://download.mersenne.ca/msieve
 
 To build Msieve from source requires GMP-ECM library functions, which in turn 
 require Pthreads. 
@@ -185,8 +188,11 @@ but for larger numbers > about 95 digits it relies on ggnfs.
 
 The source for YAFU was obtained from https://sourceforge.net/projects/yafu/files/1.24/
 (use green button to download version 1.34)
+For a precompiled version try https://download.mersenne.ca/YAFU
+
 Also need  GGNFS got precompiled from 
     https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
+    can also try https://download.mersenne.ca/GGNFS
 
 To build YAFU from source requires Msieve and GMP-ECM library functions, which in
 turn require Pthreads. 
@@ -195,7 +201,7 @@ turn require Pthreads.
 
    YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
    YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
-   YAFU PATH Displays path used when starting YAFU
+   YAFU PATH Displays or changes path used when starting YAFU
    YAFU LOG  Displays path & file name for YAFU output file
    YAFU PLAN <name> 
              where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
@@ -206,8 +212,8 @@ turn require Pthreads.
 
 
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
-back on by the YAFU ON command (which also turns Msieve off). The path to access 
-YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
+back on by the YAFU ON command (which also turns Msieve off). The default path to 
+access YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
 
 The command YAFU PATH will display the current path and verify that the yafu-X64.exe 
 file exists.
