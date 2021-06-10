@@ -2171,7 +2171,7 @@ void factor(fact_obj_t *fobj)
 		mpz_init(tmpz);
 		mpz_init(g);
 
-		fgets(tmpstr,1024,data);
+		fgets(tmpstr, GSTR_MAXSIZE-1,data);
 		substr = tmpstr + 2;
 		mpz_set_str(tmpz, substr, 0);	//auto detect the base
 
@@ -2212,7 +2212,7 @@ void factor(fact_obj_t *fobj)
 		mpz_init(tmpz);
 		mpz_init(g);
 
-		fgets(tmpstr,1024,data);
+		fgets(tmpstr, GSTR_MAXSIZE-1,data);
 		substr = tmpstr + 2;
 		mpz_set_str(tmpz, substr, 0);	//auto detect the base
 

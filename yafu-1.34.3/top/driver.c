@@ -943,6 +943,11 @@ static int process_arguments(int argc, char **argv, char *input_exp, fact_obj_t 
 			//assume its a command.  execute once, after processing any
 			//flags.  an invalid command will be handled by calc.
 			is_cmdline_run = 1;
+			if (strlen(argv[1]) >= GSTR_MAXSIZE * sizeof(char)) {
+				printf_s("** parameter 1 length %lld > max; cannot process \n",
+					strlen(argv[1]));
+				exit(-1);
+			}
 			strcpy_s(input_exp, GSTR_MAXSIZE * sizeof(char), argv[1]);
 			if (argc > 2)
 				process_flags(argc-2, &argv[2], fobj);

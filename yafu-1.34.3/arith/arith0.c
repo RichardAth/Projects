@@ -22,6 +22,12 @@ code to the public domain.
 #include "yafu.h"
 #include "arith.h"
 
+/* used to check for memory allocation problems */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>  /* used to check for memory allocation problems */
+#include <assert.h>
+
 // dest = src
 void mp2gmp(const z *src, mpz_t dest) {
 
@@ -32,16 +38,22 @@ void mp2gmp(const z *src, mpz_t dest) {
 		mpz_neg(dest, dest);
 }
 
-/* copy src to dest*/
+/* copy src to dest. Altered to check that dest is big enough to contain src */
 void gmp2mp(const mpz_t src, z *dest) {
 
 	size_t count;
-
+	
+	assert(_CrtCheckMemory());
 	dest->size = 1;
 	dest->val[0] = 0;
+	count = mpz_sizeinbase(src, 256);  /* get size of src in bytes */
+	count = count/ sizeof(fp_digit) +1; /* convert size to words (add 1 for extra safety) */
+	if (dest->alloc <= count)
+		zGrow(dest, (int)count);
 	mpz_export(dest->val, &count, -1, sizeof(fp_digit),
 			0, (size_t)0, src);
 	dest->size = (int)count;
+	assert(_CrtCheckMemory());
 }
 
 // a wrapper for mpz_get_str that will grow the input string if  necessary

@@ -42,7 +42,7 @@ code to the public domain.
 #define MAX_MP_WORDS 32
 
 //default maximum size in chars for a str_t
-#define GSTR_MAXSIZE 1024
+#define GSTR_MAXSIZE 4096
 
 //support libraries
 #include "types.h"

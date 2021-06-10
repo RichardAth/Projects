@@ -33,6 +33,12 @@ Implements an arbitrary precision calculator.
 #include "common.h"
 #include "mpz_prp_prime.h"
 
+/* used to check for memory allocation problems */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>  /* used to check for memory allocation problems */
+#include <assert.h>
+
 static int getIMM(const char s);
 static int op_precedence(const char *s1, const char *s2, int assoc);
 static int isEOE(char s);
@@ -1209,7 +1215,9 @@ static int feval(int func, int nargs, fact_obj_t *fobj)
 			printf("wrong number of arguments in factor\n");
 			break;
 		}
+		//assert(_CrtCheckMemory());
 		gmp2mp(operands[0],&fobj->N);
+		//assert(_CrtCheckMemory());
 		factor(fobj);
 		mp2gmp(&fobj->N,operands[0]);
 		print_factors(fobj);

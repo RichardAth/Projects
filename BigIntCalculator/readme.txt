@@ -409,3 +409,21 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    which correlates much more closely with time required than the 'Size' does.
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
+
+   Added 5/6/2021
+
+   The 'engine'at the heart of the calculator was largely rewritten; 
+   It was divided into 3 parts:
+   1.   'Tokenise' all terms in the expression i.e. each number, operator, 
+        Function name, bracket & comma is turned into a token. Also check that
+        the opening and closing brackets pair up correctly.
+    2.  Convert to Reverse Polish. This uses the well-known 'shunting' algorithm,
+        but a recursive call to the reverse polish function is made for each
+        function parameter (this also takes care of nested function calls).
+        Also there is a tweak for the factorial, double factorial and primorial
+        functions because the operator follows the number rather than precedes it.
+        Some syntax checks are made but there is no guarantee that all syntax
+        errors will be detected.
+    3.  Calculate the value of the reverse polish sequence. If there is more than
+        one number on the stack at the end, or at any time there are not enough
+        numbers on the stack to perform an operation an error is reported.
