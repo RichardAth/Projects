@@ -349,7 +349,7 @@ static void SortFactors(fList &Factors) {
 	if (Factors.f[0].Factor == 1) {
 		Factors.f.erase(Factors.f.begin());
 	}
-	if (verbose > 0) {
+	if (verbose > 1) {
 		std::cout << "result after sort" << '\n';
 		Factors.Xprint();
 	}
@@ -402,9 +402,9 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 	auto ipoint = lastfactor;
 	zFactors temp;
 	Znum g;
-	if (verbose > 0) {
-		/*std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
-		Factors.Xprint();*/
+	if (verbose > 1) {
+		std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
+		Factors.Xprint();
 	}
 	for (int i = 0; i < lastfactor; i++) {
 		if (Factors.f[i].Factor == divisor)
@@ -424,9 +424,9 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 			lastfactor++;
 		}
 	}
-	if (verbose > 0) {
-		/*std::cout << "result before sort" << '\n';
-		Factors.Xprint();*/
+	if (verbose > 1) {
+		std::cout << "result before sort" << '\n';
+		Factors.Xprint();
 	}
 	SortFactors(Factors);
 }
@@ -617,7 +617,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 				else {
 					/* as factor is not prime, and it has no factors < MaxP, it must have
 					just two prime factors. */
-					if (verbose > 0) {
+					if (verbose > 1) {
 						std::cout << "factors before Pollard factorisation: ";
 						Factors.Xprint();
 					}

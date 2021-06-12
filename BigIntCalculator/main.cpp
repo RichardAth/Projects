@@ -52,6 +52,8 @@ int lang = 0;             // 0 English, 1 = Spanish
 static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
+/* verbose value is used to turn off or on optional messages; 
+higher value = more messages */
 #ifdef _DEBUG
 int verbose = 1;
 #else
@@ -167,8 +169,8 @@ static bool getBit(const unsigned long long int x, bool array[]);
 void generatePrimes(unsigned long long int max_val);
 retCode tokenise(const std::string expr, std::vector <token> &tokens);
 static void textError(retCode rc);
-static retCode evalExpr(const token rPolish[], const int rPlen, Znum & result);
-static int reversePolish(token expr[], const int exprLen, token rPolish[], int &rPlen);
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result);
+static int reversePolish(token expr[], const int exprLen, std::vector<token> &rPolish);
 static void printTokens(const token expr[], const int exprLen);
 
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
@@ -1653,21 +1655,20 @@ static retCode ComputeExpr(const std::string &expr, Znum &Result) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;
-	int rpLen;  /* no of tokens in rPolish */
 
 	rv = tokenise(expr, tokens); /* 'tokenise' the expression */
 	if (rv == retCode::EXPR_OK) {
-		rPolish.resize(tokens.size());
-		int ircode = reversePolish(tokens.data(), (int)tokens.size(),
-			rPolish.data(), rpLen); /* convert expression to reverse polish */
+		rPolish.clear();
+		int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish); 
+		/* convert expression to reverse polish */
 		if (ircode == EXIT_SUCCESS) {
-			//printTokens(rPolish.data(), rpLen);
-			rv = evalExpr(rPolish.data(), rpLen, Result);
+			//printTokens(rPolish.data(), (int)rPolish.size());
+			rv = evalExpr(rPolish, Result);
 		}
 		else {
 			if (verbose > 0) {
 				std::cout << "** error: could not convert to reverse polish \n";
-				printTokens(rPolish.data(), rpLen);
+				printTokens(rPolish.data(), (int)rPolish.size());
 			}
 			return retCode::EXPR_SYNTAX_ERROR;
 		}
@@ -1924,10 +1925,12 @@ static void printTokens(const token expr[], const int exprLen) {
 
 /* convert an expression which is already tokenised to reverse polish.
 Syntax checking is done, but it is not guaranteed that all syntax errors will
-be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS */
-static int reversePolish(token expr[], const int exprLen, token rPolish[], int &rPlen) {
+be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
+The well-known shunting algorith is used, but for function parameters a recursive
+call to reversePolish is made, which also takes care of nested function calls. */
+static int reversePolish(token expr[], const int exprLen, std::vector <token> &rPolish) {
 	int exprIndex = 0;
-	rPlen = 0;
+
 	std::vector <token> operStack;  /* operator stack */
 	bool leftNumber = false;      /* used for syntax checking & to recognise unary + or - */
 
@@ -1937,11 +1940,9 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 
 		if (expr[exprIndex].typecode == types::number) {
 			if (leftNumber)
-				return EXIT_FAILURE;
-			//rPolish[rPlen++] = expr[exprIndex];
-			rPolish[rPlen].typecode = expr[exprIndex].typecode;
-			rPolish[rPlen].function = -1;
-			rPolish[rPlen++].value = expr[exprIndex].value;
+				return EXIT_FAILURE;  /* syntax error */
+
+			rPolish.push_back(expr[exprIndex]);
 			leftNumber = true;
 		}
 
@@ -1957,26 +1958,23 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 			}
 			int paramLen=0;
 			int ix3 = 0;
-			int rPL2;
 			for (int pcount = 1; pcount <= numparams; pcount++) {
 				/* find delimiter marking end of parameter*/
 
 				nextsep(expr + exprIndex +2 + ix3, paramLen); // get next , or )
 				if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
 					return EXIT_FAILURE; /* parameter sep. not found */
-				int rv = reversePolish(expr + exprIndex +2 +ix3, paramLen, 
-					rPolish + rPlen, rPL2);
+				int rv = reversePolish(expr + exprIndex +2 +ix3, paramLen, rPolish);
 				if (rv != EXIT_SUCCESS)
 					return rv;
 				ix3 += (paramLen + 1); // move ix3 past , or )
-				rPlen += rPL2;
 			}
 			if (expr[exprIndex + 1 + ix3].typecode != types::Operator ||
 				expr[exprIndex + 1 + ix3].oper != opCode::oper_rightb)
 				return EXIT_FAILURE; /* no ) when required */
-			rPolish[rPlen].typecode = expr[exprIndex].typecode;
-			rPolish[rPlen++].function = expr[exprIndex].function;
-			exprIndex += (ix3+1);
+
+			rPolish.push_back(expr[exprIndex]); /* copy function token to output */
+			exprIndex += (ix3+1); /* move past ) after function name */
 			leftNumber = true;
 		}
 
@@ -2011,10 +2009,9 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 				/* N.B. lower priority value; higher priority operator */
 				if ((stkOpPri < expOpPri)
 					/* transfer stack operator to output */
-					|| (stkOpPri == expOpPri && expr[exprIndex].oper != opCode::oper_power)) {
-					rPolish[rPlen].typecode = operStack.back().typecode;
-					rPolish[rPlen].function = operStack.back().function;
-					rPolish[rPlen++].oper = operStack.back().oper;
+					|| (stkOpPri == expOpPri && 
+						expr[exprIndex].oper != opCode::oper_power)) {
+					rPolish.push_back(operStack.back());
 					operStack.pop_back(); 
 				}
 				else
@@ -2042,10 +2039,7 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 			while (operStack.size() > 0
 				&& operStack.back().typecode == types::Operator
 				&& operStack.back().oper != opCode::oper_leftb) {
-				rPolish[rPlen].typecode = operStack.back().typecode;
-				rPolish[rPlen].oper = operStack.back().oper;
-				rPolish[rPlen].function = operStack.back().function;
-				rPolish[rPlen++].value = operStack.back().value;
+				rPolish.push_back(operStack.back());
 				operStack.pop_back();
 			};
 			if (operStack.empty())
@@ -2062,10 +2056,7 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 
 	/* transfer any remaining operators from stack to output */
 	while (operStack.size() > 0) {
-		rPolish[rPlen].typecode = operStack.back().typecode;
-		rPolish[rPlen].oper = operStack.back().oper;
-		rPolish[rPlen].function = operStack.back().function;
-		rPolish[rPlen++].value = operStack.back().value;
+		rPolish.push_back(operStack.back());
 		operStack.pop_back();
 	}
 	if (leftNumber)
@@ -2074,12 +2065,16 @@ static int reversePolish(token expr[], const int exprLen, token rPolish[], int &
 		return EXIT_FAILURE;
 }
 
-/* evaluate an expression in reverse polish form. Returns EXPR_OK or error code */
-static retCode evalExpr(const token rPolish[], const int rPlen, Znum & result) {
+/* evaluate an expression in reverse polish form. Returns EXPR_OK or error code.
+If there is more than one number on the stack at the end, or at any time there 
+are not enough numbers on the stack to perform an operation an error is reported.
+(this would indicate a syntax error not detected earlier) */
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 	std::stack <Znum> nums;
 	Znum val, p1, p2;
 	Znum args[4];
 	int index = 0;
+	int rPlen = (int)rPolish.size();
 	retCode retcode;
 
 	while (index < rPlen) {
