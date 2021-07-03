@@ -13,10 +13,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 extern double originalTenthSecond;
 extern int oldTimeElapsed;
-
 double tenths(void);
 
 void GetDHMS(char **pptrText, int seconds);

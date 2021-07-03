@@ -157,6 +157,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="modmult.cpp" />
     <ClCompile Include="modmultz.cpp" />
+    <ClCompile Include="mpz_prp.cpp" />
     <ClCompile Include="partition.cpp" />
     <ClCompile Include="R3.cpp" />
     <ClCompile Include="showtime.cpp" />

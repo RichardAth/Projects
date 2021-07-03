@@ -343,3 +343,6 @@ bool callMsieve(const Znum &num, fList&Factors);
 bool callYafu(const Znum &num, fList&Factors);
 void generatePrimes(unsigned long long int max_val);
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
+
+int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
+int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */

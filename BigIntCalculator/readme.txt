@@ -332,7 +332,10 @@ R2(n)                               The number of ways n can be formed as the su
 R3(n)                               The number of ways n can be formed as the sum of x^2 + y^2 + z^2
                                     where x, y and z are negative, zero, or positive.
 									WARNING: for large n this is very slow
-
+llt(n)                              Do Lucas-Lehmer primality test on 2^n-1.
+                                    Return 0 if 2^n-1 is composite, 1 if prime
+sqrt(n)                             Calculate floor(sqrt(n))
+nroot(x, n)                         Calculate nth root of x
 
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)                  0 <= exponent <= 2^31-1, also result is estimated 
@@ -354,7 +357,10 @@ PI(n)                               n <= 10^9 (this is because this calculation 
                                     very slow)
 F(n)                                n <= 95700 (limits result to 20,000 digits)
 L(n)                                n <= 95700 (limits result to 20,000 digits)
-P(n)                                n < 60000 (implementation limit)
+P(n)                                n <= 1000000 (implementation limit, P(100000) takes 5
+                                    minutes to calculate!)
+sqrt(n)                             n >= 0
+nroot(x, n)                         if n is even, x >= 0. (If n is odd -ve x is OK)
 
 There are a number of built-in test commands. In all tests the results are
 checked for correctness and a summary of the factorisation results is printed

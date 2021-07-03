@@ -30,7 +30,7 @@ extern Znum zR, zR2, zNI, zN;
 /* external function declaration */
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
-void biperm(int n, mpz_t &result);   // declaration for external function
+void biperm(int n, Znum &result);   // declaration for external function
 
 
 /* get time in format hh:mm:ss */
@@ -48,7 +48,7 @@ const char * myTime(void) {
 
 #define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
-//static int stackIndex=0; 
+
 static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
@@ -119,8 +119,8 @@ const static int operPrio[] =
 enum class retCode
 {
 	//EXPR_NUMBER_TOO_LOW,
-	//EXPR_NUMBER_TOO_HIGH,
-	EXPR_INTERM_TOO_HIGH = -100,
+	EXPR_NUMBER_TOO_HIGH= -100,
+	EXPR_INTERM_TOO_HIGH ,
 	EXPR_DIVIDE_BY_ZERO,
 	EXPR_PAREN_MISMATCH,
 	EXPR_SYNTAX_ERROR,
@@ -172,6 +172,19 @@ static void textError(retCode rc);
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result);
 static int reversePolish(token expr[], const int exprLen, std::vector<token> &rPolish);
 static void printTokens(const token expr[], const int exprLen);
+
+// find leftmost 1 bit of number. Bits are numbered from 63 to 0
+// An intrinsic is used that gets the bit number directly.
+// If n = zero the value returned is 0, although bit 0 is zero
+static int leftBit(unsigned __int64 n) {
+	int bit = 0, nz = 1;
+
+	nz = _BitScanReverse64((DWORD*)&bit, n);  // this intrinsic should be expanded inline
+			// to use the fastest available machine instructions
+	if (nz) return (int)bit;
+	else return 0;   // n actually contains no 1-bits.
+	
+}
 
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
@@ -567,11 +580,35 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
-/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime */
+/* get remainder when num is divided by m = 2^p-1. The obscure method used 
+avoids division by 2^p-1, and divides by 2^p instead which is much faster,
+as it is equivalent to a right shift by p bits. 
+For efficiency both p and m are given as parameter values although a cleaner
+interface would just supply p and let m be recalculated. */
+static void getrem(Znum &rem, const Znum &num, const long long &p, const Znum &m) {
+	static Znum mod2p, q;  /* static for efficiency */
+	mod2p = num & m;     // mod2p = num%(2^p) = num -q*2^p
+	mpz_tdiv_q_2exp(ZT(q), ZT(num), p);  // q = num/(2^p)
+	rem = q + mod2p;                    //rem = num-q*(2^p-1)
+	while (rem >= m)
+		rem -= m;               // reduce rem if necessary until 0 <= rem < (2^p-1)
+#ifdef _DEBUG
+	/* demonstrate that the result is correct */
+	Znum  temp;
+	mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
+	assert(temp == rem);
+#endif
+}
+
+/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime  
+see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test 
+also https://oeis.org/A000043 
+and https://www.mersenne.org/primes/ 
+the largest mersenne prime found so far is p=82589933 */
 static Znum llt(const Znum &p) {
 	int rv;
-	Znum n, tmp, ncopy, limit, i, d;
-	long long exp = MulPrToLong(p);
+	Znum n, tmp, ncopy, limit;
+	long long exp = MulPrToLong(p); /* exp = p */
 	bool composite = false;
 
 /* 1st check if p is prime*/
@@ -587,25 +624,37 @@ static Znum llt(const Znum &p) {
 	rv = mpz_probab_prime_p(ZT(p), 16);
 #endif 
 	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
-	if (rv == 0) return 0;  // if p is composite, 2^p -1 is composite.
+	if (rv == 0) 
+		return 0;  // if p is composite, 2^p -1 is composite.
+	if (p <= 7)
+		return 1; /* 1st mersenne number that is not prime is p=11 */
 
 	n = 1;
-	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^exp
-	n -= 1;                  // n = 2^exp-1
+	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^p
+	n -= 1;                            // n = 2^p-1
 	ncopy = n;
 
 	/*  n is a mersenne number calculated as (2^p)-1 and p is a prime number.
-		The factors of n must be in the form of q = 2ip+1, where q < n) 
+		The factors of n must be in the form of q = 2ip+1, where q < n. 
 		2ip+1 < n therefore
 		i < (n-1)/2p */
-	limit = (sqrt(n)-1)/(2*p)+1;  
+	limit = (sqrt(n) - 1) / (2 * p) + 1;
 	/* if we find all factors < sqrt(n) the residue is the one remaining factor */
-	if (limit > 1000000) limit = 1000000;   // large n would take too long
-	for (i = 1; i <= limit; i++)	{
-		d = 2 * i*exp + 1;
-		if (n%d == 0)
-		{
-			gmp_printf("2*%Zd*p+1 (= %Zd) is a factor\n", i, d);
+	if (limit > 1000000) {
+		/* hit this limit if p >= 59 */
+		if (verbose > 0)
+			gmp_printf("limit reduced from %Zd to 1000000\n", limit);
+		limit = 1000000;   // larger limit would take too long
+	}
+
+	long long ll_limit = MulPrToLong(limit);
+	Znum rem;
+	for (long long i = 1; i <= ll_limit; i++)	{
+		long long d = 2 * i*exp + 1;
+		//if (n%d == 0)
+		long long r = mpz_tdiv_r_ui(ZT(rem), ZT(n), d);
+		if (r == 0) {
+			printf_s("2*%lld*p+1 (= %lld) is a factor\n", i, d);
 			composite = true;
 			ncopy /= d;
 		}
@@ -613,20 +662,25 @@ static Znum llt(const Znum &p) {
 	if (composite) {
 		if (ncopy > 1)
 			gmp_printf("%Zd is a factor\n", ncopy);
-		return 0;
+		return 0; /* not prime */
 	}
+
 	else {   //else do the ll test
+		printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
+			myTime(), leftBit(2 * ll_limit * exp + 1)+1);
+
 		tmp = 4;
 		int nchars = 0;
 		for (long long i = 0; i < exp - 2; i++) {
 			tmp *= tmp;
 			tmp -= 2;
 			//tmp %= n;
-			mpz_tdiv_r(ZT(tmp), ZT(tmp), ZT(n));
-			if ((i & 511) == 0) {
+			getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
+			if ((i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
 				for (int j = 0; j < nchars; j++)
 					printf("\b");    // erase previous output
-				nchars = printf("llt iteration %lld", i);
+				nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
+					(double)i*100.0/(exp-2) );
 				fflush(stdout);
 			}
 		}
@@ -660,6 +714,10 @@ enum class fn_Code {
 	fn_jacobi,
 	fn_kronecker,
 	fn_llt,
+	fn_sqrt,
+	fn_nroot,
+	fn_bpsw,
+	fn_aprcl,
 	fn_invalid = -1,
 } ;
 
@@ -672,15 +730,17 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 23> functionList{
+const static std::array <struct functions, 27> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
 	"TOTIENT",   1,  fn_Code::fn_totient,
-	"NUMDIVS",   1,  fn_Code::fn_numdivs,
 	"SUMDIVS",   1,  fn_Code::fn_sumdivs,
 	"SUMDIGITS", 2,  fn_Code::fn_sumdigits,
+	"SQRT",      1,  fn_Code::fn_sqrt,
 	"NUMDIGITS", 2,  fn_Code::fn_numdigits,
+	"NUMDIVS",   1,  fn_Code::fn_numdivs,
+	"NROOT",     2,  fn_Code::fn_nroot,
 	"REVDIGITS", 2,  fn_Code::fn_revdigits,
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
@@ -691,11 +751,13 @@ const static std::array <struct functions, 23> functionList{
 	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
 	"P",         1,  fn_Code::fn_part,			// number of partitions
 	"N",         1,  fn_Code::fn_np,			// next prime
+	"BPSW",      1,  fn_Code::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff
 	"B",         1,  fn_Code::fn_pp,			// previous prime
 	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 primes
 	"R3",        1,  fn_Code::fn_r3,
 	"JA",		 2,  fn_Code:: fn_jacobi,
 	"KR",		 2,  fn_Code::fn_kronecker,
+	"APRCL",     1,  fn_Code::fn_aprcl           // APR-CL prime test
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -795,11 +857,12 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	}
 
 	case fn_Code::fn_part: {              // number of partitions
-		if (p1 < 0 || p1 >= 60000) {
-			return retCode::EXPR_INVALID_PARAM;  // note: biperm is limited to values <= 60,000
+		if (p1 < 0 || p1 > 1000000) {
+			return retCode::EXPR_INVALID_PARAM;  
+			// note: biperm is limited to values <= 1,000,000
 		}
 		int temp = (int)MulPrToLong(p1);
-		biperm(temp, ZT(result));   // calculate number of partitions
+		biperm(temp, result);   // calculate number of partitions
 		break;
 	}
 	case fn_Code::fn_np: {  // next prime;
@@ -852,10 +915,74 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 	case fn_Code::fn_llt: {
-		result = llt(p1);
+		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
+		if (p1 >= 0 && p1 <= INT_MAX) {
+			result = llt(p1);
+			if (verbose > 0 || p1 >= 216091) {
+				if (result == 1)
+					std::cout << "*** 2^" << p1 << " -1 is prime! ***\n";
+				else
+					std::cout << "2^" << p1 << " -1 is not prime \n";
+			}
+		}
+		 else /* for large numbers LLT takes a very long time!! */
+			 return retCode::EXPR_NUMBER_TOO_HIGH;
 		break;
 	}
-	
+	case fn_Code::fn_sqrt: {
+		if (p1 < 0) return retCode::EXPR_INVALID_PARAM;
+		mpz_sqrt(ZT(result), ZT(p1));  /* result = square root of p1*/
+		break;
+	}
+	case fn_Code::fn_nroot: {
+		/* for real numbers nroot (x, n)  = x^(1/n) has a discontinuity at n=0, 
+		so the function is considered to be undefined for n=0 */
+		if (p2 == 0) return retCode::EXPR_INVALID_PARAM;
+
+		/* odd root of a -ve number is -ve so allow it. Even root would be a complex
+		number so don't allow it */
+		if (p1 < 0 && mpz_even_p(ZT(p2)))
+			return retCode::EXPR_INVALID_PARAM;
+
+		if (p2 < 0) {
+			result = 0; /* for real numbers nroot(x, n) with n -ve would return
+						a number between 0 and 1. The floor of this value is 0 */
+			break; 
+		}
+		if (p2 > INT_MAX) {
+			/* if p2 is very large the nth root would be close to 1  for +ve p1 
+			or -1 for -ve p1 and odd p2 */
+			return retCode::EXPR_NUMBER_TOO_HIGH;
+		}
+		
+		long long temp = MulPrToLong(ZT(p2));
+		mpz_root(ZT(result), ZT(p1), temp);  /* result = nth root of p1*/
+		break;
+	}
+	case fn_Code::fn_bpsw: {
+		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
+		/* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test */
+		result = mpz_bpsw_prp(ZT(p1));
+		if (result == 0)
+			std::cout << "composite \n";
+		else if (result == 1)
+			std::cout << "probable prime \n";
+		else if (result == 2)
+			std::cout << "prime \n";
+		break;
+	}
+	case fn_Code::fn_aprcl: {
+		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
+		result = mpz_aprtcle(ZT(p1), verbose);
+		if (result == 0)
+			printf_s ( "\ncomposite \n");
+		else if (result == 1)
+			printf_s("\nprobable prime \n");
+		else if (result == 2)
+			printf_s("\nprime \n") ;
+		break;
+	}
+
 	default:
 		abort();		// if we ever get here we have a problem
 	}
@@ -988,7 +1115,7 @@ static void setBit(const unsigned long long int x, bool array[]) {
 }
 
 void generatePrimes(unsigned long long int max_val) {
-	unsigned long long int numsave, count = 1, num = 3;
+	unsigned long long int numsave=0, count = 1, num = 3;
 	size_t plist_size = 0;  // size of prime list
 	unsigned long long int sqrt_max_val;
 
@@ -1054,7 +1181,7 @@ void generatePrimes(unsigned long long int max_val) {
 NOT, unary minus, factorial, double factorial and primorial  have 1 operand. 
 All the others have two. Some operators can genererate an error condition 
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
-static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
+static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 	const Znum &secondArg, Znum &result)
 {
 	
@@ -1062,8 +1189,8 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 	{
 	case opCode::oper_comb: {  // calculate nCk AKA binomial coefficient
 		if (secondArg > INT_MAX)
-		return retCode::EXPR_INTERM_TOO_HIGH;
-		if (secondArg < INT_MIN)
+		return retCode::EXPR_NUMBER_TOO_HIGH;
+		if (secondArg < 1)
 			return retCode::EXPR_INVALID_PARAM;
 		long long k = MulPrToLong(secondArg);
 		mpz_bin_ui(ZT(result), ZT(firstArg), k);
@@ -1089,7 +1216,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 	}
 	case opCode::oper_multiply: {
 		auto resultsize = NoOfBits(firstArg) + NoOfBits(secondArg);
-		if (resultsize > 66439)  // more than 66439 bits -> more than 20,000 decimal digits
+		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		result = firstArg * secondArg;
 		return retCode::EXPR_OK;
@@ -1097,7 +1224,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 	case opCode::oper_remainder: {
 		if (secondArg == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = firstArg % secondArg;   //return BigIntRemainder(firstArg, secondArg, result);
+			result = firstArg % secondArg;   
 		return retCode::EXPR_OK;
 	}
 	case opCode::oper_power: {
@@ -1107,7 +1234,7 @@ static retCode ComputeSubExpr(opCode stackOper, const Znum &firstArg,
 			return retCode::EXPR_EXPONENT_NEGATIVE;
 		long long exp = MulPrToLong(secondArg);
 		auto resultsize = (NoOfBits(firstArg)-1)* exp;  // estimate number of bits for result
-		if (resultsize > 66439)  // more than 66439 bits -> more than 20,000 decimal digits
+		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		mpz_pow_ui(ZT(result), ZT(firstArg), exp);
 		return retCode::EXPR_OK;
@@ -1764,18 +1891,15 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			{  // hexadecimal
 				std::vector<char> digits;
 				exprIndexAux++;
-				while (exprIndexAux < expr.length() - 1)
-				{
+				while (exprIndexAux < expr.length() - 1) {
 					charValue = expr[exprIndexAux + 1];
 					if ((charValue >= '0' && charValue <= '9') ||
 						(charValue >= 'A' && charValue <= 'F') ||
-						(charValue >= 'a' && charValue <= 'f'))
-					{
+						(charValue >= 'a' && charValue <= 'f')) {
 						exprIndexAux++;
 						digits.push_back(charValue);
 					}
-					else
-					{
+					else {
 						break;   // jump out of inner while loop
 					}
 				}
@@ -1786,19 +1910,17 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 				nxtToken.oper = opCode::oper_power;  /* not used */
 				exprIndex = exprIndexAux + 1;
 			}
-			else
-			{                   // Decimal number.
+
+			else {                   // Decimal number.
 				std::vector<char> digits;
-				while (exprIndexAux < expr.length())
-				{  // find position of last digit
+				while (exprIndexAux < expr.length()) {  
+					// find position of last digit
 					charValue = expr[exprIndexAux];
-					if (charValue >= '0' && charValue <= '9')
-					{
+					if (charValue >= '0' && charValue <= '9') {
 						exprIndexAux++;
 						digits.push_back(charValue);
 					}
-					else
-					{
+					else {
 						break;    // jump out of inner while loop
 					}
 				}
@@ -1851,7 +1973,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 }
 
 
-/* find next , or ) */
+/* find next , or ) but anything enclosed in nested brackets () is ignored */
 static void nextsep(token expr[], int &ix) {
 	int brackets = 0;
 	for (ix = 0; ; ix++) {
@@ -1864,11 +1986,11 @@ static void nextsep(token expr[], int &ix) {
 				brackets--;
 			else break;
 		if (brackets > 0)
-			continue;
+			continue; /* ignore anything enclosed in brackets */
 		if (expr[ix].typecode == types::comma)
 			break;
 		if (expr[ix].typecode == types::end)
-			break;
+			break; /* safety check; if brackets match up this will never be reached */
 	}
 }
 
@@ -1927,7 +2049,9 @@ static void printTokens(const token expr[], const int exprLen) {
 Syntax checking is done, but it is not guaranteed that all syntax errors will
 be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
 The well-known shunting algorith is used, but for function parameters a recursive
-call to reversePolish is made, which also takes care of nested function calls. */
+call to reversePolish is made, which also takes care of nested function calls. 
+Also, the initial tokenisation does not distinguish unary - from normal -, so
+that is deduced from the sequence of tokens and the op code is changed if necessary. */
 static int reversePolish(token expr[], const int exprLen, std::vector <token> &rPolish) {
 	int exprIndex = 0;
 
@@ -1959,8 +2083,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			int paramLen=0;
 			int ix3 = 0;
 			for (int pcount = 1; pcount <= numparams; pcount++) {
-				/* find delimiter marking end of parameter*/
 
+				/* find delimiter marking end of parameter*/
 				nextsep(expr + exprIndex +2 + ix3, paramLen); // get next , or )
 				if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
 					return EXIT_FAILURE; /* parameter sep. not found */
@@ -1983,7 +2107,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			&& expr[exprIndex].oper < opCode::oper_rightb) {
 			if (!leftNumber)
 				return EXIT_FAILURE; /* no number or expression before the operator */
-			/* process factorial, primorial.*/
+			/* process factorial, primorial. N.B. these are highest priority 
+			operators, so no need to remove anything from operator stack */
 			operStack.push_back(expr[exprIndex]);
 		}
 
@@ -2008,7 +2133,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 				int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
 				/* N.B. lower priority value; higher priority operator */
 				if ((stkOpPri < expOpPri)
-					/* transfer stack operator to output */
+					/* transfer high priority stack operator to output */
 					|| (stkOpPri == expOpPri && 
 						expr[exprIndex].oper != opCode::oper_power)) {
 					rPolish.push_back(operStack.back());
@@ -2077,7 +2202,8 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 	int rPlen = (int)rPolish.size();
 	retCode retcode;
 
-	while (index < rPlen) {
+	for (index = 0; index < rPlen; index++) {
+		/* push numbers onto stack */
 		if (rPolish[index].typecode == types::number) {
 			nums.push(rPolish[index].value);
 		}
@@ -2089,7 +2215,8 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				return retCode::EXPR_SYNTAX_ERROR;
 
 			for (; NoOfArgs > 0; NoOfArgs--) {
-				args[NoOfArgs-1] = nums.top();
+				/* copy function parameters from number stack to args */
+				args[NoOfArgs - 1] = nums.top();
 				nums.pop();
 			}
 			retcode = ComputeFunc(fnCode, args[0], args[1], args[2], val);
@@ -2128,9 +2255,10 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				nums.push(val);
 			}
 		}
-
-		index++;
+		else
+			abort(); /* unrecognised token */
 	}
+
 
 	if (nums.size() == 1) {
 		result = nums.top();
@@ -2144,7 +2272,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 static void textError(retCode rc) {
 	/*
 	error codes currently used:
-
+	EXPR_NUMBER_TOO_HIGH
 	EXPR_INTERM_TOO_HIGH,		
 	EXPR_DIVIDE_BY_ZERO,        
 	EXPR_PAREN_MISMATCH,		
@@ -2161,10 +2289,10 @@ static void textError(retCode rc) {
 	//case EXPR_NUMBER_TOO_LOW:
 	//	std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
 	//	break;
-	//case EXPR_NUMBER_TOO_HIGH:
-	//	std::cout << (lang ? "Número muy grande \n" :
-	//		"Number too high \n");
-		//break;
+	case retCode::EXPR_NUMBER_TOO_HIGH:
+		std::cout << (lang ? "Número muy grande \n" :
+			"Number too high \n");
+		break;
 	case retCode::EXPR_INTERM_TOO_HIGH:
 		std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
 			"Intermediate number too high (more than 20000 digits)\n");
@@ -2176,12 +2304,10 @@ static void textError(retCode rc) {
 		std::cout << (lang ? "Error de paréntesis\n" : "Parenthesis mismatch\n");
 		break;
 	case retCode::EXPR_SYNTAX_ERROR:
-		if (lang)
-		{
+		if (lang) 	{
 			std::cout << ( "Error de sintaxis\n");
 		}
-		else
-		{
+		else {
 			std::cout << ("Syntax error\n");
 		}
 		break;
@@ -2545,6 +2671,9 @@ static void doTests(void) {
 		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
 		"R3(49)",                          54,
 		"R2(585)",                         16,
+		"SQRT(1234320)",                 1110,
+		"NROOT(2861381721051424,5)",      1234,
+		"LLT(3217)",                         1,  // 2^3217-1 is prime
 	};
 
 	results.clear();
@@ -3309,7 +3438,7 @@ void writeIni(void) {
     // rename .ini as .old
 	int rv = rename(iniFname.c_str(), oldFname.c_str());   
 	if (rv == 0 || errno == ENOENT)
-		rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+		rv = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
 	else
 		perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
 }
@@ -3317,7 +3446,7 @@ void writeIni(void) {
 /* read the .ini file and update paths. 
 path definitions begin with yafu-path=, yafu-prog=, msieve-path= or msieve-prog= 
 Paths are not case-sensitive. 
-Anything else is saved and copied if the .ini file is updated 
+Anything else is saved and is copied if the .ini file is updated 
 arg is arg[0] of the call to main, which conveniently contains the full path
 for the .exe file. We use the same path for the .ini file. 
 If the .ini file can't be opened a new one is created */
@@ -3408,8 +3537,13 @@ static int processCmd(const std::string &command) {
 		"NumDigits(n, r) : Number of digits of n in base r.\n"
 		"SumDigits(n, r) : Sum of digits of n in base r.\n"
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
+		"Sqrt(n)         : square root of n\n"
+		"Nroot(n, r)     : rth root of n e.g.r=3 for cube root\n"
+		"LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, "
+		                 "1 if prime.\n"
 		"FactConcat(m,n) : Concatenates the prime factors of n according to the mode m\n"
 		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
+		"R3(n)   : Number of ways n can be expressed as the sum of x^2+y^2+z^2. (order and sign of x and y are significant \n"
 		"LE(a,p) : Legendre value for (a/p) \n"
 		"JA(a,p) : Jacobi value for (a/p) \n"
 		"KR(a,p) : Kronecker value for (a/p) \n"
@@ -3518,10 +3652,7 @@ int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
 	retCode rv;
-	//std::vector <token> tokens;
-	//std::vector <token> rPolish;
-	//int rpLen;  /* no of tokens in rPolish */
-
+	
 	try {
 		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
@@ -3579,30 +3710,6 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 
-
-			//stackIndex = 0;         // ensure stack is empty 
-			//rv = tokenise(expr, tokens); /* 'tokenise' the expression */
-			////printTokens(tokens.data(), (int)tokens.size());
-			//if (rv == retCode::EXPR_OK) {
-			//	rPolish.resize(tokens.size());
-			//	int ircode = reversePolish(tokens.data(), (int)tokens.size(),
-			//		rPolish.data(), rpLen); /* convert expression to reverse polish */
-			//	if (ircode == EXIT_SUCCESS) {
-			//		//printTokens(rPolish.data(), rpLen);
-			//		rv = evalExpr(rPolish.data(), rpLen, Result); 
-			//		if (rv != retCode::EXPR_OK)
-			//			textError(rv);   // invalid expression; print error message
-			//		else {
-			//			std::cout << " = ";
-			//			ShowLargeNumber(Result, 6, true, hex);   // print value of expression
-			//			std::cout << '\n';
-			//		}
-			//	}
-			//	else
-			//		std::cout << "** error: could not convert to reverse polish \n";
-			//}
-			//else
-			//	textError(rv);   // invalid expression; print error message
 
 			rv = ComputeExpr(expr, Result); /* analyse expression, compute value*/
 

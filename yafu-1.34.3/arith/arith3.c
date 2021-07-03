@@ -592,7 +592,7 @@ int llt(uint32 exp)
 		}
 	}
 	printf("trial division to %u bits is complete\n",
-		(uint32)spBits(2*1000000*exp+1));
+		bits64(2LL*i*exp + 1));
 
 	/*
 	t1 = POLLARD_STG1_MAX;

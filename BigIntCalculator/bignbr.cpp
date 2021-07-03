@@ -17,6 +17,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //#include <cmath>
 #include "pch.h"
 #include "bignbr.h"
+#include "factor.h"
 
 
 /* nbr = - nbr */
@@ -443,15 +444,17 @@ void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 
 
 
-// BPSW primality test:
-// 1) If the input number is 2-SPRP composite, indicate composite and go out.
-// 2) Perform a Miller-Rabin probable prime test on n 
-//    If n is not a probable prime, then n is composite.
-//    Otherwise, n is almost certainly prime.
-// Output: 0 = probable prime.
-//         1 = composite: not 2-Fermat pseudoprime.
-//         2 = composite: does not pass 2-SPRP test.
-//         3 = composite: does not pass Miller-Rabin test.
+/* BPSW primality test:
+1) If the input number is 2-SPRP composite, indicate composite and go out.
+2) Perform a BPSW probable prime test on n 
+   If n is not a probable prime, then n is composite.
+   Otherwise, n is almost certainly prime.
+   upperBound is the largest divisor already tested during trial division
+Output: 0 = probable prime.
+        1 = composite: not 2-Fermat pseudoprime.
+        2 = composite: does not pass 2-SPRP test.
+        3 = composite: does not pass BPSW test.
+***********************************************************************/
 
 int PrimalityTest(const Znum &Value, long long upperBound) {
 	int i, ctr;
@@ -493,6 +496,22 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 			return 2;         // Composite. Not 2-strong probable prime.
 		}
 	}
+
+	/* consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
+	than Miller-Rabin because;
+	1.	There are no known BPSW pseudoprimes
+	2. It's faster than Miller-Rabin */
+
+	int rv2 = mpz_bpsw_prp(ZT(Value));
+	if (rv2 >= 1)
+		return 0;  // probably prime;
+	else if(rv2 == 0)
+		return 3;  // composite - fails BPSW test
+
+	/* BPSW returned error code */
+	std::cout << "*** BPSW primality test returned error! *** \n";
+
+	/* Miller-Rabin test used as backup */
 #ifdef __MPIR_VERSION
 	static bool first = true;
 	static gmp_randstate_t rstate;

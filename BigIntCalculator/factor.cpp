@@ -27,6 +27,8 @@ static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
 static Znum Zfactor;
+double originalTenthSecond;
+int oldTimeElapsed;
 
 static int Cos(int N) {
 	switch (N % 8) 	{
@@ -192,7 +194,7 @@ static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
 				t2 = t1;
 				t1 = t3;
 			}
-			AurifQ[k] = Moebius(N1 / t2) * intTotient(t2) * Cos((N - 1) * k);
+			AurifQ[k] = (long long)Moebius(N1 / t2) * intTotient(t2) * Cos((N - 1) * k);
 		}
 		Gamma[0] = Delta[0] = 1;
 		for (k = 1; k <= DegreeAurif / 2; k++) {
@@ -214,8 +216,8 @@ static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
 					- AurifQ[2 * k
 					- 2 * j] * Delta[j];
 			}
-			Gamma[k] /= 2 * k;
-			Delta[k] = (Delta[k] + Gamma[k]) / (2 * k + 1);
+			Gamma[k] /= 2LL * k;
+			Delta[k] = (Delta[k] + Gamma[k]) / (2LL * k + 1);
 		}
 
 		for (k = DegreeAurif / 2 + 1; k <= DegreeAurif; k++) {
