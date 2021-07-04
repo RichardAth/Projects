@@ -107,7 +107,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>mpir.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mpir.lib;Winmm.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -144,7 +144,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0\lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>mpir.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>mpir.lib;Winmm.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -153,6 +153,7 @@
     <ClCompile Include="bigint.cpp" />
     <ClCompile Include="ecm.cpp" />
     <ClCompile Include="factor.cpp" />
+    <ClCompile Include="FileVersionInfo.cpp" />
     <ClCompile Include="karatsuba.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="modmult.cpp" />

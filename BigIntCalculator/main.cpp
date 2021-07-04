@@ -31,6 +31,7 @@ extern Znum zR, zR2, zNI, zN;
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, Znum &result);   // declaration for external function
+void VersionInfo(const LPCSTR path, int ver[4]);
 
 
 /* get time in format hh:mm:ss */
@@ -3654,6 +3655,8 @@ int main(int argc, char *argv[]) {
 	retCode rv;
 	
 	try {
+		int version[4]; /* version info from .exe file (taken from .rc resource file) */
+
 		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
 		{
@@ -3663,11 +3666,15 @@ int main(int argc, char *argv[]) {
 		}
 
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		printf("%s BigInt calculator Version 2.1 %s", myTime(), banner);
+		VersionInfo(argv[0], version); /* get version info from .exe file */
+		printf("%s BigInt calculator Version %d.%d %s", myTime(), 
+			version[0], version[1], banner);
+
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
+
 #ifdef _MSC_FULL_VER
 /* For example, if the version number of the Visual C++ compiler is 15.00.20706.01, 
 the _MSC_FULL_VER macro evaluates to 150020706 */
