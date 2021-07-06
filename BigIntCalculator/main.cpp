@@ -66,31 +66,31 @@ HANDLE hConsole;
 /* list of operators, arranged in order of priority. Order is not exactly the
 same as C or Python. */
 enum class opCode {
-	oper_power       =  0, 
-	oper_unary_minus =  1,  // C and Python put unary minus above multiply, divide & modulus
-	oper_multiply    =  2,
-	oper_divide      =  3,
-	oper_remainder   =  4,  // AKA modulus
-	oper_comb        =  5,   // nCk, also known as binomial coefficient
-	oper_plus        =  6,
-	oper_minus       =  7,
-	oper_shr         =  8,
-	oper_shl         =  9,
-	oper_not_greater = 10,
-	oper_not_less    = 11,
-	oper_greater     = 12,
-	oper_less        = 13,
-	oper_not_equal   = 14,
-	oper_equal       = 15,
-	oper_not         = 16,      // C and Python put bitwise not with unary minus
-	oper_and         = 17,      // C and Python put AND before XOR before OR
-	oper_xor         = 18,
-	oper_or          = 19,
-	oper_leftb       = 20,
-	oper_fact		 = 21,				// !   factorial 
-	oper_dfact		 = 22,				// !!  double factorial
-	oper_prim		 = 23,				// #   primorial
-	oper_rightb		 = 24,              // right bracket (must be highest value)
+	power       =  0, 
+	unary_minus =  1,  // C and Python put unary minus above multiply, divide & modulus
+	multiply    =  2,
+	divide      =  3,
+	remainder   =  4,  // AKA modulus
+	comb        =  5,   // nCk, also known as binomial coefficient
+	plus        =  6,
+	minus       =  7,
+	shr         =  8,
+	shl         =  9,
+	not_greater = 10,
+	not_less    = 11,
+	greater     = 12,
+	less        = 13,
+	not_equal   = 14,
+	equal       = 15,
+	not         = 16,      // C and Python put bitwise not with unary minus
+	and         = 17,      // C and Python put AND before XOR before OR
+	xor         = 18,
+	or          = 19,
+	leftb       = 20,
+	fact		 = 21,				// !   factorial 
+	dfact		 = 22,				// !!  double factorial
+	prim		 = 23,				// #   primorial
+	rightb		 = 24,              // right bracket (must be highest value)
 };
 
 /* list of operator priority values. lower value = higher priority. Note: this 
@@ -633,62 +633,71 @@ static Znum llt(const Znum &p) {
 	n = 1;
 	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^p
 	n -= 1;                            // n = 2^p-1
+
+	/* do trial division */
 	ncopy = n;
 
 	/*  n is a mersenne number calculated as (2^p)-1 and p is a prime number.
-		The factors of n must be in the form of q = 2ip+1, where q < n. 
+		The factors of n must be in the form of q = 2ip+1, where q < n.
 		2ip+1 < n therefore
 		i < (n-1)/2p */
-	limit = (sqrt(n) - 1) / (2 * p) + 1;
+	limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_root is probably faster */
 	/* if we find all factors < sqrt(n) the residue is the one remaining factor */
 	if (limit > 1000000) {
 		/* hit this limit if p >= 59 */
-		if (verbose > 0)
+		if (verbose > 1)
 			gmp_printf("limit reduced from %Zd to 1000000\n", limit);
-		limit = 1000000;   // larger limit would take too long
+		limit = 1000000;   // larger limit would take too long (also encounter > 64-bit integers)
 	}
 
 	long long ll_limit = MulPrToLong(limit);
 	Znum rem;
-	for (long long i = 1; i <= ll_limit; i++)	{
+	for (long long i = 1; i <= ll_limit; i++) {
 		long long d = 2 * i*exp + 1;
 		//if (n%d == 0)
 		long long r = mpz_tdiv_r_ui(ZT(rem), ZT(n), d);
 		if (r == 0) {
-			printf_s("2*%lld*p+1 (= %lld) is a factor\n", i, d);
 			composite = true;
 			ncopy /= d;
+			if (verbose > 0)
+				printf_s("2*%lld*p+1 (= %lld) is a factor\n", i, d);
+			else
+				return 0;  /* not prime */
 		}
 	}
 	if (composite) {
-		if (ncopy > 1)
+		if (ncopy > 1 && verbose > 0)
 			gmp_printf("%Zd is a factor\n", ncopy);
 		return 0; /* not prime */
 	}
 
-	else {   //else do the ll test
+	/* composite false; no factors found by trial division */
+	if (verbose > 0)
 		printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
-			myTime(), leftBit(2 * ll_limit * exp + 1)+1);
+			myTime(), leftBit(2 * ll_limit * exp + 1) + 1);
 
-		tmp = 4;
-		int nchars = 0;
-		for (long long i = 0; i < exp - 2; i++) {
-			tmp *= tmp;
-			tmp -= 2;
-			//tmp %= n;
-			getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
-			if ((i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
-				for (int j = 0; j < nchars; j++)
-					printf("\b");    // erase previous output
-				nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
-					(double)i*100.0/(exp-2) );
-				fflush(stdout);
-			}
+	/*do the ll test */
+	tmp = 4;
+	int nchars = 0;
+	for (long long i = 0; i < exp - 2; i++) {
+		tmp *= tmp;
+		tmp -= 2;
+		//tmp %= n;
+		getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
+		if (verbose > 0 && (i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
+			for (int j = 0; j < nchars; j++)
+				printf("\b");    // erase previous output
+			nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
+				(double)i*100.0/(exp-2) );
+			fflush(stdout);
 		}
-		printf("\n");
-		if (tmp == 0) return 1;  // prime
-		else return 0;            // composite
 	}
+	if (verbose > 0) printf("\n");
+
+	if (tmp == 0) 
+		return 1;             // prime
+	else 
+		return 0;            // composite
 }
 
 enum class fn_Code {
@@ -746,7 +755,7 @@ const static std::array <struct functions, 27> functionList{
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
-	"LLT",	     1,  fn_Code::fn_llt,           // lucas
+	"LLT",	     1,  fn_Code::fn_llt,           // lucas-Lehmer test
 	"LE",		 2,  fn_Code::fn_legendre,
 	"L",         1,  fn_Code::fn_luc,			// Lucas Number
 	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
@@ -1183,12 +1192,11 @@ NOT, unary minus, factorial, double factorial and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition 
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
 static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
-	const Znum &secondArg, Znum &result)
-{
+	const Znum &secondArg, Znum &result) {
 	
-	switch (stackOper)
-	{
-	case opCode::oper_comb: {  // calculate nCk AKA binomial coefficient
+	switch (stackOper) 	{
+
+	case opCode::comb: {  // calculate nCk AKA binomial coefficient
 		if (secondArg > INT_MAX)
 		return retCode::EXPR_NUMBER_TOO_HIGH;
 		if (secondArg < 1)
@@ -1197,38 +1205,38 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		mpz_bin_ui(ZT(result), ZT(firstArg), k);
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_plus: {
+	case opCode::plus: {
 		result = firstArg + secondArg; 
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_minus: {
+	case opCode::minus: {
 		result = firstArg - secondArg; 
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_unary_minus: {
+	case opCode::unary_minus: {
 		result = -secondArg; 
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_divide: {
+	case opCode::divide: {
 		if (secondArg == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
 		result = firstArg / secondArg; 
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_multiply: {
+	case opCode::multiply: {
 		auto resultsize = NoOfBits(firstArg) + NoOfBits(secondArg);
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		result = firstArg * secondArg;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_remainder: {
+	case opCode::remainder: {
 		if (secondArg == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
 			result = firstArg % secondArg;   
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_power: {
+	case opCode::power: {
 		if (secondArg > INT_MAX)
 			return retCode::EXPR_EXPONENT_TOO_LARGE;
 		if (secondArg < 0)
@@ -1240,73 +1248,73 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		mpz_pow_ui(ZT(result), ZT(firstArg), exp);
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_equal: {
+	case opCode::equal: {
 		if (firstArg == secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_not_equal: {
+	case opCode::not_equal: {
 		if (firstArg != secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_greater: {
+	case opCode::greater: {
 		if (firstArg > secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_not_greater: {
+	case opCode::not_greater: {
 		if (firstArg <= secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_less: {
+	case opCode::less: {
 		if (firstArg < secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_not_less: {
+	case opCode::not_less: {
 		if (firstArg <= secondArg)
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_shl: {
+	case opCode::shl: {
 		return ShiftLeft(firstArg, secondArg, result);
 	}
-	case opCode::oper_shr: {
+	case opCode::shr: {
 		// invert sign of shift
 		return ShiftLeft(firstArg, -secondArg, result);
 	}
-	case opCode::oper_not: {   // Perform binary NOT 
+	case opCode::not: {   // Perform binary NOT 
 		//result = -1 - secondArg;  // assumes 2s complement binary numbers
 		mpz_com(ZT(result), ZT(secondArg));
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_and: {  // Perform binary AND.
+	case opCode::and: {  // Perform binary AND.
 		mpz_and(ZT(result), ZT(firstArg), ZT(secondArg));
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_or: {   // Perform binary OR.
+	case opCode::or: {   // Perform binary OR.
 		mpz_ior(ZT(result), ZT(firstArg), ZT(secondArg));
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_xor: {   // Perform binary XOR.
+	case opCode::xor: {   // Perform binary XOR.
 		mpz_xor(ZT(result), ZT(firstArg), ZT(secondArg));
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_fact: {
+	case opCode::fact: {
 		if(secondArg > 5984)
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		if (secondArg < 0)
@@ -1315,7 +1323,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		mpz_fac_ui(ZT(result), temp);  // get factorial
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_dfact: {
+	case opCode::dfact: {
 		if (secondArg > 11081)
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		if (secondArg < 0)
@@ -1324,7 +1332,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		mpz_2fac_ui(ZT(result), temp);  // get double factorial
 		return retCode::EXPR_OK;
 	}
-	case opCode::oper_prim: {
+	case opCode::prim: {
 		if (secondArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		if (secondArg < 0)
@@ -1351,28 +1359,28 @@ Operators ! (factorial) !! (double factorial) and # (primorial) are not in this
 list because the convention is that they follow the number or expression they 
 operate on. */
 const static struct oper_list operators[]  {
-	{"C",	 opCode::oper_comb,	       3},
-	{ "^",   opCode::oper_power,       0},
-	{ "**",  opCode::oper_power,       0},     // can use ^ or ** for exponent
-	{ "*",   opCode::oper_multiply,    2},
-	{ "/",   opCode::oper_divide,      2},
-	{ "%",   opCode::oper_remainder,   2},
-	{ "+",   opCode::oper_plus,        4},
-	{ "-",   opCode::oper_minus,       4},
-	{ "SHL", opCode::oper_shl,         5},
-	{ "<<",  opCode::oper_shl,         5},     // can use << or SHL for left shift
-	{ "SHR", opCode::oper_shr,         5},
-	{ ">>",  opCode::oper_shr,         5},     // can use SHR or >> for right shift
-	{ "<=",  opCode::oper_not_greater, 6},
-	{ ">=",  opCode::oper_not_less,    6},
-	{ ">",   opCode::oper_greater,     6},	  // to avoid mismatches > and < must come after >> and <<
-	{ "<",   opCode::oper_less,        6},
-	{ "!=",  opCode::oper_not_equal,   7},
-	{ "==",  opCode::oper_equal,       7},
-	{ "NOT", opCode::oper_not,         8},      // bitwise NOT
-	{ "AND", opCode::oper_and,         9},      // bitwise AND
-	{ "OR",  opCode::oper_or,         11},      // bitwise OR
-	{ "XOR", opCode::oper_xor,        10}   };  // bitwise exclusive or
+	{"C",	 opCode::comb,	       3},
+	{ "^",   opCode::power,       0},
+	{ "**",  opCode::power,       0},     // can use ^ or ** for exponent
+	{ "*",   opCode::multiply,    2},
+	{ "/",   opCode::divide,      2},
+	{ "%",   opCode::remainder,   2},
+	{ "+",   opCode::plus,        4},
+	{ "-",   opCode::minus,       4},
+	{ "SHL", opCode::shl,         5},
+	{ "<<",  opCode::shl,         5},     // can use << or SHL for left shift
+	{ "SHR", opCode::shr,         5},
+	{ ">>",  opCode::shr,         5},     // can use SHR or >> for right shift
+	{ "<=",  opCode::not_greater, 6},
+	{ ">=",  opCode::not_less,    6},
+	{ ">",   opCode::greater,     6},	  // to avoid mismatches > and < must come after >> and <<
+	{ "<",   opCode::less,        6},
+	{ "!=",  opCode::not_equal,   7},
+	{ "==",  opCode::equal,       7},
+	{ "NOT", opCode::not,         8},      // bitwise NOT
+	{ "AND", opCode::and,         9},      // bitwise AND
+	{ "OR",  opCode::or,         11},      // bitwise OR
+	{ "XOR", opCode::xor,        10}   };  // bitwise exclusive or
 
 /* search for operators e.g. '+', '*'  that have format <expression> <operator> <expression>
 or <operator> <expression>. return index of operator or -1 */
@@ -1518,7 +1526,7 @@ The numerical value of the expression is returned in ExpressionResult  */
 //					continue;    // process more of expr
 //				}
 //			}
-//			if ((leftNumberFlag == false) != (operCode == opCode::oper_not))
+//			if ((leftNumberFlag == false) != (operCode == opCode::not))
 //			{     // Missing left operator if operator is not NOT or
 //					// extra left operator if operator is NOT.
 //				depth--;				// adjust call depth
@@ -1841,7 +1849,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 		{
 			/* double factorial */
 			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::oper_dfact;
+			nxtToken.oper = opCode::dfact;
 			nxtToken.value = 0;
 			exprIndex += 2;
 		}
@@ -1849,7 +1857,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 		{
 			/*factorial */
 			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::oper_fact;
+			nxtToken.oper = opCode::fact;
 			nxtToken.value = 0;
 			exprIndex++;
 		}
@@ -1857,20 +1865,20 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 		{
 			/*primorial */
 			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::oper_prim;
+			nxtToken.oper = opCode::prim;
 			nxtToken.value = 0;
 			exprIndex++;
 		}
 
 		else if (charValue == '(') {
 			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::oper_leftb;
+			nxtToken.oper = opCode::leftb;
 			nxtToken.value = 0;
 			exprIndex++;
 		}
 		else if (charValue == ')') {
 			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::oper_rightb;
+			nxtToken.oper = opCode::rightb;
 			nxtToken.value = 0;
 			exprIndex++;
 		}
@@ -1879,7 +1887,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 		else if (charValue == ',') {
 			nxtToken.typecode = types::comma;
 			nxtToken.value = 0;                /* not used */
-			nxtToken.oper = opCode::oper_power;  /* not used */
+			nxtToken.oper = opCode::power;  /* not used */
 			exprIndex++;
 		}
 
@@ -1908,7 +1916,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 				/* convert hex string to bigint */
 				mpz_set_str(ZT(nxtToken.value), digits.data(), 16);
 				nxtToken.typecode = types::number;
-				nxtToken.oper = opCode::oper_power;  /* not used */
+				nxtToken.oper = opCode::power;  /* not used */
 				exprIndex = exprIndexAux + 1;
 			}
 
@@ -1929,7 +1937,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 				digits.push_back('\0');   // null terminate string
 				mpz_set_str(ZT(nxtToken.value), digits.data(), 10);
 				nxtToken.typecode = types::number;
-				nxtToken.oper = opCode::oper_power;  /* not used */
+				nxtToken.oper = opCode::power;  /* not used */
 				exprIndex = exprIndexAux;
 			}
 		}
@@ -1942,7 +1950,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 					nxtToken.typecode = types::func;
 					nxtToken.function = ix;
 					nxtToken.value = 0;                  /* not used */
-					nxtToken.oper = opCode::oper_power;  /* not used */
+					nxtToken.oper = opCode::power;  /* not used */
 					exprIndex += (int)strlen(functionList[ix].fname); // move exprIndex past function name
 					break;
 				}
@@ -1957,9 +1965,9 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 
 	int brackets = 0; /* count depth of brackets*/
 	for (auto t : tokens) {
-		if (t.typecode == types::Operator && t.oper == opCode::oper_leftb)
+		if (t.typecode == types::Operator && t.oper == opCode::leftb)
 			brackets++;
-		if (t.typecode == types::Operator && t.oper == opCode::oper_rightb) {
+		if (t.typecode == types::Operator && t.oper == opCode::rightb) {
 			brackets--;
 			if (brackets < 0)
 				return retCode::EXPR_PAREN_MISMATCH;
@@ -1979,10 +1987,10 @@ static void nextsep(token expr[], int &ix) {
 	int brackets = 0;
 	for (ix = 0; ; ix++) {
 		if (expr[ix].typecode == types::Operator
-			&& expr[ix].oper == opCode::oper_leftb)
+			&& expr[ix].oper == opCode::leftb)
 			brackets++;
 		if (expr[ix].typecode == types::Operator
-			&& expr[ix].oper == opCode::oper_rightb)
+			&& expr[ix].oper == opCode::rightb)
 			if (brackets > 0)
 				brackets--;
 			else break;
@@ -2018,17 +2026,17 @@ static void printTokens(const token expr[], const int exprLen) {
 			break;
 
 		case types::Operator:
-			if (expr[ix].oper == opCode::oper_leftb)
+			if (expr[ix].oper == opCode::leftb)
 				std::cout << '(';
-			else if (expr[ix].oper == opCode::oper_fact)
+			else if (expr[ix].oper == opCode::fact)
 				std::cout << '!';
-			else if (expr[ix].oper == opCode::oper_dfact)
+			else if (expr[ix].oper == opCode::dfact)
 				std::cout << "!!";
-			else if (expr[ix].oper == opCode::oper_prim)
+			else if (expr[ix].oper == opCode::prim)
 				std::cout << '#';
-			else if (expr[ix].oper == opCode::oper_rightb)
+			else if (expr[ix].oper == opCode::rightb)
 				std::cout << ')';
-			else if (expr[ix].oper == opCode::oper_unary_minus)
+			else if (expr[ix].oper == opCode::unary_minus)
 				std::cout << " Unary - ";
 			else {
 				for (int ixx = 0 ; ixx < sizeof(operators)/sizeof(operators[0]); ixx++)
@@ -2078,7 +2086,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			int numparams = functionList[expr[exprIndex].function].NoOfParams;
 
 			if (expr[exprIndex+1].typecode != types::Operator ||
-				expr[exprIndex+1].oper != opCode::oper_leftb) {
+				expr[exprIndex+1].oper != opCode::leftb) {
 				return EXIT_FAILURE; /* function name not followed by (*/
 			}
 			int paramLen=0;
@@ -2095,7 +2103,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 				ix3 += (paramLen + 1); // move ix3 past , or )
 			}
 			if (expr[exprIndex + 1 + ix3].typecode != types::Operator ||
-				expr[exprIndex + 1 + ix3].oper != opCode::oper_rightb)
+				expr[exprIndex + 1 + ix3].oper != opCode::rightb)
 				return EXIT_FAILURE; /* no ) when required */
 
 			rPolish.push_back(expr[exprIndex]); /* copy function token to output */
@@ -2104,8 +2112,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		}
 
 		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper > opCode::oper_leftb
-			&& expr[exprIndex].oper < opCode::oper_rightb) {
+			&& expr[exprIndex].oper > opCode::leftb
+			&& expr[exprIndex].oper < opCode::rightb) {
 			if (!leftNumber)
 				return EXIT_FAILURE; /* no number or expression before the operator */
 			/* process factorial, primorial. N.B. these are highest priority 
@@ -2114,14 +2122,14 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		}
 
 		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper < opCode::oper_leftb ) {
+			&& expr[exprIndex].oper < opCode::leftb ) {
 			/* check for unary - or + */
 			if (!leftNumber) {
-				if (expr[exprIndex].oper == opCode::oper_minus)
-					expr[exprIndex].oper = opCode::oper_unary_minus;
-				else if (expr[exprIndex].oper == opCode::oper_plus)
+				if (expr[exprIndex].oper == opCode::minus)
+					expr[exprIndex].oper = opCode::unary_minus;
+				else if (expr[exprIndex].oper == opCode::plus)
 					continue;
-				else if (expr[exprIndex].oper != opCode::oper_not)
+				else if (expr[exprIndex].oper != opCode::not)
 					return EXIT_FAILURE;  /* operator not preceded by a number or expression */
 			}
 
@@ -2130,13 +2138,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			/* transfer higher priority operators from stack to output */
 			while (operStack.size() > 0 
 				&& operStack.back().typecode == types::Operator
-				&& operStack.back().oper != opCode::oper_leftb) {
+				&& operStack.back().oper != opCode::leftb) {
 				int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
 				/* N.B. lower priority value; higher priority operator */
 				if ((stkOpPri < expOpPri)
 					/* transfer high priority stack operator to output */
 					|| (stkOpPri == expOpPri && 
-						expr[exprIndex].oper != opCode::oper_power)) {
+						expr[exprIndex].oper != opCode::power)) {
 					rPolish.push_back(operStack.back());
 					operStack.pop_back(); 
 				}
@@ -2145,26 +2153,26 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			}
 
 			operStack.push_back(expr[exprIndex]); /* put current operator onto stack */
-			if (expr[exprIndex].oper > opCode::oper_leftb
-				&& expr[exprIndex].oper < opCode::oper_rightb)
+			if (expr[exprIndex].oper > opCode::leftb
+				&& expr[exprIndex].oper < opCode::rightb)
 				leftNumber = true;  /* factorial, primorial.*/
 			else
 				leftNumber = false;
 		}
 
 		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper == opCode::oper_leftb) {
+			&& expr[exprIndex].oper == opCode::leftb) {
 			if (leftNumber)
 				return EXIT_FAILURE; /* syntax error */
 			operStack.push_back(expr[exprIndex]);
 		}
 
 		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper == opCode::oper_rightb) {
+			&& expr[exprIndex].oper == opCode::rightb) {
 			/* right bracket; remove stacked operators up to left bracket */
 			while (operStack.size() > 0
 				&& operStack.back().typecode == types::Operator
-				&& operStack.back().oper != opCode::oper_leftb) {
+				&& operStack.back().oper != opCode::leftb) {
 				rPolish.push_back(operStack.back());
 				operStack.pop_back();
 			};
@@ -2227,11 +2235,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 		}
 
 		else if (rPolish[index].typecode == types::Operator) {
-			if (rPolish[index].oper == opCode::oper_unary_minus
-				|| rPolish[index].oper == opCode::oper_not
-				|| rPolish[index].oper == opCode::oper_fact
-				|| rPolish[index].oper == opCode::oper_dfact
-				|| rPolish[index].oper == opCode::oper_prim) {
+			if (rPolish[index].oper == opCode::unary_minus
+				|| rPolish[index].oper == opCode::not
+				|| rPolish[index].oper == opCode::fact
+				|| rPolish[index].oper == opCode::dfact
+				|| rPolish[index].oper == opCode::prim) {
 				/* operators that only take 1 operand */
 				if (nums.empty())
 					return retCode::EXPR_SYNTAX_ERROR;
@@ -2675,6 +2683,8 @@ static void doTests(void) {
 		"SQRT(1234320)",                 1110,
 		"NROOT(2861381721051424,5)",      1234,
 		"LLT(3217)",                         1,  // 2^3217-1 is prime
+		"BPSW(2^99-1)",                      0,  //not a prime number
+		"BPSW(2^127-1)",                     1,  //a prime number
 	};
 
 	results.clear();
@@ -3403,6 +3413,46 @@ static void doTests6(void) {
 	printSummary();           // print 1 line per test
 }
 
+/* Lucas-Lehmer test*/
+static void doTests7(const std::string &params) {
+	std::vector <long long> mPrimes;
+	int p1;
+#ifdef _DEBUG
+	int limit = 2000;  /* find 1st 15 Mersenne  primes, test 303 primes */
+#else
+	int limit = 12000; /* find 1st 23 Mersenne primes, test 1438 primes */
+#endif
+	auto start = clock();	// used to measure execution time
+
+	auto numParams = sscanf_s(params.data(), "%d", &p1);
+	if (numParams >= 1)
+		limit = p1;    /* replace default value with user-specified value */
+	generatePrimes(limit);    /* make prime list if not already done */
+
+	for (int i = 0; primeList[i] < limit; i++) {
+		Znum p = primeList[i];
+		Znum rv = llt(p); /* Return 0 if 2^p-1 is composite, 1 if prime  */
+		if (rv == 1) {
+			std::cout << myTime() << " 2^" << primeList[i] << " -1 is prime *** \n";
+			mPrimes.push_back(primeList[i]);
+		}
+		else if (verbose > 0 || i%100 == 0)
+			/* \r instead of usual \n means that each messsage overwrites the 
+			previous one */
+			std::cout << myTime() << " 2^" << primeList[i] << " -1 is NOT prime \r";
+	}
+
+	/* see https://oeis.org/A000043 */
+	std::cout << "Found " << mPrimes.size() << " Mersenne primes \n";
+	for (auto p : mPrimes) {
+		std::cout << p << ", ";
+	}
+	putchar('\n');
+	auto end = clock();              // measure amount of time used
+	auto elapsed = (double)end - start;
+	PrintTimeUsed(elapsed, "test 7 completed time used = ");
+}
+
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -3625,6 +3675,15 @@ static int processCmd(const std::string &command) {
 	}
 	if (command == "TEST6") {
 		doTests6();         // do Msieve tests 
+		return 1;
+	}
+	if (command.substr(0, 5) == "TEST7") {
+		/* Lucas-Lehmer test */
+		if (command.size() > 5)
+			doTests7(command.substr(6));         
+		else
+			doTests7("");
+		return 1;
 		return 1;
 	}
 	if (command.substr(0, 6) == "MSIEVE") {

@@ -363,6 +363,13 @@ int mpz_selfridge_prp(const mpz_t n)
  See https://en.wikipedia.org/wiki/Baillie%E2%80%93PSW_primality_test
  * There are no known Baillie–PSW pseudoprimes. Despite this, there are conjectured 
  * to be infinitely many. 
+ * No examples of composite numbers passing the test are known, and as of June 13, 2009, 
+ * Jeff Gilchrist has confirmed that there are no Baillie-PSW pseudoprimes up to 10^(17). 
+ * However, the elliptic curve primality proving program PRIMO checks all intermediate 
+ * probable primes with this test, and if any were composite, the certification would 
+ * necessarily have failed. Based on the fact that this has not occurred in three years 
+ * of usage, PRIMO author M. Martin estimates that there is no composite less than 
+ * about 10000 digits that can fool this test.
  * **********************************************************************************/
 int mpz_bpsw_prp(const mpz_t n)
 {
