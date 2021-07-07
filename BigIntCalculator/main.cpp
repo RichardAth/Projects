@@ -601,6 +601,12 @@ static void getrem(Znum &rem, const Znum &num, const long long &p, const Znum &m
 #endif
 }
 
+long long lltTdivCnt = 0;  /* count no of Mersenne numbers (partly) factored by 
+						   trial division */
+long long lltCmpCnt = 0; /* count no of Mersenne numbers determined to be composite
+						   using Lucas-Lehmer test */
+long long lltPriCnt = 0; /* count no of Mersenne numbers determined to be prime
+						   using Lucas-Lehmer test */
 /* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime  
 see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test 
 also https://oeis.org/A000043 
@@ -608,6 +614,9 @@ and https://www.mersenne.org/primes/
 the largest mersenne prime found so far is p=82589933 */
 static Znum llt(const Znum &p) {
 	int rv;
+	const int maxlimit = 1000000;  /* Limits the number of iterations for trial
+								     division. Experiments indicate that increasing 
+									 this limit slows llt down overall. */
 	Znum n, tmp, ncopy, limit;
 	long long exp = MulPrToLong(p); /* exp = p */
 	bool composite = false;
@@ -641,13 +650,16 @@ static Znum llt(const Znum &p) {
 		The factors of n must be in the form of q = 2ip+1, where q < n.
 		2ip+1 < n therefore
 		i < (n-1)/2p */
-	limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_root is probably faster */
+	//limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_sqrt is probably faster */
+	Znum nm1 = n - 1;
+	mpz_sqrt(ZT(limit), ZT(nm1));
 	/* if we find all factors < sqrt(n) the residue is the one remaining factor */
-	if (limit > 1000000) {
-		/* hit this limit if p >= 59 */
+
+	if (limit > maxlimit) {
+		/* hit this limit if p >= 41 */
 		if (verbose > 1)
-			gmp_printf("limit reduced from %Zd to 1000000\n", limit);
-		limit = 1000000;   // larger limit would take too long (also encounter > 64-bit integers)
+			gmp_printf("limit reduced from %Zd to %lld", limit, maxlimit);
+		limit = maxlimit;   // larger limit would take too long (also encounter > 64-bit integers)
 	}
 
 	long long ll_limit = MulPrToLong(limit);
@@ -661,13 +673,16 @@ static Znum llt(const Znum &p) {
 			ncopy /= d;
 			if (verbose > 0)
 				printf_s("2*%lld*p+1 (= %lld) is a factor\n", i, d);
-			else
-				return 0;  /* not prime */
+			else {
+				lltTdivCnt++;  /* increment counter */
+				return 0;  /* not prime; return as soon as we know this */
+			}
 		}
 	}
 	if (composite) {
 		if (ncopy > 1 && verbose > 0)
 			gmp_printf("%Zd is a factor\n", ncopy);
+		lltTdivCnt++;   /* increment counter */
 		return 0; /* not prime */
 	}
 
@@ -694,10 +709,14 @@ static Znum llt(const Znum &p) {
 	}
 	if (verbose > 0) printf("\n");
 
-	if (tmp == 0) 
+	if (tmp == 0) {
+		lltPriCnt++;  /* increment counter */
 		return 1;             // prime
-	else 
+	}
+	else {
+		lltCmpCnt++;   /* increment counter */
 		return 0;            // composite
+	}
 }
 
 enum class fn_Code {
@@ -3416,7 +3435,8 @@ static void doTests6(void) {
 /* Lucas-Lehmer test*/
 static void doTests7(const std::string &params) {
 	std::vector <long long> mPrimes;
-	int p1;
+	int p1, i=0;
+	lltPriCnt = lltCmpCnt = lltTdivCnt = 0;  /* reset counters */
 #ifdef _DEBUG
 	int limit = 2000;  /* find 1st 15 Mersenne  primes, test 303 primes */
 #else
@@ -3429,7 +3449,7 @@ static void doTests7(const std::string &params) {
 		limit = p1;    /* replace default value with user-specified value */
 	generatePrimes(limit);    /* make prime list if not already done */
 
-	for (int i = 0; primeList[i] < limit; i++) {
+	for (i = 0; primeList[i] < limit; i++) {
 		Znum p = primeList[i];
 		Znum rv = llt(p); /* Return 0 if 2^p-1 is composite, 1 if prime  */
 		if (rv == 1) {
@@ -3443,11 +3463,14 @@ static void doTests7(const std::string &params) {
 	}
 
 	/* see https://oeis.org/A000043 */
-	std::cout << "Found " << mPrimes.size() << " Mersenne primes \n";
+	std::cout << "Found " << mPrimes.size() << " Mersenne primes            \n";
 	for (auto p : mPrimes) {
 		std::cout << p << ", ";
 	}
 	putchar('\n');
+	printf_s("%2.2f%% primes, %2.2f%% composites found by trial division, ",
+		100.0 *lltPriCnt / i, 100.*lltTdivCnt / i);
+	printf_s("%2.2f%% composites found by llt \n", 100.0*lltCmpCnt / i);
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");

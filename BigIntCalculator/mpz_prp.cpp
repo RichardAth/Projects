@@ -44,12 +44,12 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
 		return PRP_ERROR;
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;
+		return PRP_COMPOSITE;   /* definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;
+			return PRP_PRIME;     /* definitely prime */
 		else
 			return PRP_COMPOSITE;
 	}
@@ -73,7 +73,7 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
 		mpz_clear(s);
 		mpz_clear(nm1);
 		mpz_clear(mpz_test);
-		return PRP_PRP;
+		return PRP_PRP;  /* probable prime */
 	}
 
 	while (--r)
@@ -87,14 +87,14 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
 			mpz_clear(s);
 			mpz_clear(nm1);
 			mpz_clear(mpz_test);
-			return PRP_PRP;
+			return PRP_PRP;  /* probable prime */
 		}
 	}
 
 	mpz_clear(s);
 	mpz_clear(nm1);
 	mpz_clear(mpz_test);
-	return PRP_COMPOSITE;
+	return PRP_COMPOSITE;   /* definitely not prime */
 
 }/* method mpz_sprp */
 
@@ -118,14 +118,14 @@ int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 		return PRP_ERROR;
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;
+		return PRP_COMPOSITE;       /* definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;
+			return PRP_PRIME;       /* definitely prime */
 		else
-			return PRP_COMPOSITE;
+			return PRP_COMPOSITE;   /* definitely not prime */
 	}
 
 	mpz_init(index);
@@ -140,7 +140,7 @@ int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 		mpz_clear(zD);
 		mpz_clear(res);
 		mpz_clear(index);
-		return PRP_COMPOSITE;
+		return PRP_COMPOSITE;     /* definitely not prime */
 	}
 
 	/* index = n-(D/n), where (D/n) is the Jacobi symbol */
@@ -258,12 +258,12 @@ int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 	if (mpz_cmp_ui(res, 0) == 0)
 	{
 		mpz_clear(res);
-		return PRP_PRP;
+		return PRP_PRP;   /* probable prime */
 	}
 	else
 	{
 		mpz_clear(res);
-		return PRP_COMPOSITE;
+		return PRP_COMPOSITE;      /* definitely not prime */
 	}
 
 }/* method mpz_lucas_prp */
@@ -283,14 +283,14 @@ int mpz_selfridge_prp(const mpz_t n)
 	mpz_t zD;
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;
+		return PRP_COMPOSITE;     /* definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;
+			return PRP_PRIME;    /* definitely prime */
 		else
-			return PRP_COMPOSITE;
+			return PRP_COMPOSITE;     /* definitely not prime */
 	}
 
 	mpz_init_set_ui(zD, d);
@@ -306,12 +306,12 @@ int mpz_selfridge_prp(const mpz_t n)
 			if ((mpz_cmpabs(zD, n) == 0) && (mpz_cmp_ui(zD, 9) != 0))
 			{
 				mpz_clear(zD);
-				return PRP_PRIME;
+				return PRP_PRIME;    /* definitely prime */
 			}
 			else
 			{
 				mpz_clear(zD);
-				return PRP_COMPOSITE;
+				return PRP_COMPOSITE;    /* definitely not prime */
 			}
 		}
 		if (jacobi == -1)
@@ -323,7 +323,7 @@ int mpz_selfridge_prp(const mpz_t n)
 			if (mpz_perfect_square_p(n))
 			{
 				mpz_clear(zD);
-				return PRP_COMPOSITE;
+				return PRP_COMPOSITE;    /* definitely not prime */
 			}
 		}
 
