@@ -412,7 +412,7 @@ static int PrimalityTestSmall(const long long Value) {
 	if ((Value & 1) == 0) return 0;   // even numbers > 2 are not prime
 
 	if (Value <= max_prime) {
-		if (primeFlags == NULL || primeListMax < max_prime) {
+		if (primeFlags == NULL || (long long)primeListMax < Value) {
 			generatePrimes(max_prime);  // takes a while, but only needed on 1st call
 		}
 		if (!getBit(Value, primeFlags))
@@ -581,67 +581,25 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
-/* get remainder when num is divided by m = 2^p-1. The obscure method used 
-avoids division by 2^p-1, and divides by 2^p instead which is much faster,
-as it is equivalent to a right shift by p bits. 
-For efficiency both p and m are given as parameter values although a cleaner
-interface would just supply p and let m be recalculated. */
-static void getrem(Znum &rem, const Znum &num, const long long &p, const Znum &m) {
-	static Znum mod2p, q;  /* static for efficiency */
-	mod2p = num & m;     // mod2p = num%(2^p) = num -q*2^p
-	mpz_tdiv_q_2exp(ZT(q), ZT(num), p);  // q = num/(2^p)
-	rem = q + mod2p;                    //rem = num-q*(2^p-1)
-	while (rem >= m)
-		rem -= m;               // reduce rem if necessary until 0 <= rem < (2^p-1)
-#ifdef _DEBUG
-	/* demonstrate that the result is correct */
-	Znum  temp;
-	mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
-	assert(temp == rem);
-#endif
-}
-
-long long lltTdivCnt = 0;  /* count no of Mersenne numbers (partly) factored by 
+long long lltTdivCnt = 0;  /* count no of Mersenne numbers (partly) factored by
 						   trial division */
-long long lltCmpCnt = 0; /* count no of Mersenne numbers determined to be composite
+long long lltPtCCnt = 0;   /* count of numbers determined to be composite by 
+						   mpz_probab_prime_p*/
+long long lltPtPCnt = 0;   /* count of numbers determined to be prime by
+						   mpz_probab_prime_p*/
+long long lltCmpCnt = 0;   /* count no of Mersenne numbers determined to be composite
 						   using Lucas-Lehmer test */
-long long lltPriCnt = 0; /* count no of Mersenne numbers determined to be prime
+long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prime
 						   using Lucas-Lehmer test */
-/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime  
-see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test 
-also https://oeis.org/A000043 
-and https://www.mersenne.org/primes/ 
-the largest mersenne prime found so far is p=82589933 */
-static Znum llt(const Znum &p) {
-	int rv;
+
+/* n = 2^p -1. Increment lltTdivCnt & return 0 if trial division finds a factor, 
+   otherwise return 1 */
+static int lltTrialDiv(const Znum &n, const long long p) {
+	Znum tmp, ncopy, limit;
 	const int maxlimit = 1000000;  /* Limits the number of iterations for trial
-								     division. Experiments indicate that increasing 
+									 division. Experiments indicate that increasing
 									 this limit slows llt down overall. */
-	Znum n, tmp, ncopy, limit;
-	long long exp = MulPrToLong(p); /* exp = p */
 	bool composite = false;
-
-/* 1st check if p is prime*/
-#ifdef __MPIR_VERSION
-	static gmp_randstate_t state;
-	static bool first = true;
-	if (first) {
-		gmp_randinit_default(state);
-		first = false;
-	}
-	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
-#else
-	rv = mpz_probab_prime_p(ZT(p), 16);
-#endif 
-	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
-	if (rv == 0) 
-		return 0;  // if p is composite, 2^p -1 is composite.
-	if (p <= 7)
-		return 1; /* 1st mersenne number that is not prime is p=11 */
-
-	n = 1;
-	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^p
-	n -= 1;                            // n = 2^p-1
 
 	/* do trial division */
 	ncopy = n;
@@ -650,7 +608,7 @@ static Znum llt(const Znum &p) {
 		The factors of n must be in the form of q = 2ip+1, where q < n.
 		2ip+1 < n therefore
 		i < (n-1)/2p */
-	//limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_sqrt is probably faster */
+		//limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_sqrt is probably faster */
 	Znum nm1 = n - 1;
 	mpz_sqrt(ZT(limit), ZT(nm1));
 	/* if we find all factors < sqrt(n) the residue is the one remaining factor */
@@ -665,7 +623,7 @@ static Znum llt(const Znum &p) {
 	long long ll_limit = MulPrToLong(limit);
 	Znum rem;
 	for (long long i = 1; i <= ll_limit; i++) {
-		long long d = 2 * i*exp + 1;
+		long long d = 2 * i*p + 1;
 		//if (n%d == 0)
 		long long r = mpz_tdiv_r_ui(ZT(rem), ZT(n), d);
 		if (r == 0) {
@@ -679,18 +637,110 @@ static Znum llt(const Znum &p) {
 			}
 		}
 	}
+
 	if (composite) {
 		if (ncopy > 1 && verbose > 0)
 			gmp_printf("%Zd is a factor\n", ncopy);
 		lltTdivCnt++;   /* increment counter */
 		return 0; /* not prime */
 	}
-
-	/* composite false; no factors found by trial division */
-	if (verbose > 0)
+	else {
+		if (verbose > 0)
 		printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
-			myTime(), leftBit(2 * ll_limit * exp + 1) + 1);
+			myTime(), leftBit(2 * ll_limit * p + 1) + 1);
+		return 1;  /* no factor found */
+	}
+}
 
+/* get remainder when num is divided by m = 2^p-1. The obscure method used 
+avoids division by 2^p-1, and divides by 2^p instead which is much faster,
+as it is equivalent to a right shift by p bits. 
+For efficiency both p and m are given as parameter values although a cleaner
+interface would just supply p and let m be recalculated. */
+static void getrem(Znum &rem, const Znum &num, const long long p, const Znum &m) {
+	static Znum mod2p, q;  /* static for efficiency */
+	mod2p = num & m;     // mod2p = num%(2^p) = num -q*2^p
+	mpz_tdiv_q_2exp(ZT(q), ZT(num), p);  // q = num/(2^p)
+	rem = q + mod2p;                    //rem = num-q*(2^p-1)
+	while (rem >= m)
+		rem -= m;               // reduce rem if necessary until 0 <= rem < (2^p-1)
+#ifdef _DEBUG
+	/* demonstrate that the result is correct */
+	Znum  temp;
+	mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
+	assert(temp == rem);
+#endif
+}
+
+/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime  
+see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test 
+also https://oeis.org/A000043 
+and https://www.mersenne.org/primes/ 
+the largest mersenne prime found so far is p=82589933 
+p must not be too large, otherwise it would take centuries to get a result.
+This code is based on the llt function in YAFU, but has been modified to make 
+it much faster. 
+if verbose is > 0 some extra messages are output.
+If verbose is > 1 trial division is used instead of miller-rabin primality test. */
+static Znum llt(const Znum &p) {
+	int rv;
+	Znum n, tmp; 
+	long long exp = MulPrToLong(p); /* exp = p */
+
+	/* 1st check if p is prime. Maybe better to use mpz_bpsw_prp instead?*/
+#ifdef __MPIR_VERSION
+	static gmp_randstate_t state;
+	static bool first = true;
+	if (first) {
+		gmp_randinit_default(state);
+		first = false;
+	}
+	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
+#else
+	rv = mpz_probab_prime_p(ZT(p), 16); /* returns 0, 1 or 2*/
+#endif 
+	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
+	if (rv == 0) {
+		lltTdivCnt++;  // count this result as found by trial division
+		return 0;      // if p is composite, 2^p -1 is composite.
+	}
+	if (p <= 7) {
+		lltPriCnt++;  // count as found by Lucas-Lehmer test
+		return 1;    /* 1st mersenne number that is not prime is p=11 */
+	}
+
+	n = 1;
+	mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^p
+	n -= 1;                            // n = 2^p-1
+
+	/* experiment - is mpz-probab_prime_p faster overall than trial division? 
+	 Results indicate yes, definitely. Maybe because it is >99% effective in screening
+	 out composites with just 2 tests so that llt is only neeeded as confirmation. */
+	if (verbose <= 1) {
+		/* Determine whether n is prime. Returns 2 if n is definitely prime, 
+		return 1 if n is probably prime (without being certain), 
+		or return 0 if n is definitely composite.*/
+		int rv = mpz_probab_prime_p(ZT(n), 2);
+		if (rv == 0) {
+			lltPtCCnt++;
+			return 0;    /* n is composite */
+		}
+		if (rv == 2) {
+			if (verbose > 0) {
+				std::cout << "mpz_probab_prime_p indicates that " << n << " is prime \n";
+			}
+			lltPtPCnt++;
+			return 1;  /* n is prime */
+		}
+	}
+	else {
+		/* use trial division if verbose > 1 because this can give some factors, 
+		whereas the other tests only show whether n is prime or composite */
+		int rv = lltTrialDiv(n, exp);
+		if (rv == 0)
+			return 0;   /* factor found -> n is composite */
+	}
+	
 	/*do the ll test */
 	tmp = 4;
 	int nchars = 0;
@@ -699,7 +749,7 @@ static Znum llt(const Znum &p) {
 		tmp -= 2;
 		//tmp %= n;
 		getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
-		if (verbose > 0 && (i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
+		if (verbose > 0 && (i > 0) && (i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
 			for (int j = 0; j < nchars; j++)
 				printf("\b");    // erase previous output
 			nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
@@ -1863,7 +1913,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			nxtToken.value = 0;
 			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
 		}
-		/* check for remaining operators */
+		/* check for remaining operators not found by operSearch */
 		else if (charValue == '!' && expr[exprIndex + 1] == '!')
 		{
 			/* double factorial */
@@ -2142,14 +2192,14 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
 		else if (expr[exprIndex].typecode == types::Operator
 			&& expr[exprIndex].oper < opCode::leftb ) {
-			/* check for unary - or + */
+			/* check for unary operator - or + or NOT */
 			if (!leftNumber) {
 				if (expr[exprIndex].oper == opCode::minus)
 					expr[exprIndex].oper = opCode::unary_minus;
 				else if (expr[exprIndex].oper == opCode::plus)
 					continue;
 				else if (expr[exprIndex].oper != opCode::not)
-					return EXIT_FAILURE;  /* operator not preceded by a number or expression */
+					return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
 			}
 
 			int expOpPri = operPrio[(int)expr[exprIndex].oper]; /* get priority of current operator */
@@ -2161,7 +2211,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 				int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
 				/* N.B. lower priority value; higher priority operator */
 				if ((stkOpPri < expOpPri)
-					/* transfer high priority stack operator to output */
+					/* transfer high priority stack operator to output. 
+					exponent operator is special because it is right-associative */
 					|| (stkOpPri == expOpPri && 
 						expr[exprIndex].oper != opCode::power)) {
 					rPolish.push_back(operStack.back());
@@ -2174,7 +2225,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			operStack.push_back(expr[exprIndex]); /* put current operator onto stack */
 			if (expr[exprIndex].oper > opCode::leftb
 				&& expr[exprIndex].oper < opCode::rightb)
-				leftNumber = true;  /* factorial, primorial.*/
+				leftNumber = true;  /* factorial, primorial operators follow the 
+									expression they apply to*/
 			else
 				leftNumber = false;
 		}
@@ -2713,22 +2765,6 @@ static void doTests(void) {
 		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
 		//stackIndex = 0;         // ensure stack is empty 
-
-		//retCode rcode = tokenise(testvalues[i].text, exprTokens);
-		////printTokens(exprTokens.data(), (int)exprTokens.size());
-		//assert(rcode == retCode::EXPR_OK);
-		//rPolish.resize(exprTokens.size());
-		//int ircode = reversePolish(exprTokens.data(), (int)exprTokens.size(), 
-		//	rPolish.data(), rpLen);
-		////printTokens(rPolish.data(), rpLen);
-		//if (ircode == EXIT_SUCCESS)
-		//	rcode = evalExpr(rPolish.data(), rpLen, result1);
-		//if (rcode != retCode::EXPR_OK || result1 != testvalues[i].expected_result) {
-		//	std::cout << "test " << i + 1 << " failed\n" <<
-		//		"expected " << testvalues[i].text << " = " << testvalues[i].expected_result << '\n';
-		//	std::cout << "got " << result << '\n';
-		//	Beep(750, 1000);
-		//}
 
 		auto  rv =ComputeExpr(testvalues[i].text, result);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
@@ -3456,21 +3492,32 @@ static void doTests7(const std::string &params) {
 			std::cout << myTime() << " 2^" << primeList[i] << " -1 is prime *** \n";
 			mPrimes.push_back(primeList[i]);
 		}
-		else if (verbose > 0 || i%100 == 0)
+		else if (verbose > 0 || (i & 0x3f) == 0)
 			/* \r instead of usual \n means that each messsage overwrites the 
 			previous one */
-			std::cout << myTime() << " 2^" << primeList[i] << " -1 is NOT prime \r";
+			std::cout << myTime() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
 	}
 
+	/* print the results */
 	/* see https://oeis.org/A000043 */
-	std::cout << "Found " << mPrimes.size() << " Mersenne primes            \n";
+	std::cout << "Found " << mPrimes.size() << " Mersenne primes  out of " << i 
+		<< " numbers tested \n" ;
 	for (auto p : mPrimes) {
 		std::cout << p << ", ";
 	}
 	putchar('\n');
-	printf_s("%2.2f%% primes, %2.2f%% composites found by trial division, ",
-		100.0 *lltPriCnt / i, 100.*lltTdivCnt / i);
-	printf_s("%2.2f%% composites found by llt \n", 100.0*lltCmpCnt / i);
+	long long other = (long long)i - (lltPriCnt+ lltPtPCnt+ lltTdivCnt+ lltCmpCnt+ lltPtCCnt);
+	printf_s("%5.2f%% primes found by llt \n", 100.0 *lltPriCnt / i);
+	printf_s("%5.2f%% primes found by  mpz_probab_prime_p \n", 100.0*lltPtPCnt / i);
+	if (lltTdivCnt != 0)
+		printf_s("%5.2f%% composites found by trial division \n", 100.*lltTdivCnt / i);
+	if (lltCmpCnt != 0)
+		printf_s("%5.2f%% composites found by llt \n", 100.0*lltCmpCnt / i);
+	if (lltPtCCnt != 0)
+		printf_s("%5.2f%% composites found by  mpz_probab_prime_p \n", 100.0*lltPtCCnt / i);
+	if (other != 0)
+		printf_s("%5.2f%% other \n", 100.0*other / i);
+
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
@@ -3491,7 +3538,7 @@ void writeIni(void) {
 
 	std::ofstream newStr(newFname, std::ios::out);  // open .new file for output
 	if (!newStr.is_open()) {
-		std::cout << "cannot open BigIntCalculator.new \n";
+		std::cerr << "cannot open BigIntCalculator.new \n";
 		return;
 	}
 	/* copy from current ini file to new one */

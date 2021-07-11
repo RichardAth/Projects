@@ -3,7 +3,7 @@
 #include <wtypes.h>
 #include <winver.h>
 /*
-Don't forget!!! 
+*** Don't forget! *****
 add to Project Properties->Linker->Input->Additional Dependencies -> Add Version.lib
 */
 
@@ -35,7 +35,7 @@ void VersionInfo(const LPCSTR path, int ver[4]) {
 	auto BufLen = GetFileVersionInfoSizeA(path, &handle); /* get size needed for data */
 	if (BufLen == 0) {
 		auto ecode = GetLastError();
-		std::cout << "can't get version info size; error code = " << ecode << '\n';
+		std::cerr << "can't get version info size; error code = " << ecode << '\n';
 		return;
 	}
 
@@ -43,14 +43,14 @@ void VersionInfo(const LPCSTR path, int ver[4]) {
 	/* get version info into FileInfo */
 	bool rv = GetFileVersionInfoA(path, handle, BufLen, (LPVOID)FileInfo.data());
 	if (!rv) {
-		std::cout << "can't get version info \n";
+		std::cerr << "can't get version info \n";
 		return;
 	}
 
 	/* read root block */
 	rv = VerQueryValueA(FileInfo.data(), "\\", (LPVOID *)&fixedinfo, (PUINT) &len);
 	if (!rv) {
-		std::cout << "can't get version info root block \n";
+		std::cerr << "can't get version info root block \n";
 		return;
 	}
 

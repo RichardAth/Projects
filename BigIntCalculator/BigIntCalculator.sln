@@ -41,10 +41,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Baillie-PSW", "..\Baillie-PSW\Baillie-PSW.vcxproj", "{BC6C29A1-88BE-411C-B853-F89968FA064C}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -124,12 +123,23 @@ Global
 		{CD555681-D65B-4173-A29C-B8BF06A4871B}.Release|x64.Build.0 = Release|x64
 		{CD555681-D65B-4173-A29C-B8BF06A4871B}.Release|x86.ActiveCfg = Debug|Win32
 		{CD555681-D65B-4173-A29C-B8BF06A4871B}.Release|x86.Build.0 = Debug|Win32
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Debug|x64.ActiveCfg = Debug|x64
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Debug|x64.Build.0 = Debug|x64
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Debug|x86.ActiveCfg = Debug|Win32
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Debug|x86.Build.0 = Debug|Win32
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x64.ActiveCfg = Release|x64
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x64.Build.0 = Release|x64
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x86.ActiveCfg = Release|Win32
+		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6D614BE-920A-4EBA-A4CC-DDB6379A057B}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
