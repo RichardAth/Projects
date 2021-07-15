@@ -119,5 +119,5 @@ _int128 doubleTo128(const double x)    //convert double to signed 128 bit intege
 _int128 extendedGcd(const _int128 &a, const _int128 &b, _int128 &x, _int128 &y)
 _uint128 gcd(_uint128 u, _uint128 v)
 _int128 modMultInv(_int128 a, _int128 m)  // modular inverse of a wrt m
-_int128 nthroot(const _int128 &x, int n)  // calculate nth root of x
+_int128 nthroot(const _int128 &x, int n)  // calculate nth root of x (i.e. calculate x^(1/n))
 _int128 power(const _int128 &x, int n)     // calculate x^n
