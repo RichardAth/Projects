@@ -1,6 +1,9 @@
 ﻿/* trn.c                 Thomas R. Nicely          2016.04.01.0400
+*
+* in this version a lot of unneeded code has been commented out or simply deleted.
  *
  * Freeware copyright (C) 2016 Thomas R. Nicely <http://www.trnicely.net>.
+ * see https://web.archive.org/web/20161030053956/http://trnicely.net/misc/trn.zip
  * Released into the public domain by the author, who disclaims any legal
  * liability arising from its use. The routine iEvalExprMPZ is included
  * under the terms of the GNU GPL; see the header of that routine (at

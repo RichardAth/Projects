@@ -31,7 +31,7 @@ extern Znum zR, zR2, zNI, zN;
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, Znum &result);   // declaration for external function
-void VersionInfo(const LPCSTR path, int ver[4]);
+void VersionInfo(const LPCSTR path, int ver[4], SYSTEMTIME *sTime);
 
 
 /* get time in format hh:mm:ss */
@@ -583,10 +583,6 @@ static Znum R3(Znum num) {
 
 long long lltTdivCnt = 0;  /* count no of Mersenne numbers (partly) factored by
 						   trial division */
-long long lltPtCCnt = 0;   /* count of numbers determined to be composite by 
-						   mpz_probab_prime_p*/
-long long lltPtPCnt = 0;   /* count of numbers determined to be prime by
-						   mpz_probab_prime_p*/
 long long lltCmpCnt = 0;   /* count no of Mersenne numbers determined to be composite
 						   using Lucas-Lehmer test */
 long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prime
@@ -616,7 +612,7 @@ static int lltTrialDiv(const Znum &n, const long long p) {
 	if (limit > maxlimit) {
 		/* hit this limit if p >= 41 */
 		if (verbose > 1)
-			gmp_printf("limit reduced from %Zd to %lld", limit, maxlimit);
+			gmp_printf("limit reduced from %Zd to %lld\n", limit, maxlimit);
 		limit = maxlimit;   // larger limit would take too long (also encounter > 64-bit integers)
 	}
 
@@ -666,9 +662,9 @@ static void getrem(Znum &rem, const Znum &num, const long long p, const Znum &m)
 		rem -= m;               // reduce rem if necessary until 0 <= rem < (2^p-1)
 #ifdef _DEBUG
 	/* demonstrate that the result is correct */
-	Znum  temp;
-	mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
-	assert(temp == rem);
+	//Znum  temp;
+	//mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
+	//assert(temp == rem);
 #endif
 }
 
@@ -681,11 +677,12 @@ p must not be too large, otherwise it would take centuries to get a result.
 This code is based on the llt function in YAFU, but has been modified to make 
 it much faster. 
 if verbose is > 0 some extra messages are output.
-If verbose is > 1 trial division is used instead of miller-rabin primality test. */
+If verbose is > 1 trial division is used to try to find factors */
 static Znum llt(const Znum &p) {
 	int rv;
 	Znum n, tmp; 
 	long long exp = MulPrToLong(p); /* exp = p */
+	clock_t t1, t2, t3;
 
 	/* 1st check if p is prime. Maybe better to use mpz_bpsw_prp instead?*/
 #ifdef __MPIR_VERSION
@@ -715,41 +712,33 @@ static Znum llt(const Znum &p) {
 
 	/* experiment - is mpz-probab_prime_p faster overall than trial division? 
 	 Results indicate yes, definitely. Maybe because it is >99% effective in screening
-	 out composites with just 2 tests so that llt is only neeeded as confirmation. */
-	if (verbose <= 1) {
-		/* Determine whether n is prime. Returns 2 if n is definitely prime, 
-		return 1 if n is probably prime (without being certain), 
-		or return 0 if n is definitely composite.*/
-		int rv = mpz_probab_prime_p(ZT(n), 2);
-		if (rv == 0) {
-			lltPtCCnt++;
-			return 0;    /* n is composite */
-		}
-		if (rv == 2) {
-			if (verbose > 0) {
-				std::cout << "mpz_probab_prime_p indicates that " << n << " is prime \n";
-			}
-			lltPtPCnt++;
-			return 1;  /* n is prime */
-		}
-	}
-	else {
+	 out composites with just 2 tests so that llt is only neeeded as confirmation. 
+	 Update 11/7/2021; using neither trial division nor  mpz-probab_prime_p is fastest.
+	 LL test is in fact faster than miller-rabin even when limitied to 2 rounds. */
+	if (verbose > 1) {
+		t1 = clock();
 		/* use trial division if verbose > 1 because this can give some factors, 
 		whereas the other tests only show whether n is prime or composite */
 		int rv = lltTrialDiv(n, exp);
-		if (rv == 0)
+		t2 = clock();
+		printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
+		if (rv == 0) {
+			std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
 			return 0;   /* factor found -> n is composite */
+		}
 	}
 	
 	/*do the ll test */
 	tmp = 4;
 	int nchars = 0;
+	if (verbose > 0) 
+		t2 = clock();
 	for (long long i = 0; i < exp - 2; i++) {
 		tmp *= tmp;
 		tmp -= 2;
 		//tmp %= n;
 		getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
-		if (verbose > 0 && (i > 0) && (i & 511) == 0) { /* 511 =  2^9 -1, print msg every 512 iterations */
+		if (verbose > 0 && (i > 0) && (i & 0x7ff) == 0) { /* 7ff = 2047, print msg every 2048 iterations */
 			for (int j = 0; j < nchars; j++)
 				printf("\b");    // erase previous output
 			nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
@@ -757,7 +746,10 @@ static Znum llt(const Znum &p) {
 			fflush(stdout);
 		}
 	}
-	if (verbose > 0) printf("\n");
+	if (verbose > 0) { 
+		t3 = clock();
+		printf_s("\ntime used by llt = %.2f sec \n", (double)(t3 - t2) / CLOCKS_PER_SEC);
+	}
 
 	if (tmp == 0) {
 		lltPriCnt++;  /* increment counter */
@@ -3506,15 +3498,12 @@ static void doTests7(const std::string &params) {
 		std::cout << p << ", ";
 	}
 	putchar('\n');
-	long long other = (long long)i - (lltPriCnt+ lltPtPCnt+ lltTdivCnt+ lltCmpCnt+ lltPtCCnt);
+	long long other = (long long)i - (lltPriCnt+ lltTdivCnt+ lltCmpCnt);
 	printf_s("%5.2f%% primes found by llt \n", 100.0 *lltPriCnt / i);
-	printf_s("%5.2f%% primes found by  mpz_probab_prime_p \n", 100.0*lltPtPCnt / i);
 	if (lltTdivCnt != 0)
 		printf_s("%5.2f%% composites found by trial division \n", 100.*lltTdivCnt / i);
 	if (lltCmpCnt != 0)
 		printf_s("%5.2f%% composites found by llt \n", 100.0*lltCmpCnt / i);
-	if (lltPtCCnt != 0)
-		printf_s("%5.2f%% composites found by  mpz_probab_prime_p \n", 100.0*lltPtCCnt / i);
 	if (other != 0)
 		printf_s("%5.2f%% other \n", 100.0*other / i);
 
@@ -3653,6 +3642,7 @@ static int processCmd(const std::string &command) {
 		"Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%%r but more efficient.\n"
 		"Totient(n)      : finds the number of positive integers less than n which are relatively prime to n.\n"
 		"IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.\n"
+		"APRC(n)         : returns zero if composite, 1 for probable prime, 2 for definite prime \n"
 		"NumDivs(n)      : Number of positive divisors of n either prime or composite.\n"
 		"SumDivs(n)      : Sum of positive divisors of n either prime or composite.\n"
 		"NumDigits(n, r) : Number of digits of n in base r.\n"
@@ -3795,7 +3785,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		VersionInfo(argv[0], version); /* get version info from .exe file */
+		SYSTEMTIME sTime;
+		VersionInfo(argv[0], version, &sTime); /* get version info from .exe file */
 		printf("%s BigInt calculator Version %d.%d %s", myTime(), 
 			version[0], version[1], banner);
 

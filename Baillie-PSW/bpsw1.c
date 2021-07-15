@@ -1,6 +1,7 @@
 /* bpsw1.c               Thomas R. Nicely          2009.06.08.0500
  *
  * Freeware copyright (c) 2009 Thomas R. Nicely <http://www.trnicely.net>.
+ * see https://web.archive.org/web/20131208185421/http://trnicely.net/misc/bpsw1.zip
  * Released into the public domain by the author, who disclaims any legal
  * liability arising from its use.
  *
@@ -65,7 +66,7 @@
  * screen manipulation routines from <conio.h>
  *
  */
-#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS  /* added to make it work with Visual Studio */
 #include "trn.h"
 
 int iBPSW(mpz_t mpzN, int iStrong);
@@ -120,6 +121,10 @@ int main(int argc1, char *argv1[])
 		fprintf_s(stdout, "%s\n SYNTAX: %s LB UB|dN [UF]\n", signature, argv[0]);
 		fprintf_s(stdout,
 			"\n ...Illustrates the Baillie-PSW and Lucas primality tests. \n");
+
+		/* if no paramers given on the command line get them from stdin. argc and
+		argv[1], [2] [3] are changed appropriately. This minimises changes to the
+		original code. */
 		printf_s("Enter parameters: \n");
 		cptr = gets_s(buffer, sizeof(buffer));
 		assert(cptr != NULL);   /* check for error */
@@ -135,7 +140,6 @@ int main(int argc1, char *argv1[])
 			else
 				break;
 		}
-
 	}
 
 	/* Allocate memory for the mpz's. Peek ahead at the specified bounds

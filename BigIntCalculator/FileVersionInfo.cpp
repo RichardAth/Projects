@@ -8,10 +8,12 @@ add to Project Properties->Linker->Input->Additional Dependencies -> Add Version
 */
 
 /* returns version info from .exe file */
-void VersionInfo(const LPCSTR path, int ver[4]) {
+void VersionInfo(const LPCSTR path, int ver[4], SYSTEMTIME *sTime) {
 	DWORD handle;
 	std::string FileInfo;
 	int len;
+
+	FILETIME ft;
 
 	VS_FIXEDFILEINFO *fixedinfo;  /* pointer to root block info */
 
@@ -59,4 +61,10 @@ void VersionInfo(const LPCSTR path, int ver[4]) {
 	ver[1] = fixedinfo->dwFileVersionMS & 0xffff;
 	ver[2] = fixedinfo->dwFileVersionLS >> 16;
 	ver[3] = fixedinfo->dwFileVersionLS & 0xffff;
+
+	/*  copy file date */
+	ft.dwHighDateTime = fixedinfo->dwFileDateMS;
+	ft.dwLowDateTime = fixedinfo->dwFileDateLS;
+	FileTimeToSystemTime(&ft, sTime);
+
 }
