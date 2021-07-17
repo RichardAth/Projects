@@ -115,7 +115,7 @@ bool changepath(std::string &path, std::string &prog) {
 	return rewrite;
 }
 
-/* check file status */
+/* check file status. Print date & time modified */
 void fileStatus(const std::string &progname) {
 	struct __stat64 fileStat;
 	struct tm ftimetm;

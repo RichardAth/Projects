@@ -31,7 +31,7 @@ extern Znum zR, zR2, zNI, zN;
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, Znum &result);   // declaration for external function
-void VersionInfo(const LPCSTR path, int ver[4], SYSTEMTIME *sTime);
+void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 
 
 /* get time in format hh:mm:ss */
@@ -3767,6 +3767,28 @@ static int processCmd(const std::string &command) {
 	return 0;
 }
 
+//static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+//{
+//	switch (fdwCtrlType)
+//	{
+//		// Handle the CTRL-C signal.
+//	case CTRL_C_EVENT:
+//		printf("Ctrl-C event\n\n");
+//		Beep(750, 300);
+//		ctrlC = true;
+//		return TRUE;
+//
+//		// CTRL-CLOSE: confirm that the user wants to exit.
+//	case CTRL_CLOSE_EVENT:
+//		Beep(600, 200);
+//		printf("Ctrl-Close event\n\n");
+//		return TRUE;
+//
+//		// Pass other signals to the next handler.
+//	default:
+//		return FALSE;
+//	}
+//}
 
 int main(int argc, char *argv[]) {
 	std::string expr;
@@ -3784,11 +3806,11 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 
-		char banner[] = "Compiled on "  __DATE__ " at " __TIME__ "\n";
-		SYSTEMTIME sTime;
-		VersionInfo(argv[0], version, &sTime); /* get version info from .exe file */
-		printf("%s BigInt calculator Version %d.%d %s", myTime(), 
-			version[0], version[1], banner);
+		std::string modified;
+		VersionInfo(argv[0], version, modified); /* get version info from .exe file */
+		printf_s("%s Bigint calculator Version %d.%d \n", myTime(), version[0], version[1]);
+		std::cout << "last modified on " << modified << '\n';
+
 
 #ifdef __GNUC__
 		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -3828,7 +3850,6 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 			getline(std::cin, expr);  // expression may include spaces
-
 			strToUpper(expr, expr);		// convert to UPPER CASE 
 
 			int cmdCode = processCmd(expr);

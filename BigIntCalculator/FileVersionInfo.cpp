@@ -7,13 +7,11 @@
 add to Project Properties->Linker->Input->Additional Dependencies -> Add Version.lib
 */
 
-/* returns version info from .exe file */
-void VersionInfo(const LPCSTR path, int ver[4], SYSTEMTIME *sTime) {
+/* returns version info from .exe file, also date & time file last modified */
+void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	DWORD handle;
 	std::string FileInfo;
 	int len;
-
-	FILETIME ft;
 
 	VS_FIXEDFILEINFO *fixedinfo;  /* pointer to root block info */
 
@@ -63,8 +61,17 @@ void VersionInfo(const LPCSTR path, int ver[4], SYSTEMTIME *sTime) {
 	ver[3] = fixedinfo->dwFileVersionLS & 0xffff;
 
 	/*  copy file date */
-	ft.dwHighDateTime = fixedinfo->dwFileDateMS;
-	ft.dwLowDateTime = fixedinfo->dwFileDateLS;
-	FileTimeToSystemTime(&ft, sTime);
-
+	struct _stat64 fileStat;
+	struct tm ftimetm;
+	
+	int err = _stat64(path, &fileStat);
+	if (err == 0) {
+		modified.resize(26);
+		auto ftime = fileStat.st_mtime;  // time last modified in time_t format
+		localtime_s(&ftimetm, &ftime);   // convert to tm format
+		/* convert to dd/mm/yyyy  at hh:mm:ss */
+		strftime(&modified[0], 25, "%d/%m/%C%y at %H:%M:%S", &ftimetm);
+	}
+	else
+		std::cout << path << " not found \n";
 }
