@@ -97,15 +97,15 @@ enum class opCode {
 order is not the same as C or Python */
 const static int operPrio[] =
 {
-	0,				  // Power
-	1,                // Unary minus.  (C and Python put unary minus above multiply, divide, remainder)
+	1,				  // Power
+	0,                // Unary minus.  (C and Python put unary minus above multiply, divide, remainder)
 	2, 2, 2,          // Multiply, divide and remainder.
 	3,                // combination
 	4, 4,             // Plus and minus.
 	5, 5,             // Shift right and left.
 	6, 6, 6, 6,       // four comparison operators (equal, greater, less, etc.)
 	7, 7,             // == and !=
-	1,                // NOT.   (C and Python put bitwise not with unary minus)
+	0,                // NOT.   (C and Python put bitwise not with unary minus)
 	9,                // AND, (C and Python but AND before XOR before OR)
 	10,               // XOR
 	11,               // OR
@@ -2180,7 +2180,10 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 					/* transfer high priority stack operator to output. 
 					exponent operator is special because it is right-associative */
 					|| (stkOpPri == expOpPri && 
-						expr[exprIndex].oper != opCode::power)) {
+						((expr[exprIndex].oper != opCode::power) &&
+						(expr[exprIndex].oper != opCode::not) &&
+						(expr[exprIndex].oper != opCode::unary_minus))
+						) ){
 					rPolish.push_back(operStack.back());
 					operStack.pop_back(); 
 				}
@@ -2717,16 +2720,18 @@ static void doTests(void) {
 		"0x12345678 OR 0x1",       0x12345679,
 		"0x12345678 XOR 0x10",     0x12345668,
 		"(NOT 0x0f23 4567 89ab cde1) * -1",  0x0f23456789abcde2,
-		"5 < 6 == 7 < 8",                  -1,   // returns true (== has lower priority)
-		"5 < 6 != 7 < 8",                   0,   // returns false (!= has lower priority)
-		"5 < (6 != 7) < 8",                -1,   // returns true; expr evaluated from left to right
-		"R3(49)",                          54,
-		"R2(585)",                         16,
-		"SQRT(1234320)",                 1110,
-		"NROOT(2861381721051424,5)",      1234,
-		"LLT(3217)",                         1,  // 2^3217-1 is prime
-		"BPSW(2^99-1)",                      0,  //not a prime number
-		"BPSW(2^127-1)",                     1,  //a prime number
+		"5 < 6 == 7 < 8",                -1,   // returns true (== has lower priority)
+		"5 < 6 != 7 < 8",                 0,   // returns false (!= has lower priority)
+		"5 < (6 != 7) < 8",              -1,   // returns true; expr evaluated from left to right
+		"R3(49)",                        54,
+		"R2(585)",                       16,
+		"SQRT(1234320)",               1110,
+		"NROOT(2861381721051424,5)",   1234,
+		"LLT(3217)",                      1,  // 2^3217-1 is prime
+		"BPSW(2^99-1)",                   0,  //not a prime number
+		"BPSW(2^127-1)",                  1,  //a prime number
+		"-not1",                          2,  // operators are processed from right to left
+		"not-1",                          0,  // operators are processed from right to left
 	};
 
 	results.clear();
