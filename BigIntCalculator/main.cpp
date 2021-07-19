@@ -1415,33 +1415,41 @@ struct oper_list{
 } ;
 /* list of operators that have format <expression> <operator> <expression> 
 with corresponding codes and priority. However, operator NOT (bitwise negation) 
-is in this list although it only has one operand. 
-Operators ! (factorial) !! (double factorial) and # (primorial) are not in this 
-list because the convention is that they follow the number or expression they 
-operate on. */
+is in this list although it only has one operand. For the search to work correctly 
+!! must precede !, 
+** must precede *, 
+<< and <= must precede < 
+>> and >= must precede > in this list.
+unary minus and unary plus are NOT in this list. */
 const static struct oper_list operators[]  {
-	{"C",	 opCode::comb,	       3},
-	{ "^",   opCode::power,       0},
-	{ "**",  opCode::power,       0},     // can use ^ or ** for exponent
-	{ "*",   opCode::multiply,    2},
-	{ "/",   opCode::divide,      2},
-	{ "%",   opCode::remainder,   2},
-	{ "+",   opCode::plus,        4},
-	{ "-",   opCode::minus,       4},
-	{ "SHL", opCode::shl,         5},
-	{ "<<",  opCode::shl,         5},     // can use << or SHL for left shift
-	{ "SHR", opCode::shr,         5},
-	{ ">>",  opCode::shr,         5},     // can use SHR or >> for right shift
-	{ "<=",  opCode::not_greater, 6},
-	{ ">=",  opCode::not_less,    6},
-	{ ">",   opCode::greater,     6},	  // to avoid mismatches > and < must come after >> and <<
-	{ "<",   opCode::less,        6},
-	{ "!=",  opCode::not_equal,   7},
-	{ "==",  opCode::equal,       7},
-	{ "NOT", opCode::not,         8},      // bitwise NOT
-	{ "AND", opCode::and,         9},      // bitwise AND
-	{ "OR",  opCode::or,         11},      // bitwise OR
-	{ "XOR", opCode::xor,        10}   };  // bitwise exclusive or
+		{"C",	 opCode::comb,	      3},
+		{ "^",   opCode::power,       0},
+		{ "**",  opCode::power,       0},     // can use ^ or ** for exponent
+		{ "*",   opCode::multiply,    2},
+		{ "/",   opCode::divide,      2},
+		{ "%",   opCode::remainder,   2},
+		{ "+",   opCode::plus,        4},
+		{ "-",   opCode::minus,       4},
+		{ "SHL", opCode::shl,         5},
+		{ "<<",  opCode::shl,         5},     // can use << or SHL for left shift
+		{ "SHR", opCode::shr,         5},
+		{ ">>",  opCode::shr,         5},     // can use SHR or >> for right shift
+		{ "<=",  opCode::not_greater, 6},
+		{ ">=",  opCode::not_less,    6},
+		{ ">",   opCode::greater,     6},	  // to avoid mismatches > and < must come after >> and <<
+		{ "<",   opCode::less,        6},
+		{ "!=",  opCode::not_equal,   7},
+		{ "==",  opCode::equal,       7},
+		{ "NOT", opCode::not,         1},      // bitwise NOT
+		{ "AND", opCode::and,         9},      // bitwise AND
+		{ "OR",  opCode::or,         11},      // bitwise OR
+		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
+		{ "!!",  opCode::dfact,       1},      // double factorial
+		{ "!",   opCode::fact,        1},      // factorial
+		{ "#",   opCode::prim,        1},      // primorial
+		{ "(",   opCode::leftb,      12},      // left bracket
+		{ ")",   opCode::rightb,      0},      // left bracket
+	 } ;
 
 /* search for operators e.g. '+', '*'  that have format <expression> <operator> <expression>
 or <operator> <expression>. return index of operator or -1 */
@@ -1905,44 +1913,6 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			nxtToken.value = 0;
 			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
 		}
-		/* check for remaining operators not found by operSearch */
-		else if (charValue == '!' && expr[exprIndex + 1] == '!')
-		{
-			/* double factorial */
-			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::dfact;
-			nxtToken.value = 0;
-			exprIndex += 2;
-		}
-		else if (charValue == '!')
-		{
-			/*factorial */
-			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::fact;
-			nxtToken.value = 0;
-			exprIndex++;
-		}
-		else if (charValue == '#')
-		{
-			/*primorial */
-			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::prim;
-			nxtToken.value = 0;
-			exprIndex++;
-		}
-
-		else if (charValue == '(') {
-			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::leftb;
-			nxtToken.value = 0;
-			exprIndex++;
-		}
-		else if (charValue == ')') {
-			nxtToken.typecode = types::Operator;
-			nxtToken.oper = opCode::rightb;
-			nxtToken.value = 0;
-			exprIndex++;
-		}
 
 		/* check for , */
 		else if (charValue == ',') {
@@ -2008,6 +1978,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			for (ptrdiff_t ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
+					/* we have a match */
 					nxtToken.typecode = types::func;
 					nxtToken.function = ix;
 					nxtToken.value = 0;                  /* not used */
@@ -2121,7 +2092,8 @@ be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
 The well-known shunting algorith is used, but for function parameters a recursive
 call to reversePolish is made, which also takes care of nested function calls. 
 Also, the initial tokenisation does not distinguish unary - from normal -, so
-that is deduced from the sequence of tokens and the op code is changed if necessary. */
+that is deduced from the sequence of tokens and the op code is changed if necessary. 
+Unary + is recognised as a special case which requires no output */
 static int reversePolish(token expr[], const int exprLen, std::vector <token> &rPolish) {
 	int exprIndex = 0;
 
@@ -2185,11 +2157,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		else if (expr[exprIndex].typecode == types::Operator
 			&& expr[exprIndex].oper < opCode::leftb ) {
 			/* check for unary operator - or + or NOT */
-			if (!leftNumber) {
+			if (!leftNumber) {  /* if operator is not preceded by an expression */
 				if (expr[exprIndex].oper == opCode::minus)
-					expr[exprIndex].oper = opCode::unary_minus;
-				else if (expr[exprIndex].oper == opCode::plus)
+					expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
+				else if (expr[exprIndex].oper == opCode::plus) {
+					exprIndex++;  /* step past unary plus; no output required*/
 					continue;
+				}
 				else if (expr[exprIndex].oper != opCode::not)
 					return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
 			}
@@ -2279,6 +2253,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 		if (rPolish[index].typecode == types::number) {
 			nums.push(rPolish[index].value);
 		}
+	 /* operators and functions are processed by taking the operand values
+		from the stack, executing the operation or function and putting
+		the returned value onto the stack. If there are insuffficient values
+		on the stack or if the operator or function returns an error code
+		exit immediately. */
 		else if (rPolish[index].typecode == types::func) {
 			fn_Code fnCode = functionList[rPolish[index].function].fCode;
 			int NoOfArgs = functionList[rPolish[index].function].NoOfParams;
@@ -2288,13 +2267,13 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 
 			for (; NoOfArgs > 0; NoOfArgs--) {
 				/* copy function parameters from number stack to args */
-				args[NoOfArgs - 1] = nums.top();
-				nums.pop();
+				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
+				nums.pop();  /* remove top value from stack */
 			}
 			retcode = ComputeFunc(fnCode, args[0], args[1], args[2], val);
 			if (retcode != retCode::EXPR_OK)
 				return retcode;
-			nums.push(val);
+			nums.push(val);  /* put value returned by function onto stack */
 		}
 
 		else if (rPolish[index].typecode == types::Operator) {
@@ -2309,22 +2288,22 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				retCode rc = ComputeSubExpr(rPolish[index].oper, 0, nums.top(), val);
 				if (rc != retCode::EXPR_OK)
 					return rc;
-				nums.pop();
-				nums.push(val);
+				nums.pop();  /* remove operand value from stack */
+				nums.push(val);  /* put generated value onto stack */
 			}
 
 			else {
 				/* operators that take 2 operands */
 				if (nums.size() < 2)
 					return retCode::EXPR_SYNTAX_ERROR;
-				p2 = nums.top();
+				p2 = nums.top(); /* move value from stack to p2 */
 				nums.pop();
-				p1 = nums.top();
+				p1 = nums.top();   /* move value from stack to p1 */
 				nums.pop();
 				retCode rc = ComputeSubExpr(rPolish[index].oper, p1, p2, val);
 				if (rc != retCode::EXPR_OK)
 					return rc;
-				nums.push(val);
+				nums.push(val);  /* put generated value onto stack */
 			}
 		}
 		else
