@@ -293,7 +293,7 @@ returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT t
 on the returned values as if they were boolean variables.
 
 #(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
-above ^ (exponentiation)
+above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the default order
 of evaluation apply.
 

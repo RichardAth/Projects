@@ -94,26 +94,45 @@ enum class opCode {
 };
 
 /* list of operator priority values. lower value = higher priority. Note: this 
-order is not the same as C or Python */
-const static int operPrio[] =
-{
-	1,				  // Power
-	0,                // Unary minus.  (C and Python put unary minus above multiply, divide, remainder)
-	2, 2, 2,          // Multiply, divide and remainder.
-	3,                // combination
-	4, 4,             // Plus and minus.
-	5, 5,             // Shift right and left.
-	6, 6, 6, 6,       // four comparison operators (equal, greater, less, etc.)
-	7, 7,             // == and !=
-	0,                // NOT.   (C and Python put bitwise not with unary minus)
-	9,                // AND, (C and Python but AND before XOR before OR)
-	10,               // XOR
-	11,               // OR
-	12,	              // left bracket
-	1,		          //  ! factorial
-	1,                // !! double factorial
-	1,                // # primorial
-	0,				  // right bracket
+order is not the same as C or Python. The priority value is obtained by using 
+the opCode (cast to an integer) as the index. */
+
+
+struct attrs {
+	int pri;
+	bool left;   /* associativity ; true = left to right, false = right to left 
+		    operators with the same precedence must have the same associativity. */
+	bool pre;    /* true if unary operator e.g. - precedes expression, false if
+				    it follows e.g. !, otherwise not used */
+	int numOps;  /* number of operands; 1 = unary, or 2, or 0 for bracket)*/
+};
+
+const static attrs opr[] = {
+	{2,  false, false, 2},  // 0 power (right to left)
+	{1,  false, true,  1},  // 1 unary minus (right to left)
+	{3,  true,  false, 2},  // 2 multiply
+	{3,  true,  false, 2},  // 3 divide
+	{3,  true,  false, 2},  // 4 remainder AKA modulus
+	{4,  true,  false, 2},  // 5 combination nCk, also known as binomial coefficient
+	{5,  true,  false, 2},  // 6 plus
+	{5,  true,  false, 2},  // 7 minus
+	{6,  true,  false, 2},  // 8 shift right
+	{6,  true,  false, 2},  // 9 shift left
+	{7,  true,  false, 2},  // 10 compare less or equal (not greater)
+	{7,  true,  false, 2},  // 11 compare greater or equal (not less)
+	{7,  true,  false, 2},  // 12 greater
+	{7,  true,  false, 2},  // 13 less
+	{8,  true,  false, 2},  // 14 not equal
+	{8,  true,  false, 2},  // 15 equal
+	{1,  false, true,  1},  // 16 NOT (unary operator ,right to left))
+	{9,  true,  false, 2},  // 17 AND
+	{10, true,  false, 2},  // 18 XOR
+	{11, true,  false, 2},  // 19 OR
+	{12, true,  false, 0},  // 20 left bracket
+	{0,  false, false, 1},  // 21 ! factorial (unary operator)
+	{0,  false, false, 1},  // 22 !! double factorial (unary operator)
+	{0,  false, false, 1},  // 23 # primorial (unary operator)
+	{0,  true,  false, 0},  // 24 right bracket
 };
 
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
@@ -1413,9 +1432,8 @@ struct oper_list{
 	opCode operCode;
 	int operPrio;
 } ;
-/* list of operators that have format <expression> <operator> <expression> 
-with corresponding codes and priority. However, operator NOT (bitwise negation) 
-is in this list although it only has one operand. For the search to work correctly 
+/* list of operators with corresponding codes and priority. For the search to 
+work correctly 
 !! must precede !, 
 ** must precede *, 
 << and <= must precede < 
@@ -2104,6 +2122,12 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		if (expr[exprIndex].typecode == types::end)
 			break;			/* reached end of tokens so stop */
 
+		if (expr[exprIndex].typecode == types::Operator && 
+			expr[exprIndex].oper == opCode::minus &&
+			!leftNumber)
+			expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
+
+
 		if (expr[exprIndex].typecode == types::number) {
 			if (leftNumber)
 				return EXIT_FAILURE;  /* syntax error */
@@ -2149,8 +2173,29 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			&& expr[exprIndex].oper < opCode::rightb) {
 			if (!leftNumber)
 				return EXIT_FAILURE; /* no number or expression before the operator */
-			/* process factorial, primorial. N.B. these are highest priority 
-			operators, so no need to remove anything from operator stack */
+			/* process factorial, primorial. */
+			/* transfer higher priority operators from stack to output */
+			int expOpPri = opr[(int)expr[exprIndex].oper].pri;
+			while (operStack.size() > 0
+				&& operStack.back().typecode == types::Operator
+				&& operStack.back().oper != opCode::leftb) {
+				//int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
+				int stkOpPri = opr[(int)operStack.back().oper].pri; /* get priority of top operator on stack */
+				/* N.B. lower priority value; higher priority operator */
+				if ((stkOpPri < expOpPri)
+					/* transfer high priority stack operator to output.
+					exponent operator is special because it is right-associative */
+					|| (stkOpPri == expOpPri &&
+					((expr[exprIndex].oper != opCode::power) &&
+						(expr[exprIndex].oper != opCode::not) &&
+						(expr[exprIndex].oper != opCode::unary_minus))
+						)) {
+					rPolish.push_back(operStack.back());
+					operStack.pop_back();
+				}
+				else
+					break; /* stop when lower priority operator found on stack */
+			}
 			operStack.push_back(expr[exprIndex]);
 		}
 
@@ -2158,23 +2203,24 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			&& expr[exprIndex].oper < opCode::leftb ) {
 			/* check for unary operator - or + or NOT */
 			if (!leftNumber) {  /* if operator is not preceded by an expression */
-				if (expr[exprIndex].oper == opCode::minus)
-					expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
-				else if (expr[exprIndex].oper == opCode::plus) {
+				if (expr[exprIndex].oper == opCode::plus) {
 					exprIndex++;  /* step past unary plus; no output required*/
 					continue;
 				}
-				else if (expr[exprIndex].oper != opCode::not)
+				else if (expr[exprIndex].oper != opCode::not &&
+					expr[exprIndex].oper != opCode::unary_minus)
 					return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
 			}
 
-			int expOpPri = operPrio[(int)expr[exprIndex].oper]; /* get priority of current operator */
+			 /* get priority of current operator */
+			int expOpPri = opr[(int)expr[exprIndex].oper].pri;
 
 			/* transfer higher priority operators from stack to output */
 			while (operStack.size() > 0 
 				&& operStack.back().typecode == types::Operator
 				&& operStack.back().oper != opCode::leftb) {
-				int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
+		        /* get priority of top operator on stack */
+				int stkOpPri = opr[(int)operStack.back().oper].pri; 
 				/* N.B. lower priority value; higher priority operator */
 				if ((stkOpPri < expOpPri)
 					/* transfer high priority stack operator to output. 
@@ -2683,10 +2729,10 @@ static void doTests(void) {
 		"7 * (11/2)",                      35,
 		"gcd (12,30)",                      6,
 		"modinv (17,21)",                   5,
-		"20 + 32^2/4*7",                 1812,   // DAs calculator returns 56 which is wrong
+		"20 + 32^2/4*7",                 1812,    
 		"20 + 32^2/(4*7)",                 56,
 		"20 - 32^2/4*7",                -1772,
-		"(20-32)^2 / 4 * 7",              252,   //DAs calculator returns 5 which is wrong
+		"(20-32)^2 / 4 * 7",              252,   
 		"(20-32)^2 / (4*7)",                5,
 		"19!",             121645100408832000,   // factorial
 		"19!!",  	                654729075,   // double factorial
@@ -2732,6 +2778,9 @@ static void doTests(void) {
 		"BPSW(2^127-1)",                  1,  //a prime number
 		"-not1",                          2,  // operators are processed from right to left
 		"not-1",                          0,  // operators are processed from right to left
+		"not5#",                        -31,  // # operator evaluated before not
+		"4^5#",         1152921504606846976,  // # operator evluated before exponent
+		"5!!#",                       30030,  // !! operator evaluated before #
 	};
 
 	results.clear();
