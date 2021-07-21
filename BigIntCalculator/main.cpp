@@ -128,11 +128,11 @@ const static attrs opr[] = {
 	{9,  true,  false, 2},  // 17 AND
 	{10, true,  false, 2},  // 18 XOR
 	{11, true,  false, 2},  // 19 OR
-	{12, true,  false, 0},  // 20 left bracket
-	{0,  false, false, 1},  // 21 ! factorial (unary operator)
-	{0,  false, false, 1},  // 22 !! double factorial (unary operator)
-	{0,  false, false, 1},  // 23 # primorial (unary operator)
-	{0,  true,  false, 0},  // 24 right bracket
+	{99, true,  false, 0},  // 20 left bracket
+	{0,  true,  false, 1},  // 21 ! factorial (unary operator)
+	{0,  true,  false, 1},  // 22 !! double factorial (unary operator)
+	{0,  true,  false, 1},  // 23 # primorial (unary operator)
+	{-1, true,  false, 0},  // 24 right bracket
 };
 
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
@@ -1294,7 +1294,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::unary_minus: {
-		result = -secondArg; 
+		result = -firstArg; 
 		return retCode::EXPR_OK;
 	}
 	case opCode::divide: {
@@ -1378,8 +1378,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return ShiftLeft(firstArg, -secondArg, result);
 	}
 	case opCode::not: {   // Perform binary NOT 
-		//result = -1 - secondArg;  // assumes 2s complement binary numbers
-		mpz_com(ZT(result), ZT(secondArg));
+		//result = -1 - firstArg;  // assumes 2s complement binary numbers
+		mpz_com(ZT(result), ZT(firstArg));
 		return retCode::EXPR_OK;
 	}
 	case opCode::and: {  // Perform binary AND.
@@ -1395,29 +1395,29 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
-		if(secondArg > 5984)
+		if(firstArg > 5984)
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (secondArg < 0)
+		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(secondArg));
+		long long temp = llabs(MulPrToLong(firstArg));
 		mpz_fac_ui(ZT(result), temp);  // get factorial
 		return retCode::EXPR_OK;
 	}
 	case opCode::dfact: {
-		if (secondArg > 11081)
+		if (firstArg > 11081)
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (secondArg < 0)
+		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(secondArg));
+		long long temp = llabs(MulPrToLong(firstArg));
 		mpz_2fac_ui(ZT(result), temp);  // get double factorial
 		return retCode::EXPR_OK;
 	}
 	case opCode::prim: {
-		if (secondArg > 46340)
+		if (firstArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (secondArg < 0)
+		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(secondArg));
+		long long temp = llabs(MulPrToLong(firstArg));
 		mpz_primorial_ui(ZT(result), temp);  // get primorial
 		return retCode::EXPR_OK;
 	}
@@ -1487,33 +1487,36 @@ static void operSearch(const std::string &expr, int &opcode) {
 /* evaluate expression and return value in ExpressionResult
 operators and functions include:
 symbol		meaning					operator Priority
-C			binomial coefficient	0
-** or ^		Exponentiate			1
-*			multiply				2
-/			divide					2
-%			modulus (remainder)		2
--			unary minus				3
-+			add						4
--			subtract				4
-n SHL b		shift n left b bits		5
-n SHR b		shift n right b bits	5
+n!			factorial               0
+n!!			double factorial        0
+p#			primorial               0
+            (product of all primes 
+			less or equal than p)
+
+-			unary minus				1    (right to left)
+NOT			bitwise operators		1    (right to left)
+** or ^		Exponentiate			2    (right to left)
+*			multiply				3
+/			divide					3
+%			modulus (remainder)		3
+C			binomial coefficient	4
++			add						5
+-			subtract				5
+n SHL b		shift n left b bits		6
+n SHR b		shift n right b bits	6
 
 comparison operators
->			return zero for false 	6
->=			and -1 for true			6
-<									6
-<=									6
-==									6
-!=			not equal				6
+>			return zero for false 	7
+>=			and -1 for true			7
+<									7
+<=									7
+==									8
+!=			not equal				8
 
-NOT			bitwise operators		7
-AND									8
-OR									8
-XOR									8
+AND			bitwise operators		9
+OR									11
+XOR									10
 
-n!			factorial
-n!!			double factorial
-p#			primorial(product of all primes less or equal than p
 
 ________________Functions___________________________________
 GCD(a, b)
@@ -1537,323 +1540,6 @@ FactConcat(m,n): Concatenates the prime factors of n according to the mode expre
 
 Hexadecimal numbers are preceded by 0X or 0x
 */
-
-/* stackValues is accessed by the following macros*/
-#define StackTopVal stackValues[stackIndex]
-#define StackP1Val stackValues[stackIndex + 1]
-#define StackM1Val stackValues[stackIndex - 1]
-
-/* analyse an expression supplied as a string. This function uses indirect recursion;
-it calls func to detect a function name and analyse the parameters of a function, which 
-in turn calls computeExpr again to evaluate each parameter to the function. 
-The numerical value of the expression is returned in ExpressionResult  */
-//static retCode ComputeExprOld(const std::string &expr, Znum &ExpressionResult) {
-//	static int depth=0;  // measures depth of recursion, increment on entry, decrement on return 
-//	bool leftNumberFlag = false;
-//	retCode SubExprResult;
-//	int startStackIndex = stackIndex;    // for nested calls this is > zero
-//
-//	static Znum stackValues[PAREN_STACK_SIZE];
-//	static opCode stackOperators[PAREN_STACK_SIZE];
-//
-//
-//	if (expr.empty()) {
-//		return retCode::EXPR_INVALID_PARAM;
-//	}
-//
-//	exprIndex = 0;
-//
-//	depth++;		// measure recursion depth
-//	/* exit from loop below when end of expr or a , or ) is reached 
-//	if an error occurs, return error code immediately to caller */
-//	while (exprIndex < expr.length())
-//	{
-//		int charValue;
-//
-//		opCode operCode;
-//		int opIndex;
-//		int exprLength;
-//		int exprIndexAux;
-//		Znum factorial;
-//		retCode retcode;
-//
-//		exprLength = (int)expr.length();
-//		charValue = toupper(expr[exprIndex]);  // get next character of the expression
-//
-//		/* find operator or evaluate number or evaluate function */
-//
-//		/* first look for operators. */
-//		operSearch(expr.substr(exprIndex), opIndex);
-//		if (opIndex != -1) {
-//			/* found operator e.g. + that has format <expression> <operator> <expression>*/
-//			operCode= operators[opIndex].operCode;
-//			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
-//
-//			if ((operCode == opCode::oper_plus || operCode == opCode::oper_minus) 
-//				&& leftNumberFlag == false)
-//			{                    // Unary plus/minus operator
-//				if (operCode == opCode::oper_plus)
-//				{
-//					continue;  // process more of expr
-//				}
-//				else
-//				{
-//					if (stackIndex > startStackIndex && 
-//						stackOperators[stackIndex - 1] == opCode::oper_unary_minus)
-//					{
-//						stackIndex--;
-//						continue;   // process more of expr
-//					}
-//					if (stackIndex >= PAREN_STACK_SIZE)
-//					{
-//						depth--;				// adjust call depth
-//						return retCode::EXPR_TOO_MANY_PAREN;
-//					}
-//					stackOperators[stackIndex++] = opCode::oper_unary_minus; /* Unary minus */
-//					continue;    // process more of expr
-//				}
-//			}
-//			if ((leftNumberFlag == false) != (operCode == opCode::not))
-//			{     // Missing left operator if operator is not NOT or
-//					// extra left operator if operator is NOT.
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			if (operCode != opCode::oper_power) {
-//			 // Power operator has right associativity.
-//				while (stackIndex > startStackIndex) {
-//					/* check whether we can process any stacked values and operators*/
-//					if (stackOperators[stackIndex - 1] == opCode::oper_leftb)
-//						break;
-//					auto p1 = operPrio[(int)stackOperators[stackIndex - 1]];
-//					auto p2 = operPrio[(int)operCode];  // get priorities of stacked and current operators
-//					if (p1 > p2)    
-//						break;    // stacked operator has lower priority
-//					if ((SubExprResult = 
-//						ComputeSubExpr(stackOperators[stackIndex-1],
-//							StackM1Val, StackTopVal, StackM1Val)) != retCode::EXPR_OK)
-//					{
-//						depth--;				// adjust call depth
-//						return SubExprResult;   // failed! return error code
-//					}
-//					stackIndex--;
-//				}
-//			}
-//			stackOperators[stackIndex++] = operCode;
-//			leftNumberFlag = false;
-//			continue;     // process more of expr
-//		}
-//		else if (charValue == '!' && expr[exprIndex + 1] == '!') { // Calculating  double factorial.
-//			if (leftNumberFlag == false)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			if (StackTopVal > 11081)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_INTERM_TOO_HIGH;
-//			}
-//			if (StackTopVal < 0)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_INVALID_PARAM;
-//			}
-//
-//			long long temp = llabs(MulPrToLong(StackTopVal));
-//			mpz_2fac_ui(ZT(factorial), temp);  // get double factorial
-//			StackTopVal = factorial;
-//			exprIndex+= 2;
-//			continue;      // process more of expr
-//		}
-//		else if (charValue == '!') {           // Calculating factorial.
-//			if (leftNumberFlag == false)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			if (StackTopVal > 5984 )
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_INTERM_TOO_HIGH;
-//			}
-//			if (StackTopVal < 0)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_INVALID_PARAM;
-//			}
-//			long long temp = llabs(MulPrToLong(StackTopVal));
-//			mpz_fac_ui(ZT(factorial), temp);  // get factorial
-//			StackTopVal = factorial;
-//			exprIndex++;
-//			continue;      // process more of expr
-//		}
-//		else if (charValue == '#') {           // Calculating primorial.
-//			if (leftNumberFlag == false)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			if (StackTopVal < 0 || StackTopVal > 46340)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_INTERM_TOO_HIGH;
-//			}
-//			long long temp = MulPrToLong(StackTopVal);
-//			mpz_primorial_ui(ZT(factorial), temp);
-//			StackTopVal = factorial;
-//			exprIndex++;
-//			continue;      // process more of expr
-//		}
-//		else   
-//			/* look for function name. If found calculate the value, leave it on   
-//			the stack and update exprIndex past ')'. If no name found return a +ve code */
-//			if ((retcode = func(expr, leftNumberFlag, exprIndex, StackTopVal)) 
-//				<= retCode::EXPR_OK) {
-//				if (retcode != retCode::EXPR_OK) {
-//					depth--;				// adjust call depth
-//					return retcode;  // error processing function parameters
-//				}
-//				
-//				leftNumberFlag = true;
-//				continue; // contine procesing rest of expr
-//			}
-//		/* drop through to here only if retcode is +ve (no name found) */
-//		else if (charValue == '(')
-//		{
-//			if (leftNumberFlag == true)	{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			if (stackIndex >= PAREN_STACK_SIZE)	{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_TOO_MANY_PAREN;
-//			}
-//			stackOperators[stackIndex++] = opCode::oper_leftb;
-//			exprIndex++;
-//			continue;         // process more of expr
-//		}
-//		else if (charValue == ')' || charValue == ',')
-//		{
-//			if (leftNumberFlag == false)
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_SYNTAX_ERROR;
-//			}
-//			while (stackIndex > startStackIndex &&
-//				stackOperators[stackIndex - 1] != opCode::oper_leftb)
-//			{  // compute value(s) of sub-expression(s) following left bracket
-//				if ((SubExprResult = ComputeSubExpr(stackOperators[stackIndex-1],
-//					StackM1Val, StackTopVal, StackM1Val)) != retCode::EXPR_OK)
-//				{
-//					depth--;				// adjust call depth
-//					return SubExprResult;  // return error code
-//				}
-//				stackIndex--;
-//			}
-//
-//			if (stackIndex == startStackIndex)
-//			{
-//				break;          // jump out of while loop if done
-//			}
-//			if (charValue == ',')
-//			{
-//				depth--;				// adjust call depth
-//				return retCode::EXPR_PAREN_MISMATCH;
-//			}
-//			stackIndex--;    /* Discard ')' */
-//			StackTopVal = StackP1Val;
-//			leftNumberFlag = 1;
-//			exprIndex++;
-//			continue;         // process more of expr
-//		}
-//		else if (charValue >= '0' && charValue <= '9') 	{
-//			/* convert number from ascii to Znum */
-//			exprIndexAux = exprIndex;
-//			if (charValue == '0' && exprIndexAux < exprLength - 2 &&
-//				toupper(expr[exprIndexAux + 1]) == 'X')
-//			{  // hexadecimal
-//				std::vector<char> digits;
-//				exprIndexAux++;
-//				while (exprIndexAux < exprLength - 1)
-//				{
-//					charValue = expr[exprIndexAux + 1];
-//					if ((charValue >= '0' && charValue <= '9') ||
-//						(charValue >= 'A' && charValue <= 'F') ||
-//						(charValue >= 'a' && charValue <= 'f'))
-//					{
-//						exprIndexAux++;
-//						digits.push_back(charValue);
-//					}
-//					else
-//					{
-//						break;   // jump out of inner while loop
-//					}
-//				}
-//				digits.push_back('\0');   // null terminate string
-//				mpz_set_str(ZT(StackTopVal), digits.data(), 16);
-//				exprIndex = exprIndexAux+1;
-//			}
-//			else
-//			{                   // Decimal number.
-//				std::vector<char> digits;
-//				while (exprIndexAux < exprLength)
-//				{  // find position of last digit
-//					charValue = expr[exprIndexAux];
-//					if (charValue >= '0' && charValue <= '9')
-//					{
-//						exprIndexAux++;
-//						digits.push_back(charValue);
-//					}
-//					else
-//					{
-//						break;    // jump out of inner while loop
-//					}
-//				}
-//				// Generate big integer from decimal number
-//				digits.push_back('\0');   // null terminate string
-//				mpz_set_str(ZT(StackTopVal), digits.data(), 10);
-//				exprIndex = exprIndexAux;
-//			}
-//			leftNumberFlag = true;
-//			continue;      // process more of expr
-//		}
-//
-//		/* If we drop through to here, we've got something we can't understand */
-//		depth--;				// adjust call depth
-//		return retCode::EXPR_SYNTAX_ERROR;
-//	}                              /* end while */
-//
-//	if (leftNumberFlag == false)
-//	{
-//		depth--;				// adjust call depth
-//		return retCode::EXPR_SYNTAX_ERROR;
-//	}
-//	while (stackIndex > startStackIndex && stackOperators[stackIndex - 1] != opCode::oper_leftb)
-//	{
-//		if ((SubExprResult = ComputeSubExpr(stackOperators[stackIndex-1],
-//			StackM1Val, StackTopVal, StackM1Val)) != retCode::EXPR_OK)
-//		{
-//			depth--;				// adjust call depth
-//			return SubExprResult;   // return error code
-//		}
-//		stackIndex--;
-//	}
-//	if (stackIndex != startStackIndex) 	{
-//		depth--;				// adjust call depth
-//		return retCode::EXPR_PAREN_MISMATCH;
-//	}
-//	ExpressionResult = StackTopVal;
-//	depth--;				// adjust call depth
-//	if (depth > 0 || exprIndex >= expr.size())
-//		return retCode::EXPR_OK;
-//	else
-//		return retCode::EXPR_SYNTAX_ERROR;  // exit from 1st call but, still have unprocessed text.
-//}
-
-#undef StackTopVal 
-#undef StackP1Val 
-#undef StackM1Val 
 
 /*
 Added 5/6/2021
@@ -1885,8 +1571,11 @@ static retCode ComputeExpr(const std::string &expr, Znum &Result) {
 		int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish); 
 		/* convert expression to reverse polish */
 		if (ircode == EXIT_SUCCESS) {
-			//printTokens(rPolish.data(), (int)rPolish.size());
 			rv = evalExpr(rPolish, Result);
+			if (rv != retCode::EXPR_OK && verbose > 0) {
+				std::cout << "Expression could not be evaluated \n";
+				printTokens(rPolish.data(), (int)rPolish.size());
+			}
 		}
 		else {
 			if (verbose > 0) {
@@ -2055,6 +1744,8 @@ static void nextsep(token expr[], int &ix) {
 
 /* print tokens in readable form */
 static void printTokens(const token expr[], const int exprLen) {
+	if (exprLen == 0)
+		return;   /* if no tokens to print do nothing but exit*/
 	for (int ix = 0; ix < exprLen; ix++) {
 		switch (expr[ix].typecode) {
 		case types::number:
@@ -2122,39 +1813,36 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		if (expr[exprIndex].typecode == types::end)
 			break;			/* reached end of tokens so stop */
 
-		if (expr[exprIndex].typecode == types::Operator && 
-			expr[exprIndex].oper == opCode::minus &&
-			!leftNumber)
-			expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
+		switch (expr[exprIndex].typecode) {
 
-
-		if (expr[exprIndex].typecode == types::number) {
+		case types::number:	{
 			if (leftNumber)
 				return EXIT_FAILURE;  /* syntax error */
 
 			rPolish.push_back(expr[exprIndex]);
 			leftNumber = true;
+			break;
 		}
 
-		else if (expr[exprIndex].typecode == types::func) {
+		case types::func: {
 			/* process function. 1st get number of parameters */
 			if (leftNumber)
 				return EXIT_FAILURE; /* syntax error */
 			int numparams = functionList[expr[exprIndex].function].NoOfParams;
 
-			if (expr[exprIndex+1].typecode != types::Operator ||
-				expr[exprIndex+1].oper != opCode::leftb) {
+			if (expr[exprIndex + 1].typecode != types::Operator ||
+				expr[exprIndex + 1].oper != opCode::leftb) {
 				return EXIT_FAILURE; /* function name not followed by (*/
 			}
-			int paramLen=0;
+			int paramLen = 0;
 			int ix3 = 0;
 			for (int pcount = 1; pcount <= numparams; pcount++) {
 
 				/* find delimiter marking end of parameter*/
-				nextsep(expr + exprIndex +2 + ix3, paramLen); // get next , or )
+				nextsep(expr + exprIndex + 2 + ix3, paramLen); // get next , or )
 				if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
 					return EXIT_FAILURE; /* parameter sep. not found */
-				int rv = reversePolish(expr + exprIndex +2 +ix3, paramLen, rPolish);
+				int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
 				if (rv != EXIT_SUCCESS)
 					return rv;
 				ix3 += (paramLen + 1); // move ix3 past , or )
@@ -2164,112 +1852,94 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 				return EXIT_FAILURE; /* no ) when required */
 
 			rPolish.push_back(expr[exprIndex]); /* copy function token to output */
-			exprIndex += (ix3+1); /* move past ) after function name */
+			exprIndex += (ix3 + 1); /* move past ) after function name */
 			leftNumber = true;
+			break;
 		}
 
-		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper > opCode::leftb
-			&& expr[exprIndex].oper < opCode::rightb) {
-			if (!leftNumber)
-				return EXIT_FAILURE; /* no number or expression before the operator */
-			/* process factorial, primorial. */
-			/* transfer higher priority operators from stack to output */
-			int expOpPri = opr[(int)expr[exprIndex].oper].pri;
-			while (operStack.size() > 0
-				&& operStack.back().typecode == types::Operator
-				&& operStack.back().oper != opCode::leftb) {
-				//int stkOpPri = operPrio[(int)operStack.back().oper]; /* get priority of top operator on stack */
-				int stkOpPri = opr[(int)operStack.back().oper].pri; /* get priority of top operator on stack */
-				/* N.B. lower priority value; higher priority operator */
-				if ((stkOpPri < expOpPri)
-					/* transfer high priority stack operator to output.
-					exponent operator is special because it is right-associative */
-					|| (stkOpPri == expOpPri &&
-					((expr[exprIndex].oper != opCode::power) &&
-						(expr[exprIndex].oper != opCode::not) &&
-						(expr[exprIndex].oper != opCode::unary_minus))
-						)) {
+		case types::Operator: {
+			if (expr[exprIndex].oper != opCode::leftb
+				&& expr[exprIndex].oper != opCode::rightb) {
+
+				if (expr[exprIndex].oper == opCode::minus && !leftNumber)
+					expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
+
+				bool left = opr[(int)expr[exprIndex].oper].left; /* assocativity*/
+				bool pre = opr[(int)expr[exprIndex].oper].pre; /* unary operator precedes expr*/
+				bool unary = (opr[(int)expr[exprIndex].oper].numOps == 1);
+				/* get priority of current operator */
+				int expOpPri = opr[(int)expr[exprIndex].oper].pri;
+				/* check for unary operator - or + or NOT */
+				if (!leftNumber) {  /* if operator is not preceded by an expression */
+					if (expr[exprIndex].oper == opCode::plus) {
+						break; /* step past unary plus; no output required*/
+					}
+					else if (!unary || !pre)
+						return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
+				}
+				else {
+					/* operator follows expression */
+					if (unary && pre)
+						return EXIT_FAILURE; /* unary operator preceded by a number or expression */
+				}
+
+				/* Transfer higher priority operators from stack to output.
+					Stop when lower priority operator or ( is found on stack.
+					For equal priority operators the left-associative flag is checked. */
+				while (operStack.size() > 0
+					&& operStack.back().typecode == types::Operator
+					&& operStack.back().oper != opCode::leftb) {
+					/* get priority of top operator on stack */
+					int stkOpPri = opr[(int)operStack.back().oper].pri;
+					/* N.B. lower priority value; higher priority operator */
+					if ((stkOpPri < expOpPri)
+						|| (stkOpPri == expOpPri && left)) {
+						/* transfer high priority stack operator to output.
+						exponent operator is special because it is right-associative */
+						rPolish.push_back(operStack.back());
+						operStack.pop_back();
+					}
+					else
+						break; /* stop when lower priority operator found on stack */
+				}
+
+				operStack.push_back(expr[exprIndex]); /* put current operator onto stack */
+
+				if (unary && !pre)
+					leftNumber = true;  /* factorial, primorial operators follow the
+										expression they apply to*/
+				else
+					leftNumber = false;
+			}
+
+			else if (expr[exprIndex].oper == opCode::leftb) {
+				if (leftNumber)
+					return EXIT_FAILURE; /* syntax error */
+				operStack.push_back(expr[exprIndex]);
+			}
+
+			else if (expr[exprIndex].oper == opCode::rightb) {
+				if (!leftNumber)
+					return EXIT_FAILURE; /* syntax error */
+				/* right bracket; remove stacked operators up to left bracket */
+				while (operStack.size() > 0
+					&& operStack.back().typecode == types::Operator
+					&& operStack.back().oper != opCode::leftb) {
 					rPolish.push_back(operStack.back());
 					operStack.pop_back();
-				}
-				else
-					break; /* stop when lower priority operator found on stack */
-			}
-			operStack.push_back(expr[exprIndex]);
-		}
-
-		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper < opCode::leftb ) {
-			/* check for unary operator - or + or NOT */
-			if (!leftNumber) {  /* if operator is not preceded by an expression */
-				if (expr[exprIndex].oper == opCode::plus) {
-					exprIndex++;  /* step past unary plus; no output required*/
-					continue;
-				}
-				else if (expr[exprIndex].oper != opCode::not &&
-					expr[exprIndex].oper != opCode::unary_minus)
-					return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
+				};
+				if (operStack.empty())
+					return EXIT_FAILURE;  /* missing ( */
+				operStack.pop_back(); /* discard left bracket */
+				leftNumber = true;
 			}
 
-			 /* get priority of current operator */
-			int expOpPri = opr[(int)expr[exprIndex].oper].pri;
-
-			/* transfer higher priority operators from stack to output */
-			while (operStack.size() > 0 
-				&& operStack.back().typecode == types::Operator
-				&& operStack.back().oper != opCode::leftb) {
-		        /* get priority of top operator on stack */
-				int stkOpPri = opr[(int)operStack.back().oper].pri; 
-				/* N.B. lower priority value; higher priority operator */
-				if ((stkOpPri < expOpPri)
-					/* transfer high priority stack operator to output. 
-					exponent operator is special because it is right-associative */
-					|| (stkOpPri == expOpPri && 
-						((expr[exprIndex].oper != opCode::power) &&
-						(expr[exprIndex].oper != opCode::not) &&
-						(expr[exprIndex].oper != opCode::unary_minus))
-						) ){
-					rPolish.push_back(operStack.back());
-					operStack.pop_back(); 
-				}
-				else
-					break; /* stop when lower priority operator found on stack */
-			}
-
-			operStack.push_back(expr[exprIndex]); /* put current operator onto stack */
-			if (expr[exprIndex].oper > opCode::leftb
-				&& expr[exprIndex].oper < opCode::rightb)
-				leftNumber = true;  /* factorial, primorial operators follow the 
-									expression they apply to*/
-			else
-				leftNumber = false;
+			break;
 		}
 
-		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper == opCode::leftb) {
-			if (leftNumber)
-				return EXIT_FAILURE; /* syntax error */
-			operStack.push_back(expr[exprIndex]);
-		}
-
-		else if (expr[exprIndex].typecode == types::Operator
-			&& expr[exprIndex].oper == opCode::rightb) {
-			/* right bracket; remove stacked operators up to left bracket */
-			while (operStack.size() > 0
-				&& operStack.back().typecode == types::Operator
-				&& operStack.back().oper != opCode::leftb) {
-				rPolish.push_back(operStack.back());
-				operStack.pop_back();
-			};
-			if (operStack.empty())
-				return EXIT_FAILURE;  /* missing ( */
-			operStack.pop_back(); /* discard left bracket */
-			leftNumber = true;
-		}
-
-		else 
+		default:
 			return EXIT_FAILURE;  /* unkown token in input */
+		}
 
 		exprIndex++;
 	}
@@ -2291,7 +1961,7 @@ are not enough numbers on the stack to perform an operation an error is reported
 (this would indicate a syntax error not detected earlier) */
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 	std::stack <Znum> nums;
-	Znum val, p1, p2;
+	Znum val;
 	Znum args[4];
 	int index = 0;
 	int rPlen = (int)rPolish.size();
@@ -2302,6 +1972,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 		if (rPolish[index].typecode == types::number) {
 			nums.push(rPolish[index].value);
 		}
+
 	 /* operators and functions are processed by taking the operand values
 		from the stack, executing the operation or function and putting
 		the returned value onto the stack. If there are insuffficient values
@@ -2326,34 +1997,19 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 		}
 
 		else if (rPolish[index].typecode == types::Operator) {
-			if (rPolish[index].oper == opCode::unary_minus
-				|| rPolish[index].oper == opCode::not
-				|| rPolish[index].oper == opCode::fact
-				|| rPolish[index].oper == opCode::dfact
-				|| rPolish[index].oper == opCode::prim) {
-				/* operators that only take 1 operand */
-				if (nums.empty())
-					return retCode::EXPR_SYNTAX_ERROR;
-				retCode rc = ComputeSubExpr(rPolish[index].oper, 0, nums.top(), val);
-				if (rc != retCode::EXPR_OK)
-					return rc;
-				nums.pop();  /* remove operand value from stack */
-				nums.push(val);  /* put generated value onto stack */
+			opCode oper = rPolish[index].oper;
+			int NoOfArgs = opr[(int)oper].numOps;
+			if (NoOfArgs > nums.size())
+				return retCode::EXPR_SYNTAX_ERROR;
+			for (; NoOfArgs > 0; NoOfArgs--) {
+				/* copy operand(s) from number stack to args */
+				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
+				nums.pop();  /* remove top value from stack */
 			}
-
-			else {
-				/* operators that take 2 operands */
-				if (nums.size() < 2)
-					return retCode::EXPR_SYNTAX_ERROR;
-				p2 = nums.top(); /* move value from stack to p2 */
-				nums.pop();
-				p1 = nums.top();   /* move value from stack to p1 */
-				nums.pop();
-				retCode rc = ComputeSubExpr(rPolish[index].oper, p1, p2, val);
-				if (rc != retCode::EXPR_OK)
-					return rc;
-				nums.push(val);  /* put generated value onto stack */
-			}
+			retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
+			if (rc != retCode::EXPR_OK)
+				return rc;
+			nums.push(val);  /* put generated value onto stack */
 		}
 		else
 			abort(); /* unrecognised token */
@@ -2781,6 +2437,7 @@ static void doTests(void) {
 		"not5#",                        -31,  // # operator evaluated before not
 		"4^5#",         1152921504606846976,  // # operator evluated before exponent
 		"5!!#",                       30030,  // !! operator evaluated before #
+		"5#!!",           42849873690624000,  // # operator evaluated before !!
 	};
 
 	results.clear();
