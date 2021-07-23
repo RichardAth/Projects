@@ -97,6 +97,9 @@
     <Text Include="readme.txt">
       <Filter>Source Files</Filter>
     </Text>
+    <Text Include="mpz_prp_readme.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="BigIntCalculator.rc">

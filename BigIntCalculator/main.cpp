@@ -46,11 +46,8 @@ const char * myTime(void) {
 	return timestamp;
 }
 
-
-#define PAREN_STACK_SIZE            100
 int lang = 0;             // 0 English, 1 = Spanish
 
-static int exprIndex;
 bool hex = false;		// set true if output is in hex
 bool factorFlag = true;
 /* verbose value is used to turn off or on optional messages; 
@@ -66,11 +63,15 @@ HANDLE hConsole;
 /* list of operators, arranged in order of priority. Order is not exactly the
 same as C or Python. */
 enum class opCode {
+	fact        = 21,	// !   factorial 
+	dfact       = 22,	// !!  double factorial
+	prim        = 23,	// #   primorial
+	unary_minus =  1,   // C and Python put unary minus above multiply, divide & modulus
+	not         = 16,   // C and Python put bitwise not with unary minus
 	power       =  0, 
-	unary_minus =  1,  // C and Python put unary minus above multiply, divide & modulus
 	multiply    =  2,
 	divide      =  3,
-	remainder   =  4,  // AKA modulus
+	remainder   =  4,   // AKA modulus
 	comb        =  5,   // nCk, also known as binomial coefficient
 	plus        =  6,
 	minus       =  7,
@@ -82,15 +83,11 @@ enum class opCode {
 	less        = 13,
 	not_equal   = 14,
 	equal       = 15,
-	not         = 16,      // C and Python put bitwise not with unary minus
 	and         = 17,      // C and Python put AND before XOR before OR
 	xor         = 18,
 	or          = 19,
 	leftb       = 20,
-	fact		 = 21,				// !   factorial 
-	dfact		 = 22,				// !!  double factorial
-	prim		 = 23,				// #   primorial
-	rightb		 = 24,              // right bracket (must be highest value)
+	rightb		= 24,              // right bracket (must be highest value)
 };
 
 /* list of operator priority values. lower value = higher priority. Note: this 
@@ -185,7 +182,7 @@ const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
 /* function declarations, only for functions that have forward references */
 static retCode ComputeExpr(const std::string &expr, Znum &ExpressionResult);
 long long MulPrToLong(const Znum &x);
-static bool getBit(const unsigned long long int x, bool array[]);
+static bool getBit(const unsigned long long int x, const bool array[]);
 void generatePrimes(unsigned long long int max_val);
 retCode tokenise(const std::string expr, std::vector <token> &tokens);
 static void textError(retCode rc);
@@ -348,6 +345,42 @@ static Znum ComputeSumDivs(const Znum &n) {
 		return divisors;
 	}
 	else return 0;
+}
+
+/* number of distinct prime factors of n */
+static Znum ComputeNumFact(const Znum &n) {
+	if (n >= -1 && n <= 1)
+		return 1;
+	fList factorlist;
+	auto rv = factorise(n, factorlist, nullptr);
+	if (rv)
+		return factorlist.fsize();
+	else
+		return 0;
+}
+
+/* minimum prime factor of n. */
+static Znum ComputeMinFact(const Znum &n) {
+	if (n >= -1 && n <= 1)
+		return n;
+	fList factorlist;
+	auto rv = factorise(n, factorlist, nullptr);
+	if (rv)
+		return factorlist.fmin();
+	else
+		return 0;
+}
+
+/* maximum prime factor of n.*/
+static Znum ComputeMaxFact(const Znum &n) {
+	if (n >= -1 && n <= 1)
+		return n;
+	fList factorlist;
+	auto rv = factorise(n, factorlist, nullptr);
+	if (rv)
+		return factorlist.fmax();
+	else
+		return 0;
 }
 
 /* SumDigits(n,r): Sum of digits of n in base r. */
@@ -733,7 +766,7 @@ static Znum llt(const Znum &p) {
 	 Results indicate yes, definitely. Maybe because it is >99% effective in screening
 	 out composites with just 2 tests so that llt is only neeeded as confirmation. 
 	 Update 11/7/2021; using neither trial division nor  mpz-probab_prime_p is fastest.
-	 LL test is in fact faster than miller-rabin even when limitied to 2 rounds. */
+	 LL test is in fact faster than miller-rabin even when MR is limitied to 2 rounds. */
 	if (verbose > 1) {
 		t1 = clock();
 		/* use trial division if verbose > 1 because this can give some factors, 
@@ -808,6 +841,9 @@ enum class fn_Code {
 	fn_nroot,
 	fn_bpsw,
 	fn_aprcl,
+	fn_numfact,
+	fn_minfact,
+	fn_maxfact,
 	fn_invalid = -1,
 } ;
 
@@ -820,7 +856,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 27> functionList{
+const static std::array <struct functions, 30> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -833,6 +869,9 @@ const static std::array <struct functions, 27> functionList{
 	"NROOT",     2,  fn_Code::fn_nroot,
 	"REVDIGITS", 2,  fn_Code::fn_revdigits,
 	"ISPRIME",   1,	 fn_Code::fn_isprime,
+	"NUMFACT",   1,  fn_Code::fn_numfact,
+	"MINFACT",   1,  fn_Code::fn_minfact,
+	"MAXFACT",   1,  fn_Code::fn_maxfact,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
 	"LLT",	     1,  fn_Code::fn_llt,           // lucas-Lehmer test
@@ -847,7 +886,7 @@ const static std::array <struct functions, 27> functionList{
 	"R3",        1,  fn_Code::fn_r3,
 	"JA",		 2,  fn_Code:: fn_jacobi,
 	"KR",		 2,  fn_Code::fn_kronecker,
-	"APRCL",     1,  fn_Code::fn_aprcl           // APR-CL prime test
+	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -1065,11 +1104,23 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
 		result = mpz_aprtcle(ZT(p1), verbose);
 		if (result == 0)
-			printf_s ( "\ncomposite \n");
+			printf_s ( "composite \n");
 		else if (result == 1)
-			printf_s("\nprobable prime \n");
+			printf_s("probable prime \n");
 		else if (result == 2)
-			printf_s("\nprime \n") ;
+			printf_s("prime \n") ;
+		break;
+	}
+	case fn_Code::fn_numfact: {
+		result = ComputeNumFact(p1);
+		break;
+	}
+	case fn_Code::fn_minfact: {
+		result = ComputeMinFact(p1);
+		break;
+	}
+	case fn_Code::fn_maxfact: {
+		result = ComputeMaxFact(p1);
 		break;
 	}
 
@@ -1078,80 +1129,6 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	}
 	return retcode;
 }
-
-/* Check whether expr matches any function name. If so ,compute value(s) of 
- parameter(s), compute function value, set Gfcode and return EXPR_OK. 
- If not, return value 1 (EXPR_FAIL).
-Updates global var exprIndex */
-//static retCode func(const std::string &expr, const bool leftNumberFlag,
-// 	 int exprIndexLocal, Znum &FnValue) {
-//	retCode retcode;
-//	fn_Code fnCode = fn_Code::fn_invalid;
-//	long long ix;
-//	int NoOfArgs = 0;
-//	Znum args[4];     // parameter values (only up to 3 values used)
-//	const char *ptrExpr = expr.data() + exprIndexLocal;
-//
-//	/* try to match function name. Names are not case-sensitive */
-//	for (ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
-//		if (_strnicmp(ptrExpr, functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
-//			fnCode = functionList[ix].fCode;
-//			NoOfArgs = functionList[ix].NoOfParams;
-//			break;  // found a match for the function name 
-//		}
-//	}
-//
-//	if (fnCode == fn_Code::fn_invalid)
-//		return retCode::EXPR_FAIL;  // no function name found
-//
-//	assert(NoOfArgs <= sizeof(args) / sizeof(args[0]));
-//		
-//	exprIndexLocal += (int)strlen(functionList[ix].fname); // move exprIndex past function name
-//	if (leftNumberFlag)
-//	{
-//		return retCode::EXPR_SYNTAX_ERROR;
-//	}
-//	if (exprIndexLocal >= expr.length() || expr[exprIndexLocal++] != '(')
-//	{
-//		return retCode::EXPR_SYNTAX_ERROR;  // no opening bracket after function name
-//	}
-//
-//	int Bracketdepth = 0;
-//	for (ix = exprIndexLocal-1; ix < (long long)expr.length(); ix++) {
-//		if (expr[ix] == '(') Bracketdepth++;
-//		if (expr[ix] == ')') Bracketdepth--;
-//		if (Bracketdepth == 0) break;  // found matching closing bracket
-//	}
-//	if (Bracketdepth != 0)
-//		return retCode::EXPR_PAREN_MISMATCH;
-//	long long exprLength = ix - exprIndexLocal + 1;  // length of text up to closing bracket.
-//
-//	/* now get value(s) of function arguments(s) */
-//	for (int index = 0; index < NoOfArgs; index++)
-//	{
-//		char compareChar;
-//		/* substring in function call below includes all characters from the parameter now
-//		being processed up to and including the closing bracket. */
-//		retcode = ComputeExpr(expr.substr(exprIndexLocal, exprLength), args[index]);
-//		if (retcode != retCode::EXPR_OK) {
-//			return retcode;   // unable to evaluate parameter
-//		}
-//		exprIndexLocal += exprIndex;  // move exprIndexLocal past expression just evaluated.
-//		exprLength -= exprIndex;
-//		/* if there's more than 1 parameter they are separated with commas. 
-//		The last one is followed by ')'*/
-//		compareChar = (index == NoOfArgs - 1 ? ')' : ',');
-//		if (exprIndexLocal >= expr.length() || expr[exprIndexLocal++] != compareChar)
-//		{
-//			return retCode::EXPR_SYNTAX_ERROR;  // no comma or ) when needed
-//		}
-//		exprLength--;		// subtract length of comma or closing bracket
-//	}
-//
-//	exprIndex = exprIndexLocal;  // update global index to char after )
-//	retcode = ComputeFunc(fnCode, args[0], args[1], args[2], FnValue);  // evaluate function
-//	return retcode;
-//}
 
 /* SHL: Shift left the number of bits specified on the right operand. If the
 number of bits to shift is negative, this is actually a right shift. If result would
@@ -1192,7 +1169,7 @@ unsigned long long llSqrt(const unsigned long long n) {
 }
 
 // return value of bit in array corresponding to x. false (0) indicates a prime number
-static bool getBit(const unsigned long long int x, bool array[])
+static bool getBit(const unsigned long long int x, const bool array[])
 {
 	return array[x/2];
 }
@@ -1267,7 +1244,7 @@ void generatePrimes(unsigned long long int max_val) {
 	return;
 }
 
-/* process one operator with 1 or 2 operands on stack. 
+/* process one operator with 1 or 2 operands. 
 NOT, unary minus, factorial, double factorial and primorial  have 1 operand. 
 All the others have two. Some operators can genererate an error condition 
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
@@ -2245,7 +2222,7 @@ static void doFactors(const Znum &Result, bool test) {
 				break;
 			if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
 			std::cout << c << "² ";
-			c++;
+			c++;    // change a to b, b to c, etc
 		}
 		c = 'a';
 		for (auto q : Quad) {
@@ -3332,7 +3309,10 @@ static int processCmd(const std::string &command) {
 		"Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%%r but more efficient.\n"
 		"Totient(n)      : finds the number of positive integers less than n which are relatively prime to n.\n"
 		"IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.\n"
-		"APRC(n)         : returns zero if composite, 1 for probable prime, 2 for definite prime \n"
+		"BPSW(n)         : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
+		"                  considered to be 100%% reliable for numbers up to 10000 digits \n"
+		"APRCL(n)        : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
+		"                  WARNING: very slow for large numbers e.g. 20s for 400 digits \n"
 		"NumDivs(n)      : Number of positive divisors of n either prime or composite.\n"
 		"SumDivs(n)      : Sum of positive divisors of n either prime or composite.\n"
 		"NumDigits(n, r) : Number of digits of n in base r.\n"
@@ -3340,6 +3320,9 @@ static int processCmd(const std::string &command) {
 		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
 		"Sqrt(n)         : square root of n\n"
 		"Nroot(n, r)     : rth root of n e.g.r=3 for cube root\n"
+		"NumFact(n)      : number of distinct prime factors of n. \n"
+		"MinFact(n)      : minimum prime factor of n. \n"
+		"MaxFact(n)      : maximum prime factor of n \n"
 		"LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, "
 		                 "1 if prime.\n"
 		"FactConcat(m,n) : Concatenates the prime factors of n according to the mode m\n"
@@ -3434,7 +3417,6 @@ static int processCmd(const std::string &command) {
 		else
 			doTests7("");
 		return 1;
-		return 1;
 	}
 	if (command.substr(0, 6) == "MSIEVE") {
 		msieveParam(command);
@@ -3457,29 +3439,6 @@ static int processCmd(const std::string &command) {
 	return 0;
 }
 
-//static BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
-//{
-//	switch (fdwCtrlType)
-//	{
-//		// Handle the CTRL-C signal.
-//	case CTRL_C_EVENT:
-//		printf("Ctrl-C event\n\n");
-//		Beep(750, 300);
-//		ctrlC = true;
-//		return TRUE;
-//
-//		// CTRL-CLOSE: confirm that the user wants to exit.
-//	case CTRL_CLOSE_EVENT:
-//		Beep(600, 200);
-//		printf("Ctrl-Close event\n\n");
-//		return TRUE;
-//
-//		// Pass other signals to the next handler.
-//	default:
-//		return FALSE;
-//	}
-//}
-
 int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
@@ -3496,7 +3455,7 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 
-		std::string modified;
+		std::string modified;  /* date & time program last modified */
 		VersionInfo(argv[0], version, modified); /* get version info from .exe file */
 		printf_s("%s Bigint calculator Version %d.%d \n", myTime(), version[0], version[1]);
 		std::cout << "last modified on " << modified << '\n';
@@ -3539,13 +3498,19 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-			getline(std::cin, expr);  // expression may include spaces
+			getline(std::cin, expr);    // expression may include spaces
 			strToUpper(expr, expr);		// convert to UPPER CASE 
+
+			// prevent the sleep idle time-out.
+			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
 			int cmdCode = processCmd(expr);
 			if (cmdCode == 2) break;    // EXIT command
-			if (cmdCode == 1) continue; // command has been fully processed
-
+			if (cmdCode == 1) {
+				// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+				SetThreadExecutionState(ES_CONTINUOUS);
+				continue; // command has been fully processed
+			}
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 
 
@@ -3567,7 +3532,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			auto end = clock();   // measure amount of time used
 			double elapsed = (double)end - start;
 			PrintTimeUsed(elapsed, "time used = ");
+			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+			SetThreadExecutionState(ES_CONTINUOUS);
 		}
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
 
 		return EXIT_SUCCESS;  // EXIT command entered
 	}

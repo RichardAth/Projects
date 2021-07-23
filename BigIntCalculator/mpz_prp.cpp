@@ -41,17 +41,17 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
 	unsigned long long int r = 0;
 
 	if (mpz_cmp_ui(a, 2) < 0)
-		return PRP_ERROR;
+		return PRP_ERROR;     /* a < n */
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;   /* definitely not prime */
+		return PRP_COMPOSITE;   /*  n < 2; definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;     /* definitely prime */
+			return PRP_PRIME;     /* n is 2; definitely prime */
 		else
-			return PRP_COMPOSITE;
+			return PRP_COMPOSITE;   /* n is even; definitely copmposite */
 	}
 
 	mpz_init_set_ui(mpz_test, 0);
@@ -61,8 +61,8 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
 
 	/***********************************************/
 	/* Find s and r satisfying: n-1=(2^r)*s, s odd */
-	r = mpz_scan1(nm1, 0);
-	mpz_fdiv_q_2exp(s, nm1, r);
+	r = mpz_scan1(nm1, 0); /* find least significant 1-bit*/
+	mpz_fdiv_q_2exp(s, nm1, r);  /* remove 0-bits */
 
 
 	/******************************************/
@@ -118,14 +118,14 @@ int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 		return PRP_ERROR;
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;       /* definitely not prime */
+		return PRP_COMPOSITE;       /* n < 2; definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;       /* definitely prime */
+			return PRP_PRIME;       /* n = 2; definitely prime */
 		else
-			return PRP_COMPOSITE;   /* definitely not prime */
+			return PRP_COMPOSITE;   /* n is even; definitely not prime */
 	}
 
 	mpz_init(index);
@@ -278,19 +278,19 @@ int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 int mpz_selfridge_prp(const mpz_t n)
 {
 	long int d = 5, p = 1, q = 0;
-	int max_d = 1000000;
+	const int max_d = 1000000;
 	int jacobi = 0;
 	mpz_t zD;
 
 	if (mpz_cmp_ui(n, 2) < 0)
-		return PRP_COMPOSITE;     /* definitely not prime */
+		return PRP_COMPOSITE;     /* n < 2; definitely not prime */
 
 	if (mpz_divisible_ui_p(n, 2))
 	{
 		if (mpz_cmp_ui(n, 2) == 0)
-			return PRP_PRIME;    /* definitely prime */
+			return PRP_PRIME;    /* n = 2; definitely prime */
 		else
-			return PRP_COMPOSITE;     /* definitely not prime */
+			return PRP_COMPOSITE;     /* n is even; definitely not prime */
 	}
 
 	mpz_init_set_ui(zD, d);
@@ -380,7 +380,7 @@ int mpz_bpsw_prp(const mpz_t n)
 
 	mpz_init_set_ui(two, 2);
 
-	ret = mpz_sprp(n, two);
+	ret = mpz_sprp(n, two); /* is n a strong pseudoprime to base 2? */
 	mpz_clear(two);
 
 	/* with a base of 2, mpz_sprp, won't return PRP_ERROR */
@@ -388,7 +388,7 @@ int mpz_bpsw_prp(const mpz_t n)
 	if ((ret == PRP_COMPOSITE) || (ret == PRP_PRIME))
 		return ret;
 
-	return mpz_selfridge_prp(n);
+	return mpz_selfridge_prp(n);  /* is it a strong Lucas pseudoprime? */
 
 }/* method mpz_bpsw_prp */
 
@@ -421,6 +421,10 @@ typedef unsigned long long u64_t;
 /* **********************************************************************************
  * APR-CL (also known as APRT-CLE) is a prime proving algorithm developed by:
  * L. Adleman, C. Pomerance, R. Rumely, H. Cohen, and A. K. Lenstra
+ * 'proving' means that it returns a definite true/false indicator; It is a
+ * deterministic primality test but is very slow for large numbers 
+ * (17min 30 s for 10^999+7).
+ * for numbers > 2000 digits it reverts to a BPSW probabilistic test.
  * APRT-CLE = Adleman-Pomerance-Rumely Test Cohen-Lenstra Extended version
  * You can find all the details of this implementation in the Cohen & Lenstra paper:
  *    H. Cohen and A. K. Lenstra, "Implementation of a new primality test",

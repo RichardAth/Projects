@@ -180,6 +180,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="mpz_prp_readme.txt" />
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemGroup>

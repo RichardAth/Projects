@@ -288,6 +288,7 @@ Repeated factors: No or Yes
 		return (this->f.size() == 1 && this->f[0].exponent == 1);
 	}
 
+	/* return number of unique factors */
 	size_t fsize() const {
 		return this->f.size();
 	}
@@ -310,6 +311,21 @@ Repeated factors: No or Yes
 		}
 		return result;
 	}
+
+	/* return value of smallest factor */
+	Znum fmin ()const{
+		if (!this->f.empty())
+			return (this->f.front().Factor);
+		else return -1;  /* error - factor list is empty */
+	}
+
+	/* return value of largest factor */
+	Znum fmax()const {
+		if (!this->f.empty())
+			return this->f.back().Factor ;
+		else return -1;  /* error - factor list is empty */
+	}
+
 };
 
 
