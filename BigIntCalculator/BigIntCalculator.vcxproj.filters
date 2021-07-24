@@ -30,9 +30,6 @@
     <ClCompile Include="modmult.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="division.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sqroot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -40,9 +37,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="baseconv.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="siqs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bignbr.cpp">
@@ -54,6 +48,30 @@
     <ClCompile Include="ecm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="siqsnew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="modmultz.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="R3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="msieve.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="yafu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mpz_prp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileVersionInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">
@@ -62,10 +80,16 @@
     <ClInclude Include="bignbr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="expression.h">
+    <ClInclude Include="factor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="factor.h">
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bigint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -73,5 +97,13 @@
     <Text Include="readme.txt">
       <Filter>Source Files</Filter>
     </Text>
+    <Text Include="mpz_prp_readme.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BigIntCalculator.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -31,3 +31,35 @@ The factoriser is essentially DAs program, with an interface function that conve
 GMP/MPIR extended precision numbers to DAs BigIntegers and vice versa. The progress 
 messages it produces have been modified to work with a console window instead of a 
 Web Browser. 
+
+My attempt to speed up factorisation failed completely, so I took an entirely different approach.
+
+A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
+factorisation. My conclusion was that for larger numbers (> about 50 digits) Msieve
+is usually significantly faster, provided that the -i option is used witm Msieve.
+The -e option causes greater use of ECM within Msieve. The default is to use ECM
+only for factors < 15 digits. In addition I modified the function choose_max_digits
+within the source file gmp_ecm.c to increase the use of ECM still further.
+
+Use of Msieve is controlled by Msieve on/off commands. Note: msive must be installed
+separately and the path to it must be correct.
+
+Also an interface to YAFU, which is generally faster than Msieve. Again YAFU must be installed separately
+and the path to it must be correct. For numbers > 95 digits YAFU neeeeds GGNFS to be installed as well.
+Use of YAFU is controlled by YAFU ON/OFF commands.
+
+Turning YAFU on turns Msieve off and vice versa. If both are off the original ECM/SIQS is used.
+
+To build Msieve requires some components of GMP-ECM, as well as Pthreads
+
+To build YAFU requires components of Msieve, GMP-ECM and Pthreads.
+
+Some other unrelated stuff is also included:
+
+Int128 - allows use of 128-bit integers with visual studio. I had intended to use this in the factorisation
+but never actually did so.
+
+Baillie-PSW - a copy of a program I found that demonstrates various primality-testing functions
+
+
+For more information see readme.txt file

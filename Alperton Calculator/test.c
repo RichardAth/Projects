@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
 			7	fsquaresText (arg1, 6)
 			8	ModInvBigNbr
 			9	polyFactText  // not working
+			10  Factorisation
 			11	DilogText
 			12 gaussianText
 			13 emcFrontText  predefined values

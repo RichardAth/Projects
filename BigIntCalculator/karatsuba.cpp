@@ -14,19 +14,19 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* Perform Karatsuba multiplication in little endian order */
+#include "pch.h"
 
-#include <string>
 #include "bignbr.h"
-//#include <stdio.h>
-#include <cmath>
-#include <cstdint>
 
-#define KARATSUBA_CUTOFF 16
 
-static limb arr[3 * MAX_LEN];
+#define KARATSUBA_CUTOFF 16   /* n.b. cannot increase this unless modifying 
+						ClassicalMult as well */
+
+static limb arr[4 * MAX_LEN];      /*    3 * changed to 4 * on 16/5/2019, because
+							karatsuba exceeded arrray bound for large numbers */
 static limb arrayAux[3 * MAX_LEN];
 static int karatLength;
-static void Karatsuba(int idxFactor1, int length, int diffIndex);
+static void Karatsuba(int idxFactor1, const int length, int diffIndex);
 
 #define PROLOG_MULTIPLICATION_DOUBLE                                    \
   factor2_i = arr[idxFactor2 + i].x;                                    \
@@ -77,7 +77,7 @@ void multiply(const limb *factor1, const limb *factor2, limb *result, const int 
 		}
 		length *= div;
 	}
-	if (length*2 > MAX_LEN) {
+	if (length > MAX_LEN) {
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot perform multiplication: ";
 		mesg += __func__;
@@ -585,11 +585,11 @@ static void ClassicalMult16Limbs(int idxFactor1, int idxFactor2)
 }
 
 #endif
-static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen)
-{
+static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
 #ifdef _USING64BITS_
 	uint64_t product;
-	switch (nbrLen)
+
+	switch (nbrLen)     /* currently must have nbrLen <= 16 */
 	{
 	case 1:
 		product = (int64_t)arr[idxFactor1].x * arr[idxFactor2].x;
@@ -643,6 +643,8 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen)
 	case 16:
 		ClassicalMult16Limbs(idxFactor1, idxFactor2);
 		break;
+
+	default: abort();   // should never get here
 	}
 #else
 	limb *ptrFactor1, *ptrFactor2;
@@ -694,8 +696,11 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen)
 }
 
 // Recursive Karatsuba function.
-static void Karatsuba(int idxFactor1, int nbrLen, int diffIndex)
+static void Karatsuba(int idxFactor1, const int nbrLen, int diffIndex)
 {
+	/* check that array index is within bounds */
+	assert(idxFactor1 + nbrLen * 2 <= sizeof(arr) / sizeof(arr[0]));
+
 	int idxFactor2 = idxFactor1 + nbrLen;
 	int i;
 	unsigned int carry1First, carry1Second;
@@ -704,40 +709,22 @@ static void Karatsuba(int idxFactor1, int nbrLen, int diffIndex)
 	int middle;
 	int sign;
 	int halfLength;
-	if (nbrLen <= KARATSUBA_CUTOFF)
-	{
-		// Check if one of the factors is equal to zero.
-		ptrResult = &arr[idxFactor1];
-		for (i = nbrLen; i > 0; i--)
-		{
-			if ((ptrResult++)->x != 0)
-			{
-				break;
-			}
+	
+	// Check if one of the factors is equal to zero.
+	if (BigNbrIsZero (&arr[idxFactor1], nbrLen) || BigNbrIsZero(&arr[idxFactor1], nbrLen))
+	{    // One of the factors is equal to zero.
+		for (i = nbrLen - 1; i >= 0; i--) 	{
+			arr[idxFactor1 + i].x = arr[idxFactor2 + i].x = 0;
 		}
-		if (i > 0)
-		{     // First factor is not zero. Check second.
-			ptrResult = &arr[idxFactor2];
-			for (i = nbrLen; i > 0; i--)
-			{
-				if ((ptrResult++)->x != 0)
-				{
-					break;
-				}
-			}
-		}
-		if (i == 0)
-		{    // One of the factors is equal to zero.
-			for (i = nbrLen - 1; i >= 0; i--)
-			{
-				arr[idxFactor1 + i].x = arr[idxFactor2 + i].x = 0;
-			}
-			return;
-		}
+		return;
+	}
+
+	if (nbrLen <= KARATSUBA_CUTOFF) {
 		// Below cutoff: perform standard classical multiplcation.
 		ClassicalMult(idxFactor1, idxFactor2, nbrLen);
 		return;
 	}
+
 	// Length > KARATSUBA_CUTOFF: Use Karatsuba multiplication.
 	// It uses three half-length multiplications instead of four.
 	//  x*y = (xH*b + xL)*(yH*b + yL)
