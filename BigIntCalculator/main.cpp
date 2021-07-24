@@ -1821,7 +1821,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 					return EXIT_FAILURE; /* parameter sep. not found */
 				int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
 				if (rv != EXIT_SUCCESS)
-					return rv;
+					return rv;  /* syntax error? */
 				ix3 += (paramLen + 1); // move ix3 past , or )
 			}
 			if (expr[exprIndex + 1 + ix3].typecode != types::Operator ||
@@ -1918,7 +1918,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			return EXIT_FAILURE;  /* unkown token in input */
 		}
 
-		exprIndex++;
+		exprIndex++;  /* move index to next token */
 	}
 
 	/* transfer any remaining operators from stack to output */
@@ -1927,9 +1927,9 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 		operStack.pop_back();
 	}
 	if (leftNumber)
-		return EXIT_SUCCESS;
+		return EXIT_SUCCESS;  /* expression appears to be syntactically valid */
 	else 
-		return EXIT_FAILURE;
+		return EXIT_FAILURE;  /* syntax error e.g.  expression "2+" would trigger this */
 }
 
 /* evaluate an expression in reverse polish form. Returns EXPR_OK or error code.
@@ -1977,7 +1977,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 			opCode oper = rPolish[index].oper;
 			int NoOfArgs = opr[(int)oper].numOps;
 			if (NoOfArgs > nums.size())
-				return retCode::EXPR_SYNTAX_ERROR;
+				return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
 			for (; NoOfArgs > 0; NoOfArgs--) {
 				/* copy operand(s) from number stack to args */
 				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
@@ -1998,7 +1998,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 		return retCode::EXPR_OK;
 	}
 	else
-		return retCode::EXPR_SYNTAX_ERROR;
+		return retCode::EXPR_SYNTAX_ERROR;  /* too many operands on stack*/
 }
 
 /* translate error code to text and output it*/
@@ -2360,6 +2360,8 @@ static void doTests(void) {
 		"(2-5)/2",                         -1,
 		"7 * 11 / 2",                      38,  // * and / have same priority, left-to-right evaluation
 		"7 * (11/2)",                      35,
+		"-2^6",                            64,   // unary - has higher priority than ^
+		"0-2^6",                          -64,   // ^ has higher priority than -
 		"gcd (12,30)",                      6,
 		"modinv (17,21)",                   5,
 		"20 + 32^2/4*7",                 1812,    

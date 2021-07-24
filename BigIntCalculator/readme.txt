@@ -224,8 +224,8 @@ to the YAFU file will then be saved in the BigIntCalculator.ini file.
 The command YAFU INI will check whether the YAFU.ini file exist. If it does it is
 read and any ggnfs_dir parameter is found. If ggnfs_dir is found the path that it 
 contains is checked by checking for the existence of the gnfs-lasieve4iXXe.exe files,
-where XX is between 11 and 16. Note that YAFU INI requires the path to already be
-set correctly (by YAFU PATH or otherwise).
+where XX is between 11 and 16. Note that YAFU INI requires the YAFU path to already 
+be set correctly (by YAFU PATH or otherwise).
 
 The command YAFU INI I allows the ggnfs_dir parameter to be altered or created. It
 will display a windows explorer style window where you can navigate to the correct 
@@ -268,8 +268,8 @@ disadvantages:  no functions such as gcd, fibonacci, factorial, primorial etc
 
 Operators and Functions
 calculator      C/C++   Python      notes
- +                +      +
- -                -      -
+ +                +      +          unary + and - are supported and have higher priority than 
+ -                -      -          other operators.
  *                *      *
  /                /      //         calculator and C/C++ uses truncation division
                                     python uses floor division (/ operator in python generates
@@ -336,6 +336,9 @@ llt(n)                              Do Lucas-Lehmer primality test on 2^n-1.
                                     Return 0 if 2^n-1 is composite, 1 if prime
 sqrt(n)                             Calculate floor(sqrt(n))
 nroot(x, n)                         Calculate nth root of x
+numfact(n)                          returns the number of uniqe factors in n
+minfact(n)                          returns the value of the smallest factor of n
+maxfact(n)                          returns the value of the largest factor of n
 
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)                  0 <= exponent <= 2^31-1, also result is estimated 

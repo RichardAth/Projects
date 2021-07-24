@@ -597,18 +597,18 @@ typedef unsigned char uint8_t;
 #define POP53       16294579238595022365ULL
 #endif
 
-			/* POP53 is the product of the odd primes <= 53, i.e., 53#/2.
-			   Extending it to 59 (or including 2 as a factor) overflows
-			   the 64-bit integers. Its value can be useful for primality
-			   and GCD tests. */
+/* POP53 is the product of the odd primes <= 53, i.e., 53#/2.
+	Extending it to 59 (or including 2 as a factor) overflows
+	the 64-bit integers. Its value can be useful for primality
+	and GCD tests. */
 
-			   /**********************************************************************/
-			   /****************** END MANIFEST CONSTANTS CORRECTED ******************/
-			   /**********************************************************************/
+	/**********************************************************************/
+	/****************** END MANIFEST CONSTANTS CORRECTED ******************/
+	/**********************************************************************/
 
-			   /* Miscellaneous defines, including the maximum number of decimal digits
-				  for which mpz_t storage is to be reserved, and the corresponding
-				  maximum number of bits; __MAX_BITS__=ceil(__MAX_DIGITS__/log_10(2)). */
+/* Miscellaneous defines, including the maximum number of decimal digits
+	for which mpz_t storage is to be reserved, and the corresponding
+	maximum number of bits; __MAX_BITS__=ceil(__MAX_DIGITS__/log_10(2)). */
 
 #undef __MAX_DIGITS__
 #undef __MAX_BITS__
@@ -623,22 +623,22 @@ typedef unsigned char uint8_t;
 #define  MIN_32BIT_PRIME     65537UL
 #define  MAX_32BIT_PRIME     4294967291UL
 
-				  /**********************************************************************/
-				  /**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
 
-				  /* The following declaration attempts to reconcile C++ compilers with
-					 standard C code, specifically function prototypes.  No
-					 "#include <system_header.h>" directives should fall within the scope
-					 of this declaration. It is terminated by a right bracket near the
-					 end of the file. */
+/* The following declaration attempts to reconcile C++ compilers with
+	standard C code, specifically function prototypes.  No
+	"#include <system_header.h>" directives should fall within the scope
+	of this declaration. It is terminated by a right bracket near the
+	end of the file. */
 
 #ifdef __cplusplus
 	extern "C" {
 #endif
 
-	/**********************************************************************/
-	/*********************** GMP BASED ROUTINES ***************************/
-	/**********************************************************************/
+/**********************************************************************/
+/*********************** GMP BASED ROUTINES ***************************/
+/**********************************************************************/
 
 #ifdef __GMP__
 
@@ -681,48 +681,50 @@ typedef unsigned char uint8_t;
 
 #endif /* __GMP__ */
 
-	/**********************************************************************/
-	/********************* END GMP BASED ROUTINES *************************/
-	/**********************************************************************/
+/**********************************************************************/
+/********************* END GMP BASED ROUTINES *************************/
+/**********************************************************************/
 
-	/* Routines for analyzing prime gap records */
+/* Routines for analyzing prime gap records */
 
-	int         iRecordValidExt(char *sz);
-	int         iGetGapRecExt(char *szGapRec, FILE *fpIn);
-	void        vGapContExt(char *szContRec, char *szGapRec);
-	int         iGetGapRec(char *szGapRec, FILE *fpIn);
-	int         iRecordValid(char *szRec);
-	void        vGapCont(char *szContRec, char *szGapRec);
+int         iRecordValidExt(char *sz);
+int         iGetGapRecExt(char *szGapRec, FILE *fpIn);
+void        vGapContExt(char *szContRec, char *szGapRec);
+int         iGetGapRec(char *szGapRec, FILE *fpIn);
+int         iRecordValid(char *szRec);
+void        vGapCont(char *szContRec, char *szGapRec);
 
-	/* Prime number generation and testing without GMP */
+/* Prime number generation and testing without GMP */
 
-	uint64_t ullGCD(uint64_t N1, uint64_t N2);
-	void     vGenPrimesDiv(unsigned long *ulPrime, unsigned long *nPrimes,
-		unsigned long *ulUB);
+uint64_t ullGCD(uint64_t N1, uint64_t N2);
+void     vGenPrimesDiv(unsigned long *ulPrime, unsigned long *nPrimes,
+	unsigned long *ulUB);
+
 #define  vGenPrimes vGenPrimesDiv
-	void     vGenPrimes16(void);
-	void     vGenPrimesSieve(unsigned long *ulPrime, unsigned long *nPrimes,
-		unsigned long *ulUB);
-	void     vSieve(unsigned char *uchSieve, unsigned long *ulLB,
-		unsigned long *ulUB, unsigned long *ulPrime);
-	void     vSieveForDivisors(unsigned char *uchPrime, unsigned long ulStart,
-		unsigned long ulEnd, unsigned long ulMaxDiv);
-	void     vSieveULL(unsigned char *uchPrime, uint64_t ullStart,
-		uint64_t ullEnd);
-	int      iIsPrime32(unsigned long ulN);
-	int64_t  sllLML(uint64_t ullx);  /* pi(x) using LML algorithm; see lml.c */
 
-	/* Functions returning (for x >= 2) Li(x); the Hardy-Littlewood integral
-	   approximations for the counts of twin primes, triplets, and
-	   quadruplets; Riemann's prime counting function R(x); and Riemann's
-	   zeta function. */
+void     vGenPrimes16(void);
+//void     vGenPrimesSieve(unsigned long *ulPrime, unsigned long *nPrimes,
+//	unsigned long *ulUB);
+//void     vSieve(unsigned char *uchSieve, unsigned long *ulLB,
+//	unsigned long *ulUB, unsigned long *ulPrime);
+//void     vSieveForDivisors(unsigned char *uchPrime, unsigned long ulStart,
+//	unsigned long ulEnd, unsigned long ulMaxDiv);
+//void     vSieveULL(unsigned char *uchPrime, uint64_t ullStart,
+//	uint64_t ullEnd);
+//int      iIsPrime32(unsigned long ulN);
+//int64_t  sllLML(uint64_t ullx);  /* pi(x) using LML algorithm; see lml.c */
 
-	long double ldLogInt(long double ldx, long double *ldHL2,
-		long double *ldHL3, long double *ldHL4);
-	long double ldLi(long double ldx);
-	long double ldRPCF(long double ldx);
-	void vDefineZetaArray(void);
-	long double ldZeta(long double ldx);
+/* Functions returning (for x >= 2) Li(x); the Hardy-Littlewood integral
+	approximations for the counts of twin primes, triplets, and
+	quadruplets; Riemann's prime counting function R(x); and Riemann's
+	zeta function. */
+
+//long double ldLogInt(long double ldx, long double *ldHL2,
+//	long double *ldHL3, long double *ldHL4);
+//long double ldLi(long double ldx);
+//long double ldRPCF(long double ldx);
+//void vDefineZetaArray(void);
+//long double ldZeta(long double ldx);
 
 	/* String editing.  MSVC equivalents unknown. */
 
@@ -766,21 +768,21 @@ typedef unsigned char uint8_t;
 #define SIGKILL  SIGINT
 #endif
 
-	unsigned long  __ulMem(void);
-	unsigned long  __ulPhysicalMemoryAvailable(void);
-	double	       lfPMA(void);
-	int            iSignum(long double ldArg);
-	void           vFlush(void);
-	void           __vSleep(double lfSeconds);
-	int            __iXOpen(FILE **fpp, char *szFullName,
-		const char *szBaseName, const char *szMode);
-	long           __lFile(char *szFileName);
-	long           __lRFile(char *szFileName);
-	long           __lRWFile(char *szFileName);
-	void           __vREF(char *szFileName);
-	double         lfSeconds2(void);
-	unsigned long  ulSqrt(uint64_t ull);
-	void           vAtExit(void);
+//unsigned long  __ulMem(void);
+//unsigned long  __ulPhysicalMemoryAvailable(void);
+//double	       lfPMA(void);
+//int            iSignum(long double ldArg);
+//void           vFlush(void);
+//void           __vSleep(double lfSeconds);
+//int            __iXOpen(FILE **fpp, char *szFullName,
+//				const char *szBaseName, const char *szMode);
+//long           __lFile(char *szFileName);
+//long           __lRFile(char *szFileName);
+//long           __lRWFile(char *szFileName);
+//void           __vREF(char *szFileName);
+double         lfSeconds2(void);
+//unsigned long  ulSqrt(uint64_t ull);
+void           vAtExit(void);
 
 #undef  _iSignum
 #define _iSignum  iSignum

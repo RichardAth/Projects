@@ -3071,7 +3071,8 @@ char *szTrimLWS(char *pch)
 }
 /********************************************************/
 
-
+/* Returns the number of seconds elapsed since some fixed event, dependent 
+  upon the function call and platform. */
 double lfSeconds2(void)
 {
 	/* NOTE: The peculiar design of this routine is due to MinGW's
