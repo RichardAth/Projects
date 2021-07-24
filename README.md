@@ -54,4 +54,12 @@ To build Msieve requires some components of GMP-ECM, as well as Pthreads
 
 To build YAFU requires components of Msieve, GMP-ECM and Pthreads.
 
+Some other unrelated stuff is also included:
+
+Int128 - allows use of 128-bit integers with visual studio. I had intended to use this in the factorisation
+but never actually did so.
+
+Baillie-PSW - a copy of a program I found that demonstrates various primality-testing functions
+
+
 For more information see readme.txt file
