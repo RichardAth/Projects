@@ -396,6 +396,50 @@ TEST5     tests using only YAFU for factorisation. Note that these tests bypass 
 
 TEST6     tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
 
+TEST7     tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= num are
+          tested to see whether 2^p-1 is prime or not. The default value for num is
+          12000.   Sample output:
+
+            test7 87000
+            18:47:15 2^2 -1 is prime ***
+            18:47:15 2^3 -1 is prime ***
+            18:47:15 2^5 -1 is prime ***
+            18:47:15 2^7 -1 is prime ***
+            18:47:15 2^13 -1 is prime ***
+            18:47:15 2^17 -1 is prime ***
+            18:47:15 2^19 -1 is prime ***
+            18:47:15 2^31 -1 is prime ***
+            18:47:15 2^61 -1 is prime ***
+            18:47:15 2^89 -1 is prime ***
+            18:47:15 2^107 -1 is prime ***
+            18:47:15 2^127 -1 is prime ***
+            18:47:15 2^521 -1 is prime ***
+            18:47:15 2^607 -1 is prime ***
+            18:47:16 2^1279 -1 is prime ***
+            18:47:16 2^2203 -1 is prime ***
+            18:47:16 2^2281 -1 is prime ***
+            18:47:17 2^3217 -1 is prime ***
+            18:47:18 2^4253 -1 is prime ***
+            18:47:18 2^4423 -1 is prime ***
+            18:47:53 2^9689 -1 is prime ***
+            18:47:56 2^9941 -1 is prime ***
+            18:48:15 2^11213 -1 is prime ***
+            18:55:42 2^19937 -1 is prime ***
+            18:57:54 2^21701 -1 is prime ***
+            19:00:14 2^23209 -1 is prime ***
+            20:33:19 2^44497 -1 is prime ***
+            08:18:34 2^86243 -1 is prime ***
+            Found 28 Mersenne primes  out of 8450 numbers tested
+            2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 
+            3217, 4253, 4423, 9689, 9941, 11213, 19937, 21701, 23209, 44497, 86243,
+            0.33% primes found by llt
+            99.67% composites found by llt
+            08:40:38 test 7 completed time used =  13h 53 min 23.314sec
+
+          This has found the 1st 28 Mersenne primes in less than 14 hours. The 
+          last of these was originally found in 1982 using a mult-million $ Cray
+          supercomputer. Talk about standing on the shoulders of giants!
+
 Test example:
 
 enter expression to be processed, or HELP, or EXIT
