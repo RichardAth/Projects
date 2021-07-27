@@ -179,6 +179,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="docfile.txt" />
     <Text Include="mpz_prp_readme.txt" />
     <Text Include="readme.txt" />
   </ItemGroup>

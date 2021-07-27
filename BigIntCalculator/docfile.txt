@@ -1,0 +1,136 @@
+[HELP]
+You can get help on the following topics by entering "HELP <topic>";
+help      expression     function      yafu       msieve     other
+
+[EXPRESSION]
+You can enter expressions that use the following operators, also functions 
+and parentheses:
+^ or ** : exponentiation (the exponent must be greater than or equal to zero).
+*       : multiplication
+/       : integer division
+%       : modulus (remainder from integer division)
++       : addition
+-       : subtraction
+SHL or <<: Shift left the number of bits specified on the right operand.
+SHR or >>: Shift right the number of bits specified on the right operand.
+<, >, <=, >= for comparisons.  The operators return zero for false and -1 for true.
+==, != for equality. The operators return zero for false and -1 for true.
+NOT, AND, XOR, OR  for bitwise operations.
+n!      : factorial (n must be greater than or equal to zero).
+n!!     : double factorial (n must be greater than or equal to zero).
+p#      : primorial (product of all primes less or equal than p).
+C       : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient
+
+#(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
+above NOT and unary -, which are above ^ (exponentiation)
+The normal rules for operator precedence and use of brackets to over-ride the 
+default order of evaluation apply.
+
+for a list of functions enter HELP FUNCTION
+
+[FUNCTION]
+B(n)    : Previous probable prime before n
+F(n)    : Fibonacci number Fn
+L(n)    : Lucas number Ln = F(n-1) + F(n+1)
+N(n)    : Next probable prime after n
+P(n)    : Unrestricted Partition Number (number of decompositions of n into sums of 
+          integers without regard to order)
+Pi(n)   : Number of primes <= n
+Gcd(m, n)       : Greatest common divisor of m and n.
+Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
+Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
+Totient(n)      : finds the number of positive integers less than n which are 
+                  relatively prime to n.
+IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.
+BPSW(n)         : Baillie–PSW primality test. It returns zero if n is composite, 
+                  1 for probable prime, 2 for definite prime. 
+                  considered to be 100% reliable for numbers up to 10000 digits
+APRCL(n)        : Adleman–Pomerance–Rumely primality test. returns zero if n is 
+                  composite, 1 for probable prime (only if BPSW used), 2 for 
+                  definite prime. WARNING: very slow for large numbers 
+                  e.g. 20s for 400 digits
+                  If the number is > 6021 digits it reverts to the BPSW test.
+NumDivs(n)      : Number of positive divisors of n either prime or composite.
+SumDivs(n)      : Sum of positive divisors of n either prime or composite.
+NumDigits(n, r) : Number of digits of n in base r.
+SumDigits(n, r) : Sum of digits of n in base r.
+RevDigits(n, r) : finds the value obtained by writing backwards the digits of n 
+                  in base r.
+Sqrt(n)         : square root of n
+Nroot(n, r)     : rth root of n e.g.r=3 for cube root
+NumFact(n)      : number of distinct prime factors of n.
+MinFact(n)      : minimum prime factor of n.
+MaxFact(n)      : maximum prime factor of n
+LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, 
+                  1 if prime.
+FactConcat(m,n) : Concatenates the prime factors of n according to the mode m
+R2(n)           : Number of ways n can be expressed as the sum of x^2+y^2.  
+                  (order andsign of x and y are significant)
+R3(n)           : Number of ways n can be expressed as the sum of x^2+y^2+z^2. 
+                  (order and sign of x and y are significant)
+LE(a,p) : Legendre value for (a/p)
+JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a multiple of p
+          it is one if there is a solution of x² = a (mod p) and it is equal to -1 when the
+          congruence has no solution.
+KR(a,p) : Kronecker value for (a/p)
+
+[OTHER]
+commands: X=hexadecimal o/p, D=decimal o/p
+F = do factorisation, 
+N = Don't factorise 
+S = Spanish, 
+E = English
+HELP 
+EXIT
+
+[YAFU]
+The YAFU command controls factorisation using YAFU:
+
+   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
+   YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
+   YAFU PATH Displays or changes path used when starting YAFU
+   YAFU LOG  Displays path & file name for YAFU output file
+   YAFU PLAN <name> 
+             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
+             These correspond to the -plan options documented in YAFU's
+             docfile.txt file. The default is NORMAL. This is a convenient way
+             to control the amount of testing using ECM before switching to SIQS 
+             or NFS.
+
+YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
+back on by the YAFU ON command (which also turns Msieve off). The default path to 
+access YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
+
+The command YAFU PATH will display the current path and verify that the yafu-X64.exe 
+file exists.
+The command YAFU PATH SET will display a windows explorer style window where 
+you can navigate to the correct folder then click on the yafu exe file. The new path 
+to the YAFU file will then be saved in the BigIntCalculator.ini file.
+
+The command YAFU INI will check whether the YAFU.ini file exist. If it does it is
+read and any ggnfs_dir parameter is found. If ggnfs_dir is found the path that it 
+contains is checked by checking for the existence of the gnfs-lasieve4iXXe.exe files,
+where XX is between 11 and 16. Note that YAFU INI requires the YAFU path to already 
+be set correctly (by YAFU PATH or otherwise).
+
+The command YAFU INI I allows the ggnfs_dir parameter to be altered or created. It
+will display a windows explorer style window where you can navigate to the correct 
+folder then click on any file. The new path to the ggnfs files will then be saved
+in the ggnfs_dir parameter of the YAFU.ini file.
+
+[MSIEVE]
+Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
+also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
+access msieve should be changed to whatever is appropriate.
+
+MSIEVE PATH will display the current path and verify that the msieve.exe 
+file exists.
+MSIEVE PATH SET will display a windows explorer style window where you can 
+navigate to the correct folder then click on the Msieve exe file. The new path 
+to the Msieve file will then be saved in the BigIntCalculator.ini file.
+
+MSIEVE E ON turns on the E option in Msieve for 'deep' ECM
+MSIEVE E off turns off the E option
+
+MSIEVE N ON turns on the N option to use the Number Field sieve for factorisation.
+MSIEVE N OFF turns off the N option.

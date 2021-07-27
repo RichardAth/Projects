@@ -3280,6 +3280,67 @@ static void processIni(const char * arg) {
 	}
 }
 
+//search the docfile for the right entry
+//just search for the heading, and print everything until
+//the next heading is found
+static void helpfunc(const std::string &s)
+{
+	FILE *doc;
+	char str[1024];
+	int printtopic = 0;
+
+
+	//open the doc file and search matching topics
+	//doc = fopen("docfile.txt", "r");
+	errno_t ecode = fopen_s(&doc, "docfile.txt", "r");
+	if (ecode != 0) {
+		char buffer[80];
+		_strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
+		fprintf_s(stderr, "fopen error: %s\n", buffer);
+		fprintf_s(stderr, "documentation file not found\n");
+		return;
+	}
+	if (verbose > 0)
+	printf_s("searching for help on '%s'\n", s.data());
+
+	/* exit this loop when EOF reached or the next topic after the one required 
+	is reached */
+	while (!feof(doc)) {
+		
+		char *rv = fgets(str, sizeof(str), doc);   //read a line
+		if (rv == NULL)
+			if (feof(doc)) {
+				break;
+			}
+			else {
+				char buffer[80];
+				_strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
+				fprintf_s(stderr, "fgets error: %s\n", buffer);
+				break;
+			}
+
+		//is this a header?
+		if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) 	{
+			//printf("in printtopic if\n");
+			if (printtopic == 1)
+				break;  /* we have reached the start of the next topic */
+			printtopic = 0;
+			//does it match our topic?
+			str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
+			if (strstr(s.data(), str + 1) != NULL)
+				printtopic = 1;   /* we have found the required topic*/
+		}
+		else {  /* not a header line */
+			if (printtopic)
+				printf_s("%s", str);  /* print only if within the required topic */
+		}
+	}
+	if (feof(doc))
+		putchar('\n');
+	fclose(doc);
+	return;
+}
+
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
 static int processCmd(const std::string &command) {
@@ -3331,7 +3392,9 @@ static int processCmd(const std::string &command) {
 		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
 		"R3(n)   : Number of ways n can be expressed as the sum of x^2+y^2+z^2. (order and sign of x and y are significant \n"
 		"LE(a,p) : Legendre value for (a/p) \n"
-		"JA(a,p) : Jacobi value for (a/p) \n"
+		"JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a multiple of p \n"
+		"          it is one if there is a solution of x² = a (mod p) and it is equal to -1 when the \n"
+		"          congruence has no solution. \n"
 		"KR(a,p) : Kronecker value for (a/p) \n"
 		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
 		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
@@ -3339,16 +3402,16 @@ static int processCmd(const std::string &command) {
 
 	const static char ayuda[] =
 		"Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:\n"
-		"+ para suma\n"
-		"- para resta\n"
+		"^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).\n"
 		"* para multiplicación\n"
 		"/ para división entera\n"
 		"%% para el resto de la división entera\n"
-		"^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).\n"
+		"+ para suma\n"
+		"- para resta\n"
+		"SHL o <<: Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.\n"
+		"SHR o >>: Desplazar a la derecha la cantidad de bits indicada en el operando derecho.\n"
 		"<, == , >; <= , >= , != para comparaciones.Los operadores devuelven cero si es falso y - 1 si es verdadero.\n"
 		"AND, OR, XOR, NOT para lógica binaria.\n"
-		"SHL  : Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.\n"
-		"SHR  : Desplazar a la derecha la cantidad de bits indicada en el operando derecho.\n"
 		"n!   : factorial(n debe ser mayor o igual que cero).\n"
 		"p#   : primorial(producto de todos los primos menores o iguales a p).\n"
 		"B(n) : Número probablemente primo anterior a n\n"
@@ -3360,19 +3423,32 @@ static int processCmd(const std::string &command) {
 		"Modinv(m, n)    : inverso de m modulo n, sólo válido cuando gcd(m, n) = 1.\n"
 		"Modpow(m, n, r) : halla m^n módulo r.\n"
 		"Totient(n)      : cantidad de enteros positivos menores que n coprimos con n.\n"
+		"Ja(m,n)         : obtiene el símbolo de Jacobi de m y n. Cuando el segundo argumento \n"
+		"                   es primo, el resultado es cero si m es múltiplo de n, es uno si hay \n"
+		"                   una solución a x² = m (mód n) y es igual a -1 cuando la congruencia \n"
+		"                   mencionada no tiene soluciones. \n"
 		"IsPrime(n)      : returna cero si n no es un primo probable y - 1 si lo es.\n"
 		"NumDivs(n)      : cantidad de divisores positivos de n primos o compuestos.\n"
 		"SumDivs(n)      : suma de divisores positivos de n primos o compuestos.\n"
 		"NumDigits(n, r) : cantidad de dígitos de n en base r.\n"
 		"SumDigits(n, r) : suma de dígitos de n en base r.\n"
 		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
+	    "Sqrt(n)         : parte entera de la raíz cuadrada del argumento. \n"
+		"NumFact(n)      : cantidad de factores primos distintos de n. \n"
+		"                 Ejemplo : NumFact(28) = 2 porque los factores primos son 2 y 7.\n"
+		"MinFact(n)      : mínimo factor primo de n.Ejemplo : MinFact(28) = 2 porque los factores primos son 2 y 7.\n"
+		"MaxFact(n)      : máximo factor primo de n.Ejemplo : MaxFact(28) = 7 porque los factores primos son 2 y 7. \n";
 
 	if (command == "EXIT" || command == "SALIDA")
 		return 2;
 
-	if (command == "HELP" || command == "AYUDA") {
+	if (command.substr(0,4) == "HELP" || command == "AYUDA") {
 		if (lang == 0)
-			printf(helpmsg);   // english
+			//printf(helpmsg);   // english
+			if (command.size() > 4)
+				helpfunc(command.substr(5));
+			else
+				helpfunc("HELP");
 		else
 			printf(ayuda);     // spanish
 		return 1;
