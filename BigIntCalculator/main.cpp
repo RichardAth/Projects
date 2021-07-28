@@ -14,6 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
+#include "bignbr.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
@@ -844,6 +845,7 @@ enum class fn_Code {
 	fn_numfact,
 	fn_minfact,
 	fn_maxfact,
+	fn_ispow,
 	fn_invalid = -1,
 } ;
 
@@ -856,7 +858,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 30> functionList{
+const static std::array <struct functions, 31> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -887,6 +889,7 @@ const static std::array <struct functions, 30> functionList{
 	"JA",		 2,  fn_Code:: fn_jacobi,
 	"KR",		 2,  fn_Code::fn_kronecker,
 	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
+	"ISPOW",     1,  fn_Code::fn_ispow,
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -1123,6 +1126,23 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		result = ComputeMaxFact(p1);
 		break;
 	}
+	case fn_Code::fn_ispow: {
+		/* return -1 if p1 is a perfect power, otherwise 0 */
+			long long MaxP = 393'203;  // use 1st  33333 primes
+			if ((long long)primeListMax < MaxP) {  // get primes
+				generatePrimes(MaxP);  // takes a while, but only needed on 1st call
+			}
+			Znum base;
+			long long exp = PowerCheck(p1, base, 2);
+			if (exp > 1) {
+				std::cout << p1 << " = " << base << "^" << exp << '\n';
+				result = -1;
+			}
+			else {
+				result = 0;
+			}
+			break;
+		}
 
 	default:
 		abort();		// if we ever get here we have a problem
@@ -3280,18 +3300,17 @@ static void processIni(const char * arg) {
 	}
 }
 
-//search the docfile for the right entry
+//search the docfile for the right entry specified by s
 //just search for the heading, and print everything until
 //the next heading is found
 static void helpfunc(const std::string &s)
 {
 	FILE *doc;
 	char str[1024];
-	int printtopic = 0;
+	bool printtopic = false;
 
 
-	//open the doc file and search matching topics
-	//doc = fopen("docfile.txt", "r");
+	//open the doc file and search for a matching topic
 	errno_t ecode = fopen_s(&doc, "docfile.txt", "r");
 	if (ecode != 0) {
 		char buffer[80];
@@ -3301,7 +3320,7 @@ static void helpfunc(const std::string &s)
 		return;
 	}
 	if (verbose > 0)
-	printf_s("searching for help on '%s'\n", s.data());
+		printf_s("searching for help on '%s'\n", s.data());
 
 	/* exit this loop when EOF reached or the next topic after the one required 
 	is reached */
@@ -3321,14 +3340,17 @@ static void helpfunc(const std::string &s)
 
 		//is this a header?
 		if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) 	{
-			//printf("in printtopic if\n");
-			if (printtopic == 1)
-				break;  /* we have reached the start of the next topic */
-			printtopic = 0;
+
+			if (printtopic)
+				break;  /* we have reached the start of the next topic, so exit 
+						   Only print 1 topic per help command */
+
 			//does it match our topic?
 			str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
 			if (strstr(s.data(), str + 1) != NULL)
-				printtopic = 1;   /* we have found the required topic*/
+				/* we get a match if the topic between [ and ] is contained 
+				anywhere in string s */
+				printtopic = true;   /* we have found the required topic*/
 		}
 		else {  /* not a header line */
 			if (printtopic)
@@ -3344,177 +3366,127 @@ static void helpfunc(const std::string &s)
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
 static int processCmd(const std::string &command) {
-	const static char helpmsg[] =
-		"You can enter expressions that use the following operators, functions and parentheses:\n"
-		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
-		"*       : multiplication\n"
-		"/       : integer division\n"
-		"%%       : modulus (remainder from integer division)\n"
-		"+       : addition\n"
-		"-       : subtraction\n"
-		"SHL or <<: Shift left the number of bits specified on the right operand.\n"
-		"SHR or >>: Shift right the number of bits specified on the right operand.\n"
-		"<, >, <=, >= for comparisons.  The operators return zero for false and -1 for true.\n"
-		"==, != for equality. The operators return zero for false and -1 for true.\n"
-		"NOT, AND, XOR, OR  for bitwise operations.\n"
-		"n!      : factorial (n must be greater than or equal to zero).\n"
-		"n!!     : double factorial (n must be greater than or equal to zero).\n"
-		"p#      : primorial (product of all primes less or equal than p).\n"
-		"C       : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient\n"
-		"B(n)    : Previous probable prime before n\n"
-		"F(n)    : Fibonacci number Fn\n"
-		"L(n)    : Lucas number Ln = F(n-1) + F(n+1)\n"
-		"N(n)    : Next probable prime after n\n"
-		"P(n)    : Unrestricted Partition Number (number of decompositions of n into sums of integers without regard to order).\n"
-		"Pi(n)   : Number of primes <= n \n"
-		"Gcd(m, n)       : Greatest common divisor of m and n.\n"
-		"Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.\n"
-		"Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%%r but more efficient.\n"
-		"Totient(n)      : finds the number of positive integers less than n which are relatively prime to n.\n"
-		"IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.\n"
-		"BPSW(n)         : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
-		"                  considered to be 100%% reliable for numbers up to 10000 digits \n"
-		"APRCL(n)        : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
-		"                  WARNING: very slow for large numbers e.g. 20s for 400 digits \n"
-		"NumDivs(n)      : Number of positive divisors of n either prime or composite.\n"
-		"SumDivs(n)      : Sum of positive divisors of n either prime or composite.\n"
-		"NumDigits(n, r) : Number of digits of n in base r.\n"
-		"SumDigits(n, r) : Sum of digits of n in base r.\n"
-		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
-		"Sqrt(n)         : square root of n\n"
-		"Nroot(n, r)     : rth root of n e.g.r=3 for cube root\n"
-		"NumFact(n)      : number of distinct prime factors of n. \n"
-		"MinFact(n)      : minimum prime factor of n. \n"
-		"MaxFact(n)      : maximum prime factor of n \n"
-		"LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, "
-		                 "1 if prime.\n"
-		"FactConcat(m,n) : Concatenates the prime factors of n according to the mode m\n"
-		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
-		"R3(n)   : Number of ways n can be expressed as the sum of x^2+y^2+z^2. (order and sign of x and y are significant \n"
-		"LE(a,p) : Legendre value for (a/p) \n"
-		"JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a multiple of p \n"
-		"          it is one if there is a solution of x² = a (mod p) and it is equal to -1 when the \n"
-		"          congruence has no solution. \n"
-		"KR(a,p) : Kronecker value for (a/p) \n"
-		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
-		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
-		"HELP (this message) and EXIT\n";
 
-	const static char ayuda[] =
-		"Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:\n"
-		"^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).\n"
-		"* para multiplicación\n"
-		"/ para división entera\n"
-		"%% para el resto de la división entera\n"
-		"+ para suma\n"
-		"- para resta\n"
-		"SHL o <<: Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.\n"
-		"SHR o >>: Desplazar a la derecha la cantidad de bits indicada en el operando derecho.\n"
-		"<, == , >; <= , >= , != para comparaciones.Los operadores devuelven cero si es falso y - 1 si es verdadero.\n"
-		"AND, OR, XOR, NOT para lógica binaria.\n"
-		"n!   : factorial(n debe ser mayor o igual que cero).\n"
-		"p#   : primorial(producto de todos los primos menores o iguales a p).\n"
-		"B(n) : Número probablemente primo anterior a n\n"
-		"F(n) : Número de Fibonacci Fn\n"
-		"L(n) : Número de Lucas Ln = F(n-1) + F(n+1)\n"
-		"N(n) : Número probablemente primo posterior a n\n"
-		"P(n) : particiones irrestrictas(cantidad de descomposiciones de n en sumas de números enteros sin tener en cuenta el orden).\n"
-		"Gcd(m, n)       : Máximo común divisor de estos dos números enteros.\n"
-		"Modinv(m, n)    : inverso de m modulo n, sólo válido cuando gcd(m, n) = 1.\n"
-		"Modpow(m, n, r) : halla m^n módulo r.\n"
-		"Totient(n)      : cantidad de enteros positivos menores que n coprimos con n.\n"
-		"Ja(m,n)         : obtiene el símbolo de Jacobi de m y n. Cuando el segundo argumento \n"
-		"                   es primo, el resultado es cero si m es múltiplo de n, es uno si hay \n"
-		"                   una solución a x² = m (mód n) y es igual a -1 cuando la congruencia \n"
-		"                   mencionada no tiene soluciones. \n"
-		"IsPrime(n)      : returna cero si n no es un primo probable y - 1 si lo es.\n"
-		"NumDivs(n)      : cantidad de divisores positivos de n primos o compuestos.\n"
-		"SumDivs(n)      : suma de divisores positivos de n primos o compuestos.\n"
-		"NumDigits(n, r) : cantidad de dígitos de n en base r.\n"
-		"SumDigits(n, r) : suma de dígitos de n en base r.\n"
-		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
-	    "Sqrt(n)         : parte entera de la raíz cuadrada del argumento. \n"
-		"NumFact(n)      : cantidad de factores primos distintos de n. \n"
-		"                 Ejemplo : NumFact(28) = 2 porque los factores primos son 2 y 7.\n"
-		"MinFact(n)      : mínimo factor primo de n.Ejemplo : MinFact(28) = 2 porque los factores primos son 2 y 7.\n"
-		"MaxFact(n)      : máximo factor primo de n.Ejemplo : MaxFact(28) = 7 porque los factores primos son 2 y 7. \n";
+	/* list of commands (static for efficiency) */
+	const static std::vector<std::string>list =
+	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E", "S",  "F" , "N" , "X", "D",
+	  "TEST", "MSIEVE", "YAFU", "V " };
 
-	if (command == "EXIT" || command == "SALIDA")
-		return 2;
+	/* do 1st characters of text in command match anything in list? */
+	int ix = 0;
+	for (ix = 0; ix < list.size(); ix++) {
+		auto len = list[ix].size();  /* get length of a string in list*/
+		if (len > 1 && command.substr(0, len) == list[ix])
+			break;  /* exit loop if match found */
+		if (len == 1 && command == list[ix])
+			break;   /* 1-letter commands with no parameters only match 1-letter input */
+	}
 
-	if (command.substr(0,4) == "HELP" || command == "AYUDA") {
-		if (lang == 0)
-			//printf(helpmsg);   // english
+	if (ix >= list.size())
+		return 0;   /* not a command in list */
+
+	switch (ix) {
+	case 0:  /* exit*/
+	case 1:  /* salida */
+		return 2;  /* same command in 2 languages */
+	case 2: /* Help */ {
 			if (command.size() > 4)
 				helpfunc(command.substr(5));
 			else
 				helpfunc("HELP");
-		else
-			printf(ayuda);     // spanish
-		return 1;
-	}
-	if (command == "E") { lang = 0; return 1; }           // english
-	if (command == "S") { lang = 1; return 1; }	          // spanish (Español)
-	if (command == "F") { factorFlag = true; return 1; }  // do factorisation
-	if (command == "N") { factorFlag = false; return 1; } // don't do factorisation
-	if (command == "X") { hex = true; return 1; }         // hexadecimal output
-	if (command == "D") { hex = false; return 1; }        // decimal output
-	if (command == "TEST") {
-		doTests();         // do basic tests 
-		return 1;
-	}
-	if (command.substr(0,5) == "TEST2") {
-		if (command.size() > 5)
-			doTests2(command.substr(6));         // do basic tests 
-		else
-			doTests2("");
-		return 1;
-	}
-#ifdef BIGNBR
-	if (command == "TEST3") {
-		doTests3();         // do basic tests 
-		return 1;
-	}
-#endif
-	if (command == "TEST4") {
-		doTests4();         // do R3 tests 
-		return 1;
-	}
-	if (command == "TEST5") {
-		doTests5();         // do YAFU tests 
-		return 1;
-	}
-	if (command == "TEST6") {
-		doTests6();         // do Msieve tests 
-		return 1;
-	}
-	if (command.substr(0, 5) == "TEST7") {
-		/* Lucas-Lehmer test */
-		if (command.size() > 5)
-			doTests7(command.substr(6));         
-		else
-			doTests7("");
-		return 1;
-	}
-	if (command.substr(0, 6) == "MSIEVE") {
-		msieveParam(command);
-		return 1;
-	}
+			return 1;
+		}
+	case 3: /* ayuda */ {
+			if (command.size() > 5)
+				helpfunc(command.substr(6));
+			else
+				helpfunc("AYUDA");
+			return 1;
+		}
+	case 4: /* E */
+		{ lang = 0; return 1; }           // english
+	case 5: /* S */
+		{ lang = 1; return 1; }	          // spanish (Español)
+	case 6: /* F */
+		{ factorFlag = true; return 1; }  // do factorisation
+	case 7: /* N */
+		{ factorFlag = false; return 1; } // don't do factorisation
+	case 8: /* X */
+		{ hex = true; return 1; }         // hexadecimal output
+	case 9: /* D */
+		{ hex = false; return 1; }        // decimal output
 
-	if (command.substr(0, 4) == "YAFU") {
-		yafuParam(command);
-		return 1;
-	}
-	if (command.substr(0, 2) == "V ") {
-		/* will not throw an exception if input has fat finger syndrome.
-		If no valid digits found, sets verbose to 0 */
-		verbose = atoi(command.substr(1).data());
-		std::cout << "verbose set to " << verbose << '\n';
-		return 1;
-	}
+	case 10: /* TEST */ {
+			/* there are a number of comands that begin with TEST */
+			if (command == "TEST") {
+				doTests();         // do basic tests 
+				return 1;
+			}
 
-	/* drop through to here if no command identified */
-	return 0;
+			int ttype = command.data()[4] - '0';  /* for TEST2 ttype = 2, etc*/
+			switch (ttype) {
+			case 2: {
+				if (command.size() > 5)
+					doTests2(command.substr(6));         // do basic tests 
+				else
+					doTests2("");
+				return 1;
+			}
+			case 3:
+	#ifdef BIGNBR
+				{
+					doTests3();         // do basic tests 
+					return 1;
+				}
+	#else
+				return 0;
+	#endif
+			case 4: {
+					doTests4();         // do R3 tests 
+					return 1;
+				}
+			case 5: {
+					doTests5();         // do YAFU tests 
+					return 1;
+				}
+			case 6: {
+					doTests6();         // do Msieve tests 
+					return 1;
+				}
+			case 7: {
+					/* Lucas-Lehmer test */
+					if (command.size() > 5)
+						doTests7(command.substr(6));
+					else
+						doTests7("");
+					return 1;
+				}
+			default:
+				return 0;  /* not a recognised command */
+			}
+		}
+
+	case 11: /* MSIEVE */
+		{
+			msieveParam(command);
+			return 1;
+		}
+	case 12: /* YAFU */
+		{
+			yafuParam(command);
+			return 1;
+		}
+	case 13: /* V */
+		{
+			/* will not throw an exception if input has fat finger syndrome.
+			If no valid digits found, sets verbose to 0 */
+			verbose = atoi(command.substr(1).data());
+			std::cout << "verbose set to " << verbose << '\n';
+			return 1;
+		}
+	default:
+		return 0;   /* not a recognised command */
+	}
 }
 
 int main(int argc, char *argv[]) {

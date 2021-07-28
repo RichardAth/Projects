@@ -233,3 +233,47 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    which correlates much more closely with time required than the 'Size' does.
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
+
+[AYUDA]
+Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:
+^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).
+* para multiplicación
+/ para división entera
+% para el resto de la división entera
++ para suma
+- para resta
+SHL o <<: Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.
+SHR o >>: Desplazar a la derecha la cantidad de bits indicada en el operando derecho.
+<, ==, >, <=, >=, != para comparaciones.Los operadores devuelven cero si es falso 
+        y - 1 si es verdadero.
+AND, OR, XOR, NOT para lógica binaria.
+n!   : factorial(n debe ser mayor o igual que cero).
+p#   : primorial(producto de todos los primos menores o iguales a p).
+B(n) : Número probablemente primo anterior a n
+F(n) : Número de Fibonacci Fn
+L(n) : Número de Lucas Ln = F(n-1) + F(n+1)
+N(n) : Número probablemente primo posterior a n
+P(n) : particiones irrestrictas(cantidad de descomposiciones de n en sumas de números 
+       enteros sin tener en cuenta e orden).
+Gcd(m, n)       : Máximo común divisor de estos dos números enteros.
+Modinv(m, n)    : inverso de m modulo n, sólo válido cuando gcd(m, n) = 1.
+Modpow(m, n, r) : halla m^n módulo r.
+Totient(n)      : cantidad de enteros positivos menores que n coprimos con n.
+Ja(m,n)         : obtiene el símbolo de Jacobi de m y n. Cuando el segundo argumento
+                  es primo, el resultado es cero si m es múltiplo de n, es uno si hay
+                  una solución a x² = m (mód n) y es igual a -1 cuando la congruencia
+                  mencionada no tiene soluciones.
+IsPrime(n)      : returna cero si n no es un primo probable y - 1 si lo es.
+NumDivs(n)      : cantidad de divisores positivos de n primos o compuestos.
+SumDivs(n)      : suma de divisores positivos de n primos o compuestos.
+NumDigits(n, r) : cantidad de dígitos de n en base r.
+SumDigits(n, r) : suma de dígitos de n en base r.
+RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos 
+                  de n en base r.
+Sqrt(n)         : parte entera de la raíz cuadrada del argumento
+NumFact(n)      : cantidad de factores primos distintos de n. Ejemplo: NumFact(28) = 2 
+                  porque los factores primos son 2 y 7
+MinFact(n)      : mínimo factor primo de n. Ejemplo: MinFact(28) = 2 porque los 
+                  factores primos son 2 y 7.
+MaxFact(n)      : máximo factor primo de n. Ejemplo: MaxFact(28) = 7 porque los 
+                  factores primos son 2 y 7.

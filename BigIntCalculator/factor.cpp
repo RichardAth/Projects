@@ -647,7 +647,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 /* factorise toFactor; factor list returned in Factors. */
 static bool factor(const Znum &toFactor, fList &Factors) {
 	long long testP;
-	long long MaxP = 393'203;  // use 1st  33333 primes
+	const long long MaxP = 393'203;  // use 1st  33333 primes
 	/* larger value seems to slow down factorisation overall. */
 	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
 	long long LehmanLimit = MaxP*MaxP*MaxP;
