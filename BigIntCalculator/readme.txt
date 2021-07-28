@@ -88,13 +88,17 @@ B. Test whether the number is prime:
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
    Otherwise either:
+      factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
+      used for numbers between 30 and 95 digits. This method is alway used for 
+      numbers less than 2^192 (58 digits)
+  OR
       factorise it using Msieve. Using modified Msieve that makes more use of
    elliptic curve factorisation than the standard version (even with the e option)
    does, this is nearly always the fastest for larger numbers that would use SIQS 
    for factorisation.
-      or factorise it using YAFU
-      or factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
-   used for numbers between 30 and 95 digits.
+   OR
+      factorise it using YAFU
+
 
 The built-in factoriser is essentially DAs program, with an interface function 
 that converts GMP/MPIR extended precision numbers to DAs BigIntegers and vice 
@@ -385,8 +389,8 @@ TEST2   test factorisation using pseudo-random numbers of a specified size.
 TEST3    Tests for the built-in bigintegers. These are based on DA's biginteger 
          functions but made into a C++ class with arithmetic , shift, compare 
          operators, etc implemented. However the built-in bigintegers are now 
-         only used in the the built-in ECM & SIQS, which themselver are not 
-         normally used, so this test is not normally included.
+         only used in the the built-in ECM & SIQS, which themselves are normally 
+         only used for numbers up to 2^192, so this test is not normally included.
 
 TEST4     test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
           this test will take over an hour.

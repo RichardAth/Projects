@@ -1,6 +1,6 @@
 [HELP]
 You can get help on the following topics by entering "HELP <topic>";
-help      expression     function      yafu       msieve     other
+help    expression   function    yafu     msieve     other    test
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
@@ -134,3 +134,102 @@ MSIEVE E off turns off the E option
 
 MSIEVE N ON turns on the N option to use the Number Field sieve for factorisation.
 MSIEVE N OFF turns off the N option.
+
+[TEST]
+There are a number of built-in test commands. In all tests the results are
+checked for correctness and a summary of the factorisation results is printed
+after the tests are completed:
+
+TEST    1st tests most of the calculator functions, then factorises a series of
+        numbers. The numbers are chosen to test for various special cases as well
+        as normal factorisation. This test is good for regression testing.
+
+TEST2   test factorisation using pseudo-random numbers of a specified size.
+        Command format is TEST2 [num1[,num[,num3]]] where num1 is the number of 
+        tests,  num2 is the size of the numbers to be factored in bits. If num3  
+        NE 0 the number to be factored consists of 2 approximately same-sized 
+        'strong' prime factors, otherwise it is a random number that can contain 
+        any number of factors. If the values for num2 and num3 are the same in 
+        two TEST2 commands the same sequence of numbers to be factored is 
+        generated. This command is useful for benchmarking factorisation.
+
+TEST3   Tests for the built-in bigintegers. These are based on DA's biginteger 
+        functions but made into a C++ class with arithmetic , shift, compare 
+        operators, etc implemented. However the built-in bigintegers are now 
+        only used in the the built-in ECM & SIQS, which themselves are only 
+        used for numbers up to 59 digits, so this test is not normally included.
+
+TEST4   test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
+        this test will take over an hour.
+
+TEST5   tests using only YAFU for factorisation. Note that these tests bypass the
+        trial division etc normally used and rely on YAFU for all the factorisation.
+
+TEST6   tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
+
+TEST7   tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= num are
+        tested to see whether 2^p-1 is prime or not. The default value for num is
+        12000.   Sample output:
+
+            test7 87000
+            18:47:15 2^2 -1 is prime ***
+            18:47:15 2^3 -1 is prime ***
+            18:47:15 2^5 -1 is prime ***
+            18:47:15 2^7 -1 is prime ***
+            18:47:15 2^13 -1 is prime ***
+            18:47:15 2^17 -1 is prime ***
+            18:47:15 2^19 -1 is prime ***
+            18:47:15 2^31 -1 is prime ***
+            18:47:15 2^61 -1 is prime ***
+            18:47:15 2^89 -1 is prime ***
+            18:47:15 2^107 -1 is prime ***
+            18:47:15 2^127 -1 is prime ***
+            18:47:15 2^521 -1 is prime ***
+            18:47:15 2^607 -1 is prime ***
+            18:47:16 2^1279 -1 is prime ***
+            18:47:16 2^2203 -1 is prime ***
+            18:47:16 2^2281 -1 is prime ***
+            18:47:17 2^3217 -1 is prime ***
+            18:47:18 2^4253 -1 is prime ***
+            18:47:18 2^4423 -1 is prime ***
+            18:47:53 2^9689 -1 is prime ***
+            18:47:56 2^9941 -1 is prime ***
+            18:48:15 2^11213 -1 is prime ***
+            18:55:42 2^19937 -1 is prime ***
+            18:57:54 2^21701 -1 is prime ***
+            19:00:14 2^23209 -1 is prime ***
+            20:33:19 2^44497 -1 is prime ***
+            08:18:34 2^86243 -1 is prime ***
+            Found 28 Mersenne primes  out of 8450 numbers tested
+            2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 
+            3217, 4253, 4423, 9689, 9941, 11213, 19937, 21701, 23209, 44497, 86243,
+            0.33% primes found by llt
+            99.67% composites found by llt
+            08:40:38 test 7 completed time used =  13h 53 min 23.314sec
+
+        This has found the 1st 28 Mersenne primes in less than 14 hours. The 
+        last of these was originally found in 1982 using a mult-million $ Cray
+        supercomputer. Talk about standing on the shoulders of giants!
+
+Test example:
+
+enter expression to be processed, or HELP, or EXIT
+TEST2 5
+Use default 48 for number size in bits
+ 
+ <******** output from indivdial tests omitted *****************>
+
+10:48:34 All tests completed. Time used = 0.172 seconds
+Test Num Size   time      Unique Factors Total Factors     2nd Fac
+   1       14  0:00:00.01             4          4            4
+   2       15  0:00:00.04             4          4            3
+   3       15  0:00:00.03             3          3            5
+   4       15  0:00:00.03             2          2            5
+   5       14  0:00:00.02             5          6            4
+
+
+   note: The 'Size' column gives the size in decimal digits of the number to be
+   factored. The '2nd Fac' column gives the size of the 2nd largest factor, 
+   which correlates much more closely with time required than the 'Size' does.
+   The 'time' column gives the time required for each factorisation to one-
+   hundredth of a second.
