@@ -33,6 +33,7 @@ void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, Znum &result);   // declaration for external function
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
+char * getFileName(const char *filter, HWND owner);
 
 
 /* get time in format hh:mm:ss */
@@ -3204,6 +3205,7 @@ static void doTests7(const std::string &params) {
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
+std::string helpFilePath = "docfile.txt";  /* can be overwritten from the .ini file */
 
 /* (re)write the BigIntCalculator.ini file
 initially a .new file is created, then any .old file is deleted
@@ -3227,6 +3229,7 @@ void writeIni(void) {
 	newStr << "yafu-prog=" << yafuprog << '\n';
 	newStr << "msieve-path=" << MsievePath << '\n';
 	newStr << "msieve-prog=" << MsieveProg << '\n';
+	newStr << "helpfile=" << helpFilePath << '\n';
 	newStr.close();
 
 	  // delete any previous .old
@@ -3294,11 +3297,16 @@ static void processIni(const char * arg) {
 			else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
 				MsieveProg = buffer.substr(12); // copy path following '=' character
 			}
+			else if (_strnicmp("helpfile=", buffer.c_str(), 9) == 0) {
+				helpFilePath = buffer.substr(9);
+			}
+
 			else inifile.push_back(buffer);  // save anything not recognised
 		}
 		iniStr.close();
 	}
 }
+
 
 //search the docfile for the right entry specified by s
 //just search for the heading, and print everything until
@@ -3308,17 +3316,38 @@ static void helpfunc(const std::string &s)
 	FILE *doc;
 	char str[1024];
 	bool printtopic = false;
+	std::string expr = "";
+	char * newpathC;
+	std::string newpath;
 
-
+retry:
 	//open the doc file and search for a matching topic
-	errno_t ecode = fopen_s(&doc, "docfile.txt", "r");
+	errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
 	if (ecode != 0) {
+		/* failed to open the help file*/
 		char buffer[80];
 		_strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
 		fprintf_s(stderr, "fopen error: %s\n", buffer);
-		fprintf_s(stderr, "documentation file not found\n");
-		return;
+		fprintf_s(stderr, "help file not found\n");
+
+		while (std::toupper(expr[0]) != 'Y') {
+			std::cout << "Do you want to search for the help file? (Y/N) \n";
+			getline(std::cin, expr);
+			if (std::toupper(expr[0]) == 'N')
+				return;
+		}
+		newpathC = getFileName("Text\0*.TXT\0\0", NULL);
+		if (newpathC ==NULL) {
+			std::cout << "command cancelled \n";
+			return;
+		}
+		else {
+			helpFilePath = newpathC;
+			writeIni();  /* update the .ini file*/
+			goto retry;
+		}
 	}
+
 	if (verbose > 0)
 		printf_s("searching for help on '%s'\n", s.data());
 

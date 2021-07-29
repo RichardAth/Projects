@@ -75,12 +75,14 @@ JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a m
 KR(a,p) : Kronecker value for (a/p)
 
 [OTHER]
-commands: X=hexadecimal o/p, D=decimal o/p
+other commands: 
+X = hexadecimal o/p, 
+D = decimal o/p
 F = do factorisation, 
 N = Don't factorise 
-S = Spanish, 
-E = English
-HELP 
+S = switch to Spanish, 
+E = switch to English
+HELP (this command)
 EXIT
 
 [YAFU]
