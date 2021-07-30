@@ -3342,16 +3342,17 @@ retry:
 			return;
 		}
 		else {
-			helpFilePath = newpathC;
-			writeIni();  /* update the .ini file*/
-			goto retry;
+			helpFilePath = newpathC; /* copy new path for doc file to permanent storage */
+			writeIni();       /* update the .ini file*/
+			goto retry;       /* let's try to open the file again */
 		}
 	}
 
+	/* doc file has been opened successfully */
 	if (verbose > 0)
 		printf_s("searching for help on '%s'\n", s.data());
 
-	/* exit this loop when EOF reached or the next topic after the one required 
+	/* exit this loop when reached EOF or the next topic after the one required 
 	is reached */
 	while (!feof(doc)) {
 		
@@ -3386,8 +3387,10 @@ retry:
 				printf_s("%s", str);  /* print only if within the required topic */
 		}
 	}
+
 	if (feof(doc))
-		putchar('\n');
+		putchar('\n');   /* contrary to the POSIX standard, the last line of the file 
+						    may not end with newline */
 	fclose(doc);
 	return;
 }
@@ -3495,24 +3498,22 @@ static int processCmd(const std::string &command) {
 			}
 		}
 
-	case 11: /* MSIEVE */
-		{
+	case 11: /* MSIEVE */ {
 			msieveParam(command);
 			return 1;
 		}
-	case 12: /* YAFU */
-		{
+	case 12: /* YAFU */ {
 			yafuParam(command);
 			return 1;
 		}
-	case 13: /* V */
-		{
+	case 13: /* V */ {
 			/* will not throw an exception if input has fat finger syndrome.
 			If no valid digits found, sets verbose to 0 */
 			verbose = atoi(command.substr(1).data());
 			std::cout << "verbose set to " << verbose << '\n';
 			return 1;
 		}
+
 	default:
 		return 0;   /* not a recognised command */
 	}
@@ -3526,7 +3527,7 @@ int main(int argc, char *argv[]) {
 	try {
 		int version[4]; /* version info from .exe file (taken from .rc resource file) */
 
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
 		{
 			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);

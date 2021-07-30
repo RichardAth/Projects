@@ -73,7 +73,7 @@ JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a m
           it is one if there is a solution of x² = a (mod p) and it is equal to -1 when the
           congruence has no solution.
 KR(a,p) : Kronecker value for (a/p)
-
+ISPOW(n): returns -1 if n is a perfect power, otherwise 0
 [OTHER]
 other commands: 
 X = hexadecimal o/p, 
@@ -82,6 +82,9 @@ F = do factorisation,
 N = Don't factorise 
 S = switch to Spanish, 
 E = switch to English
+V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
+       n = 1 turns on many messages that show more of what is happening internally.
+       n = 2 turns on even more messages.
 HELP (this command)
 EXIT
 

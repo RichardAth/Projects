@@ -117,35 +117,36 @@ static int Moebius(int N) {
 	return moebius;
 }
 
+/* power = base^exponent */
 static void BigIntPowerIntExp(const Znum &Base, int exponent, Znum &Power) {
 	mpz_pow_ui(ZT(Power), ZT(Base), exponent);
 }
 
-static void GetAurifeuilleFactor(fList &Factors, int L, const Znum &BigBase,
+static void GetAurifeuilleFactor(fList &Factors, int L, const Znum &Base,
 	const int DegreeAurif) {
 	Znum x, Csal, Dsal, Nbr1;  
 	int k;
 
-	BigIntPowerIntExp(BigBase, L, x);   // x <- BigBase^L.
-	Csal = 1;      //intToBigInteger(Csal, 1);
-	Dsal = 1;       // intToBigInteger(Dsal, 1);
+	BigIntPowerIntExp(Base, L, x);   // x <- BigBase^L.
+	Csal = 1;      
+	Dsal = 1;       
 	for (k = 1; k < DegreeAurif; k++) {
-		Nbr1 = Gamma[k]; // longToBigInteger(Nbr1, Gamma[k]);
-		Csal *= x;       // BigIntMultiply(Csal, x, Csal);
-		Csal += Nbr1;    // BigIntAdd(Csal, Nbr1, Csal);      // Csal <- Csal * x + Gamma[k]
-		Nbr1 = Delta[k]; // longToBigInteger(Nbr1, Delta[k]);
-		Dsal *= x;       //BigIntMultiply(Dsal, x, Dsal);
-		Dsal += Nbr1;    // BigIntAdd(Dsal, Nbr1, Dsal);      // Dsal <- Dsal * x + Gamma[k]
+		Nbr1 = Gamma[k]; 
+		Csal *= x;       
+		Csal += Nbr1;     // Csal <- Csal * x + Gamma[k]
+		Nbr1 = Delta[k]; 
+		Dsal *= x;      
+		Dsal += Nbr1;        // Dsal <- Dsal * x + Gamma[k]
 	}
-	Nbr1 = Gamma[k];    // longToBigInteger(Nbr1, Gamma[k]);
-	Csal = Csal*x;      // BigIntMultiply(Csal, x, Csal);
-	Csal += Nbr1; // BigIntAdd(Csal, Nbr1, Csal);        // Csal <- Csal * x + Gamma[k]
-	BigIntPowerIntExp(BigBase, (L + 1) / 2, Nbr1);   // Nbr1 <- Dsal * base^((L+1)/2)
-	Nbr1 = Nbr1 * Dsal; //BigIntMultiply(Dsal, Nbr1, Nbr1);
-	Dsal = Csal + Nbr1; // BigIntAdd(Csal, Nbr1, Dsal);
+	Nbr1 = Gamma[k];   
+	Csal = Csal*x;      
+	Csal += Nbr1;        // Csal <- Csal * x + Gamma[k]
+	BigIntPowerIntExp(Base, (L + 1) / 2, Nbr1);   
+	Nbr1 = Nbr1 * Dsal;       // Nbr1 <- Dsal * base^((L+1)/2)
+	Dsal = Csal + Nbr1; 
  
 	insertBigFactor(Factors, Dsal);
-	Dsal = Csal - Nbr1; // BigIntSubt(Csal, Nbr1, Dsal);
+	Dsal = Csal - Nbr1; 
 
 	insertBigFactor(Factors, Dsal);
 	return;
@@ -153,29 +154,29 @@ static void GetAurifeuilleFactor(fList &Factors, int L, const Znum &BigBase,
 
 /* Get Aurifeuille factors.
  see https://en.wikipedia.org/wiki/Aurifeuillean_factorization */
-static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
+static void InsertAurifFactors(fList &Factors, const Znum &Base,
 	int Expon, int Incre)
 {
 	int DegreeAurif;
-	if (BigBase >= 386) {
+	if (Base >= 386) {
 		return;    // Base is very big, so go out.
 	}
-	auto Base = MulPrToLong(BigBase);
+	auto llBase = MulPrToLong(Base);
 
 	if (Expon % 2 == 0 && Incre == -1) {
 		do {
 			Expon /= 2;
 		} while (Expon % 2 == 0);
 
-		Incre = Base % 4 - 2;
+		Incre = llBase % 4 - 2;
 	}
 
-	if (Expon % Base == 0
-		&& Expon / Base % 2 != 0
-		&& ((Base % 4 != 1 && Incre == 1) || (Base % 4 == 1 && Incre == -1)))
+	if (Expon % llBase == 0
+		&& Expon / llBase % 2 != 0
+		&& ((llBase % 4 != 1 && Incre == 1) || (llBase % 4 == 1 && Incre == -1)))
 	{
 		int N1, q, L, k;
-		int N = (int)Base;
+		int N = (int)llBase;
 		if (N % 4 == 1) {
 			N1 = N;
 		}
@@ -232,9 +233,9 @@ static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
 		L = 1;
 		while (L * L <= q) {
 			if (q % L == 0) {
-				GetAurifeuilleFactor(Factors, L, BigBase, DegreeAurif);
+				GetAurifeuilleFactor(Factors, L, Base, DegreeAurif);
 				if (q != L * L) {
-					GetAurifeuilleFactor(Factors, q / L, BigBase, DegreeAurif);
+					GetAurifeuilleFactor(Factors, q / L, Base, DegreeAurif);
 				}
 			}
 			L += 2;
@@ -244,44 +245,44 @@ static void InsertAurifFactors(fList &Factors, const Znum &BigBase,
 }
 
 
-static void Cunningham(fList &Factors, const Znum &BigBase, int Expon,
-	int increment, const Znum &BigOriginal) {
+static void Cunningham(fList &Factors, const Znum &Base, int Expon,
+	const int increment, const Znum &Original) {
 	int Expon2, k;
-	Znum Nbr1, Nbr2, Temp1;      
+	Znum Nbr1, Nbr2; // Temp1;
 
 	Expon2 = Expon;
 
 	while (Expon2 % 2 == 0 && increment == -1) {
 		Expon2 /= 2;
-		BigIntPowerIntExp(BigBase, Expon2, Nbr1);
-		Nbr1 += increment; //addbigint(Nbr1, increment);
+		BigIntPowerIntExp(Base, Expon2, Nbr1);  /* Nbr1 = Base^Expon2*/
+		Nbr1 += increment; 
 		insertBigFactor(Factors, Nbr1);
-		InsertAurifFactors(Factors, BigBase, Expon2, 1);
+		InsertAurifFactors(Factors, Base, Expon2, 1);
 	}
 
 	k = 1;
 	while (k * k <= Expon) {
 		if (Expon % k == 0) {
 			if (k % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, Expon / k, Nbr1);
-				Nbr1 += increment;      //addbigint(Nbr1, increment);
-				Nbr2 = gcd(Nbr1, BigOriginal);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
+				BigIntPowerIntExp(Base, Expon / k, Nbr1); /* nbr1 = base^(expon/k) */
+				Nbr1 += increment;      
+				Nbr2 = gcd(Nbr1, Original);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
 				insertBigFactor(Factors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+				//Temp1 = Original; 
+				Nbr1 = Original / Nbr2; 
 				insertBigFactor(Factors, Nbr1);
-				InsertAurifFactors(Factors, BigBase, Expon / k, increment);
+				InsertAurifFactors(Factors, Base, Expon / k, increment);
 			}
 
 			if ((Expon / k) % 2 != 0) { /* Only for odd exponent */
-				BigIntPowerIntExp(BigBase, k, Nbr1);
-				Nbr1 += increment; //addbigint(Nbr1, increment);
-				Nbr2 = gcd(Nbr1, BigOriginal);   // Nbr2 <- gcd(Base^k+incre, original)
+				BigIntPowerIntExp(Base, k, Nbr1);  /* Nbr1 = Base^k*/
+				Nbr1 += increment; 
+				Nbr2 = gcd(Nbr1, Original);   // Nbr2 <- gcd(Base^k+incre, original)
 				insertBigFactor(Factors, Nbr2);
-				Temp1 = BigOriginal; // CopyBigInt(Temp1, *BigOriginal);
-				Nbr1 = Temp1 / Nbr2; // BigIntDivide(Temp1, Nbr2, Nbr1);
+				//Temp1 = Original; 
+				Nbr1 = Original / Nbr2; 
 				insertBigFactor(Factors, Nbr1);
-				InsertAurifFactors(Factors, BigBase, k, increment);
+				InsertAurifFactors(Factors, Base, k, increment);
 			}
 		}
 		k++;

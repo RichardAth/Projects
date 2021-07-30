@@ -230,7 +230,7 @@ GOT_BOUNDS:;
 	/* Optional argument to control display update frequency.
 	   If absent, adjust update frequency to size of integers. */
 
-	ulUF = 10000UL;
+	ulUF = 100000UL;
 	i = (int)mpz_sizeinbase(mpzUB, 10);
 	if (i > 499)ulUF = 2;
 	else if (i > 199)ulUF = 10;
@@ -239,7 +239,7 @@ GOT_BOUNDS:;
 	{
 		lf = ___strtold(argv[3], NULL);
 		if ((lf < 1) || (lf > UINT32_MAX))
-			ulUF = 10000;  /* default value */
+			ulUF = 100000;  /* default value */
 		else
 			ulUF = (unsigned long long)floor(lf + 0.5);
 	}
@@ -256,6 +256,7 @@ GOT_BOUNDS:;
 		{
 			lfSec = lfSeconds2() - t0;
 			__clearline();
+
 			if (iNsmall)
 			{
 				fprintf(stderr, "\r LB=");
@@ -270,6 +271,9 @@ GOT_BOUNDS:;
 				mpz_out_str(stderr, 10, mpzDelta);
 			}
 			fprintf(stderr, "   Pix=%llu   T=%.3lf sec", ulPix, lfSec);
+			double fComplete = (mpz_get_d(mpzDelta)*100.0) /
+				(mpz_get_d(mpzUB) - mpz_get_d(mpzLB));
+			fprintf(stderr, " %6.3f%% complete ", fComplete);
 			//vFlush();
 		}
 
@@ -346,22 +350,33 @@ GOT_BOUNDS:;
 				fprintf(stderr, "\n *** Also a STRONG Baillie-PSW pseudoprime!!!\n");
 			else
 				fprintf(stderr,
-					"\n ...However, N is NOT a STRONG Baillie-PSW pseudoprime.");
+					"\n ...However, N is NOT a STRONG Baillie-PSW pseudoprime.\n");
+			Beep(1200, 1000);
+			Beep(2400, 1000);
+			Beep(1200, 1000);
+			system("PAUSE");
 			exit(EXIT_SUCCESS);
 		}
 
 		/* Tabulate pseudoprimes. */
 
-		if (!iPrime && iPrimeBPSW)ulPSP_BPSW++;
-		if (!iPrime && iPrimeSBPSW)ulPSP_SBPSW++;
-		if (!iPrime && iPrimeMR2)ulPSP_MR2++;
-		if (!iPrime && iPrimeFermat2)ulPSP_Fermat2++;
-		if (!iPrime && iPrimeLS)ulPSP_LS++;
-		if (!iPrime && iPrimeSLS)ulPSP_SLS++;
-		if (!iPrime && iPrimeXSL)ulPSP_XSL++;
+		if (!iPrime && iPrimeBPSW)
+			ulPSP_BPSW++;
+		if (!iPrime && iPrimeSBPSW)
+			ulPSP_SBPSW++;
+		if (!iPrime && iPrimeMR2)
+			ulPSP_MR2++;
+		if (!iPrime && iPrimeFermat2)
+			ulPSP_Fermat2++;
+		if (!iPrime && iPrimeLS)
+			ulPSP_LS++;
+		if (!iPrime && iPrimeSLS)
+			ulPSP_SLS++;
+		if (!iPrime && iPrimeXSL)
+			ulPSP_XSL++;
 
-		mpz_add_ui(mpzN, mpzN, 2);
-		mpz_add_ui(mpzDelta, mpzDelta, 2);
+		mpz_add_ui(mpzN, mpzN, 2);           /* N += 2*/
+		mpz_add_ui(mpzDelta, mpzDelta, 2);   /* delta += 2*/
 	}
 
 	lfSec = lfSeconds2() - t0;
@@ -388,7 +403,10 @@ GOT_BOUNDS:;
 	printf("\n      Strong Lucas-Selfridge: %llu", ulPSP_SLS);
 	printf("\n Extra Strong Lucas (base 3): %llu", ulPSP_XSL);
 	printf("\n        Standard Baillie-PSW: %llu", ulPSP_BPSW);
-	printf("\n          Strong Baillie-PSW: %llu", ulPSP_SBPSW);
+	printf("\n          Strong Baillie-PSW: %llu \n", ulPSP_SBPSW);
+
+	Beep(1200, 250);
+	system("PAUSE");  /* press any key to continue */
 
 	return(EXIT_SUCCESS);
 }
