@@ -1,4 +1,25 @@
 [HELP]
+This a big integer calculator and a factorisation program. Start by entering
+an expression which will be evaluated and the resultiong value will normally 
+be factorised.e.g
+
+    2^131-1                            <<< you enter expression to be evaluated
+
+     = 2722 258935 367507 707706 996859 454145 691647 (40 digits)  <<< result
+     = 263 * 10 350794 431055 162386 718619 237468 234569          <<< factors  
+    Number of Divisors = 4
+    Sum of Divisors    = 2732 609729 798562 870093 715478 691613 926480
+    Totient            = 2711 908140 936452 545320 278240 216677 456816
+    Möbius             = 1
+    n = a² + b² + c² + d²
+    a= 37635272946430607907
+    b= 31068021837726540390
+    c= 16137376740926782227
+    d= 8955906242648937037
+    found by trial division: 1      <<< factor 263 found by trial division
+                                    <<< 10 350794 431055 162386 718619 237468 234569 is prime
+    10:58:36 time used = 0.077 seconds
+
 You can get help on the following topics by entering "HELP <topic>";
 help    expression   function    yafu     msieve     other    test
 
@@ -63,10 +84,15 @@ MinFact(n)      : minimum prime factor of n.
 MaxFact(n)      : maximum prime factor of n
 LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, 
                   1 if prime.
-FactConcat(m,n) : Concatenates the prime factors of n according to the mode m
-R2(n)           : Number of ways n can be expressed as the sum of x^2+y^2.  
-                  (order andsign of x and y are significant)
-R3(n)           : Number of ways n can be expressed as the sum of x^2+y^2+z^2. 
+FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the mode m
+                  mode    Order of factors    Repeated factors
+                  0       Ascending           No
+                  1       Descending          No
+                  2       Ascending           Yes
+                  3       Descending          Yes
+R2(n)           : Number of ways n can be expressed as the sum of x² + y².  
+                  (order and sign of x and y are significant)
+R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
                   (order and sign of x and y are significant)
 LE(a,p) : Legendre value for (a/p)
 JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a multiple of p

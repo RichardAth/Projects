@@ -92,18 +92,17 @@ enum class opCode {
 	rightb		= 24,              // right bracket (must be highest value)
 };
 
-/* list of operator priority values. lower value = higher priority. Note: this 
-order is not the same as C or Python. The priority value is obtained by using 
-the opCode (cast to an integer) as the index. */
-
+/* list of operators. Priority values lower value = higher priority. Note: this 
+order is not the same as C or Python. The operator attributes are obtained by 
+using the opCode (cast to an integer) as the index. */
 
 struct attrs {
-	int pri;
+	int pri;  /* operator precedence, 0 is highest, 99 is lowest */
 	bool left;   /* associativity ; true = left to right, false = right to left 
 		    operators with the same precedence must have the same associativity. */
 	bool pre;    /* true if unary operator e.g. - precedes expression, false if
 				    it follows e.g. !, otherwise not used */
-	int numOps;  /* number of operands; 1 = unary, or 2, or 0 for bracket)*/
+	int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 
 const static attrs opr[] = {
@@ -3311,7 +3310,7 @@ static void processIni(const char * arg) {
 //search the docfile for the right entry specified by s
 //just search for the heading, and print everything until
 //the next heading is found
-static void helpfunc(const std::string &s)
+static void helpfunc(const std::string &helpTopic)
 {
 	FILE *doc;
 	char str[1024];
@@ -3350,7 +3349,7 @@ retry:
 
 	/* doc file has been opened successfully */
 	if (verbose > 0)
-		printf_s("searching for help on '%s'\n", s.data());
+		printf_s("searching for help on '%s'\n", helpTopic.data());
 
 	/* exit this loop when reached EOF or the next topic after the one required 
 	is reached */
@@ -3377,9 +3376,9 @@ retry:
 
 			//does it match our topic?
 			str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-			if (strstr(s.data(), str + 1) != NULL)
+			if (strstr(helpTopic.data(), str + 1) != NULL)
 				/* we get a match if the topic between [ and ] is contained 
-				anywhere in string s */
+				anywhere in helptopic */
 				printtopic = true;   /* we have found the required topic*/
 		}
 		else {  /* not a header line */
@@ -3388,9 +3387,13 @@ retry:
 		}
 	}
 
-	if (feof(doc))
-		putchar('\n');   /* contrary to the POSIX standard, the last line of the file 
-						    may not end with newline */
+	if (feof(doc)) {
+		if (printtopic)
+			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
+							may not end with newline */
+		else
+			printf_s("Help for %s not found \n", helpTopic.data());
+	}
 	fclose(doc);
 	return;
 }
