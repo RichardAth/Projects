@@ -246,13 +246,13 @@ in the ggnfs_dir parameter of the YAFU.ini file.
 
  Use Msieve directly
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
-                 about 30 mins vs 1 hour using DA's code. 
+                 about 5 mins vs 1 hour using DA's code. 
  Disadvantage:   Build is tricky & Calculator is basic, and result isn't sent to
                  console window. default is that input & output are from/to files, 
 				 not console window.
 
 Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number 
-                 2^311-1 it took about 13 mins
+                 2^311-1 it took about 80 sec.
                  needs GGNFS for large numbers > about 95 digits. 
                  try https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
                  https://www.mersenneforum.org/showthread.php?t=22215&page=5

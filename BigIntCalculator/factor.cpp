@@ -584,7 +584,7 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 }
 
 /* trial division & Pollard-Rho. Uses first 33333 primes */
-static void TrialDiv(fList &Factors, long long LehmanLimit) {
+static void TrialDiv(fList &Factors, const long long PollardLimit) {
 	bool restart = false;  // set true if trial division has to restart
 	int upperBound;
 	long long testP;
@@ -612,7 +612,7 @@ static void TrialDiv(fList &Factors, long long LehmanLimit) {
 			}
 
 			if (!restart && (Factors.f[i].upperBound != -1)
-				&& Factors.f[i].Factor <= LehmanLimit) {
+				&& Factors.f[i].Factor <= PollardLimit) {
 				long long f;
 				if (PrimalityTest(Factors.f[i].Factor, primeList[Factors.f[i].upperBound]) == 0)
 					/* if factor is prime calling PollardFactor would waste a LOT of time*/
@@ -650,8 +650,8 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	long long testP;
 	const long long MaxP = 393'203;  // use 1st  33333 primes
 	/* larger value seems to slow down factorisation overall. */
-	// MaxP must never exceed 2,097,152 to avoid overflow of LehmanLimit
-	long long LehmanLimit = MaxP*MaxP*MaxP;
+	// MaxP must never exceed 2,097,152 to avoid overflow of PollardLimit
+	const long long PollardLimit = MaxP*MaxP*MaxP;
 
 	Factors.set(toFactor);   /* initialise factor list */
 
@@ -664,7 +664,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
-		PowerPM1Check(Factors, toFactor, MaxP);  // check if toFactor is a perfect power +/- 1
+		PowerPM1Check(Factors, toFactor, MaxP/2);  // check if toFactor is a perfect power +/- 1
 		Factors.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
 		if (Factors.f.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
@@ -672,9 +672,9 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		}
 	}
 
-	// If toFactor is < LehmanLimit it will be factorised completely using 
+	// If toFactor is < PollardLimit it will be factorised completely using 
     // trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
-	TrialDiv(Factors, LehmanLimit);
+	TrialDiv(Factors, PollardLimit);
 	/* Any small factors (up to 393,203) have now been found by trial division */
 
 	for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.f.size(); i++) {
@@ -709,7 +709,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			}
 		}
 
-		if (Zpower <= LehmanLimit) {
+		if (Zpower <= PollardLimit) {
 			long long f;
 			f = PollardRho(MulPrToLong(Zpower));
 			if (f != 1) {

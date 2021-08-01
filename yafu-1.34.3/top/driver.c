@@ -996,9 +996,9 @@ static void print_splash(int is_cmdline_run, FILE *logfile, char *idstr,
 	if (Vflag > 0 || !is_cmdline_run)
 #ifdef _MSC_MPIR_VERSION
 		printf("Using GMP-ECM %s, Powered by MPIR %s\n", ECM_VERSION,
-_MSC_MPIR_VERSION);
+			_MSC_MPIR_VERSION);
 		fprintf(logfile,"Using GMP-ECM %s, Powered by MPIR %s\n", ECM_VERSION,
-_MSC_MPIR_VERSION);
+			_MSC_MPIR_VERSION);
 #else
 	#ifdef ECM_VERSION
 		printf("Using GMP-ECM %s, Powered by GMP %d.%d.%d\n", ECM_VERSION, 

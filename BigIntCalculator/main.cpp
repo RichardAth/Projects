@@ -524,11 +524,8 @@ mode	Order of factors	Repeated factors
 */
 static Znum  FactConcat(const Znum &mode, const Znum &num) {
 	fList factorlist;
-	std::string result;
-	Znum rvalue = 0;
 	const bool descending = ((mode & 1) == 1);
 	const bool repeat = ((mode & 2) == 2);
-	char *buffer = NULL;
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
@@ -1032,20 +1029,15 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		result = R3(p1);
 		break;
 	}
-	case fn_Code::fn_legendre: {
-		/* p2 must be an odd positive prime */
-		result = mpz_legendre(ZT(p1), ZT(p2));
-		break;
-	}
-	case fn_Code::fn_jacobi: {
-		/*p2 must be odd */
+
+	/* legendre & kronecker are in fact implemented as aliases of jacobi in MPIR */
+	case fn_Code::fn_legendre: 
+	case fn_Code::fn_jacobi: 
+	case fn_Code::fn_kronecker: {
 		result = mpz_jacobi(ZT(p1), ZT(p2));
 		break;
 	}
-	case fn_Code::fn_kronecker: {
-		result = mpz_kronecker(ZT(p1), ZT(p2));
-		break;
-	}
+
 	case fn_Code::fn_llt: {
 		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
 		if (p1 >= 0 && p1 <= INT_MAX) {
@@ -1466,8 +1458,8 @@ const static struct oper_list operators[]  {
 		{ ")",   opCode::rightb,      0},      // left bracket
 	 } ;
 
-/* search for operators e.g. '+', '*'  that have format <expression> <operator> <expression>
-or <operator> <expression>. return index of operator or -1 */
+/* search for operators e.g. '+', '*'  '!', 'NOT'
+return index of operator or -1 */
 static void operSearch(const std::string &expr, int &opcode) {
 	opcode = -1;
 	for (int ix = 0; ix < sizeof(operators)/sizeof(operators[0]); ix++) {
@@ -3245,9 +3237,11 @@ void writeIni(void) {
 }
 
 /* read the .ini file and update paths. 
-path definitions begin with yafu-path=, yafu-prog=, msieve-path= or msieve-prog= 
+path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog= 
+or helpfile=
 Paths are not case-sensitive. 
 Anything else is saved and is copied if the .ini file is updated 
+
 arg is arg[0] of the call to main, which conveniently contains the full path
 for the .exe file. We use the same path for the .ini file. 
 If the .ini file can't be opened a new one is created */

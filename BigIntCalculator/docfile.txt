@@ -1,46 +1,39 @@
 [HELP]
 This a big integer calculator and a factorisation program. Start by entering
-an expression which will be evaluated and the resultiong value will normally 
-be factorised.e.g
+an expression which will be evaluated and the resulting value will normally 
+be factorised. e.g
 
     2^131-1                            <<< you enter expression to be evaluated
 
      = 2722 258935 367507 707706 996859 454145 691647 (40 digits)  <<< result
      = 263 * 10 350794 431055 162386 718619 237468 234569          <<< factors  
-    Number of Divisors = 4
-    Sum of Divisors    = 2732 609729 798562 870093 715478 691613 926480
-    Totient            = 2711 908140 936452 545320 278240 216677 456816
-    Möbius             = 1
-    n = a² + b² + c² + d²
-    a= 37635272946430607907
-    b= 31068021837726540390
-    c= 16137376740926782227
-    d= 8955906242648937037
-    found by trial division: 1      <<< factor 263 found by trial division
-                                    <<< 10 350794 431055 162386 718619 237468 234569 is prime
-    10:58:36 time used = 0.077 seconds
+
+The sum of divisors, number of divisors, möbius  & totient are also displayed; 
+they are easy to calculate once the factors are known.
+Any number can be expressed as the sum of 4 or fewer squares. Usually there are
+many ways of doing this. One way is displayed.
 
 You can get help on the following topics by entering "HELP <topic>";
-help    expression   function    yafu     msieve     other    test
+expression  function  yafu  msieve  other  test  background
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
 and parentheses:
-^ or ** : exponentiation (the exponent must be greater than or equal to zero).
-*       : multiplication
-/       : integer division
-%       : modulus (remainder from integer division)
-+       : addition
--       : subtraction
-SHL or <<: Shift left the number of bits specified on the right operand.
-SHR or >>: Shift right the number of bits specified on the right operand.
+^ or **   : exponentiation (the exponent must be greater than or equal to zero).
+*         : multiplication
+/         : integer division
+%         : modulus (remainder from integer division)
++         : addition
+-         : subtraction
+SHL or << : Shift left the number of bits specified on the right operand.
+SHR or >> : Shift right the number of bits specified on the right operand.
 <, >, <=, >= for comparisons.  The operators return zero for false and -1 for true.
 ==, != for equality. The operators return zero for false and -1 for true.
 NOT, AND, XOR, OR  for bitwise operations.
-n!      : factorial (n must be greater than or equal to zero).
-n!!     : double factorial (n must be greater than or equal to zero).
-p#      : primorial (product of all primes less or equal than p).
-C       : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient
+n!        : factorial (n must be greater than or equal to zero).
+n!!       : double factorial (n must be greater than or equal to zero).
+p#        : primorial (product of all primes less or equal than p).
+C         : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient
 
 #(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
 above NOT and unary -, which are above ^ (exponentiation)
@@ -50,13 +43,13 @@ default order of evaluation apply.
 for a list of functions enter HELP FUNCTION
 
 [FUNCTION]
-B(n)    : Previous probable prime before n
-F(n)    : Fibonacci number Fn
-L(n)    : Lucas number Ln = F(n-1) + F(n+1)
-N(n)    : Next probable prime after n
-P(n)    : Unrestricted Partition Number (number of decompositions of n into sums of 
-          integers without regard to order)
-Pi(n)   : Number of primes <= n
+B(n)            : Previous probable prime before n
+F(n)            : Fibonacci number Fn
+L(n)            : Lucas number Ln = F(n-1) + F(n+1)
+N(n)            : Next probable prime after n
+P(n)            : Unrestricted Partition Number (number of decompositions of n 
+                  into sums of integers without regard to order)
+Pi(n)           : Number of primes <= n
 Gcd(m, n)       : Greatest common divisor of m and n.
 Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
 Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
@@ -94,20 +87,23 @@ R2(n)           : Number of ways n can be expressed as the sum of x² + y².
                   (order and sign of x and y are significant)
 R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
                   (order and sign of x and y are significant)
-LE(a,p) : Legendre value for (a/p)
-JA(a,p) : Jacobi value for (a/p). If p is prime the result is zero when a is a multiple of p
-          it is one if there is a solution of x² = a (mod p) and it is equal to -1 when the
-          congruence has no solution.
-KR(a,p) : Kronecker value for (a/p)
-ISPOW(n): returns -1 if n is a perfect power, otherwise 0
+LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
+JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
+                  of p, otherwise it is one if there is a solution of x² = a (mod p) 
+                  and it is -1 when the congruence has no solution. 
+                  Extension of Legendre to all odd values of p.
+KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
+                  all values of p
+ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
+
 [OTHER]
 other commands: 
-X = hexadecimal o/p, 
-D = decimal o/p
-F = do factorisation, 
-N = Don't factorise 
-S = switch to Spanish, 
-E = switch to English
+X    : hexadecimal o/p, 
+D    : decimal o/p
+F    : do factorisation, 
+N    : Don't factorise 
+S    : switch to Spanish, 
+E    : switch to English
 V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 1 turns on many messages that show more of what is happening internally.
        n = 2 turns on even more messages.
@@ -308,3 +304,106 @@ MinFact(n)      : mínimo factor primo de n. Ejemplo: MinFact(28) = 2 porque los
                   factores primos son 2 y 7.
 MaxFact(n)      : máximo factor primo de n. Ejemplo: MaxFact(28) = 7 porque los 
                   factores primos son 2 y 7.
+
+[BACKGROUND]
+INTRODUCTION
+
+This is a calculator and factorisation program based on Dario Alpert's program.
+See https://www.alpertron.com.ar/ECM.HTM
+
+It factorises numbers or numeric expressions using fast algorithms ECM and SIQS.
+ECM = Lenstra elliptic-curve factorization
+see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization
+SIQS = Self-initializing quadratic sieve
+see http://www.mersennewiki.org/index.php/Self-Initializing_Quadratic_Sieve
+or https://en.wikipedia.org/wiki/Quadratic_sieve
+
+HISTORY
+
+the program was converted from browser-based to a console window. The advantage
+is that it is somewhat faster, and the calculator part has been carefully tested.
+The disadvantage is that you have to download and build it. In order to do that
+you need GMP or MPIR multi-precision library and the Boost multi-precision library.
+
+the following changes were made:
+
+C++ rather than C
+
+The calculator part was extensively rewritten to use GMP/MPIR extended precision
+and the Boost multiprecision library. Wherever possible GMP functions were used
+instead of DAs version of bigIntegers.
+
+Standard arithmetic operators for extended precision values use the Boost library,  
+which implements them using GMP/MPIR functions.
+
+FACTORIZATION
+
+The built-in factoriser is essentially DAs program, with an interface function 
+that converts GMP/MPIR extended precision numbers to DAs BigIntegers and vice 
+versa. The progress messages it produces have been modified to work with a 
+console window instead of a Web Browser.
+
+A feature was added to allow use of Msieve as an alternative to the original ECM & SIQS
+factorisation. My conclusion was that for larger numbers (> about 60 digits) Msieve
+is usually significantly faster, provided that the -e option is used with Msieve.
+The -e option causes greater use of ECM within Msieve. The default in mseive is 
+to use ECM only for factors < 15 digits. 
+
+Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
+also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
+access msieve should be changed to whatever is appropriate.
+
+Additionally, the option to use YAFU (Yet Another Factorisation Utility) instead of 
+Msieve or the built-in ECM and SIQS has been added. The conclusion is that for 
+numbers over about 60 digits YAFU is generally significantly faster than Msieve 
+but for larger numbers > about 95 digits it relies on ggnfs.
+
+YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
+back on by the YAFU ON command (which also turns Msieve off). The default path to 
+access YAFU should be changed to whatever is appropriate.
+
+As mentioned above ECM and SIQS are used for factorisation.
+
+At all stages a factor list is maintained that contains all known factors, whether
+prime or not, that have not yet been split into smaller factors. Initially the
+factor list just contains the number to be factorised. Whenever a new factor is found,
+existing factors that are multiples of that factor are split into two factors. If
+this process creates equal factors they are merged. 
+
+Step 1: if number to factor is > than the the square of the largest prime to be 
+used in trial division, check if the number is a perfect power +/- 1 and if so 
+attempt to factorise it. This step may return factors that are not prime factors.
+
+Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
+using a list of primes. If a factor is found that is: 
+    less than the cube of the largest prime in the trial division list, 
+    and has no factors in the list, 
+    and the factor is not prime 
+then the factor can only have two prime factors. In this case factorise it using 
+Pollard's Rho algorithm. 
+
+Step 3: For each factor that is not already known to be prime:
+A. If the factor is a perfect power replace it with the number which is the root 
+   and adjust the the factor's exponent accordingly. Although such numbers are  
+   rare this is necessary because SIQS and ECM do not work for numbers which are
+   perfect powers.
+B. Test whether the number is prime: 
+   If it is a Carmichael number factorise it using a specific algorithm. 
+   If it is prime mark it as such. 
+   Otherwise either:
+      factorise it using built-in ECM, SIQS and Lehman algorithms. This method is 
+      alway used for numbers less than 2^192 (58 digits). built-in SIQS is only 
+      used for numbers between 30 and 95 digits.
+  OR
+      factorise it using Msieve. Using modified Msieve that makes more use of
+      elliptic curve factorisation than the standard version (even with the e option)
+      does, this is nearly always faster for larger numbers that would use SIQS 
+      for factorisation.
+   OR
+      factorise it using YAFU
+ 
+sample timing:
+2^311+1 (94 digits)
+YAFU on             10 min 
+MSIEVE on           5 min
+builtin ECM & SIQS 57 min
