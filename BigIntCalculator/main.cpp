@@ -1384,10 +1384,17 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
+		/* hard-coded limits allow size limit check before calculating the factorial */
+		int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
+			 38536, 42873, 47172 };
 		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
 		long long temp = llabs(MulPrToLong(firstArg));
 		long long t2 = MulPrToLong(secondArg);
+		if (t2 < sizeof(limits)/sizeof(limits[0]) && temp > limits[t2])
+			/* more than 20,000 digits in base 10 */
+			return retCode::EXPR_INTERM_TOO_HIGH;
+		
 		mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
 		if (ZT(result)->_mp_size > 1039)
 			/* more than 20,000 digits in base 10 */
