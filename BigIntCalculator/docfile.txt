@@ -31,11 +31,11 @@ SHR or >> : Shift right the number of bits specified on the right operand.
 ==, != for equality. The operators return zero for false and -1 for true.
 NOT, AND, XOR, OR  for bitwise operations.
 n!        : factorial (n must be greater than or equal to zero).
-n!!       : double factorial (n must be greater than or equal to zero).
+n!..!     : multi-factorial (n must be greater than or equal to zero).
 p#        : primorial (product of all primes less or equal than p).
 C         : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient
 
-#(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
+#(primorial) !(factorial) and !...!(multi-factorial) operators have the highest priority, 
 above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the 
 default order of evaluation apply.

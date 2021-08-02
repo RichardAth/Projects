@@ -296,15 +296,15 @@ comparision operators <, <=, ==, !=, >, and >= are similar in all three. The cal
 returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT to operate
 on the returned values as if they were boolean variables.
 
-#(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
+#(primorial) !(factorial) and !..!(multi-factorial) operators have the highest priority, 
 above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the default order
 of evaluation apply.
 
 the following functions and operators are only in the calculator
 n!                                  factorial
-n!!                                 double factorial, not to be confused with (n!)!
-n#                                  primorial. (DA's calculator requires n to be prime)
+n!..!                               multi-factorial, not to be confused with (n!)!
+n#                                  primorial. 
 
 B(n)                                Previous probable prime before n
 F(n)                                Fibonacci number Fn
@@ -352,8 +352,8 @@ Some functions and operators limit the range of their parameters:
                                     appears to be > 20,000 digits an error will be reported.
 / (division)                        divisor must not be zero
 % (modulus)                         modulus must not be zero
-! (factorial)                       0 < number <= 5984 (limits result to 20,000 digits)	
-!! (double factorial)               0 < number <= 11081	(limits result to 20,000 digits)
+! (factorial & multi-factorial)     0 < number <= 11081 (limits result to 20,000 digits)	
+
 # (primorial)                       0 < number <= 46340 (limits result to 20,000 digits)
 nCk (binomial coefficient)          (-2^31 <= k <= 2^31-1)	
 << and >> (shift operators)         -2^63 <= bitshift value <= 2^63-1

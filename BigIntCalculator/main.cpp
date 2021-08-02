@@ -66,7 +66,7 @@ HANDLE hConsole;
 same as C or Python. */
 enum class opCode {
 	fact        = 21,	// !   factorial 
-	dfact       = 22,	// !!  double factorial
+	//dfact       = 22,	// !!  double factorial
 	prim        = 23,	// #   primorial
 	unary_minus =  1,   // C and Python put unary minus above multiply, divide & modulus
 	not         = 16,   // C and Python put bitwise not with unary minus
@@ -1257,7 +1257,7 @@ void generatePrimes(unsigned long long int max_val) {
 }
 
 /* process one operator with 1 or 2 operands. 
-NOT, unary minus, factorial, double factorial and primorial  have 1 operand. 
+NOT, unary minus and primorial  have 1 operand. 
 All the others have two. Some operators can genererate an error condition 
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
 static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
@@ -1384,23 +1384,26 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
-		if(firstArg > 5984)
-			return retCode::EXPR_INTERM_TOO_HIGH;
 		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
 		long long temp = llabs(MulPrToLong(firstArg));
-		mpz_fac_ui(ZT(result), temp);  // get factorial
-		return retCode::EXPR_OK;
-	}
-	case opCode::dfact: {
-		if (firstArg > 11081)
+		long long t2 = MulPrToLong(secondArg);
+		mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
+		if (ZT(result)->_mp_size > 1039)
+			/* more than 20,000 digits in base 10 */
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (firstArg < 0)
-			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(firstArg));
-		mpz_2fac_ui(ZT(result), temp);  // get double factorial
+
 		return retCode::EXPR_OK;
 	}
+	//case opCode::dfact: {
+	//	if (firstArg > 11081)
+	//		return retCode::EXPR_INTERM_TOO_HIGH;
+	//	if (firstArg < 0)
+	//		return retCode::EXPR_INVALID_PARAM;
+	//	long long temp = llabs(MulPrToLong(firstArg));
+	//	mpz_2fac_ui(ZT(result), temp);  // get double factorial
+	//	return retCode::EXPR_OK;
+	//}
 	case opCode::prim: {
 		if (firstArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -1451,8 +1454,8 @@ const static struct oper_list operators[]  {
 		{ "AND", opCode::and,         9},      // bitwise AND
 		{ "OR",  opCode::or,         11},      // bitwise OR
 		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
-		{ "!!",  opCode::dfact,       1},      // double factorial
-		{ "!",   opCode::fact,        1},      // factorial
+		//{ "!!",  opCode::dfact,       1},      // double factorial
+		{ "!",   opCode::fact,        1},      // multi-factorial
 		{ "#",   opCode::prim,        1},      // primorial
 		{ "(",   opCode::leftb,      12},      // left bracket
 		{ ")",   opCode::rightb,      0},      // left bracket
@@ -1608,6 +1611,13 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			nxtToken.oper = operators[opIndex].operCode;
 			nxtToken.value = 0;
 			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
+			if (operators[opIndex].operCode == opCode::fact) {
+				nxtToken.value = 1;
+				while (expr.substr(exprIndex, 1) == "!") {
+					nxtToken.value++; /* get 2nd operand for multi-factorial*/
+					exprIndex++;
+				}
+			}
 		}
 
 		/* check for , */
@@ -1758,10 +1768,12 @@ static void printTokens(const token expr[], const int exprLen) {
 		case types::Operator:
 			if (expr[ix].oper == opCode::leftb)
 				std::cout << '(';
-			else if (expr[ix].oper == opCode::fact)
-				std::cout << '!';
-			else if (expr[ix].oper == opCode::dfact)
-				std::cout << "!!";
+			else if (expr[ix].oper == opCode::fact) {
+				for(int i = 1; i <= expr[ix].value; i++)
+					std::cout << '!';
+			}
+			//else if (expr[ix].oper == opCode::dfact)
+			//	std::cout << "!!";
 			else if (expr[ix].oper == opCode::prim)
 				std::cout << '#';
 			else if (expr[ix].oper == opCode::rightb)
@@ -1994,6 +2006,10 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				/* copy operand(s) from number stack to args */
 				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
 				nums.pop();  /* remove top value from stack */
+			}
+			if (oper == opCode::fact) { 
+				/* get 2nd operand for multifactorial */
+				args[1] = rPolish[index].value;
 			}
 			retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
 			if (rc != retCode::EXPR_OK)
@@ -2383,6 +2399,8 @@ static void doTests(void) {
 		"(20-32)^2 / (4*7)",                5,
 		"19!",             121645100408832000,   // factorial
 		"19!!",  	                654729075,   // double factorial
+		"29!!!",                  72642169600,   // triple factorial
+		"33!!!!",                  4996616625,
 		"37#",                  7420738134810,   // primorial
 		"b(123456789)",	            123456761,   // prime before n
 		"f(60)",	            1548008755920,   // fibonacci
@@ -2437,7 +2455,6 @@ static void doTests(void) {
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
-		//stackIndex = 0;         // ensure stack is empty 
 
 		auto  rv =ComputeExpr(testvalues[i].text, result);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
