@@ -1389,6 +1389,9 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 			 38536, 42873, 47172 };
 		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
+		if (firstArg > LLONG_MAX)
+			return retCode::EXPR_NUMBER_TOO_HIGH;
+
 		long long temp = llabs(MulPrToLong(firstArg));
 		long long t2 = MulPrToLong(secondArg);
 		if (t2 < sizeof(limits)/sizeof(limits[0]) && temp > limits[t2])
@@ -1461,7 +1464,7 @@ const static struct oper_list operators[]  {
 		{ "AND", opCode::and,         9},      // bitwise AND
 		{ "OR",  opCode::or,         11},      // bitwise OR
 		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
-		//{ "!!",  opCode::dfact,       1},      // double factorial
+      //{ "!!",  opCode::dfact,       1},      // double factorial
 		{ "!",   opCode::fact,        1},      // multi-factorial
 		{ "#",   opCode::prim,        1},      // primorial
 		{ "(",   opCode::leftb,      12},      // left bracket
@@ -1487,7 +1490,7 @@ static void operSearch(const std::string &expr, int &opcode) {
 operators and functions include:
 symbol		meaning					operator Priority
 n!			factorial               0
-n!!			double factorial        0
+n!..!	    multi-factorial         0
 p#			primorial               0
             (product of all primes 
 			less or equal than p)
@@ -1590,6 +1593,7 @@ static retCode ComputeExpr(const std::string &expr, Znum &Result) {
 			printTokens(tokens.data(), (int)tokens.size());
 		}
 	}
+
 	return rv;
 }
 
@@ -2015,7 +2019,8 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				nums.pop();  /* remove top value from stack */
 			}
 			if (oper == opCode::fact) { 
-				/* get 2nd operand for multifactorial */
+				/* get 2nd operand for multifactorial. In this special case
+				 the 2nd operand is in the operator token, not a number token */
 				args[1] = rPolish[index].value;
 			}
 			retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
