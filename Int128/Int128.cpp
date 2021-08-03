@@ -126,7 +126,7 @@ long long dobenchmark(void) {
 	const int tries = 90'000'000;
 #endif
 	_uint128 x, y, a, b;
-	unsigned long long xll, yll, zll, all, bll;
+	unsigned long long xll, yll, zll = 0, all, bll;
 	double ratio;
 	clock_t starttime, midtime, endtime;
 	long long ctr = 0;
