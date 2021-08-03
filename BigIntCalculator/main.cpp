@@ -961,15 +961,19 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 	case fn_Code::fn_fib: {		// fibonacci
-		if (p1 < 0) {
-			return retCode::EXPR_INVALID_PARAM;
-		}
-		if (p1 > 95700)
-		{
+		if (p1 > 95700 || p1 < -95700)
+		{  /* result would exceed 20,000 digits */
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		}
 		long long temp = MulPrToLong(ZT(p1));
+		bool neg = false;
+		if (temp < 0) {
+			/* is it a "negafibonacci" number? */
+			if ((temp & 1) == 0) { neg = true; } /* set for even -ve number */
+			temp = -temp;
+		}
 		mpz_fib_ui(ZT(result), temp);  // calculate fibonacci number
+		if (neg) { result = -result; } /* flip sign for even -ve number */
 		break;
 	}
 	case fn_Code::fn_luc: {		// lucas number
