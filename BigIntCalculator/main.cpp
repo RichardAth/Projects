@@ -3567,9 +3567,11 @@ int main(int argc, char *argv[]) {
 	f.sigterm = 1;     /* trap terminate signal */
 	f.sigill = 1;      /* trap 'illegal' signal */
 	f.interrupt = 1;   /* trap interrupt signal */
+	f.sigsegv = 1;     /* trap segment violation signal */
 #ifdef _DEBUG
 	/* only seems to work properly if compiled in debug mode */
-	f.InvParam = 1; /* trap invalid parameters on library calls */
+	f.InvParam = 1;    /* trap invalid parameters on library calls */
+	f.sigfpe = 1;      /* trap floating point error signal */
 #endif
 	SetProcessExceptionHandlers(f);
 	// Suppress the abort message

@@ -316,7 +316,7 @@ DWORD StackTrace2(void)
 }
 
 /* to handle calls to library functions that have invalid parameters 
-(only works when compiled in debug mode??? */
+(only works when compiled in debug mode???) */
 void InvalidParameterHandler(const wchar_t* expression,
 	const wchar_t* function,
 	const wchar_t* file,
@@ -404,14 +404,15 @@ FPE_EXPLICITGEN     0x8c // raise(SIGFPE);
 */
 void SigfpeHandler(int sig, int num) {
 	const char *msg = NULL;
-	if (num == FPE_INEXACT)
-		return;
+	if (num == FPE_INEXACT || num == FPE_UNDERFLOW)
+		return;  /* ignore these signals */
 
 	msg = FPEcodeToTxt(num);
 	/* strictly speaking, should not call I/O routines here, but it seems to work OK */
-	fprintf_s(stderr, "\nreceived FPE signal %d %s; continue \n", sig, msg);
+	fprintf_s(stderr, "\nreceived FPE signal %d %s \n", sig, msg);
 	StackTrace2();
-	//__debugbreak();     // try to enter debuggger (to look at call stack)
+	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
 
@@ -422,8 +423,7 @@ void SigabrtHandler(int sig) {
 	fprintf(stderr, "Abort occurred\n");
 	StackTrace2();
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	if (ep != nullptr)
-		createMiniDump(ep);
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
@@ -434,8 +434,7 @@ void SigillHandler(int sig) {
 	StackTrace2();
 	//__debugbreak();     // try to enter debuggger (to look at call stack)
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	if (ep != nullptr)
-		createMiniDump(ep);
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
@@ -446,8 +445,7 @@ void SigsegvHandler(int sig) {
 	StackTrace2();
 	//__debugbreak();     // try to enter debuggger (to look at call stack)
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	if (ep != nullptr)
-		createMiniDump(ep);
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
@@ -458,8 +456,7 @@ void SigintHandler(int sig) {
 	StackTrace2();
 	//__debugbreak();     // try to enter debuggger (to look at call stack)
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	if (ep != nullptr)
-		createMiniDump(ep);
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	//system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
@@ -470,8 +467,7 @@ void SigtermHandler(int sig) {
 	StackTrace2();
 	//__debugbreak();     // try to enter debuggger (to look at call stack)
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	if (ep != nullptr)
-		createMiniDump(ep);
+	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
@@ -487,6 +483,9 @@ int handle_program_memory_depletion(size_t memsize)
 /* set up exception handlers; caller specifies which are required using flags */
 void SetProcessExceptionHandlers(flags f)
 {
+	/* send errors to calling process */
+	SetErrorMode(SEM_FAILCRITICALERRORS & SEM_NOGPFAULTERRORBOX);
+
 	if (f.UnEx)
 		SetUnhandledExceptionFilter(filter2);
 
@@ -560,6 +559,10 @@ void SetProcessExceptionHandlers(flags f)
 
 }
 
+/* pExcPtrs is a pointer to a MINIDUMP_EXCEPTION_INFORMATION structure 
+describing the client exception that caused the minidump to be generated. If 
+the value of this parameter is NULL, no exception information is included in 
+the minidump file*/
 void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 {
 	HMODULE hDbgHelp = NULL;
@@ -729,8 +732,27 @@ const char *getText(const int errorcode) {
 	return msg;
 }
 
-/* Structured Exception Handler. called if the __except section of a function is
-entered. This can happen for a variety of causes, e.g. signals, divide errors etc. 
+/* Structured Exception Handler Filter. called if the __except section of a 
+function is entered. This can happen for a variety of causes, e.g. signals, 
+divide errors etc. 
+return Value 	                   Meaning
+
+EXCEPTION_EXECUTE_HANDLER 0x1      Return from UnhandledExceptionFilter and
+								   execute the associated exception handler.
+								   This usually results in process termination.
+
+EXCEPTION_CONTINUE_EXECUTION
+0xffffffff                         Return from UnhandledExceptionFilter and
+								   continue execution from the point of the
+								   exception. Note that the filter function is
+								   free to modify the continuation state by
+								   modifying the exception information supplied
+								   through its LPEXCEPTION_POINTERS parameter.
+
+EXCEPTION_CONTINUE_SEARCH 0x0      Proceed with normal execution of
+								   UnhandledExceptionFilter. That means obeying
+								   the SetErrorMode flags, or invoking the
+								   Application Error pop-up message box.
 */
 int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 {
@@ -757,7 +779,9 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 	return EXCEPTION_EXECUTE_HANDLER;  /* continue execution of the __except block */
 }
 
-/* interface matcher; separates exception code */
+/* interface matcher; gets the exception code from the exception record. 
+This version is useful for SetUnhandledExceptionFilter() 
+*/
 long filter2(struct _EXCEPTION_POINTERS *ep) {
 	int code = ep->ExceptionRecord->ExceptionCode;
 	return filter(code, ep);
@@ -773,7 +797,7 @@ void testerrors(void) {
 	printf("4 - invalid parameter\n");
 	printf("5 - new operator fault\n");
 	printf("6 - SIGABRT\n");
-	printf("7 - SIGFPE\n");
+	printf("7 - SIGFPE (divide error) \n");
 	printf("8 - SIGILL\n");
 	printf("9 - SIGINT\n");
 	printf("10 - SIGSEGV\n");
@@ -781,6 +805,9 @@ void testerrors(void) {
 	printf("12 - RaiseException\n");
 	printf("13 - throw C++ typed exception\n");
 	printf("14 - SEH exception (divide error) \n");
+	printf("15 - SIGFPE (overflow) \n");
+	printf("16 - SIGFPE (invalid) \n");
+	printf("17 - SIGFPE (raise) \n");
 	printf("Your choice >  ");
 
 	int ExceptionType = 0;
@@ -788,7 +815,7 @@ void testerrors(void) {
 	scanf_s("%d", &ExceptionType);
 	char c = '\0';
 	while (true) {
-		c = getchar();
+		c = getchar();  /* remove unwanted chars from stdin up to newline */
 		if (c == '\n') break;
 	}
 
@@ -879,9 +906,24 @@ void testerrors(void) {
 	case 14: /* SEH exception */ {
 		int x = 1, y = 0, z;
 		z = x / (2 - x - x);  /* divide by zero */
-		printf("z=%d", z);
+		printf("z=%d\n", z);
 		break;
 	}
+	case 15: /* floating point overflow */ {
+		double z = std::pow(DBL_MAX, 2);
+		printf("z=%g\n", z);
+		break;
+	}
+	case 16: /* floating point invalid */ {
+		double z = std::acos(2);
+		printf("z=%g\n", z);
+		break;
+	}
+	case 17: /* raise FPE */ {
+		raise(SIGFPE);
+		break;
+	}
+
 	default: {
 		printf("Unknown exception type %d specified. \n", ExceptionType);
 
