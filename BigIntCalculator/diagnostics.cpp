@@ -910,7 +910,7 @@ void testerrors(void) {
 		break;
 	}
 	case 17: /* raise FPE */ {
-		raise(SIGFPE);  /* only seems to work when compiled in debug mode? */
+		raise(SIGFPE);  
 		break;
 	}
 

@@ -3571,8 +3571,8 @@ int main(int argc, char *argv[]) {
 #ifdef _DEBUG
 	/* only seems to work properly if compiled in debug mode */
 	f.InvParam = 1;    /* trap invalid parameters on library calls */
-	f.sigfpe = 1;      /* trap floating point error signal */
 #endif
+	f.sigfpe = 1;      /* trap floating point error signal */
 	SetProcessExceptionHandlers(f);
 	// Suppress the abort message
 	_set_abort_behavior(0, _WRITE_ABORT_MSG);
