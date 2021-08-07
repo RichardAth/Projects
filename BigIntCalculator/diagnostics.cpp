@@ -27,24 +27,6 @@
 
 #include "diagnostic.h"
 /* function declarations */
-//static void __cdecl UnexpectedHandler();
-//static void __cdecl TerminateHandler();
-//static void __cdecl PureCallHandler();
-//long filter2(struct _EXCEPTION_POINTERS *ep);
-//
-//static void __cdecl InvalidParameterHandler(const wchar_t* expression,
-//		const wchar_t* function, const wchar_t* file,
-//		unsigned int line, size_t pReserved);
-//
-//static int __cdecl NewHandler(size_t);
-//
-//static void SigabrtHandler(int);
-//static void SigfpeHandler(int /*code*/, int subcode);
-//static void SigintHandler(int);
-//static void SigillHandler(int);
-//static void SigsegvHandler(int);
-//static void SigtermHandler(int);
-//int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep);
 
 
 struct module_data {
@@ -577,10 +559,18 @@ void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 		// Error - couldn't load dbghelp.dll
 		return;
 	}
-
+	char buf[80] = "crashdump";
+	char timestamp[10];   // time in format hhmmss
+	struct tm newtime;
+	const time_t current = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+	localtime_s(&newtime, &current);    // convert time to tm structure
+	/* convert time to hhmmss */
+	strftime(timestamp, sizeof(timestamp), "%H%M%S", &newtime);
+	strcat_s(buf, timestamp);
+	strcat_s(buf, ".dmp");
 	// Create the minidump file
-	hFile = CreateFile(
-		TEXT("crashdump.dmp"),
+	hFile = CreateFileA(
+		buf,
 		GENERIC_WRITE,
 		0,
 		NULL,
@@ -641,7 +631,7 @@ void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 
 	// Unload dbghelp.dll
 	FreeLibrary(hDbgHelp);
-	fprintf_s(stderr, "minidump file created; crashdump.dmp \n");
+	fprintf_s(stderr, "minidump file created; %s \n", buf);
 }
 
 /* convert an error code to text */
@@ -920,14 +910,12 @@ void testerrors(void) {
 		break;
 	}
 	case 17: /* raise FPE */ {
-		raise(SIGFPE);
+		raise(SIGFPE);  /* only seems to work when compiled in debug mode? */
 		break;
 	}
 
 	default: {
 		printf("Unknown exception type %d specified. \n", ExceptionType);
-
-		getchar();
 		break;
 	}
 
