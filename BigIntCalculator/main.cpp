@@ -20,6 +20,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <Mmsystem.h >   // for sound effects
 #include "factor.h"
 #include <stack>
+#include "diagnostic.h"
 
 //#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
@@ -3523,6 +3524,10 @@ static int processCmd(const std::string &command) {
 						doTests7("");
 					return 1;
 				}
+			case 8: {
+				testerrors();
+				return 1;
+			}
 			default:
 				return 0;  /* not a recognised command */
 			}
@@ -3553,6 +3558,31 @@ int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
 	retCode rv;
+	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0};
+	unsigned int control_word;
+	int err;
+
+	f.UnEx = 1;        /* set unhandled exception*/
+	f.abort = 1;       /* trap abort (as a signal) */
+	f.sigterm = 1;     /* trap terminate signal */
+	f.sigill = 1;      /* trap 'illegal' signal */
+	f.interrupt = 1;   /* trap interrupt signal */
+#ifdef _DEBUG
+	/* only seems to work properly if compiled in debug mode */
+	f.InvParam = 1; /* trap invalid parameters on library calls */
+#endif
+	SetProcessExceptionHandlers(f);
+	// Suppress the abort message
+	_set_abort_behavior(0, _WRITE_ABORT_MSG);
+
+	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
+	/* trap hardware FP exceptions except inexact and underflow which are
+	considered to be normal, not errors. */
+	if (err) {
+		printf_s("could not set FP control word\n");
+		return -1;
+	}
+
 	
 	try {
 		int version[4]; /* version info from .exe file (taken from .rc resource file) */
@@ -3608,6 +3638,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+		retry:
 			getline(std::cin, expr);    // expression may include spaces
 			strToUpper(expr, expr);		// convert to UPPER CASE 
 
@@ -3623,6 +3654,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			}
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 
+			if (expr.empty()) {
+				Beep(3000, 250);
+				goto retry;
+			}
 
 			rv = ComputeExpr(expr, Result); /* analyse expression, compute value*/
 
@@ -3667,8 +3702,16 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		exit(EXIT_FAILURE);
 	}
 
+	catch (int e) {
+		printf_s("\n*** Caught exception: <%d> \n", e);
+		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
+		system("PAUSE");               // press any key to continue
+		exit(EXIT_FAILURE);
+
+	}
+
 	catch (...) {
-		// this executes if f() throws int or any other unrelated type
+		// this executes if f() throws any other unrelated type
 		// This catch block probably only would be executed under /EHa compiler option 
 		/* most likely to be a SEH-type exception */
 		printf_s("\n*** unknown exception ocurred\n");
