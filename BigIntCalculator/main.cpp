@@ -1594,8 +1594,14 @@ static retCode ComputeExpr(const std::string &expr, Znum &Result) {
 	}
 	else {
 		if (verbose > 0) {
-			std::cout << "** error: could not tokenise expression \n";
+			std::cout << "** error: could not tokenise expression «"
+				 << expr << "»\n";
 			printTokens(tokens.data(), (int)tokens.size());
+			printf_s("expr contains: ");
+			for (auto c : expr) {
+				printf("%2x", c);
+			}
+			putchar('\n');
 		}
 	}
 
@@ -3572,7 +3578,7 @@ int main(int argc, char *argv[]) {
 	/* only seems to work properly if compiled in debug mode */
 	f.InvParam = 1;    /* trap invalid parameters on library calls */
 #endif
-	f.sigfpe = 1;      /* trap floating point error signal */
+	//f.sigfpe = 1;      /* trap floating point error signal */
 	SetProcessExceptionHandlers(f);
 	// Suppress the abort message
 	_set_abort_behavior(0, _WRITE_ABORT_MSG);
@@ -3653,6 +3659,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 				SetThreadExecutionState(ES_CONTINUOUS);
 				continue; // command has been fully processed
+			}
+			if (cmdCode != 0) {
+				fprintf_s(stderr, "Invalid return code %x from processCmd \n", cmdCode);
+				continue;
 			}
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 

@@ -1,4 +1,3 @@
-
 #include "pch.h"
 
 #include <Windows.h>
@@ -26,9 +25,8 @@
 #include <minidumpapiset.h>
 
 #include "diagnostic.h"
-/* function declarations */
 
-
+/* used for minidump */
 struct module_data {
 	std::string image_name;
 	std::string module_name;
@@ -95,7 +93,7 @@ public:
 // record as a local copy. Note that you must do the stack dump at the
 // earliest opportunity, to avoid the interesting stack-frames being gone
 // by the time you do the dump.
-DWORD StackTrace(EXCEPTION_POINTERS *ep)
+DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 {
 	HANDLE process = GetCurrentProcess();
 	HANDLE hThread = GetCurrentThread();
@@ -157,7 +155,7 @@ DWORD StackTrace(EXCEPTION_POINTERS *ep)
 			std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
 			builder << fnName;
 			if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line))
-				builder << "  " /*<< line.FileName*/ << "(" << line.LineNumber << ")\n";
+				builder << "  " << line.FileName << "(" << line.LineNumber << ")\n";
 			else builder << "\n";
 			if (fnName == "main")
 				break;  /* stop when we get to top level of all code */
@@ -205,8 +203,8 @@ DWORD StackTrace2(void)
 	if (!SymInitialize(process, nullptr, false))
 		//throw(std::logic_error("Unable to initialize symbol handler"));
 	{
-		std::cout << "dumpstack failure; Unable to initialize symbol handler\n";
-		abort();
+		std::cerr << "dumpstack failure; Unable to initialize symbol handler\n";
+		exit(EXIT_FAILURE);
 	}
 
 	DWORD symOptions = SymGetOptions();
@@ -278,9 +276,12 @@ DWORD StackTrace2(void)
 			//	printf_s("%s", "the program has crashed.\n\n");
 			//	break;
 			//}
+			bIx = strlen(builder);
 		}
-		else
-			strcat_s(builder, bIxMax - bIx, "(No Symbols: PC == 0)\n");
+		else {
+			strcat_s(builder, bIxMax - bIx, "(No Symbols: PC.offset == 0)\n");
+			bIx = strlen(builder);
+		}
 		if (!StackWalk64(image_type, process, hThread, &frame, &ct, NULL,
 			SymFunctionTableAccess64, SymGetModuleBase64, NULL))
 			break;
@@ -291,7 +292,7 @@ DWORD StackTrace2(void)
 	SymCleanup(process);
 
 	// Display the string:
-	printf_s("%s%s", "the program has crashed; Stack Trace: \n",
+	fprintf_s(stderr, "%s%s", "the program has crashed; Stack Trace: \n",
 		builder);
 	free(builder);
 	return EXCEPTION_EXECUTE_HANDLER;
@@ -468,14 +469,20 @@ void SetProcessExceptionHandlers(flags f)
 	/* send errors to calling process */
 	SetErrorMode(SEM_FAILCRITICALERRORS & SEM_NOGPFAULTERRORBOX);
 
+/* if you use C++ exception handling: install a translator function
+with set_se_translator() or use SetUnhandledExceptionFilter(). In the 
+context of that function (but *not* afterwards), you can either do 
+your stack dump, or save the CONTEXT record as a local copy. Note 
+that you must do the stack dump at the earliest opportunity, to avoid 
+the interesting stack-frames being gone by the time you do the dump.  */
 	if (f.UnEx)
 		SetUnhandledExceptionFilter(filter2);
 
-	// Catch pure virtual function calls.
-	// Because there is one _purecall_handler for the whole process, 
-	// calling this function immediately impacts all threads. The last 
-	// caller on any thread sets the handler. 
-	// http://msdn.microsoft.com/en-us/library/t296ys27.
+	/* Catch pure virtual function calls.
+	Because there is one _purecall_handler for the whole process, 
+	calling this function immediately impacts all threads. The last 
+	caller on any thread sets the handler. 
+	http://msdn.microsoft.com/en-us/library/t296ys27. */
 	//if (f.PureCall)
 		//_set_purecall_handler(PureCallHandler);
 
@@ -525,7 +532,9 @@ void SetProcessExceptionHandlers(flags f)
 
 	/* Catch a floating point error.
 	Note: some errors e.g. floating point errors will be caught by the filter
-	function if a signal handler is not registered */
+	function if a signal handler is not registered. If both a SIGFPE signal
+	function and a filter function are used, both seem to get called for each 
+	floating point error. */
 	typedef void(*sigh)(int); /* force compiler to accept SigfpeHandler although
 							  it actually has 2 parameters, not 1 */
 	if (f.sigfpe)
@@ -541,11 +550,14 @@ void SetProcessExceptionHandlers(flags f)
 
 }
 
-/* pExcPtrs is a pointer to a MINIDUMP_EXCEPTION_INFORMATION structure 
+/* pExcPtrs is a pointer to a EXCEPTION_POINTERS structure 
 describing the client exception that caused the minidump to be generated. If 
 the value of this parameter is NULL, no exception information is included in 
-the minidump file*/
-void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
+the minidump file 
+the dump file will be placed inthe TEMP directory.
+The file name is crashdumpHHMMSS.dmp so that each dump has a unique name and will
+not overwrite earlier dumps. */
+void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
 {
 	HMODULE hDbgHelp = NULL;
 	HANDLE hFile = NULL;
@@ -559,7 +571,13 @@ void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 		// Error - couldn't load dbghelp.dll
 		return;
 	}
-	char buf[80] = "crashdump";
+	char buf[1024];
+	DWORD rv = GetTempPathA(sizeof(buf), buf);
+	if (rv > MAX_PATH || rv == 0)
+		/* error - couldn't get path*/
+		return;
+
+	strcat_s(buf, "crashdump");
 	char timestamp[10];   // time in format hhmmss
 	struct tm newtime;
 	const time_t current = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
@@ -586,7 +604,7 @@ void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 
 	// Write minidump to the file
 	mei.ThreadId = GetCurrentThreadId();
-	mei.ExceptionPointers = pExcPtrs;
+	mei.ExceptionPointers = (EXCEPTION_POINTERS *)pExcPtrs;
 	mei.ClientPointers = FALSE;
 	mci.CallbackRoutine = NULL;
 	mci.CallbackParam = NULL;
@@ -612,13 +630,20 @@ void createMiniDump(EXCEPTION_POINTERS* pExcPtrs)
 	DWORD dwProcessId = GetCurrentProcessId();
 
 	BOOL bWriteDump = pfnMiniDumpWriteDump(
-		hProcess,
-		dwProcessId,
-		hFile,
-		MiniDumpNormal,
-		&mei,
-		NULL,
-		&mci);
+		hProcess,      /* A handle to the process for which the information is 
+					   to be generated.*/
+		dwProcessId,   /* The identifier of the process for which the information 
+					   is to be generated*/
+		hFile,         /* A handle to the file in which the information is to be written*/
+		MiniDumpNormal,  /* A normal minidump contains just the information
+                           necessary to capture stack traces for all of the
+                          existing threads in a process. */
+		&mei,          /* A pointer to a MINIDUMP_EXCEPTION_INFORMATION structure 
+					   describing the client exception that caused the minidump 
+					   to be generated. If the value of this parameter is NULL, 
+					   no exception information is included in the minidump file*/
+		NULL,          /* no user-defined information is included in the minidump file */
+		&mci);         /* no callbacks are performed */
 
 	if (!bWriteDump)
 	{
@@ -766,6 +791,17 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 
 	createMiniDump(ep);
 	StackTrace(ep);  /* print call stack */
+
+	/* floating point error handling is well-defined even without any exception
+	handling, so it should be relatively safe to continue execution 
+	BUT in practise control jumps to main. */
+	if (code == EXCEPTION_FLT_DENORMAL_OPERAND ||
+		code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
+		code == EXCEPTION_FLT_INEXACT_RESULT ||
+		code == EXCEPTION_FLT_OVERFLOW ||
+		code == EXCEPTION_FLT_UNDERFLOW)
+		return EXCEPTION_CONTINUE_EXECUTION;
+
 	return EXCEPTION_EXECUTE_HANDLER;  /* continue execution of the __except block */
 }
 
@@ -773,8 +809,10 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 This version is useful for SetUnhandledExceptionFilter() 
 */
 long filter2(struct _EXCEPTION_POINTERS *ep) {
+	int rcode;
 	int code = ep->ExceptionRecord->ExceptionCode;
-	return filter(code, ep);
+	rcode = filter(code, ep);
+	return EXCEPTION_EXECUTE_HANDLER;  /* override return code from filter */
 }
 
 /* call this to generate one of a variety of errors; test error handling */
