@@ -155,7 +155,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 			std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
 			builder << fnName;
 			if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line))
-				builder << "  " << line.FileName << "(" << line.LineNumber << ")\n";
+				builder << "  " << line.FileName << " (" << line.LineNumber << ")\n";
 			else builder << "\n";
 			if (fnName == "main")
 				break;  /* stop when we get to top level of all code */
@@ -166,11 +166,11 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 			//}
 		}
 		else
-			builder << "(No Symbols: PC == 0)";
+			builder << "(No Symbols: PC.offset == 0)\n";
 		if (!StackWalk64(image_type, process, hThread, &frame, context, NULL,
 			SymFunctionTableAccess64, SymGetModuleBase64, NULL))
 			break;
-		if (++n > 10)
+		if (++n > 20)
 			break;
 	} while (frame.AddrReturn.Offset != 0);
 
@@ -178,7 +178,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	SymCleanup(process);
 
 	// Display the string:
-	printf_s("%s %s", "the program has crashed. Stack Trace; \n",
+	printf_s("%s %s", " Stack Trace; \n",
 		builder.str().c_str());
 	return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -209,7 +209,7 @@ DWORD StackTrace2(void)
 
 	DWORD symOptions = SymGetOptions();
 	symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
-	SymSetOptions(symOptions);
+	SymSetOptions(symOptions); /* set load lines & undecorated names */
 
 	EnumProcessModules(process, &module_handles[0],
 		sizeof(module_handles), &cbNeeded);
@@ -259,14 +259,15 @@ DWORD StackTrace2(void)
 	do {
 		if (frame.AddrPC.Offset != 0) {
 			std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
-			strcat_s(builder, bIxMax - bIx, fnName.c_str());
+			sprintf_s(builder+bIx, bIxMax-bIx, "%-16s ", fnName.c_str());
+			bIx = strlen(builder);
 			if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line)) {
+				strcat_s(builder, bIxMax, line.FileName);
 				bIx = strlen(builder);
-				strcat_s(builder, bIxMax - bIx, "  (line ");
+				sprintf_s(builder+bIx, bIxMax-bIx, " (%4d) \n", line.LineNumber);
 				bIx = strlen(builder);
-				sprintf_s(builder + bIx, bIxMax - bIx, "%4d) \n", line.LineNumber);
 			}
-			else strcat_s(builder, bIxMax - bIx, "\n");
+			else strcat_s(builder, bIxMax, "\n");
 
 			if (fnName == "main")
 				break;    // exit when top level in stack is reached
@@ -292,7 +293,7 @@ DWORD StackTrace2(void)
 	SymCleanup(process);
 
 	// Display the string:
-	fprintf_s(stderr, "%s%s", "the program has crashed; Stack Trace: \n",
+	fprintf_s(stderr, "%s%s", " Stack Trace: \n",
 		builder);
 	free(builder);
 	return EXCEPTION_EXECUTE_HANDLER;
@@ -774,10 +775,6 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 	const char *msg;
 	unsigned long flags;
 
-	int code2 = ep->ExceptionRecord->ExceptionCode;
-	if (code2 != code) {
-		fprintf(stderr, "???\n");
-	}
 	flags = ep->ExceptionRecord->ExceptionFlags;
 
 	/* convert code to a text message in msg */
@@ -794,7 +791,7 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 
 	/* floating point error handling is well-defined even without any exception
 	handling, so it should be relatively safe to continue execution 
-	BUT in practise control jumps to main. */
+	BUT in practise control jumps straight to main. */
 	if (code == EXCEPTION_FLT_DENORMAL_OPERAND ||
 		code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
 		code == EXCEPTION_FLT_INEXACT_RESULT ||
@@ -849,113 +846,112 @@ void testerrors(void) {
 
 	switch (ExceptionType) {
 	case 0: /* SEH */ {
-		// Access violation
-		int *p = 0;
+			// Access violation
+			int *p = 0;
 #pragma warning(disable : 6011)
-		// warning C6011: Dereferencing NULL pointer 'p'
-		*p = 0;
+			// warning C6011: Dereferencing NULL pointer 'p'
+			*p = 0;
 #pragma warning(default : 6011)   
-		break;
-	}
+			break;
+		}
 	case 1: /* terminate */ {
-		// Call terminate
-		terminate();
-		break;
-	}
+			// Call terminate
+			terminate();
+			break;
+		}
 	case 2: /* unexpected */ {
-		// Call unexpected
-		unexpected();
-		break;
-	}
+			// Call unexpected
+			unexpected();
+			break;
+		}
 	case 3: /* pure virtual method call */ {
-		// pure virtual method call
-		//CDerived derived;
-		break;
-	}
+			// pure virtual method call
+			//CDerived derived;
+			break;
+		}
 	case 4: /* invalid parameter */ {
-		char* formatString;
-		// Call printf_s with invalid parameters.
-		formatString = NULL;
+			char* formatString;
+			// Call printf_s with invalid parameters.
+			formatString = NULL;
 #pragma warning(disable : 6387)
-		// warning C6387: 'argument 1' might be '0': this does
-		// not adhere to the specification for the function 'printf'
-		printf(formatString);
+			// warning C6387: 'argument 1' might be '0': this does
+			// not adhere to the specification for the function 'printf'
+			printf(formatString);
 #pragma warning(default : 6387)   
-
-		break;
-	}
+			break;
+		}
 	case 5: /* new operator fault */ {
-		// Cause memory allocation error
-		const int BIG_NUMBER = 0x7fffffff;  /* try to allocate 1 terabyte*/
-		size_t *pi = new size_t[BIG_NUMBER];
-		delete[]pi;
-		break;
-	}
+			// Cause memory allocation error
+			const int BIG_NUMBER = 0x7fffffff;  /* try to allocate 1 terabyte*/
+			size_t *pi = new size_t[BIG_NUMBER];
+			delete[]pi;
+			break;
+		}
 	case 6: /* SIGABRT */ {
-		// Call abort
-		abort();
-		break;
-	}
+			// Call abort
+			abort();
+			break;
+		}
 	case 7: /* SIGFPE */ {
-		// floating point exception ( /fp:except compiler option)
-		double x = 0, y = 1, z;
-		z = y / x;  /* generate divide error */
-		printf("z= %g \n", z); /* stop optimiser from removing test code */
-		break;
-	}
+			// floating point exception ( /fp:except compiler option)
+			double x = 0, y = 1, z;
+			z = y / x;  /* generate divide error */
+			printf("z= %g \n", z); /* stop optimiser from removing test code */
+			break;
+		}
 	case 8: /* SIGILL */ {
-		raise(SIGILL);
-		break;
-	}
+			raise(SIGILL);
+			break;
+		}
 	case 9: /* SIGINT */ {
-		raise(SIGINT);
-		break;
-	}
+			raise(SIGINT);
+			break;
+		}
 	case 10: /* SIGSEGV */ {
-		raise(SIGSEGV);
-		break;
-	}
+			raise(SIGSEGV);
+			break;
+		}
 	case 11: /* SIGTERM */ {
-		raise(SIGTERM);
-		break;
-	}
+			raise(SIGTERM);
+			break;
+		}
 	case 12: /* RaiseException */ {
-		// Raise noncontinuable software exception
-		RaiseException(124, EXCEPTION_NONCONTINUABLE, 0, NULL);
-		break;
-	}
+			// Raise noncontinuable software exception
+			RaiseException(124, EXCEPTION_NONCONTINUABLE, 0, NULL);
+			break;
+		}
 
 	case 13: /* throw */ {
-		// Throw typed C++ exception.
-		throw std::range_error("test for throw");
-		//throw 13;
-		break;
-	}
+			// Throw typed C++ exception.
+			throw std::range_error("test for throw");
+			//throw 13;
+			break;
+		}
 	case 14: /* SEH exception */ {
-		int x = 1, y = 0, z;
-		z = x / (2 - x - x);  /* divide by zero */
-		printf("z=%d\n", z);
-		break;
-	}
+			int x = 1, y = 0, z;
+			z = x / (2 - x - x);  /* divide by zero */
+			printf("z=%d\n", z);
+			break;
+		}
 	case 15: /* floating point overflow */ {
-		double z = std::pow(DBL_MAX, 2);
-		printf("z=%g\n", z);
-		break;
-	}
+			double z = std::pow(DBL_MAX, 2);
+			printf("z=%g\n", z);
+			break;
+		}
 	case 16: /* floating point invalid */ {
-		double z = std::acos(2);
-		printf("z=%g\n", z);
-		break;
-	}
+			double z = std::acos(2);
+			printf("z=%g\n", z);
+			break;
+		}
 	case 17: /* raise FPE */ {
-		raise(SIGFPE);  
-		break;
-	}
+			raise(SIGFPE);  
+			break;
+		}
 
 	default: {
-		printf("Unknown exception type %d specified. \n", ExceptionType);
-		break;
-	}
+			printf("Unknown exception type %d specified. \n", ExceptionType);
+			break;
+		}
 
 		break;
 	}
