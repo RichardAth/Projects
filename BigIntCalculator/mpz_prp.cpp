@@ -388,6 +388,7 @@ int mpz_bpsw_prp(const mpz_t n)
 	if ((ret == PRP_COMPOSITE) || (ret == PRP_PRIME))
 		return ret;
 
+	/* if ret == PRP_PRP i.e. could be prime (but maybe not) use selfridge test */
 	return mpz_selfridge_prp(n);  /* is it a strong Lucas pseudoprime? */
 
 }/* method mpz_bpsw_prp */

@@ -736,17 +736,18 @@ static Znum llt(const Znum &p) {
 	clock_t t1, t2, t3;
 
 	/* 1st check if p is prime. Maybe better to use mpz_bpsw_prp instead?*/
-#ifdef __MPIR_VERSION
-	static gmp_randstate_t state;
-	static bool first = true;
-	if (first) {
-		gmp_randinit_default(state);
-		first = false;
-	}
-	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
-#else
-	rv = mpz_probab_prime_p(ZT(p), 16); /* returns 0, 1 or 2*/
-#endif 
+//#ifdef __MPIR_VERSION
+//	static gmp_randstate_t state;
+//	static bool first = true;
+//	if (first) {
+//		gmp_randinit_default(state);
+//		first = false;
+//	}
+//	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
+//#else
+//	rv = mpz_probab_prime_p(ZT(p), 16); /* returns 0, 1 or 2*/
+//#endif 
+	rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1 or 2*/
 	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
 	if (rv == 0) {
 		lltTdivCnt++;  // count this result as found by trial division
@@ -2629,7 +2630,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	// 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
 	t2 = t * 2;
 	r = t2 + 1;
-	while (!mpz_likely_prime_p(ZT(r), state, 0))
+	while (mpz_bpsw_prp(ZT(r)) == 0)
+	//while (!mpz_likely_prime_p(ZT(r), state, 0))
 		r += t2;
 
 
@@ -2638,7 +2640,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 
 	// 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
 	p = p0;
-	while (!mpz_likely_prime_p(ZT(p), state, 0))
+	while (mpz_bpsw_prp(ZT(p)) == 0)
+	//while (!mpz_likely_prime_p(ZT(p), state, 0))
 		p += 2 * r*s;
 	return;
 }
@@ -2654,7 +2657,7 @@ static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 		gordon(p, state, bits / 2);
 		gordon(q, state, bits / 2);
 		x = p * q;
-	}
+	} 
 	return;
 }
 
@@ -3580,10 +3583,12 @@ int main(int argc, char *argv[]) {
 #endif
 	//f.sigfpe = 1;      /* trap floating point error signal */
 	SetProcessExceptionHandlers(f);
-	// Suppress the abort message
-	_set_abort_behavior(0, _WRITE_ABORT_MSG);
 
+	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
+	functions that actually work OK */
 	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
+	//err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW | _EM_INVALID,
+		//MCW_EM);
 	/* trap hardware FP exceptions except inexact and underflow which are
 	considered to be normal, not errors. */
 	if (err) {

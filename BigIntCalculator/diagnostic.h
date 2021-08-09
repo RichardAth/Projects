@@ -28,7 +28,6 @@ static void SigsegvHandler(int);
 static void SigtermHandler(int);
 void SigfpeHandler(int sig, int num);
 
-int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep);
 unsigned long StackTrace(const EXCEPTION_POINTERS *ep);
 unsigned long StackTrace2(void);
 void InvalidParameterHandler(const wchar_t* expression,
@@ -46,7 +45,7 @@ void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs);
 /* Structured Exception Handler. called if the __except section of a function is
 entered, . This can happen for a variety of causes, e.g. signals, divide errors etc.
 */
-int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep);
+int filter(unsigned int code, const struct _EXCEPTION_POINTERS *ep);
 
 /* does same as filter, but doesn't need code value */
 long filter2(struct _EXCEPTION_POINTERS *ep);

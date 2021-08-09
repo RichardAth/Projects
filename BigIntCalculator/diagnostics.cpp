@@ -467,8 +467,10 @@ int handle_program_memory_depletion(size_t memsize)
 /* set up exception handlers; caller specifies which are required using flags */
 void SetProcessExceptionHandlers(flags f)
 {
+#ifndef _DEBUG
 	/* send errors to calling process */
-	SetErrorMode(SEM_FAILCRITICALERRORS & SEM_NOGPFAULTERRORBOX);
+	SetErrorMode(SEM_FAILCRITICALERRORS);
+#endif
 
 /* if you use C++ exception handling: install a translator function
 with set_se_translator() or use SetUnhandledExceptionFilter(). In the 
@@ -500,15 +502,17 @@ the interesting stack-frames being gone by the time you do the dump.  */
 	// Set up C++ signal handlers
 
 	if (f.abort) {
-		// Suppress the abort message
+		// Suppress the abort message (debug only, has no effect in release)
 		_set_abort_behavior(0, _WRITE_ABORT_MSG);
 		// Catch an abnormal program termination
 		signal(SIGABRT, SigabrtHandler);
 	}
 
 	// Catch interrupt handler
-	if (f.interrupt)
-		signal(SIGINT, SigintHandler);
+	if (f.interrupt) {
+		signal(SIGINT,   SigintHandler);     // interrupt (Ctrl - C)
+		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+	}
 
 	// Catch a termination request
 	if (f.sigterm)
@@ -751,15 +755,14 @@ const char *getText(const int errorcode) {
 /* Structured Exception Handler Filter. called if the __except section of a 
 function is entered. This can happen for a variety of causes, e.g. signals, 
 divide errors etc. 
-return Value 	                   Meaning
 
+return Value 	                   Meaning
 EXCEPTION_EXECUTE_HANDLER 0x1      Return from UnhandledExceptionFilter and
 								   execute the associated exception handler.
 								   This usually results in process termination.
 
-EXCEPTION_CONTINUE_EXECUTION
-0xffffffff                         Return from UnhandledExceptionFilter and
-								   continue execution from the point of the
+EXCEPTION_CONTINUE_EXECUTION       Return from UnhandledExceptionFilter and
+0xffffffff                         continue execution from the point of the
 								   exception. Note that the filter function is
 								   free to modify the continuation state by
 								   modifying the exception information supplied
@@ -770,7 +773,7 @@ EXCEPTION_CONTINUE_SEARCH 0x0      Proceed with normal execution of
 								   the SetErrorMode flags, or invoking the
 								   Application Error pop-up message box.
 */
-int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
+int filter(unsigned int code, const struct _EXCEPTION_POINTERS *ep)
 {
 	const char *msg;
 	unsigned long flags;
@@ -796,7 +799,8 @@ int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep)
 		code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
 		code == EXCEPTION_FLT_INEXACT_RESULT ||
 		code == EXCEPTION_FLT_OVERFLOW ||
-		code == EXCEPTION_FLT_UNDERFLOW)
+		code == EXCEPTION_FLT_UNDERFLOW ||
+		code == EXCEPTION_FLT_INVALID_OPERATION)
 		return EXCEPTION_CONTINUE_EXECUTION;
 
 	return EXCEPTION_EXECUTE_HANDLER;  /* continue execution of the __except block */
@@ -808,6 +812,15 @@ This version is useful for SetUnhandledExceptionFilter()
 long filter2(struct _EXCEPTION_POINTERS *ep) {
 	int rcode;
 	int code = ep->ExceptionRecord->ExceptionCode;
+
+	//if (code == EXCEPTION_FLT_DENORMAL_OPERAND ||
+	//	code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
+	//	code == EXCEPTION_FLT_INEXACT_RESULT ||
+	//	code == EXCEPTION_FLT_OVERFLOW ||
+	//	code == EXCEPTION_FLT_UNDERFLOW ||
+	//	code == EXCEPTION_FLT_INVALID_OPERATION)
+	//	return EXCEPTION_CONTINUE_EXECUTION;
+
 	rcode = filter(code, ep);
 	return EXCEPTION_EXECUTE_HANDLER;  /* override return code from filter */
 }
