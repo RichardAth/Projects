@@ -961,7 +961,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 	} /* end prime not 2 */
 }
 
-/* compute 3 values the squares of which add up to s *2^r, return values in quads */
+/* compute 3 values the squares of which add up to s *2^2r, return values in quads */
 static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
 	int m = 0;
@@ -969,6 +969,8 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	if (s == 3) {
 		quads[0] = quads[1] = quads[2] = 1;
 		quads[3] = 0;
+		for (int ix = 0; ix <= 2; ix++)
+			mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
 		return;
 	}
 
@@ -979,7 +981,7 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		for (s3 = s2, m = 0; ZisEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
-		/* we know s3 is odd, need to check whether s3 mod 4 = 1*/
+		/* we know s3 is odd, need to check whether s3 mod 4 = 1 */
 		if ((s3 & 3) != 1)
 			continue;
 		/* In general, to establish whether or not s3 can be expressed as the sum of 2 

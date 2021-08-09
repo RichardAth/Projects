@@ -848,14 +848,11 @@ void testerrors(void) {
 	printf("17 - SIGFPE (raise) \n");
 	printf("Your choice >  ");
 
-	int ExceptionType = 0;
-	
-	scanf_s("%d", &ExceptionType);
-	char c = '\0';
-	while (true) {
-		c = getchar();  /* remove unwanted chars from stdin up to newline */
-		if (c == '\n') break;
-	}
+	int ExceptionType = 9999;
+	char buffer[256];
+	fgets(buffer, sizeof(buffer), stdin);
+	int rv = sscanf_s(buffer, "%d", &ExceptionType);
+
 
 	switch (ExceptionType) {
 	case 0: /* SEH */ {
@@ -910,6 +907,7 @@ void testerrors(void) {
 			double x = 0, y = 1, z;
 			z = y / x;  /* generate divide error */
 			printf("z= %g \n", z); /* stop optimiser from removing test code */
+			y++;
 			break;
 		}
 	case 8: /* SIGILL */ {
@@ -948,6 +946,11 @@ void testerrors(void) {
 		}
 	case 15: /* floating point overflow */ {
 			double z = std::pow(DBL_MAX, 2);
+			printf("z=%g\n", z);
+			z = DBL_MAX;
+			printf("z=%g\n", z);
+			z *= 100.0;
+			z -= 1.0;
 			printf("z=%g\n", z);
 			break;
 		}
