@@ -436,7 +436,7 @@ static long long NoOfBits(const Znum &n) {
 	return result;
 }
 
-/* IsPrime(n): returns zero if n is definately composite,  -1 if it is a probable prime, */
+/* IsPrime(n): returns zero if n is definitely composite,  -1 if it is a probable prime, */
 static int PrimalityTest(const Znum &Value) {
 	int rv;
 	assert(Value >= 0);
@@ -448,9 +448,10 @@ static int PrimalityTest(const Znum &Value) {
 		gmp_randinit_default(state);
 		first = false;
 	}
-		rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+	rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+	//rv = mpz_likely_prime_p(ZT(Value), state, 0);
 #else
-		rv = mpz_probab_prime_p(ZT(Value), 16);
+	rv = mpz_probab_prime_p(ZT(Value), 16);
 #endif 
 	/* rv is 1 if n is probably prime, or 0 if n is definitely composite.*/
 	if (rv == 1)

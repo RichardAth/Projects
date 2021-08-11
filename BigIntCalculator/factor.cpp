@@ -988,19 +988,19 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		squares, it would be necessary to factorise it and examine all the factors.
 		However, if s3 is prime, we know it can be so expressed, and can easily find
 		two squares. If s3 is not prime we keep on looking. */
-//#ifdef __MPIR_VERSION
-//		static bool first = true;
-//		static gmp_randstate_t rstate;
-//		if (first) {
-//			gmp_randinit_default(rstate);
-//			first = false;
-//		}
-//
-//		auto rv = mpz_likely_prime_p(ZT(s3), rstate, 0);
-//#else
-//		auto rv = mpz_probab_prime_p(ZT(s3), 16);
-//#endif
-		auto rv = mpz_bpsw_prp(ZT(s3)); /* rv = 0 for composite, 1 = probable prime, 2 = definite prime*/
+#ifdef __MPIR_VERSION
+		static bool first = true;
+		static gmp_randstate_t rstate;
+		if (first) {
+			gmp_randinit_default(rstate);
+			first = false;
+		}
+
+		auto rv = mpz_probable_prime_p(ZT(s3), rstate, 16, 0);
+#else
+		auto rv = mpz_probab_prime_p(ZT(s3), 16);
+#endif
+		//auto rv = mpz_bpsw_prp(ZT(s3)); /* rv = 0 for composite, 1 = probable prime, 2 = definite prime*/
 		if (rv != 0) {
 			/* s3 is prime of form 4k+1 */
 			ComputeFourSquares(s3, quads[0], quads[1], quads[2], quads[3]);

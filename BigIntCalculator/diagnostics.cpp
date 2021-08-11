@@ -361,6 +361,9 @@ FPE_INVALID			0x81   This exception occurs when the result of an operation is
 						   ill-defined, such as (0.0 / 0.0). If trapping is enabled,
 						   the floating-point-invalid condition is signalled.
 						   Otherwise, a quiet NaN is returned.
+						   Also occurs if, when attempting to convert to an integer,
+						   it cannot be converted because it is a NaN, infinite or 
+						   outside the integer range.
 FPE_DENORMAL		0x82   operation results in a denormalized float?
 FPE_ZERODIVIDE		0x83   This exception occurs when a float is divided by zero.
 						   If trapping is enabled, the  divide-by-zero condition
@@ -435,6 +438,7 @@ void SigsegvHandler(int sig) {
 	exit(EXIT_FAILURE);
 }
 
+/* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) */
 void SigintHandler(int sig) {
 	fprintf(stderr, "Interrupt \n");
 	StackTrace2();
@@ -954,7 +958,22 @@ void testerrors(void) {
 			printf("z=%g\n", z);
 			break;
 		}
-	case 16: /* floating point invalid */ {
+	case 16: /* floating point invalid 
+			 This exception is raised if the given operands are invalid for the 
+			 operation to be performed. Examples are (see IEEE 754, section 7):
+
+             Addition or subtraction: &infin; - &infin;. (But &infin; + &infin; = &infin;).
+             Multiplication: 0 &middot; &infin;.
+             Division: 0/0 or &infin;/&infin;.
+             Remainder: x REM y, where y is zero or x is infinite.
+             Square root if the operand is less then zero. More generally, any 
+			 mathematical function evaluated outside its domain produces this exception.
+             Conversion of a floating-point number to an integer or decimal string, 
+			 when the number cannot be represented in the target format (due to 
+			 overflow, infinity, or NaN).
+             Conversion of an unrecognizable input string.
+             Comparison via predicates involving < or >, when one or other of the
+			 operands is NaN. */ {
 			double z = std::acos(2);
 			printf("z=%g\n", z);
 			break;
