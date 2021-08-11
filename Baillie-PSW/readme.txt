@@ -2,6 +2,9 @@ Freeware copyright (c) 2009 Thomas R. Nicely <http://www.trnicely.net>.
  see https://web.archive.org/web/20131208185421/http://trnicely.net/misc/bpsw1.zip
  Released into the public domain by the author, who disclaims any legal
  liability arising from its use.
+
+ Dr Nicely died Wednesday, September 11, 2019, 
+ see https://www.lynchburg.edu/news/2019/09/remembering-dr-thomas-nicely-legendary-teacher-who-discovered-pentium-bug/
  
  NOTE: Most of the functions called in this code are defined and
  implemented in the separately downloadable support files trn.h and
@@ -50,6 +53,10 @@ Freeware copyright (c) 2009 Thomas R. Nicely <http://www.trnicely.net>.
  has verified that none exists for N < 10^15. If a BPSW
  pseudoprime is detected (a significant and highly unexpected
  event), it will be reported directly to the screen.
+
+ Note: according to 
+ https://web.archive.org/web/20191121062007/http://www.trnicely.net/misc/bpsw.html
+ there is no pseudoprime below 2^64 (approximately 1.845*10^19)
  
  See the documentation in the individual modules for additional
  details, including bibliographies. These modules are part of

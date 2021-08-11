@@ -3,6 +3,7 @@
 #include "factor.h"
 const char * myTime(void);  // get time as hh:mm:ss
 
+/* Note: the path specified here can be overwritten by a path specified in the .ini file */
 #ifndef _DEBUG
 std::string YafuPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Release";
@@ -18,6 +19,7 @@ static std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
+/* delete file specified by path + FileName */
 void delfile(const std::string &path,  const char * FileName) {
 	std::string fname;
 	struct __stat64 fileStat;
@@ -74,8 +76,7 @@ char * getFileName(const char *filter, HWND owner) {
 
 /* replace path and/or program name, 
 return true if change actually made. 
-otherwise return false
-*/
+otherwise return false */
 bool changepath(std::string &path, std::string &prog) {
 	bool rewrite = false;
 	char * newpathC;
@@ -181,6 +182,7 @@ static void inifile(std::string &param) {
 			std::cout << "ggnfs_dir parameter not found \n";
 	}
 
+	/* should we change/add the ggnfs_dir parameter?*/
 	if (!param.empty() && toupper(param[0]) == 'I') {
 		std::string newFname = YafuPath + "\\" + "yafu.new";
 		std::string oldFname = YafuPath + "\\" + "yafu.old";

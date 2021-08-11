@@ -388,6 +388,7 @@ int mpz_bpsw_prp(const mpz_t n)
 	if ((ret == PRP_COMPOSITE) || (ret == PRP_PRIME))
 		return ret;
 
+	/* if ret == PRP_PRP i.e. could be prime (but maybe not) use selfridge test */
 	return mpz_selfridge_prp(n);  /* is it a strong Lucas pseudoprime? */
 
 }/* method mpz_bpsw_prp */
@@ -7885,10 +7886,10 @@ int mpz_aprtcle(const mpz_t N, const int verbose)
 		return APRTCLE_COMPOSITE;
 
 
-	/* If the input number is larger than 20000 decimal digits
+	/* If the input number is larger than 6021 decimal digits
 	   we will just return whether it is a BPSW (probable) prime */
 	NumberLength = mpz_sizeinbase(N, 10);
-	if (NumberLength > 20000)
+	if (NumberLength > 6021)
 	{
 		if (verbose >= APRTCLE_VERBOSE2)
 			printf(" Info: Number too large, returning BPSW(N)\n");

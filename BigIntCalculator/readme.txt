@@ -88,13 +88,17 @@ B. Test whether the number is prime:
    If it is a Carmichael number factorise it using a specific algorithm. 
    If it is prime mark it as such. 
    Otherwise either:
+      factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
+      used for numbers between 30 and 95 digits. This method is alway used for 
+      numbers less than 2^192 (58 digits)
+  OR
       factorise it using Msieve. Using modified Msieve that makes more use of
    elliptic curve factorisation than the standard version (even with the e option)
    does, this is nearly always the fastest for larger numbers that would use SIQS 
    for factorisation.
-      or factorise it using YAFU
-      or factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
-   used for numbers between 30 and 95 digits.
+   OR
+      factorise it using YAFU
+
 
 The built-in factoriser is essentially DAs program, with an interface function 
 that converts GMP/MPIR extended precision numbers to DAs BigIntegers and vice 
@@ -242,13 +246,13 @@ in the ggnfs_dir parameter of the YAFU.ini file.
 
  Use Msieve directly
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
-                 about 30 mins vs 1 hour using DA's code. 
+                 about 5 mins vs 1 hour using DA's code. 
  Disadvantage:   Build is tricky & Calculator is basic, and result isn't sent to
                  console window. default is that input & output are from/to files, 
 				 not console window.
 
 Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number 
-                 2^311-1 it took about 13 mins
+                 2^311-1 it took about 80 sec.
                  needs GGNFS for large numbers > about 95 digits. 
                  try https://mersenneforum.org/attachment.php?attachmentid=18244&d=1525946072
                  https://www.mersenneforum.org/showthread.php?t=22215&page=5
@@ -292,15 +296,15 @@ comparision operators <, <=, ==, !=, >, and >= are similar in all three. The cal
 returns -1 for true, 0 for false. This allows this allows AND, OR, XOR and NOT to operate
 on the returned values as if they were boolean variables.
 
-#(primorial) !(factorial) and !!(double factorial) operators have the highest priority, 
+#(primorial) !(factorial) and !..!(multi-factorial) operators have the highest priority, 
 above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the default order
 of evaluation apply.
 
 the following functions and operators are only in the calculator
 n!                                  factorial
-n!!                                 double factorial, not to be confused with (n!)!
-n#                                  primorial. (DA's calculator requires n to be prime)
+n!..!                               multi-factorial, not to be confused with (n!)!
+n#                                  primorial. 
 
 B(n)                                Previous probable prime before n
 F(n)                                Fibonacci number Fn
@@ -348,8 +352,8 @@ Some functions and operators limit the range of their parameters:
                                     appears to be > 20,000 digits an error will be reported.
 / (division)                        divisor must not be zero
 % (modulus)                         modulus must not be zero
-! (factorial)                       0 < number <= 5984 (limits result to 20,000 digits)	
-!! (double factorial)               0 < number <= 11081	(limits result to 20,000 digits)
+! (factorial & multi-factorial)     0 < number <= 11081 (limits result to 20,000 digits)	
+
 # (primorial)                       0 < number <= 46340 (limits result to 20,000 digits)
 nCk (binomial coefficient)          (-2^31 <= k <= 2^31-1)	
 << and >> (shift operators)         -2^63 <= bitshift value <= 2^63-1
@@ -385,8 +389,8 @@ TEST2   test factorisation using pseudo-random numbers of a specified size.
 TEST3    Tests for the built-in bigintegers. These are based on DA's biginteger 
          functions but made into a C++ class with arithmetic , shift, compare 
          operators, etc implemented. However the built-in bigintegers are now 
-         only used in the the built-in ECM & SIQS, which themselver are not 
-         normally used, so this test is not normally included.
+         only used in the the built-in ECM & SIQS, which themselves are normally 
+         only used for numbers up to 2^192, so this test is not normally included.
 
 TEST4     test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
           this test will take over an hour.
@@ -395,6 +399,50 @@ TEST5     tests using only YAFU for factorisation. Note that these tests bypass 
           trial division etc normally used and rely on YAFU for all the factorisation.
 
 TEST6     tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
+
+TEST7     tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= num are
+          tested to see whether 2^p-1 is prime or not. The default value for num is
+          12000.   Sample output:
+
+            test7 87000
+            18:47:15 2^2 -1 is prime ***
+            18:47:15 2^3 -1 is prime ***
+            18:47:15 2^5 -1 is prime ***
+            18:47:15 2^7 -1 is prime ***
+            18:47:15 2^13 -1 is prime ***
+            18:47:15 2^17 -1 is prime ***
+            18:47:15 2^19 -1 is prime ***
+            18:47:15 2^31 -1 is prime ***
+            18:47:15 2^61 -1 is prime ***
+            18:47:15 2^89 -1 is prime ***
+            18:47:15 2^107 -1 is prime ***
+            18:47:15 2^127 -1 is prime ***
+            18:47:15 2^521 -1 is prime ***
+            18:47:15 2^607 -1 is prime ***
+            18:47:16 2^1279 -1 is prime ***
+            18:47:16 2^2203 -1 is prime ***
+            18:47:16 2^2281 -1 is prime ***
+            18:47:17 2^3217 -1 is prime ***
+            18:47:18 2^4253 -1 is prime ***
+            18:47:18 2^4423 -1 is prime ***
+            18:47:53 2^9689 -1 is prime ***
+            18:47:56 2^9941 -1 is prime ***
+            18:48:15 2^11213 -1 is prime ***
+            18:55:42 2^19937 -1 is prime ***
+            18:57:54 2^21701 -1 is prime ***
+            19:00:14 2^23209 -1 is prime ***
+            20:33:19 2^44497 -1 is prime ***
+            08:18:34 2^86243 -1 is prime ***
+            Found 28 Mersenne primes  out of 8450 numbers tested
+            2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203, 2281, 
+            3217, 4253, 4423, 9689, 9941, 11213, 19937, 21701, 23209, 44497, 86243,
+            0.33% primes found by llt
+            99.67% composites found by llt
+            08:40:38 test 7 completed time used =  13h 53 min 23.314sec
+
+          This has found the 1st 28 Mersenne primes in less than 14 hours. The 
+          last of these was originally found in 1982 using a mult-million $ Cray
+          supercomputer. Talk about standing on the shoulders of giants!
 
 Test example:
 

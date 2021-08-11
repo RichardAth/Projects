@@ -72,6 +72,9 @@
     <ClCompile Include="FileVersionInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="diagnostics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">
@@ -92,12 +95,18 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="diagnostic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt">
       <Filter>Source Files</Filter>
     </Text>
     <Text Include="mpz_prp_readme.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="docfile.txt">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>

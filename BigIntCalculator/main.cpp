@@ -12,13 +12,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma fenv_access (on)
 
 #include "pch.h"
+#include "bignbr.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
 #include "factor.h"
 #include <stack>
+#include "diagnostic.h"
 
 //#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
@@ -32,6 +35,7 @@ void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
 void biperm(int n, Znum &result);   // declaration for external function
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
+char * getFileName(const char *filter, HWND owner);
 
 
 /* get time in format hh:mm:ss */
@@ -64,7 +68,7 @@ HANDLE hConsole;
 same as C or Python. */
 enum class opCode {
 	fact        = 21,	// !   factorial 
-	dfact       = 22,	// !!  double factorial
+	//dfact       = 22,	// !!  double factorial
 	prim        = 23,	// #   primorial
 	unary_minus =  1,   // C and Python put unary minus above multiply, divide & modulus
 	not         = 16,   // C and Python put bitwise not with unary minus
@@ -90,18 +94,17 @@ enum class opCode {
 	rightb		= 24,              // right bracket (must be highest value)
 };
 
-/* list of operator priority values. lower value = higher priority. Note: this 
-order is not the same as C or Python. The priority value is obtained by using 
-the opCode (cast to an integer) as the index. */
-
+/* list of operators. Priority values lower value = higher priority. Note: this 
+order is not the same as C or Python. The operator attributes are obtained by 
+using the opCode (cast to an integer) as the index. */
 
 struct attrs {
-	int pri;
+	int pri;  /* operator precedence, 0 is highest, 99 is lowest */
 	bool left;   /* associativity ; true = left to right, false = right to left 
 		    operators with the same precedence must have the same associativity. */
 	bool pre;    /* true if unary operator e.g. - precedes expression, false if
 				    it follows e.g. !, otherwise not used */
-	int numOps;  /* number of operands; 1 = unary, or 2, or 0 for bracket)*/
+	int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 
 const static attrs opr[] = {
@@ -433,7 +436,7 @@ static long long NoOfBits(const Znum &n) {
 	return result;
 }
 
-/* IsPrime(n): returns zero if n is definately composite,  -1 if it is a probable prime, */
+/* IsPrime(n): returns zero if n is definitely composite,  -1 if it is a probable prime, */
 static int PrimalityTest(const Znum &Value) {
 	int rv;
 	assert(Value >= 0);
@@ -445,9 +448,10 @@ static int PrimalityTest(const Znum &Value) {
 		gmp_randinit_default(state);
 		first = false;
 	}
-		rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+	rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+	//rv = mpz_likely_prime_p(ZT(Value), state, 0);
 #else
-		rv = mpz_probab_prime_p(ZT(Value), 16);
+	rv = mpz_probab_prime_p(ZT(Value), 16);
 #endif 
 	/* rv is 1 if n is probably prime, or 0 if n is definitely composite.*/
 	if (rv == 1)
@@ -523,11 +527,8 @@ mode	Order of factors	Repeated factors
 */
 static Znum  FactConcat(const Znum &mode, const Znum &num) {
 	fList factorlist;
-	std::string result;
-	Znum rvalue = 0;
 	const bool descending = ((mode & 1) == 1);
 	const bool repeat = ((mode & 2) == 2);
-	char *buffer = NULL;
 
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
@@ -737,17 +738,18 @@ static Znum llt(const Znum &p) {
 	clock_t t1, t2, t3;
 
 	/* 1st check if p is prime. Maybe better to use mpz_bpsw_prp instead?*/
-#ifdef __MPIR_VERSION
-	static gmp_randstate_t state;
-	static bool first = true;
-	if (first) {
-		gmp_randinit_default(state);
-		first = false;
-	}
-	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
-#else
-	rv = mpz_probab_prime_p(ZT(p), 16); /* returns 0, 1 or 2*/
-#endif 
+//#ifdef __MPIR_VERSION
+//	static gmp_randstate_t state;
+//	static bool first = true;
+//	if (first) {
+//		gmp_randinit_default(state);
+//		first = false;
+//	}
+//	rv = mpz_probable_prime_p(ZT(p), state, 16, 0);
+//#else
+//	rv = mpz_probab_prime_p(ZT(p), 16); /* returns 0, 1 or 2*/
+//#endif 
+	rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1 or 2*/
 	/* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
 	if (rv == 0) {
 		lltTdivCnt++;  // count this result as found by trial division
@@ -844,6 +846,7 @@ enum class fn_Code {
 	fn_numfact,
 	fn_minfact,
 	fn_maxfact,
+	fn_ispow,
 	fn_invalid = -1,
 } ;
 
@@ -856,7 +859,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would 
  conflict with the C operator. Longer names must come before short ones 
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 30> functionList{
+const static std::array <struct functions, 31> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -887,6 +890,7 @@ const static std::array <struct functions, 30> functionList{
 	"JA",		 2,  fn_Code:: fn_jacobi,
 	"KR",		 2,  fn_Code::fn_kronecker,
 	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
+	"ISPOW",     1,  fn_Code::fn_ispow,
 };
 
 /* Do any further checks needed on the parameter values, then evaluate the function. 
@@ -961,15 +965,19 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 	case fn_Code::fn_fib: {		// fibonacci
-		if (p1 < 0) {
-			return retCode::EXPR_INVALID_PARAM;
-		}
-		if (p1 > 95700)
-		{
+		if (p1 > 95700 || p1 < -95700)
+		{  /* result would exceed 20,000 digits */
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		}
 		long long temp = MulPrToLong(ZT(p1));
+		bool neg = false;
+		if (temp < 0) {
+			/* is it a "negafibonacci" number? */
+			if ((temp & 1) == 0) { neg = true; } /* set for even -ve number */
+			temp = -temp;
+		}
 		mpz_fib_ui(ZT(result), temp);  // calculate fibonacci number
+		if (neg) { result = -result; } /* flip sign for even -ve number */
 		break;
 	}
 	case fn_Code::fn_luc: {		// lucas number
@@ -1029,20 +1037,15 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		result = R3(p1);
 		break;
 	}
-	case fn_Code::fn_legendre: {
-		/* p2 must be an odd positive prime */
-		result = mpz_legendre(ZT(p1), ZT(p2));
-		break;
-	}
-	case fn_Code::fn_jacobi: {
-		/*p2 must be odd */
+
+	/* legendre & kronecker are in fact implemented as aliases of jacobi in MPIR */
+	case fn_Code::fn_legendre: 
+	case fn_Code::fn_jacobi: 
+	case fn_Code::fn_kronecker: {
 		result = mpz_jacobi(ZT(p1), ZT(p2));
 		break;
 	}
-	case fn_Code::fn_kronecker: {
-		result = mpz_kronecker(ZT(p1), ZT(p2));
-		break;
-	}
+
 	case fn_Code::fn_llt: {
 		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
 		if (p1 >= 0 && p1 <= INT_MAX) {
@@ -1123,6 +1126,23 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		result = ComputeMaxFact(p1);
 		break;
 	}
+	case fn_Code::fn_ispow: {
+		/* return -1 if p1 is a perfect power, otherwise 0 */
+			long long MaxP = 393'203;  // use 1st  33333 primes
+			if ((long long)primeListMax < MaxP) {  // get primes
+				generatePrimes(MaxP);  // takes a while, but only needed on 1st call
+			}
+			Znum base;
+			long long exp = PowerCheck(p1, base, 2);
+			if (exp > 1) {
+				std::cout << p1 << " = " << base << "^" << exp << '\n';
+				result = -1;
+			}
+			else {
+				result = 0;
+			}
+			break;
+		}
 
 	default:
 		abort();		// if we ever get here we have a problem
@@ -1245,7 +1265,7 @@ void generatePrimes(unsigned long long int max_val) {
 }
 
 /* process one operator with 1 or 2 operands. 
-NOT, unary minus, factorial, double factorial and primorial  have 1 operand. 
+NOT, unary minus and primorial  have 1 operand. 
 All the others have two. Some operators can genererate an error condition 
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
 static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
@@ -1372,23 +1392,36 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
-		if(firstArg > 5984)
-			return retCode::EXPR_INTERM_TOO_HIGH;
+		/* hard-coded limits allow size limit check before calculating the factorial */
+		int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
+			 38536, 42873, 47172 };
 		if (firstArg < 0)
 			return retCode::EXPR_INVALID_PARAM;
+		if (firstArg > LLONG_MAX)
+			return retCode::EXPR_NUMBER_TOO_HIGH;
+
 		long long temp = llabs(MulPrToLong(firstArg));
-		mpz_fac_ui(ZT(result), temp);  // get factorial
-		return retCode::EXPR_OK;
-	}
-	case opCode::dfact: {
-		if (firstArg > 11081)
+		long long t2 = MulPrToLong(secondArg);
+		if (t2 < sizeof(limits)/sizeof(limits[0]) && temp > limits[t2])
+			/* more than 20,000 digits in base 10 */
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (firstArg < 0)
-			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(firstArg));
-		mpz_2fac_ui(ZT(result), temp);  // get double factorial
+		
+		mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
+		if (ZT(result)->_mp_size > 1039)
+			/* more than 20,000 digits in base 10 */
+			return retCode::EXPR_INTERM_TOO_HIGH;
+
 		return retCode::EXPR_OK;
 	}
+	//case opCode::dfact: {
+	//	if (firstArg > 11081)
+	//		return retCode::EXPR_INTERM_TOO_HIGH;
+	//	if (firstArg < 0)
+	//		return retCode::EXPR_INVALID_PARAM;
+	//	long long temp = llabs(MulPrToLong(firstArg));
+	//	mpz_2fac_ui(ZT(result), temp);  // get double factorial
+	//	return retCode::EXPR_OK;
+	//}
 	case opCode::prim: {
 		if (firstArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -1439,15 +1472,15 @@ const static struct oper_list operators[]  {
 		{ "AND", opCode::and,         9},      // bitwise AND
 		{ "OR",  opCode::or,         11},      // bitwise OR
 		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
-		{ "!!",  opCode::dfact,       1},      // double factorial
-		{ "!",   opCode::fact,        1},      // factorial
+      //{ "!!",  opCode::dfact,       1},      // double factorial
+		{ "!",   opCode::fact,        1},      // multi-factorial
 		{ "#",   opCode::prim,        1},      // primorial
 		{ "(",   opCode::leftb,      12},      // left bracket
 		{ ")",   opCode::rightb,      0},      // left bracket
 	 } ;
 
-/* search for operators e.g. '+', '*'  that have format <expression> <operator> <expression>
-or <operator> <expression>. return index of operator or -1 */
+/* search for operators e.g. '+', '*'  '!', 'NOT'
+return index of operator or -1 */
 static void operSearch(const std::string &expr, int &opcode) {
 	opcode = -1;
 	for (int ix = 0; ix < sizeof(operators)/sizeof(operators[0]); ix++) {
@@ -1465,7 +1498,7 @@ static void operSearch(const std::string &expr, int &opcode) {
 operators and functions include:
 symbol		meaning					operator Priority
 n!			factorial               0
-n!!			double factorial        0
+n!..!	    multi-factorial         0
 p#			primorial               0
             (product of all primes 
 			less or equal than p)
@@ -1564,10 +1597,17 @@ static retCode ComputeExpr(const std::string &expr, Znum &Result) {
 	}
 	else {
 		if (verbose > 0) {
-			std::cout << "** error: could not tokenise expression \n";
+			std::cout << "** error: could not tokenise expression «"
+				 << expr << "»\n";
 			printTokens(tokens.data(), (int)tokens.size());
+			printf_s("expr contains: ");
+			for (auto c : expr) {
+				printf("%2x", c);
+			}
+			putchar('\n');
 		}
 	}
+
 	return rv;
 }
 
@@ -1596,6 +1636,13 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 			nxtToken.oper = operators[opIndex].operCode;
 			nxtToken.value = 0;
 			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
+			if (operators[opIndex].operCode == opCode::fact) {
+				nxtToken.value = 1;
+				while (expr.substr(exprIndex, 1) == "!") {
+					nxtToken.value++; /* get 2nd operand for multi-factorial*/
+					exprIndex++;
+				}
+			}
 		}
 
 		/* check for , */
@@ -1746,10 +1793,12 @@ static void printTokens(const token expr[], const int exprLen) {
 		case types::Operator:
 			if (expr[ix].oper == opCode::leftb)
 				std::cout << '(';
-			else if (expr[ix].oper == opCode::fact)
-				std::cout << '!';
-			else if (expr[ix].oper == opCode::dfact)
-				std::cout << "!!";
+			else if (expr[ix].oper == opCode::fact) {
+				for(int i = 1; i <= expr[ix].value; i++)
+					std::cout << '!';
+			}
+			//else if (expr[ix].oper == opCode::dfact)
+			//	std::cout << "!!";
 			else if (expr[ix].oper == opCode::prim)
 				std::cout << '#';
 			else if (expr[ix].oper == opCode::rightb)
@@ -1982,6 +2031,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 				/* copy operand(s) from number stack to args */
 				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
 				nums.pop();  /* remove top value from stack */
+			}
+			if (oper == opCode::fact) { 
+				/* get 2nd operand for multifactorial. In this special case
+				 the 2nd operand is in the operator token, not a number token */
+				args[1] = rPolish[index].value;
 			}
 			retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
 			if (rc != retCode::EXPR_OK)
@@ -2371,6 +2425,8 @@ static void doTests(void) {
 		"(20-32)^2 / (4*7)",                5,
 		"19!",             121645100408832000,   // factorial
 		"19!!",  	                654729075,   // double factorial
+		"29!!!",                  72642169600,   // triple factorial
+		"33!!!!",                  4996616625,
 		"37#",                  7420738134810,   // primorial
 		"b(123456789)",	            123456761,   // prime before n
 		"f(60)",	            1548008755920,   // fibonacci
@@ -2425,7 +2481,6 @@ static void doTests(void) {
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
-		//stackIndex = 0;         // ensure stack is empty 
 
 		auto  rv =ComputeExpr(testvalues[i].text, result);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
@@ -2577,7 +2632,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	// 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
 	t2 = t * 2;
 	r = t2 + 1;
-	while (!mpz_likely_prime_p(ZT(r), state, 0))
+	while (mpz_bpsw_prp(ZT(r)) == 0)
+	//while (!mpz_likely_prime_p(ZT(r), state, 0))
 		r += t2;
 
 
@@ -2586,7 +2642,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 
 	// 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
 	p = p0;
-	while (!mpz_likely_prime_p(ZT(p), state, 0))
+	while (mpz_bpsw_prp(ZT(p)) == 0)
+	//while (!mpz_likely_prime_p(ZT(p), state, 0))
 		p += 2 * r*s;
 	return;
 }
@@ -2602,7 +2659,7 @@ static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 		gordon(p, state, bits / 2);
 		gordon(q, state, bits / 2);
 		x = p * q;
-	}
+	} 
 	return;
 }
 
@@ -3184,6 +3241,7 @@ static void doTests7(const std::string &params) {
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
+std::string helpFilePath = "docfile.txt";  /* can be overwritten from the .ini file */
 
 /* (re)write the BigIntCalculator.ini file
 initially a .new file is created, then any .old file is deleted
@@ -3207,6 +3265,7 @@ void writeIni(void) {
 	newStr << "yafu-prog=" << yafuprog << '\n';
 	newStr << "msieve-path=" << MsievePath << '\n';
 	newStr << "msieve-prog=" << MsieveProg << '\n';
+	newStr << "helpfile=" << helpFilePath << '\n';
 	newStr.close();
 
 	  // delete any previous .old
@@ -3223,9 +3282,11 @@ void writeIni(void) {
 }
 
 /* read the .ini file and update paths. 
-path definitions begin with yafu-path=, yafu-prog=, msieve-path= or msieve-prog= 
+path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog= 
+or helpfile=
 Paths are not case-sensitive. 
 Anything else is saved and is copied if the .ini file is updated 
+
 arg is arg[0] of the call to main, which conveniently contains the full path
 for the .exe file. We use the same path for the .ini file. 
 If the .ini file can't be opened a new one is created */
@@ -3274,6 +3335,10 @@ static void processIni(const char * arg) {
 			else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
 				MsieveProg = buffer.substr(12); // copy path following '=' character
 			}
+			else if (_strnicmp("helpfile=", buffer.c_str(), 9) == 0) {
+				helpFilePath = buffer.substr(9);
+			}
+
 			else inifile.push_back(buffer);  // save anything not recognised
 		}
 		iniStr.close();
@@ -3281,175 +3346,263 @@ static void processIni(const char * arg) {
 }
 
 
+//search the docfile for the right entry specified by s
+//just search for the heading, and print everything until
+//the next heading is found
+static void helpfunc(const std::string &helpTopic)
+{
+	FILE *doc;
+	char str[1024];
+	bool printtopic = false;
+	std::string expr = "";
+	char * newpathC;
+	std::string newpath;
+
+retry:
+	//open the doc file and search for a matching topic
+	errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
+	if (ecode != 0) {
+		/* failed to open the help file*/
+		char buffer[80];
+		_strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
+		fprintf_s(stderr, "fopen error: %s\n", buffer);
+		fprintf_s(stderr, "help file not found\n");
+
+		while (std::toupper(expr[0]) != 'Y') {
+			std::cout << "Do you want to search for the help file? (Y/N) \n";
+			getline(std::cin, expr);
+			if (std::toupper(expr[0]) == 'N')
+				return;
+		}
+		newpathC = getFileName("Text\0*.TXT\0\0", NULL);
+		if (newpathC ==NULL) {
+			std::cout << "command cancelled \n";
+			return;
+		}
+		else {
+			helpFilePath = newpathC; /* copy new path for doc file to permanent storage */
+			writeIni();       /* update the .ini file*/
+			goto retry;       /* let's try to open the file again */
+		}
+	}
+
+	/* doc file has been opened successfully */
+	if (verbose > 0)
+		printf_s("searching for help on '%s'\n", helpTopic.data());
+
+	/* exit this loop when reached EOF or the next topic after the one required 
+	is reached */
+	while (!feof(doc)) {
+		
+		char *rv = fgets(str, sizeof(str), doc);   //read a line
+		if (rv == NULL)
+			if (feof(doc)) {
+				break;
+			}
+			else {
+				char buffer[80];
+				_strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
+				fprintf_s(stderr, "fgets error: %s\n", buffer);
+				break;
+			}
+
+		//is this a header?
+		if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) 	{
+
+			if (printtopic)
+				break;  /* we have reached the start of the next topic, so exit 
+						   Only print 1 topic per help command */
+
+			//does it match our topic?
+			str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
+			if (strstr(helpTopic.data(), str + 1) != NULL)
+				/* we get a match if the topic between [ and ] is contained 
+				anywhere in helptopic */
+				printtopic = true;   /* we have found the required topic*/
+		}
+		else {  /* not a header line */
+			if (printtopic)
+				printf_s("%s", str);  /* print only if within the required topic */
+		}
+	}
+
+	if (feof(doc)) {
+		if (printtopic)
+			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
+							may not end with newline */
+		else
+			printf_s("Help for %s not found \n", helpTopic.data());
+	}
+	fclose(doc);
+	return;
+}
+
+
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
 static int processCmd(const std::string &command) {
-	const static char helpmsg[] =
-		"You can enter expressions that use the following operators, functions and parentheses:\n"
-		"^ or ** : exponentiation (the exponent must be greater than or equal to zero).\n"
-		"*       : multiplication\n"
-		"/       : integer division\n"
-		"%%       : modulus (remainder from integer division)\n"
-		"+       : addition\n"
-		"-       : subtraction\n"
-		"SHL or <<: Shift left the number of bits specified on the right operand.\n"
-		"SHR or >>: Shift right the number of bits specified on the right operand.\n"
-		"<, >, <=, >= for comparisons.  The operators return zero for false and -1 for true.\n"
-		"==, != for equality. The operators return zero for false and -1 for true.\n"
-		"NOT, AND, XOR, OR  for bitwise operations.\n"
-		"n!      : factorial (n must be greater than or equal to zero).\n"
-		"n!!     : double factorial (n must be greater than or equal to zero).\n"
-		"p#      : primorial (product of all primes less or equal than p).\n"
-		"C       : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient\n"
-		"B(n)    : Previous probable prime before n\n"
-		"F(n)    : Fibonacci number Fn\n"
-		"L(n)    : Lucas number Ln = F(n-1) + F(n+1)\n"
-		"N(n)    : Next probable prime after n\n"
-		"P(n)    : Unrestricted Partition Number (number of decompositions of n into sums of integers without regard to order).\n"
-		"Pi(n)   : Number of primes <= n \n"
-		"Gcd(m, n)       : Greatest common divisor of m and n.\n"
-		"Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.\n"
-		"Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%%r but more efficient.\n"
-		"Totient(n)      : finds the number of positive integers less than n which are relatively prime to n.\n"
-		"IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.\n"
-		"BPSW(n)         : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
-		"                  considered to be 100%% reliable for numbers up to 10000 digits \n"
-		"APRCL(n)        : returns zero if n is composite, 1 for probable prime, 2 for definite prime \n"
-		"                  WARNING: very slow for large numbers e.g. 20s for 400 digits \n"
-		"NumDivs(n)      : Number of positive divisors of n either prime or composite.\n"
-		"SumDivs(n)      : Sum of positive divisors of n either prime or composite.\n"
-		"NumDigits(n, r) : Number of digits of n in base r.\n"
-		"SumDigits(n, r) : Sum of digits of n in base r.\n"
-		"RevDigits(n, r) : finds the value obtained by writing backwards the digits of n in base r.\n"
-		"Sqrt(n)         : square root of n\n"
-		"Nroot(n, r)     : rth root of n e.g.r=3 for cube root\n"
-		"NumFact(n)      : number of distinct prime factors of n. \n"
-		"MinFact(n)      : minimum prime factor of n. \n"
-		"MaxFact(n)      : maximum prime factor of n \n"
-		"LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, "
-		                 "1 if prime.\n"
-		"FactConcat(m,n) : Concatenates the prime factors of n according to the mode m\n"
-		"R2(n)   : Number of ways n can be expressed as the sum of x^2+y^2. (order and sign of x and y are significant \n"
-		"R3(n)   : Number of ways n can be expressed as the sum of x^2+y^2+z^2. (order and sign of x and y are significant \n"
-		"LE(a,p) : Legendre value for (a/p) \n"
-		"JA(a,p) : Jacobi value for (a/p) \n"
-		"KR(a,p) : Kronecker value for (a/p) \n"
-		"Also the following commands: X=hexadecimal o/p, D=decimal o/p \n"
-		"F = do factorisation, N = Don't factorise, S = Spanish, E=English\n"
-		"HELP (this message) and EXIT\n";
 
-	const static char ayuda[] =
-		"Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:\n"
-		"+ para suma\n"
-		"- para resta\n"
-		"* para multiplicación\n"
-		"/ para división entera\n"
-		"%% para el resto de la división entera\n"
-		"^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).\n"
-		"<, == , >; <= , >= , != para comparaciones.Los operadores devuelven cero si es falso y - 1 si es verdadero.\n"
-		"AND, OR, XOR, NOT para lógica binaria.\n"
-		"SHL  : Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.\n"
-		"SHR  : Desplazar a la derecha la cantidad de bits indicada en el operando derecho.\n"
-		"n!   : factorial(n debe ser mayor o igual que cero).\n"
-		"p#   : primorial(producto de todos los primos menores o iguales a p).\n"
-		"B(n) : Número probablemente primo anterior a n\n"
-		"F(n) : Número de Fibonacci Fn\n"
-		"L(n) : Número de Lucas Ln = F(n-1) + F(n+1)\n"
-		"N(n) : Número probablemente primo posterior a n\n"
-		"P(n) : particiones irrestrictas(cantidad de descomposiciones de n en sumas de números enteros sin tener en cuenta el orden).\n"
-		"Gcd(m, n)       : Máximo común divisor de estos dos números enteros.\n"
-		"Modinv(m, n)    : inverso de m modulo n, sólo válido cuando gcd(m, n) = 1.\n"
-		"Modpow(m, n, r) : halla m^n módulo r.\n"
-		"Totient(n)      : cantidad de enteros positivos menores que n coprimos con n.\n"
-		"IsPrime(n)      : returna cero si n no es un primo probable y - 1 si lo es.\n"
-		"NumDivs(n)      : cantidad de divisores positivos de n primos o compuestos.\n"
-		"SumDivs(n)      : suma de divisores positivos de n primos o compuestos.\n"
-		"NumDigits(n, r) : cantidad de dígitos de n en base r.\n"
-		"SumDigits(n, r) : suma de dígitos de n en base r.\n"
-		"RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos de n en base r.\n";
+	/* list of commands (static for efficiency) */
+	const static std::vector<std::string>list =
+	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E", "S",  "F" , "N" , "X", "D",
+	  "TEST", "MSIEVE", "YAFU", "V " };
 
-	if (command == "EXIT" || command == "SALIDA")
-		return 2;
-
-	if (command == "HELP" || command == "AYUDA") {
-		if (lang == 0)
-			printf(helpmsg);   // english
-		else
-			printf(ayuda);     // spanish
-		return 1;
-	}
-	if (command == "E") { lang = 0; return 1; }           // english
-	if (command == "S") { lang = 1; return 1; }	          // spanish (Español)
-	if (command == "F") { factorFlag = true; return 1; }  // do factorisation
-	if (command == "N") { factorFlag = false; return 1; } // don't do factorisation
-	if (command == "X") { hex = true; return 1; }         // hexadecimal output
-	if (command == "D") { hex = false; return 1; }        // decimal output
-	if (command == "TEST") {
-		doTests();         // do basic tests 
-		return 1;
-	}
-	if (command.substr(0,5) == "TEST2") {
-		if (command.size() > 5)
-			doTests2(command.substr(6));         // do basic tests 
-		else
-			doTests2("");
-		return 1;
-	}
-#ifdef BIGNBR
-	if (command == "TEST3") {
-		doTests3();         // do basic tests 
-		return 1;
-	}
-#endif
-	if (command == "TEST4") {
-		doTests4();         // do R3 tests 
-		return 1;
-	}
-	if (command == "TEST5") {
-		doTests5();         // do YAFU tests 
-		return 1;
-	}
-	if (command == "TEST6") {
-		doTests6();         // do Msieve tests 
-		return 1;
-	}
-	if (command.substr(0, 5) == "TEST7") {
-		/* Lucas-Lehmer test */
-		if (command.size() > 5)
-			doTests7(command.substr(6));         
-		else
-			doTests7("");
-		return 1;
-	}
-	if (command.substr(0, 6) == "MSIEVE") {
-		msieveParam(command);
-		return 1;
+	/* do 1st characters of text in command match anything in list? */
+	int ix = 0;
+	for (ix = 0; ix < list.size(); ix++) {
+		auto len = list[ix].size();  /* get length of a string in list*/
+		if (len > 1 && command.substr(0, len) == list[ix])
+			break;  /* exit loop if match found */
+		if (len == 1 && command == list[ix])
+			break;   /* 1-letter commands with no parameters only match 1-letter input */
 	}
 
-	if (command.substr(0, 4) == "YAFU") {
-		yafuParam(command);
-		return 1;
-	}
-	if (command.substr(0, 2) == "V ") {
-		/* will not throw an exception if input has fat finger syndrome.
-		If no valid digits found, sets verbose to 0 */
-		verbose = atoi(command.substr(1).data());
-		std::cout << "verbose set to " << verbose << '\n';
-		return 1;
-	}
+	if (ix >= list.size())
+		return 0;   /* not a command in list */
 
-	/* drop through to here if no command identified */
-	return 0;
+	switch (ix) {
+	case 0:  /* exit*/
+	case 1:  /* salida */
+		return 2;  /* same command in 2 languages */
+	case 2: /* Help */ {
+			if (command.size() > 4)
+				helpfunc(command.substr(5));
+			else
+				helpfunc("HELP");
+			return 1;
+		}
+	case 3: /* ayuda */ {
+			if (command.size() > 5)
+				helpfunc(command.substr(6));
+			else
+				helpfunc("AYUDA");
+			return 1;
+		}
+	case 4: /* E */
+		{ lang = 0; return 1; }           // english
+	case 5: /* S */
+		{ lang = 1; return 1; }	          // spanish (Español)
+	case 6: /* F */
+		{ factorFlag = true; return 1; }  // do factorisation
+	case 7: /* N */
+		{ factorFlag = false; return 1; } // don't do factorisation
+	case 8: /* X */
+		{ hex = true; return 1; }         // hexadecimal output
+	case 9: /* D */
+		{ hex = false; return 1; }        // decimal output
+
+	case 10: /* TEST */ {
+			/* there are a number of comands that begin with TEST */
+			if (command == "TEST") {
+				doTests();         // do basic tests 
+				return 1;
+			}
+
+			int ttype = command.data()[4] - '0';  /* for TEST2 ttype = 2, etc*/
+			switch (ttype) {
+			case 2: {
+				if (command.size() > 5)
+					doTests2(command.substr(6));         // do basic tests 
+				else
+					doTests2("");
+				return 1;
+			}
+			case 3:
+	#ifdef BIGNBR
+				{
+					doTests3();         // do basic tests 
+					return 1;
+				}
+	#else
+				return 0;
+	#endif
+			case 4: {
+					doTests4();         // do R3 tests 
+					return 1;
+				}
+			case 5: {
+					doTests5();         // do YAFU tests 
+					return 1;
+				}
+			case 6: {
+					doTests6();         // do Msieve tests 
+					return 1;
+				}
+			case 7: {
+					/* Lucas-Lehmer test */
+					if (command.size() > 5)
+						doTests7(command.substr(6));
+					else
+						doTests7("");
+					return 1;
+				}
+			case 8: {
+				testerrors();
+				return 1;
+			}
+			default:
+				return 0;  /* not a recognised command */
+			}
+		}
+
+	case 11: /* MSIEVE */ {
+			msieveParam(command);
+			return 1;
+		}
+	case 12: /* YAFU */ {
+			yafuParam(command);
+			return 1;
+		}
+	case 13: /* V */ {
+			/* will not throw an exception if input has fat finger syndrome.
+			If no valid digits found, sets verbose to 0 */
+			verbose = atoi(command.substr(1).data());
+			std::cout << "verbose set to " << verbose << '\n';
+			return 1;
+		}
+
+	default:
+		return 0;   /* not a recognised command */
+	}
 }
 
 int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
 	retCode rv;
+	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0};
+	unsigned int control_word;
+	int err;
+
+	f.UnEx = 1;        /* set unhandled exception*/
+	f.abort = 1;       /* trap abort (as a signal) */
+	f.sigterm = 1;     /* trap terminate signal */
+	f.sigill = 1;      /* trap 'illegal' signal */
+	f.interrupt = 1;   /* trap interrupt signal */
+	//f.sigsegv = 1;     /* trap segment violation signal */
+#ifdef _DEBUG
+	/* only seems to work properly if compiled in debug mode */
+	f.InvParam = 1;    /* trap invalid parameters on library calls */
+#endif
+	//f.sigfpe = 1;      /* trap floating point error signal */
+	SetProcessExceptionHandlers(f);
+
+	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
+	functions that actually work OK */
+	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
+	//err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW | _EM_INVALID,
+		//MCW_EM);
+	/* trap hardware FP exceptions except inexact and underflow which are
+	considered to be normal, not errors. */
+	if (err) {
+		printf_s("could not set FP control word\n");
+		return -1;
+	}
+
 	
 	try {
 		int version[4]; /* version info from .exe file (taken from .rc resource file) */
 
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // gete handle for console window
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
 		{
 			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
@@ -3500,6 +3653,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+		retry:
 			getline(std::cin, expr);    // expression may include spaces
 			strToUpper(expr, expr);		// convert to UPPER CASE 
 
@@ -3513,8 +3667,16 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				SetThreadExecutionState(ES_CONTINUOUS);
 				continue; // command has been fully processed
 			}
+			if (cmdCode != 0) {
+				fprintf_s(stderr, "Invalid return code %x from processCmd \n", cmdCode);
+				continue;
+			}
 			auto start = clock();	// used to measure execution time
 			removeBlanks(expr);     // remove any spaces 
+			if (expr.empty()) {
+				Beep(3000, 250);
+				goto retry;
+			}
 
 			rv = ComputeExpr(expr, Result); /* analyse expression, compute value*/
 
@@ -3559,8 +3721,16 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		exit(EXIT_FAILURE);
 	}
 
+	catch (int e) {
+		printf_s("\n*** Caught exception: <%d> \n", e);
+		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
+		system("PAUSE");               // press any key to continue
+		exit(EXIT_FAILURE);
+
+	}
+
 	catch (...) {
-		// this executes if f() throws int or any other unrelated type
+		// this executes if f() throws any other unrelated type
 		// This catch block probably only would be executed under /EHa compiler option 
 		/* most likely to be a SEH-type exception */
 		printf_s("\n*** unknown exception ocurred\n");

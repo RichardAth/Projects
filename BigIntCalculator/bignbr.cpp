@@ -302,6 +302,9 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 	i.e. factor has no factors < upperBound. This can be used to put a much
 	smaller limit on maxExpon (max about 2000) */
 
+	if (upperBound < 2)
+		upperBound = 2;
+
 	/* upperBound^maxExpon ≈ factor */
 	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
 
@@ -520,7 +523,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 		first = false;
 	}
 
-	auto rv = mpz_likely_prime_p(ZT(Value), rstate, upperBound);
+	auto rv = mpz_probable_prime_p(ZT(Value), rstate, 20, upperBound);
 #else
 	auto rv = mpz_probab_prime_p(ZT(Value), 16);
 #endif
