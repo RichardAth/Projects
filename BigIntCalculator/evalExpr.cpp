@@ -26,8 +26,29 @@ bool getBit(const unsigned long long int x, const bool array[]);
 void biperm(int n, Znum &result);  
 Znum llt(const Znum &p);
 
+int new_uvar(const char *name);
+int set_uvar(const char *name, const Znum &data);
+int get_uvar(const char *name, Znum data);
+static void free_uvars();
+
 
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
+
+typedef struct        // used for user variables
+{
+	char name[40];    // variable name
+	Znum data;        // and value
+} uvar_t;
+
+typedef struct
+{
+	std::vector <uvar_t> vars;
+	int num = 0;              /* number of user variables*/
+	int alloc = 0;            /* space allocated for user variables */
+} uvars_t;
+
+//user variables
+uvars_t uvars ;
 
 /* list of operators, arranged in order of priority. Order is not exactly the
 same as C or Python. */
@@ -56,7 +77,8 @@ enum class opCode {
 	xor = 18,
 	or = 19,
 	leftb = 20,
-	rightb = 24,              // right bracket (must be highest value)
+	assign = 24,              /* assignment operator */
+	rightb = 25,              // right bracket (must be highest value)
 };
 
 /* list of operators. Priority values lower value = higher priority. Note: this
@@ -97,7 +119,8 @@ const static attrs opr[] = {
 	{0,  true,  false, 1},  // 21 ! factorial (unary operator)
 	{0,  true,  false, 1},  // 22 !! double factorial (unary operator)
 	{0,  true,  false, 1},  // 23 # primorial (unary operator)
-	{-1, true,  false, 0},  // 24 right bracket
+	{12, false, false, 2},  // 24 assignment
+	{-1, true,  false, 0},  // 25 right bracket
 };
 
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
@@ -130,13 +153,14 @@ enum class retCode
 	EXPR_FAIL = 1
 };
 
-enum class types { Operator, func, number, comma, error, end };
+enum class types { Operator, func, number, comma, error, uservar, end };
 
 struct token {
 	types typecode;
 	long long function;   /* contains function code index,  only when typecode = func */
-	opCode oper;    /* contains operator value, only when typecode = Operator*/
-	Znum value;     /* contains numeric value,  only when typecode = number*/
+	opCode oper;    /* contains operator value, only when typecode = Operator */
+	Znum value;     /* contains numeric value,  only when typecode = number */
+	size_t userIx;  /* index into user variable list (only when typecode = uservar) */
 };
 
 enum class fn_Code {
@@ -250,13 +274,14 @@ const static struct oper_list operators[]{
 		{ "==",  opCode::equal,       7},
 		{ "NOT", opCode::not,         1},      // bitwise NOT
 		{ "AND", opCode::and,         9},      // bitwise AND
-		{ "OR",  opCode:: or ,         11},      // bitwise OR
+		{ "OR",  opCode:: or,        11},      // bitwise OR
 		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
 	  //{ "!!",  opCode::dfact,       1},      // double factorial
 		{ "!",   opCode::fact,        1},      // multi-factorial
 		{ "#",   opCode::prim,        1},      // primorial
 		{ "(",   opCode::leftb,      12},      // left bracket
 		{ ")",   opCode::rightb,      0},      // left bracket
+		{"=", opCode::assign,        12},      // assignment
 };
 
 
@@ -608,7 +633,6 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
-
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
@@ -758,15 +782,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 
 		return retCode::EXPR_OK;
 	}
-					   //case opCode::dfact: {
-					   //	if (firstArg > 11081)
-					   //		return retCode::EXPR_INTERM_TOO_HIGH;
-					   //	if (firstArg < 0)
-					   //		return retCode::EXPR_INVALID_PARAM;
-					   //	long long temp = llabs(MulPrToLong(firstArg));
-					   //	mpz_2fac_ui(ZT(result), temp);  // get double factorial
-					   //	return retCode::EXPR_OK;
-					   //}
+	//case opCode::dfact: {
+	//	if (firstArg > 11081)
+	//		return retCode::EXPR_INTERM_TOO_HIGH;
+	//	if (firstArg < 0)
+	//		return retCode::EXPR_INVALID_PARAM;
+	//	long long temp = llabs(MulPrToLong(firstArg));
+	//	mpz_2fac_ui(ZT(result), temp);  // get double factorial
+	//	return retCode::EXPR_OK;
+	//}
 	case opCode::prim: {
 		if (firstArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -1217,6 +1241,16 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			break;
 		}
 
+		/* a user variable is treated the same as a number */
+		case types::uservar: {
+			if (leftNumber)
+				return EXIT_FAILURE;  /* syntax error */
+
+			rPolish.push_back(expr[exprIndex]);
+			leftNumber = true;
+			break;
+		}
+
 		case types::func: {
 			/* process function. 1st get number of parameters */
 			if (leftNumber)
@@ -1354,17 +1388,23 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) */
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
-	std::stack <Znum> nums;
+	std::stack <token> nums;   /* this stack holds both numbers and user variables */
 	Znum val;
 	Znum args[4];
 	int index = 0;
 	int rPlen = (int)rPolish.size();
 	retCode retcode;
+	token temp;
+
+	temp.typecode = types::number;
 
 	for (index = 0; index < rPlen; index++) {
 		/* push numbers onto stack */
 		if (rPolish[index].typecode == types::number) {
-			nums.push(rPolish[index].value);
+			nums.push(rPolish[index]);
+		}
+		else if (rPolish[index].typecode == types::uservar) {
+			nums.push(rPolish[index]);
 		}
 
 		/* operators and functions are processed by taking the operand values
@@ -1381,34 +1421,69 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 
 			for (; NoOfArgs > 0; NoOfArgs--) {
 				/* copy function parameters from number stack to args */
-				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
+				if (nums.top().typecode == types::number)
+					args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
+				else {
+					size_t userIx = nums.top().userIx;
+					args[NoOfArgs - 1] = uvars.vars[userIx].data;
+				}
 				nums.pop();  /* remove top value from stack */
 			}
 			retcode = ComputeFunc(fnCode, args[0], args[1], args[2], val);
 			if (retcode != retCode::EXPR_OK)
 				return retcode;
-			nums.push(val);  /* put value returned by function onto stack */
+			temp.typecode = types::number;
+			temp.value = val;
+			nums.push(temp);  /* put value returned by function onto stack */
 		}
 
 		else if (rPolish[index].typecode == types::Operator) {
 			opCode oper = rPolish[index].oper;
+
 			int NoOfArgs = opr[(int)oper].numOps;
 			if (NoOfArgs > nums.size())
 				return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
-			for (; NoOfArgs > 0; NoOfArgs--) {
-				/* copy operand(s) from number stack to args */
-				args[NoOfArgs - 1] = nums.top(); /* use top value from stack*/
-				nums.pop();  /* remove top value from stack */
+			if (oper == opCode::assign) {
+				temp = nums.top();
+				nums.pop();
+				if (nums.top().typecode != types::uservar)
+					return retCode::EXPR_SYNTAX_ERROR;
+				size_t Userix = nums.top().userIx;
+
+				if (temp.typecode == types::number)
+					uvars.vars[Userix].data = temp.value;
+				else if (temp.typecode == types::uservar)
+					uvars.vars[Userix].data =
+					uvars.vars[temp.userIx].data;
+				else
+					return retCode::EXPR_SYNTAX_ERROR;
+				nums.pop();  /* remove variable from stack */
+				nums.push(temp);  /* put value back on stack */
+			} 
+			else {
+				for (; NoOfArgs > 0; NoOfArgs--) {
+					/* copy operand(s) from number stack to args */
+					if (nums.top().typecode == types::number)
+						args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
+					else {
+						size_t Userix = nums.top().userIx;
+						args[NoOfArgs - 1] = uvars.vars[Userix].data;
+					}
+					nums.pop();  /* remove top value from stack */
+				}
+
+				if (oper == opCode::fact) {
+					/* get 2nd operand for multifactorial. In this special case
+					 the 2nd operand is in the operator token, not a number token */
+					args[1] = rPolish[index].value;
+				}
+				retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
+				if (rc != retCode::EXPR_OK)
+					return rc;
+				temp.typecode = types::number;
+				temp.value = val;
+				nums.push(temp);  /* put generated value onto stack */
 			}
-			if (oper == opCode::fact) {
-				/* get 2nd operand for multifactorial. In this special case
-				 the 2nd operand is in the operator token, not a number token */
-				args[1] = rPolish[index].value;
-			}
-			retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
-			if (rc != retCode::EXPR_OK)
-				return rc;
-			nums.push(val);  /* put generated value onto stack */
 		}
 		else
 			abort(); /* unrecognised token */
@@ -1416,7 +1491,12 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 
 
 	if (nums.size() == 1) {
-		result = nums.top();
+		if (nums.top().typecode == types::number)
+			result = nums.top().value;
+		else {
+			size_t Userix = nums.top().userIx;  /* get value from user variable */
+			result = uvars.vars[Userix].data;
+		}
 		return retCode::EXPR_OK;
 	}
 	else
@@ -1500,6 +1580,17 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 	while (exprIndex < expr.length()) {
 		nxtToken.typecode = types::error;   /* should be replaced later by valid code */
 		int charValue = toupper(expr[exprIndex]);
+
+		/* skip blanks */
+		while (exprIndex <= (expr.length()) && isspace(charValue)) {
+			exprIndex++;
+			if (exprIndex >= expr.length())
+				break;
+			charValue = toupper(expr[exprIndex]);
+		}
+		if (exprIndex >= expr.length())
+			break;
+
 		/* first look for operators. */
 		operSearch(expr.substr(exprIndex), opIndex);
 		if (opIndex != -1) {
@@ -1590,7 +1681,32 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 					break;
 				}
 			}
+
+			/* if we drop through to here the only possibility left is a
+			   user variable */
+			int exprIndexAux = exprIndex;
+			if (charValue == '_' || charValue == '$') {
+				while (charValue == '_' || charValue == '$' || isalnum(charValue)) {
+					exprIndex++;
+					if (exprIndex >= expr.size())
+						break;
+					charValue = expr[exprIndex];
+				}
+
+				int length = exprIndex - exprIndexAux;
+				assert(length < 40);
+				char uid[40];
+				Znum temp;
+				strcpy_s(uid, sizeof(uid), expr.substr(exprIndexAux, length).data());
+				int rv = get_uvar(uid, temp); /* does variable exist already? */
+				if (rv < 0) {
+					rv = new_uvar(uid);   /* set up new variable */
+				}
+				nxtToken.typecode = types::uservar;
+				nxtToken.userIx = rv;
+			}
 		}
+	
 
 		if (nxtToken.typecode == types::error)
 			return retCode::EXPR_SYNTAX_ERROR;  /* unable to tokenise expression*/
@@ -1615,3 +1731,79 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 	tokens.push_back(nxtToken);
 	return retCode::EXPR_OK;
 }
+
+/* create a new user variable with name 'name', initialise it
+and return its location in the global uvars structure */
+int new_uvar(const char *name) {
+	if (uvars.num == uvars.alloc) {
+		//need more room for variables
+		if (uvars.num == 0) 
+			uvars.alloc = 4;
+		else 
+			uvars.alloc *= 2;
+
+		uvars.vars.resize(uvars.alloc);
+	}
+
+	strcpy_s(uvars.vars[uvars.num].name, sizeof(uvars.vars[uvars.num].name),
+		name);
+	uvars.vars[uvars.num].data = 0;
+	uvars.num++;
+	return uvars.num - 1;
+}
+
+//look for 'name' in the global uvars structure
+//if found, copy in data and return 0 else return 1
+int set_uvar(const char *name, const Znum &data) {
+	int i;
+
+	for (i = 0; i < uvars.num; i++) {
+		if (strcmp(uvars.vars[i].name, name) == 0) {
+			uvars.vars[i].data =  data;
+			return 0;
+		}
+	}  
+
+	return 1;  /* name not found */
+}
+
+/* look for 'name' in the global uvars structure
+   if found, copy out data and return index else return 1 if not found */
+int get_uvar(const char *name, Znum data)
+{
+	int i;
+
+	for (i = 0; i < uvars.num; i++)
+	{
+		if (strcmp(uvars.vars[i].name, name) == 0)
+		{
+			data=  uvars.vars[i].data;
+			return i;
+		}
+	}
+
+	if (strcmp(name, "vars") == 0) {
+		for (i = 0; i < uvars.num; i++)
+			gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
+		return -2;
+	}
+
+	return -1;  /* name not found */
+}
+
+static void free_uvars() {
+	uvars.vars.clear();
+	uvars.num = 0;  
+	uvars.alloc = 0;
+}
+void printvars(std::string name) {
+	while (name.size() > 0 && isblank(name[0])) {
+		name.erase(0, 1);  /* remove leading spaces */
+	}
+	if (uvars.num == 0)
+		printf("No user variables defined \n");
+	else
+		for (int i = 0; i < uvars.num; i++)
+			if (name.size() == 0 || strcmp(uvars.vars[i].name, name.c_str()) == 0)
+			gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
+ }

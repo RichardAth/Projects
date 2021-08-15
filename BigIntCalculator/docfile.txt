@@ -13,6 +13,16 @@ they are easy to calculate once the factors are known.
 Any number can be expressed as the sum of 4 or fewer squares. Usually there are
 many ways of doing this. One way is displayed.
 
+Numeric values can be stored in variables which must have names beginning with $ or _
+and contain only letters, digits $ or _ characters. Names are not case-sensitive. 
+e.g.
+$p= n(200)
+$x = 2^$p-1
+
+the result will be:
+$P = 211
+$X = 3291009114642412084309938365114701009965471731267159726697218047
+
 You can get help on the following topics by entering "HELP <topic>";
 expression  function  yafu  msieve  other  test  background
 
@@ -107,6 +117,7 @@ E    : switch to English
 V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 1 turns on many messages that show more of what is happening internally.
        n = 2 turns on even more messages.
+PRINT  Print the names and values of any user variables.
 HELP (this command)
 EXIT
 

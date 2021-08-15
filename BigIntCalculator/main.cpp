@@ -36,7 +36,7 @@ void yafuParam(const std::string &command);      /*process YAFU commands */
 // declaration for external function
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 char * getFileName(const char *filter, HWND owner);
-
+void printvars(std::string name);
 
 /* get time in format hh:mm:ss */
 const char * myTime(void) {
@@ -185,11 +185,7 @@ retCode ComputeExpr(const std::string &expr, Znum &Result);
 long long MulPrToLong(const Znum &x);
 bool getBit(const unsigned long long int x, const bool array[]);
 void generatePrimes(unsigned long long int max_val);
-retCode tokenise(const std::string expr, std::vector <token> &tokens);
 static void textError(retCode rc);
-static retCode evalExpr(const std::vector<token> &rPolish, Znum & result);
-static int reversePolish(token expr[], const int exprLen, std::vector<token> &rPolish);
-static void printTokens(const token expr[], const int exprLen);
 
 // find leftmost 1 bit of number. Bits are numbered from 63 to 0
 // An intrinsic is used that gets the bit number directly.
@@ -982,7 +978,7 @@ static void doTests(void) {
 		"(0x12345678) AND 0x018",        0x18,   // brackets round 1st number are needed so that A of AND is not considered part of number
 		"0x12345678 OR 0x1",       0x12345679,
 		"0x12345678 XOR 0x10",     0x12345668,
-		"(NOT 0x0f23 4567 89ab cde1) * -1",  0x0f23456789abcde2,
+		"(NOT 0x0f23456789abcde1) * -1",  0x0f23456789abcde2,
 		"5 < 6 == 7 < 8",                -1,   // returns true (== has lower priority)
 		"5 < 6 != 7 < 8",                 0,   // returns false (!= has lower priority)
 		"5 < (6 != 7) < 8",              -1,   // returns true; expr evaluated from left to right
@@ -999,13 +995,15 @@ static void doTests(void) {
 		"4^5#",         1152921504606846976,  // # operator evluated before exponent
 		"5!!#",                       30030,  // !! operator evaluated before #
 		"5#!!",           42849873690624000,  // # operator evaluated before !!
+		"$x = 99 ",                      99,  /* test user variables */
+		"$y = $x+1  ",                  100,
 	};
 
 	results.clear();
 
 	auto start = clock();	// used to measure execution time
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
-		removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
+		//removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
 
 		auto  rv =ComputeExpr(testvalues[i].text, result);
@@ -1970,7 +1968,7 @@ static int processCmd(const std::string &command) {
 	/* list of commands (static for efficiency) */
 	const static std::vector<std::string>list =
 	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E", "S",  "F" , "N" , "X", "D",
-	  "TEST", "MSIEVE", "YAFU", "V " };
+	  "TEST", "MSIEVE", "YAFU", "V ", "PRINT" };
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -2085,6 +2083,13 @@ static int processCmd(const std::string &command) {
 			std::cout << "verbose set to " << verbose << '\n';
 			return 1;
 		}
+	case 14: /* PRINT */ {
+		if (command.size() > 4)
+			printvars(command.substr(5));
+		else
+			printvars("");
+		return 1;
+	}
 
 	default:
 		return 0;   /* not a recognised command */
@@ -2198,7 +2203,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				             //  go back to start of loop
 			}
 			auto start = clock();	// used to measure execution time
-			removeBlanks(expr);     // remove any spaces 
+			//removeBlanks(expr);     // remove any spaces 
 			if (expr.empty()) {
 				Beep(3000, 250);
 				goto retry;     /* input is zero-length; go back*/
