@@ -563,7 +563,7 @@ the interesting stack-frames being gone by the time you do the dump.  */
 describing the client exception that caused the minidump to be generated. If 
 the value of this parameter is NULL, no exception information is included in 
 the minidump file 
-the dump file will be placed inthe TEMP directory.
+the dump file will be placed in the TEMP directory.
 The file name is crashdumpHHMMSS.dmp so that each dump has a unique name and will
 not overwrite earlier dumps. */
 void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
@@ -716,7 +716,7 @@ const char *getText(const int errorcode) {
 			return "Integer Overflow";
 		}
 	case EXCEPTION_PRIV_INSTRUCTION: {
-			return "Priviledged Instruction";
+			return "Privileged Instruction";
 		}
 	case EXCEPTION_IN_PAGE_ERROR: {
 			return "In-page error";
@@ -831,7 +831,7 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void) {
-	printf("Choose an exception type:\n");
+	printf("Choose an exception type:\a\n");
 	printf("0 - SEH exception (access violation)\n");
 	printf("1 - terminate\n");
 	printf("2 - unexpected\n");
@@ -869,13 +869,11 @@ void testerrors(void) {
 			break;
 		}
 	case 1: /* terminate */ {
-			// Call terminate
-			terminate();
+			terminate();  // Call terminate
 			break;
 		}
 	case 2: /* unexpected */ {
-			// Call unexpected
-			unexpected();
+			unexpected();    // Call unexpected
 			break;
 		}
 	case 3: /* pure virtual method call */ {
@@ -902,8 +900,7 @@ void testerrors(void) {
 			break;
 		}
 	case 6: /* SIGABRT */ {
-			// Call abort
-			abort();
+			abort();    // Call abort
 			break;
 		}
 	case 7: /* SIGFPE */ {
@@ -949,11 +946,11 @@ void testerrors(void) {
 			break;
 		}
 	case 15: /* floating point overflow */ {
-			double z = std::pow(DBL_MAX, 2);
-			printf("z=%g\n", z);
+			double z = std::pow(DBL_MAX, 2);    /* generate overflow */
+			printf("z=%g\n", z);                /* if overflow not trapped z = inf. */
 			z = DBL_MAX;
 			printf("z=%g\n", z);
-			z *= 100.0;
+			z *= 100.0;                           /* if overflow not trapped z = inf. */
 			z -= 1.0;
 			printf("z=%g\n", z);
 			break;
@@ -963,8 +960,8 @@ void testerrors(void) {
 			 operation to be performed. Examples are (see IEEE 754, section 7):
 
              Addition or subtraction: &infin; - &infin;. (But &infin; + &infin; = &infin;).
-             Multiplication: 0 &middot; &infin;.
-             Division: 0/0 or &infin;/&infin;.
+             Multiplication: 0  x infin .
+             Division: 0/0 or  infin/infin .
              Remainder: x REM y, where y is zero or x is infinite.
              Square root if the operand is less then zero. More generally, any 
 			 mathematical function evaluated outside its domain produces this exception.
@@ -975,7 +972,7 @@ void testerrors(void) {
              Comparison via predicates involving < or >, when one or other of the
 			 operands is NaN. */ {
 			double z = std::acos(2);
-			printf("z=%g\n", z);
+			printf("z=%g\n", z);    /* if error not trapped, Z = NaN */
 			break;
 		}
 	case 17: /* raise FPE */ {
