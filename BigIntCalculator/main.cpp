@@ -53,7 +53,8 @@ const char * myTime(void) {
 int lang = 0;             // 0 English, 1 = Spanish
 
 bool hex = false;		// set true if output is in hex
-bool factorFlag = true;
+int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
+						   2 = get totient, number of divisors etc after factorisation */
 /* verbose value is used to turn off or on optional messages; 
 higher value = more messages */
 #ifdef _DEBUG
@@ -180,7 +181,12 @@ unsigned long long *primeList = NULL;
 unsigned int prime_list_count = 0;
 unsigned long long int primeListMax = 0;
 
+std::vector <std::string> exprList;  /* expressions store here as text once
+									   they are validated */
+
+/* external functions */
 retCode ComputeExpr(const std::string &expr, Znum &Result);
+
 /* function declarations, only for functions that have forward references */
 long long MulPrToLong(const Znum &x);
 bool getBit(const unsigned long long int x, const bool array[]);
@@ -708,13 +714,24 @@ static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 	}
 }
 
-/* remove spaces, tabs, etc  from msg */
+/* remove spaces, tabs, etc  from msg (\t, \r, \n, \v   and \f)*/
 static void removeBlanks(std::string &msg) {
 	for (size_t ix = 0; ix < msg.size(); ix++) {
 		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {     // look for spaces, tabs, etc
 			msg.erase(ix, 1);      // remove space character
 			ix--;  // adjust index to take account of removed blank
 		}
+	}
+}
+
+/* remove trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
+static void removeTrailing(std::string &msg) {
+	for(ptrdiff_t ix = msg.size()-1; ix >= 0; ix--) {
+		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {
+			msg.erase(ix, 1);  /* remove trailing space */
+		}
+		else
+			break;
 	}
 }
 
@@ -758,58 +775,64 @@ static void doFactors(const Znum &Result, bool test) {
 	Znum Quad[4];
 	clock_t start;
 	summary sum;    // save summary of factorisation
+	bool rv;
 
 	if (test)
 		start = clock();	// used to measure execution time
 
 	/* call DA´s magic function to factorise Result */
-	bool rv = factorise(Result, factorlist, Quad);
+	if (factorFlag > 1)
+		rv = factorise(Result, factorlist, Quad);
+	else
+		rv = factorise(Result, factorlist, nullptr);
 	if (rv && factorlist.fsize() > 0) {
 		factorlist.print(Result < 0);   /* print factors */
+		std::cout << '\n';
+		if (factorFlag > 1) {
+			if (abs(Result) != 1) {
+				auto divisors = factorlist.NoOfDivs();
+				std::cout << "Number of Divisors = ";
+				ShowLargeNumber(divisors, 6, false, false);
+			}
+			else
+				std::cout << "Number of Divisors = 1";   // treat n=1 as special case
 
-		if (abs(Result) != 1) {
-			auto divisors = factorlist.NoOfDivs();
-			std::cout << "\nNumber of Divisors = ";
+			auto divisors = factorlist.DivisorSum();
+			std::cout << "\nSum of Divisors    = ";
 			ShowLargeNumber(divisors, 6, false, false);
-		}
-		else 
-			std::cout << "\nNumber of Divisors = 1";   // treat n=1 as special case
+			divisors = factorlist.totient();
+			std::cout << "\nTotient            = ";
+			ShowLargeNumber(divisors, 6, false, false);
+			if (Result > 0) {
+				auto mob = factorlist.mob();  // mobius only defined for +ve integers
+				std::cout << "\nMöbius             = " << mob;
+			}
 
-		auto divisors = factorlist.DivisorSum();
-		std::cout << "\nSum of Divisors    = ";
-		ShowLargeNumber(divisors, 6, false, false);
-		divisors = factorlist.totient();
-		std::cout << "\nTotient            = ";
-		ShowLargeNumber(divisors, 6, false, false);
-		if (Result > 0) {
-			auto mob = factorlist.mob();  // mobius only defined for +ve integers
-			std::cout << "\nMöbius             = " << mob;
+			/* show that the number is the sum of 4 or fewer squares. See
+			https://www.alpertron.com.ar/4SQUARES.HTM */
+			if (Result >= 0)
+				std::cout << "\nn = ";
+			else
+				std::cout << "\n-n = ";
+			char c = 'a';
+			for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
+				if (q == 0)
+					break;
+				if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
+				std::cout << c << "² ";
+				c++;    // change a to b, b to c, etc
+			}
+			c = 'a';
+			for (auto q : Quad) {
+				if (q == 0)
+					break;
+				std::cout << "\n" << c << "= " << q;
+				c++;  // change a to b, b to c, etc
+			}
+			std::cout << "\n";
+			factorlist.prCounts();  // print counts
 		}
-
-		/* show that the number is the sum of 4 or fewer squares. See
-		https://www.alpertron.com.ar/4SQUARES.HTM */
-		if (Result >= 0)
-			std::cout << "\nn = ";
-		else
-			std::cout << "\n-n = ";
-		char c = 'a';
-		for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
-			if (q == 0)
-				break;
-			if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
-			std::cout << c << "² ";
-			c++;    // change a to b, b to c, etc
-		}
-		c = 'a';
-		for (auto q : Quad) {
-			if (q == 0)
-				break;
-			std::cout << "\n" << c << "= " << q;
-			c++;  // change a to b, b to c, etc
-		}
-		std::cout << "\n";
-		factorlist.prCounts();  // print counts
-
+		
 		if (test) {
 			/* recalculate result & get total number of factors */
 			Znum result = factorlist.recheck(sum.totalFacs);
@@ -817,10 +840,12 @@ static void doFactors(const Znum &Result, bool test) {
 				std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
 				Beep(750, 1000);
 			}
-			result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-			if (result != Result) {
-				std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
-				Beep(750, 1000);
+			if (factorFlag > 1) {
+				result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
+				if (result != Result) {
+					std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
+					Beep(750, 1000);
+				}
 			}
 			auto end = clock(); 
 			double elapsed = (double)end - start;
@@ -1962,13 +1987,14 @@ retry:
 }
 
 
-/* check for commands. return 2 for exit, 1 for other command, 0 if not a command*/
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
 static int processCmd(const std::string &command) {
 
 	/* list of commands (static for efficiency) */
-	const static std::vector<std::string>list =
-	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E", "S",  "F" , "N" , "X", "D",
-	  "TEST", "MSIEVE", "YAFU", "V ", "PRINT" };
+	const static std::vector<std::string> list =
+	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
+	   "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
+	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT" };
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -2005,16 +2031,19 @@ static int processCmd(const std::string &command) {
 		{ lang = 0; return 1; }           // english
 	case 5: /* S */
 		{ lang = 1; return 1; }	          // spanish (Español)
-	case 6: /* F */
-		{ factorFlag = true; return 1; }  // do factorisation
-	case 7: /* N */
-		{ factorFlag = false; return 1; } // don't do factorisation
-	case 8: /* X */
+	case 6: /* F */ { 
+		/* will not throw an exception if input has fat finger syndrome.
+			If no valid digits found, sets factorFlag to 0 */
+		factorFlag = atoi(command.substr(1).data());
+		std::cout << "factor set to " << factorFlag << '\n';
+		return 1; }  
+	
+	case 7: /* X */
 		{ hex = true; return 1; }         // hexadecimal output
-	case 9: /* D */
+	case 8: /* D */
 		{ hex = false; return 1; }        // decimal output
 
-	case 10: /* TEST */ {
+	case 9: /* TEST */ {
 			/* there are a number of commands that begin with TEST */
 			if (command == "TEST") {
 				doTests();         // do basic tests 
@@ -2068,29 +2097,66 @@ static int processCmd(const std::string &command) {
 			}
 		}
 
-	case 11: /* MSIEVE */ {
+	case 10: /* MSIEVE */ {
 			msieveParam(command);
 			return 1;
 		}
-	case 12: /* YAFU */ {
+	case 11: /* YAFU */ {
 			yafuParam(command);
 			return 1;
 		}
-	case 13: /* V */ {
+	case 12: /* V */ {
 			/* will not throw an exception if input has fat finger syndrome.
 			If no valid digits found, sets verbose to 0 */
 			verbose = atoi(command.substr(1).data());
 			std::cout << "verbose set to " << verbose << '\n';
 			return 1;
 		}
-	case 14: /* PRINT */ {
+	case 13: /* PRINT */ {
 		if (command.size() > 4)
 			printvars(command.substr(5));
 		else
 			printvars("");
 		return 1;
 	}
-
+	case 14: /* LIST */ {
+		if (exprList.empty())
+			std::cout << "No expressions stored yet \n";
+		else
+			std::cout << exprList.size() << " expressions stored \n";
+		for (auto exp : exprList) {
+			std::cout << exp << '\n';
+		}
+		return 1;
+	}
+	case 15: /* LOOP */ {
+		exprList.clear();
+		return 1;
+	}
+	case 16: /* REPEAT */ {
+		int repeat = 0;
+		Znum result;
+		retCode rv;
+		repeat = atoi(command.substr(6).data());
+		for (int count = 1; count <= repeat; count++) {
+			for (auto expr : exprList) {
+				rv = ComputeExpr(expr, result);
+				if (rv != retCode::EXPR_OK) {
+					textError(rv);   // invalid expression; print error message
+				}
+				else {
+				std::cout << " = ";
+				ShowLargeNumber(result, 6, true, hex);   // print value of expression
+				std::cout << '\n';
+				if (factorFlag > 0) {
+					doFactors(result, false); /* factorise Result, calculate number of divisors etc */
+					results.clear();  // get rid of unwanted results
+				}
+			}
+			}
+		}
+		return 1;
+	}
 	default:
 		return 0;   /* not a recognised command */
 	}
@@ -2107,7 +2173,7 @@ int main(int argc, char *argv[]) {
 	std::string modified;  /* date & time program last modified */
 
 	try {
-		f.UnEx = 1;        /* set unhandled exception*/
+		f.UnEx = 1;        /* set unhandled exception 'filter' */
 		f.abort = 1;       /* trap abort (as a signal) */
 		f.sigterm = 1;     /* trap terminate signal */
 		f.sigill = 1;      /* trap 'illegal' signal */
@@ -2186,12 +2252,19 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		retry:
 			getline(std::cin, expr);    // expression may include spaces
 			strToUpper(expr, expr);		// convert to UPPER CASE 
+			removeTrailing(expr);       // remove trailing spaces
+
+			if (expr.empty()) {
+				Beep(3000, 250);     /* audible alarm instead of error msg */
+				goto retry;          /* input is zero-length; go back*/
+			}
 
 			// prevent the sleep idle time-out.
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
-			int cmdCode = processCmd(expr);
-			if (cmdCode == 2) break;    // EXIT command
+			int cmdCode = processCmd(expr);  /* is input a command? */
+			if (cmdCode == 2) 
+				break;    // EXIT command
 			if (cmdCode == 1) {
 				// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 				SetThreadExecutionState(ES_CONTINUOUS);
@@ -2199,15 +2272,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			}
 			if (cmdCode != 0) {
 				fprintf_s(stderr, "Invalid return code %x from processCmd \n", cmdCode);
-				continue;    // wierd return code; can't process further; 
+				continue;    // weird return code; can't process further; 
 				             //  go back to start of loop
 			}
+
+			/* input is not a valid command; assume it is an expression */
 			auto start = clock();	// used to measure execution time
-			//removeBlanks(expr);     // remove any spaces 
-			if (expr.empty()) {
-				Beep(3000, 250);
-				goto retry;     /* input is zero-length; go back*/
-			}
 
 			rv = ComputeExpr(expr, Result); /* analyse expression, compute value*/
 
@@ -2215,11 +2285,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				textError(rv);   // invalid expression; print error message
 			}
 			else {
+				exprList.push_back(expr);  /* save text of expression */
 				std::cout << " = ";
 				ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 				std::cout << '\n';				
-				if (factorFlag) {
-					doFactors(Result,false); /* factorise Result, calculate number of divisors etc */
+				if (factorFlag > 0) {
+					doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
 					results.clear();  // get rid of unwanted results
 				}
 			}

@@ -1744,11 +1744,11 @@ int new_uvar(const char *name) {
 
 		uvars.vars.resize(uvars.alloc);
 	}
-
+	/* copy variable name, then setvariable's value to 0 */
 	strcpy_s(uvars.vars[uvars.num].name, sizeof(uvars.vars[uvars.num].name),
 		name);
 	uvars.vars[uvars.num].data = 0;
-	uvars.num++;
+	uvars.num++;   /* increase number of user variables */
 	return uvars.num - 1;
 }
 
@@ -1768,24 +1768,16 @@ int set_uvar(const char *name, const Znum &data) {
 }
 
 /* look for 'name' in the global uvars structure
-   if found, copy out data and return index else return 1 if not found */
+   if found, copy out data and return index else return -1 if not found */
 int get_uvar(const char *name, Znum data)
 {
 	int i;
 
-	for (i = 0; i < uvars.num; i++)
-	{
-		if (strcmp(uvars.vars[i].name, name) == 0)
-		{
+	for (i = 0; i < uvars.num; i++) {
+		if (strcmp(uvars.vars[i].name, name) == 0) 	{
 			data=  uvars.vars[i].data;
 			return i;
 		}
-	}
-
-	if (strcmp(name, "vars") == 0) {
-		for (i = 0; i < uvars.num; i++)
-			gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
-		return -2;
 	}
 
 	return -1;  /* name not found */
