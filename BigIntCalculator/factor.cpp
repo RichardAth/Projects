@@ -654,6 +654,8 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	const long long PollardLimit = MaxP*MaxP*MaxP;
 
 	Factors.set(toFactor);   /* initialise factor list */
+	if (toFactor <= 3)
+		return true;   /* toFactor is 1 or prime so we can stop now*/
 
 	if ((long long)primeListMax <MaxP) {  // get primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
@@ -1215,6 +1217,7 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 		auto rv = factor(numberZ, vfactors);
 		if (!rv)
 			return false;  // failed to factorise number
+		
 		if (quads != nullptr) {
 			ComputeFourSquares(vfactors, quads, numberZ); 
 			// get a, b, c, d such that sum of their squares = numberZ

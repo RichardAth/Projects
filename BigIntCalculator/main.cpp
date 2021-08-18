@@ -724,13 +724,21 @@ static void removeBlanks(std::string &msg) {
 	}
 }
 
-/* remove trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
-static void removeTrailing(std::string &msg) {
-	for(ptrdiff_t ix = msg.size()-1; ix >= 0; ix--) {
-		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {
-			msg.erase(ix, 1);  /* remove trailing space */
+/* remove initial & trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
+static void removeInitTrail(std::string &msg) {
+	for (size_t ix = 0; ix < msg.size(); ix++) {
+		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {     // look for spaces, tabs, etc
+			msg.erase(ix, 1);      // remove space character
+			ix--;  // adjust index to take account of removed blank
 		}
 		else
+			break;  /* exit when 1st non-space char is found */
+	}
+	if (msg.empty())
+		return;
+	while (isspace(msg.back())) {
+		msg.resize(msg.size() - 1);
+		if (msg.empty())
 			break;
 	}
 }
@@ -1895,7 +1903,7 @@ static void processIni(const char * arg) {
 }
 
 
-//search the docfile for the right entry specified by s
+//search the docfile for the right entry specified by helpTopic
 //just search for the heading, and print everything until
 //the next heading is found
 static void helpfunc(const std::string &helpTopic)
@@ -1986,6 +1994,62 @@ retry:
 	return;
 }
 
+/* format is IF (expression) LOOP or IF (expression) STOP 
+return -1 if syntax is invalid
+ return 0 if expression is 0 
+ return 1 if expression NE 0 and actionj is STOP
+ return 2 if expression NE 0 and action is LOOP */
+static int ifCommand(const std::string &command) {
+	int ixx, ixx2, exprLen;
+	std::string expr;
+	Znum result;
+
+	for (ixx = 2; ixx < command.size(); ixx++)
+		if (command[ixx] == '(')
+			break;
+	if (ixx >= command.size()) {
+		std::cout << "No ( after IF command \n";
+		return -1;
+	}
+	int bc = 1;  /* bracket count */
+	for (ixx2 = ixx + 1; ixx2 < command.size(); ixx2++) {
+		if (command[ixx2] == '(')
+			bc++;
+		if (command[ixx2] == ')') {
+			bc--;
+			if (bc == 0)
+				break;   /* found closing bracket */
+		}
+	}
+	if (ixx2 >= command.size()) {
+		std::cout << "No  matching ) after IF command \n";
+		return -1;
+	}
+
+	exprLen = ixx2 - ixx - 1;
+	expr = command.substr(ixx + 1, exprLen);
+	retCode rv = ComputeExpr(expr, result);
+	if (rv != retCode::EXPR_OK) {
+		textError(rv);   // invalid expression; print error message
+		return -1;
+	}
+	 /* move ixx2 to next non-blank character */
+	for (ixx2++; ixx2 < command.size() && isblank(command[ixx2]); ixx2++);
+	if (command.substr(ixx2) == "STOP") {
+		if (result != 0)
+			return 1;
+		else
+			return 0;
+	}
+	if (command.substr(ixx2) == "LOOP") {
+		if (result != 0)
+			return 2;
+		else
+			return 0;
+	}
+
+	return -1;  /* neither STOP nor LOOP found */
+}
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
 static int processCmd(const std::string &command) {
@@ -1994,7 +2058,7 @@ static int processCmd(const std::string &command) {
 	const static std::vector<std::string> list =
 	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
 	   "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
-	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT" };
+	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF" };
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -2037,12 +2101,10 @@ static int processCmd(const std::string &command) {
 		factorFlag = atoi(command.substr(1).data());
 		std::cout << "factor set to " << factorFlag << '\n';
 		return 1; }  
-	
 	case 7: /* X */
 		{ hex = true; return 1; }         // hexadecimal output
 	case 8: /* D */
 		{ hex = false; return 1; }        // decimal output
-
 	case 9: /* TEST */ {
 			/* there are a number of commands that begin with TEST */
 			if (command == "TEST") {
@@ -2096,7 +2158,6 @@ static int processCmd(const std::string &command) {
 				return 0;  /* not a recognised command */
 			}
 		}
-
 	case 10: /* MSIEVE */ {
 			msieveParam(command);
 			return 1;
@@ -2140,21 +2201,63 @@ static int processCmd(const std::string &command) {
 		repeat = atoi(command.substr(6).data());
 		for (int count = 1; count <= repeat; count++) {
 			for (auto expr : exprList) {
+				/* recalculate each stored expression */
 				rv = ComputeExpr(expr, result);
 				if (rv != retCode::EXPR_OK) {
 					textError(rv);   // invalid expression; print error message
 				}
 				else {
-				std::cout << " = ";
-				ShowLargeNumber(result, 6, true, hex);   // print value of expression
-				std::cout << '\n';
-				if (factorFlag > 0) {
-					doFactors(result, false); /* factorise Result, calculate number of divisors etc */
-					results.clear();  // get rid of unwanted results
+					std::cout << " = ";
+					ShowLargeNumber(result, 6, true, hex);   // print value of expression
+					std::cout << '\n';
+					if (factorFlag > 0) {
+						doFactors(result, false); /* factorise Result, calculate number of divisors etc */
+						results.clear();  // get rid of unwanted results
+					}
 				}
 			}
-			}
 		}
+		return 1;
+	}
+	case 17: /* IF */ {
+		/*format is IF (expression) LOOP or IF (expression) STOP */
+		Znum result;
+		int rv = ifCommand(command);
+		if (rv == 2) {
+			/* LOOP*/
+			exprList.push_back(command);
+			loop:
+			for (auto expr : exprList) {
+				if (expr.substr(0, 2) == "IF") {
+					int rv2 = ifCommand(expr);
+					if (rv2 == 2)
+						goto loop;
+					else if (rv2 == 0)
+						break;
+					else
+						abort();  /* where are we? */
+				}
+				/* recalculate each stored expression */
+				retCode rv = ComputeExpr(expr, result);
+				if (rv != retCode::EXPR_OK) {
+					textError(rv);   // invalid expression; print error message
+				}
+				else {
+					std::cout << " = ";
+					ShowLargeNumber(result, 6, true, hex);   // print value of expression
+					std::cout << '\n';
+					if (factorFlag > 0) {
+						doFactors(result, false); /* factorise Result, calculate number of divisors etc */
+						results.clear();  // get rid of unwanted results
+					}
+				}
+			}
+			return 1;  /* loop completed */
+		}
+		if (rv == 0)
+			/* command does nothing now but may do something in a later iteration */
+			exprList.push_back(command);  
+		/* to be completed */
 		return 1;
 	}
 	default:
@@ -2252,7 +2355,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		retry:
 			getline(std::cin, expr);    // expression may include spaces
 			strToUpper(expr, expr);		// convert to UPPER CASE 
-			removeTrailing(expr);       // remove trailing spaces
+			removeInitTrail(expr);       // remove initial & trailing spaces
 
 			if (expr.empty()) {
 				Beep(3000, 250);     /* audible alarm instead of error msg */

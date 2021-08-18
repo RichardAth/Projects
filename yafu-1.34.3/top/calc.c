@@ -621,20 +621,20 @@ While there are tokens to be read:
 	* If the token is a number, then add it to the output queue.
 	* If the token is a function token, then push it onto the stack.
 	* If the token is a function argument separator (e.g., a comma):
-		* Until the topmost element of the stack is a left parenthesis, pop the element onto the
-			output queue. If no left parentheses are encountered, either the separator was misplaced
-			or parentheses were mismatched.
+		* Until the topmost element of the stack is a left parenthesis, pop the element 
+		  onto the output queue. If no left parentheses are encountered, either the 
+		  separator was misplaced or parentheses were mismatched.
 	* If the token is an operator, o1, then:
 		* while there is an operator, o2, at the top of the stack, and either
 			o1 is associative or left-associative and its precedence is less than
-			(lower precedence) or equal to that of o2, or o1 is right-associative and its precedence
-			is less than (lower precedence) that of o2,
+			(lower precedence) or equal to that of o2, or o1 is right-associative 
+			and its precedence is less than (lower precedence) that of o2,
 			* pop o2 off the stack, onto the output queue;
 		* push o1 onto the operator stack.
 	* If the token is a left parenthesis, then push it onto the stack.
 	* If the token is a right parenthesis:
-		* Until the token at the top of the stack is a left parenthesis, pop operators off the stack
-			onto the output queue.
+		* Until the token at the top of the stack is a left parenthesis, pop operators 
+		  off the stack onto the output queue.
 		* Pop the left parenthesis from the stack, but not onto the output queue.
 		* If the token at the top of the stack is a function token, pop it and onto the output queue.
 		* If the stack runs out without finding a left parenthesis, then there are mismatched parentheses.
