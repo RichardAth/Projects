@@ -442,6 +442,19 @@ LOOP
 $p=n($p)
 REPEAT 1000
 
+An alternative to the simple REPEAT is the IF command e.g.
+$p=151
+LOOP
+$p=n($p)
+IF ($p < 10000) REPEAT
+
+The IF command is processed as follows:
+1.  The expression in brackets is evaluated. If the value is not zero the specified
+    action is performed, otherwise no action is taken. The action can be REPEAT 
+    which goes back to the start of the loop, or STOP which terminates the loop.
+    The loop can contain many IF commands.
+
+
 the LIST command will output all the saved expressions. Expressions entered
 before the last LOOP command are not shown.
 

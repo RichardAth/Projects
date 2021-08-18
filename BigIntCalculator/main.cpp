@@ -1994,11 +1994,11 @@ retry:
 	return;
 }
 
-/* format is IF (expression) LOOP or IF (expression) STOP 
+/* format is IF (expression) REPEAT or IF (expression) STOP 
 return -1 if syntax is invalid
  return 0 if expression is 0 
- return 1 if expression NE 0 and actionj is STOP
- return 2 if expression NE 0 and action is LOOP */
+ return 1 if expression NE 0 and action is STOP
+ return 2 if expression NE 0 and action is REPEAT */
 static int ifCommand(const std::string &command) {
 	int ixx, ixx2, exprLen;
 	std::string expr;
@@ -2041,14 +2041,14 @@ static int ifCommand(const std::string &command) {
 		else
 			return 0;
 	}
-	if (command.substr(ixx2) == "LOOP") {
+	if (command.substr(ixx2) == "REPEAT") {
 		if (result != 0)
 			return 2;
 		else
 			return 0;
 	}
 
-	return -1;  /* neither STOP nor LOOP found */
+	return -1;  /* neither STOP nor REPEAT found */
 }
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
@@ -2220,20 +2220,20 @@ static int processCmd(const std::string &command) {
 		return 1;
 	}
 	case 17: /* IF */ {
-		/*format is IF (expression) LOOP or IF (expression) STOP */
+		/*format is IF (expression) REPEAT or IF (expression) STOP */
 		Znum result;
 		int rv = ifCommand(command);
 		if (rv == 2) {
-			/* LOOP*/
+			/* REPEAT */
 			exprList.push_back(command);
 			loop:
 			for (auto expr : exprList) {
 				if (expr.substr(0, 2) == "IF") {
 					int rv2 = ifCommand(expr);
 					if (rv2 == 2)
-						goto loop;
-					else if (rv2 == 0)
-						break;
+						goto loop;  /* repeat stored expressions agaion */
+					else if (rv2 == 0 || rv2 == 1)
+						break;     /* expression is 0 or STOP specified */
 					else
 						abort();  /* where are we? */
 				}
