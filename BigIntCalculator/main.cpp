@@ -734,12 +734,8 @@ static void removeInitTrail(std::string &msg) {
 		else
 			break;  /* exit when 1st non-space char is found */
 	}
-	if (msg.empty())
-		return;
-	while (isspace(msg.back())) {
-		msg.resize(msg.size() - 1);
-		if (msg.empty())
-			break;
+	while (!msg.empty() && isspace(msg.back())) {
+		msg.resize(msg.size() - 1);  /* remove trailing spaces */
 	}
 }
 
@@ -1994,11 +1990,15 @@ retry:
 	return;
 }
 
-/* format is IF (expression) REPEAT or IF (expression) STOP 
+/* format is IF (expression) REPEAT 
+          or IF (expression) STOP 
+		  or IF (expression) THEN (expression) [ELSE (expression)]
+          [the ELSE (expression) part is optional]
 return -1 if syntax is invalid
  return 0 if expression is 0 
  return 1 if expression NE 0 and action is STOP
- return 2 if expression NE 0 and action is REPEAT */
+ return 2 if expression NE 0 and action is REPEAT 
+ return 3 if THEN or ELSE expression evaluated succesfully */
 static int ifCommand(const std::string &command) {
 	int ixx, ixx2, exprLen;
 	std::string expr;
@@ -2047,7 +2047,88 @@ static int ifCommand(const std::string &command) {
 		else
 			return 0;
 	}
+	if (command.substr(ixx2, 4) == "THEN") {
+		size_t ex1Start=ixx2+4, ex1End, ex2Start, ex2End;
+		int bc = 0;
+		while (ex1Start < command.size() && isblank(command[ex1Start]))
+			ex1Start++;  /* move past blank char*/
+		if (ex1Start >= command.size() || command[ex1Start] != '(') {
+			std::cout << " THEN is not followed by ( \n";
+			return -1;  /* no ( after THEN so invalid */
+		}
+		ex1End = ex1Start + 1;
+		bc = 1;
+		while (ex1End < command.size()) {
+			if (command[ex1End] == '(')
+				bc++;
+			if (command[ex1End] == ')')
+				bc--;
+			if (bc == 0)
+				break;
+			ex1End++;
+		}
+		if (bc != 0) {
+			std::cout << "Matching ) not found \n";
+			return -1;   /* matching ) not found */
+		}
+		ex2Start = ex1End + 1;
+		if (ex2Start < command.size()) {
+			/* still some unprocessed characters */
+			while (ex2Start < command.size() && isblank(command[ex2Start]))
+				ex2Start++;  /* move past blank char*/
+			if (command.size() < ex2Start + 4 || command.substr(ex2Start, 4) != "ELSE") {
+				std::cout << "Format invalid. ELSE not found \n";
+				return -1;
+			}
+			ex2Start += 4;   /* move past ELSE */
+			while (ex2Start < command.size() && isblank(command[ex2Start]))
+				ex2Start++;  /* move past blank char*/
+			if (ex2Start >= command.size() || command[ex2Start] != '(') {
+				std::cout << "ELSE not followed by ( \n";
+				return -1;  /* no ( after ELSE so invalid */
+			}
+			bc = 1;
+			ex2End = ex2Start + 1;
+			while (ex2End < command.size()) {
+				if (command[ex2End] == '(')
+					bc++;
+				if (command[ex2End] == ')')
+					bc--;
+				if (bc == 0)
+					break;
+				ex2End++;
+			}
 
+			if (bc != 0) {
+				std::cout << "Matching ) not found \n";
+				return -1;   /* matching ) not found */
+			}
+		}
+		if (result != 0) {
+			expr = command.substr(ex1Start+1, ex1End - ex1Start-1);
+		}
+		else if (ex2Start < command.size())
+			expr = command.substr(ex2Start+1, ex2End - ex2Start-1);
+		else 
+			return 3;  /* no ELSE expression to evaluate */
+
+		retCode rv = ComputeExpr(expr, result);
+		if (rv != retCode::EXPR_OK) {
+			textError(rv);   // invalid expression; print error message
+			return -1;
+		}
+		else {
+			std::cout << " = ";
+			ShowLargeNumber(result, 6, true, hex);   // print value of expression
+			std::cout << '\n';
+			if (factorFlag > 0) {
+				doFactors(result, false); /* factorise Result, calculate number of divisors etc */
+				results.clear();  // get rid of unwanted results
+			}
+			return 3;  /* IF (...) THEN (...) ELSE (...) processed OK*/
+		}
+	}
+	std::cout << "Neither STOP, REPEAT, nor THEN found \n";
 	return -1;  /* neither STOP nor REPEAT found */
 }
 
@@ -2222,18 +2303,20 @@ static int processCmd(const std::string &command) {
 	case 17: /* IF */ {
 		/*format is IF (expression) REPEAT or IF (expression) STOP */
 		Znum result;
-		int rv = ifCommand(command);
+		int rv = ifCommand(command);  /* analyse IF command */
 		if (rv == 2) {
 			/* REPEAT */
 			exprList.push_back(command);
 			loop:
 			for (auto expr : exprList) {
 				if (expr.substr(0, 2) == "IF") {
-					int rv2 = ifCommand(expr);
+					int rv2 = ifCommand(expr);  /* analyse stored command again */
 					if (rv2 == 2)
-						goto loop;  /* repeat stored expressions agaion */
+						goto loop;  /* repeat stored expressions again */
 					else if (rv2 == 0 || rv2 == 1)
 						break;     /* expression is 0 or STOP specified */
+					else if (rv2 == 3)
+						continue;
 					else
 						abort();  /* where are we? */
 				}
@@ -2254,8 +2337,7 @@ static int processCmd(const std::string &command) {
 			}
 			return 1;  /* loop completed */
 		}
-		if (rv == 0)
-			/* command does nothing now but may do something in a later iteration */
+		if (rv == 0 || rv == 3)
 			exprList.push_back(command);  
 		/* to be completed */
 		return 1;
@@ -2360,6 +2442,18 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			if (expr.empty()) {
 				Beep(3000, 250);     /* audible alarm instead of error msg */
 				goto retry;          /* input is zero-length; go back*/
+			}
+
+			while (expr.back() == '\\') {   /* ends with continuation character? */
+				std::string cont;  
+				std::cout << "continue: ";
+				getline(std::cin, cont);   /* get continuation line */
+				strToUpper(cont, cont);   // convert to UPPER CASE 
+				while (!cont.empty() && isspace(cont.back())) {
+					cont.resize(cont.size() - 1);   /* remove trailing space */
+				}
+				expr.resize(expr.size() - 1); /* remove trailing \ char */
+				expr += cont;    /* append continuation line to previous input */
 			}
 
 			// prevent the sleep idle time-out.
