@@ -51,6 +51,13 @@ above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the 
 default order of evaluation apply.
 
+User variables can be created and used like multiple memories in a pocket calculator.
+Numeric values can be stored in these variables which must have names beginning with 
+$ or _ and contain only letters, digits $ or _ characters. Names are not case-sensitive. 
+Assign values to variables using the assignment operator = 
+Assignment statements are also expressions which return the value to the right of the =
+operator.
+
 for a list of functions enter HELP FUNCTION
 
 [FUNCTION]
@@ -112,18 +119,19 @@ other commands:
 X    : hexadecimal o/p, 
 D    : decimal o/p
 F n  : control factorisation, 
-       0 = just evaluate expression, no factorisation
-       1 = evaluate expression, factorise resulting value, but don't do no. of
-       divisors, etc.
-       2 = evaluate expression, factorise resulting value, then get no of divisors,
-           sum of divisors, totient, möbius, sum of squares.
-           initial setting is F = 2.
+       n = 0 : just evaluate expression, no factorisation
+       n = 1 : evaluate expression, factorise resulting value, but don't do no. of
+               divisors, etc.
+       n = 2 : evaluate expression, factorise resulting value, then get no. of 
+               divisors, sum of divisors, totient, möbius, sum of squares.
+       initial setting is n = 2.
 S    : switch to Spanish, 
 E    : switch to English
 V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 1 turns on many messages that show more of what is happening internally.
        n = 2 turns on even more messages.
 PRINT  Print the names and values of any user variables.
+LIST   Print all stored expressions.
 HELP (this command)
 EXIT
 
@@ -449,15 +457,15 @@ $p=n($p)
 IF ($p < 10000) REPEAT
 
 The IF command is processed as follows:
-1.  The expression in brackets is evaluated. If the value is not zero the specified
-    action is performed, otherwise no action is taken. The action can be REPEAT 
-    which goes back to the start of the loop, or STOP which terminates the loop.
+1.  The expression in brackets is evaluated. 
+2.  If the value is not zero the specified action is performed, otherwise no 
+    action is taken. The action can be REPEAT  which goes back to the start 
+    of the loop, or STOP which terminates the loop.
     The loop can contain many IF commands.
-
 
 the LIST command will output all the saved expressions. Expressions entered
 before the last LOOP command are not shown.
 
-Note that commands and invalid expressions are not saved, but there is no way to
-edit saved expressions. It is only possible to delete them using the LOOP command
-and start again.
+Note that invalid expressions and commands other than IF are not saved, and there 
+is no way to edit saved expressions. It is only possible to delete them all using 
+the LOOP command and start again.

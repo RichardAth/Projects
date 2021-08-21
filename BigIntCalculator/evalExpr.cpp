@@ -286,7 +286,7 @@ const static struct oper_list operators[]{
 
 
 /* forward references */
-static retCode tokenise(const std::string expr, std::vector <token> &tokens);
+static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1)
 where p=prime factor and e=exponent.*/
@@ -1108,7 +1108,7 @@ static void printTokens(const token expr[], const int exprLen) {
 			std::cout << " **ERROR** ";
 			break;
 
-		case types::Operator:
+		case types::Operator: {
 			if (expr[ix].oper == opCode::leftb)
 				std::cout << '(';
 			else if (expr[ix].oper == opCode::fact) {
@@ -1131,6 +1131,15 @@ static void printTokens(const token expr[], const int exprLen) {
 					}
 			}
 			break;
+		}
+
+		case types::uservar: {
+			size_t Userix = expr[ix].userIx;  /* get value from user variable */
+			Znum data = uvars.vars[Userix].data;
+			std::string name = uvars.vars[Userix].name;
+			std::cout << "User variable " << name << " = " << data << '\n';
+			break;
+		}
 
 		default:
 			abort(); /* unrecognised token */
@@ -1522,12 +1531,12 @@ Added 5/6/2021
 		one number on the stack at the end, or at any time there are not enough
 		numbers on the stack to perform an operation an error is reported.
 		(this would indicate a syntax error not detected earlier)*/
-retCode ComputeExpr(const std::string &expr, Znum &Result) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;
 
-	rv = tokenise(expr, tokens); /* 'tokenise' the expression */
+	rv = tokenise(expr, tokens, asgCt); /* 'tokenise' the expression */
 	if (rv == retCode::EXPR_OK) {
 		rPolish.clear();
 		int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish);
@@ -1570,12 +1579,13 @@ be tokenised EXPR_SYNTAX_ERROR is returned. If left & right brackets don't match
 EXPR_PAREN_MISMATCH is returned.
 The normal return value is EXPR_OK.
 */
-static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
+static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt) {
 	int exprIndex = 0;
 	int opIndex;
 	token nxtToken;
 
 	tokens.clear();
+	asgCt = 0;
 
 	while (exprIndex < expr.length()) {
 		nxtToken.typecode = types::error;   /* should be replaced later by valid code */
@@ -1606,6 +1616,8 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens) {
 					exprIndex++;
 				}
 			}
+			if (operators[opIndex].operCode == opCode::assign)
+				asgCt++;
 		}
 
 		/* check for , */

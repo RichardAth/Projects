@@ -185,7 +185,7 @@ std::vector <std::string> exprList;  /* expressions store here as text once
 									   they are validated */
 
 /* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result);
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt);
 
 /* function declarations, only for functions that have forward references */
 long long MulPrToLong(const Znum &x);
@@ -916,8 +916,6 @@ static bool factortest(const Znum &x3, const int method=0) {
 		std::cout << "found " << factorlist.fsize() << " unique factors, total "
 			<< sum.totalFacs << " factors\n";
 
-		/* get number of digits in 2nd largest factor */
-		sum.sndFac = factorlist.sndFac();
 		if (method == 0)
 			factorlist.prCounts();   // print counts
 
@@ -948,7 +946,7 @@ static void doTests(void) {
 	/*std::vector <token> exprTokens;
 	std::vector <token> rPolish;
 	int rpLen;*/
-	int i;
+	int i, asgCt;
 	int testcnt = 0;
 	struct test {
 		std::string text;        // text of expression to be evaluated
@@ -1035,7 +1033,7 @@ static void doTests(void) {
 		//removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
 		/* but it is not necessary to convert to upper case */
 
-		auto  rv =ComputeExpr(testvalues[i].text, result);
+		auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
 			std::cout << "test " << i + 1 << " failed\n" <<
 				"expected " << testvalues[i].text << " = " << testvalues[i].expected_result << '\n';
@@ -1081,28 +1079,28 @@ static void doTests(void) {
 	x3 += 2;
 	factortest(x3);
 	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^10)^2-1", x3);  // test power of large number-1
+	ComputeExpr("n(10^10)^2-1", x3, asgCt);  // test power of large number-1
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
-	ComputeExpr("120#-1", x3);
+	ComputeExpr("120#-1", x3, asgCt);
 	factortest(x3);
 	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^15)^2", x3);  // test power of large number
+	ComputeExpr("n(10^15)^2", x3, asgCt);  // test power of large number
 	factortest(x3);
 	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^6+20)^1667", x3);  // test power of large prime number
+	ComputeExpr("n(10^6+20)^1667", x3, asgCt);  // test power of large prime number
 	factortest(x3);
 	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^7)^3*n(10^8)^2", x3);  // test powers of two large prime number
+	ComputeExpr("n(10^7)^3*n(10^8)^2", x3, asgCt);  // test powers of two large prime number
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
-	ComputeExpr("n(3*10^9+50)*n(3*10^10+500)", x3);  // test Lehman factorisation
+	ComputeExpr("n(3*10^9+50)*n(3*10^10+500)", x3, asgCt);  // test Lehman factorisation
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 	x3 = 0;
-	ComputeExpr("n(10^15)^3*n(10^14)", x3);  // test Lehman factorisation
+	ComputeExpr("n(10^15)^3*n(10^14)", x3, asgCt);  // test Lehman factorisation
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
@@ -1116,7 +1114,7 @@ static void doTests(void) {
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
 	ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
-		"5531276838753171770199594238596428121188033664754218345562493168782883", x3);
+		"5531276838753171770199594238596428121188033664754218345562493168782883", x3, asgCt);
 	x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
 	/* in general numbers > about 110 digits cannot be factorised in a reasonable time 
 	but this one can, because a special algorithm just for Carmichael numbers is used. */
@@ -1124,11 +1122,11 @@ static void doTests(void) {
 	results.back().testNum = ++testcnt;
 	std::cout << "factorised 397-digit Carmichael number \n";
 
-	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3);  
+	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
-	ComputeExpr("n(2^97)*n(2^105)", x3);
+	ComputeExpr("n(2^97)*n(2^105)", x3, asgCt);
 	factortest(x3);
 	results.back().testNum = ++testcnt;
 
@@ -1609,7 +1607,7 @@ static void doTests4(void) {
 /* tests using only YAFU for factorisation */
 static void doTests5(void) {
 	results.clear();
-	int testcnt = 0;
+	int testcnt = 0, asgCt;
 
 	Znum num = 49728103; // 7001 * 7103
 	factortest(num, 1);
@@ -1625,7 +1623,8 @@ static void doTests5(void) {
 	* 33637 310674 071348 724927 955857 253537  
 	*117445 937227 520353 139789 517076 610399  
 	(7 factors)   */
-	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", num);
+	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", 
+		num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";  // test 2
@@ -1637,7 +1636,7 @@ static void doTests5(void) {
 	  P13 = 4527716228491
 	  P18 = 248158049830971629
 	*/
-	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num);
+	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";  // test 3
@@ -1646,7 +1645,7 @@ static void doTests5(void) {
 	/* P49 = 2412329883909990626764837681505523221799246895133
        P32 = 18138544144503826077310252140817
     */
-	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num);
+	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";   // test 4
@@ -1654,7 +1653,7 @@ static void doTests5(void) {
 	//factorise 85 digit number (about 7 mins)
 	/* factors are 1485325304578290487744454354798448608807999 and 
                    1263789702211268559063981919736415575710439 */
-	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num);
+	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";  // test 5
@@ -1662,7 +1661,7 @@ static void doTests5(void) {
 	// factorise 94 digit number (about 60 mins)
 	/* factors are 10910042366770069935194172108679294830357131379375349 and 
                    859735020008609871428759089831769060699941 */
-	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num);
+	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";  // test 6
@@ -1670,7 +1669,7 @@ static void doTests5(void) {
 	//factorise 100 digit number - takes many hours
 	/* factor are 618162834186865969389336374155487198277265679 and
 	              4660648728983566373964395375209529291596595400646068307 */
-	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num);
+	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num, asgCt);
 	factortest(num, 1);
 	results.back().testNum = ++testcnt;
 	std::cout << "test " << testcnt << " completed \n";  // test 7
@@ -1990,6 +1989,55 @@ retry:
 	return;
 }
 
+
+/* evaluate 1 or more expressions, separated by commas */
+static retCode ComputeMultiExpr(std::string expr, Znum result) {
+	std::string subExpr;
+	retCode rv;
+	size_t subStart = 0, subEnd;
+	int bc = 0;   /* bracket count */
+	int asgCt = 0;   /* number of assignment operators */
+	while (subStart < expr.size()) {
+		bc = 0;
+		/* find  separator or end of text*/
+		for (subEnd = subStart + 1; subEnd < expr.size(); subEnd++) {
+			if (expr[subEnd] == '(')
+				bc++;
+			if (expr[subEnd] == ')')
+				bc--;
+			if (bc == 0 && expr[subEnd] == ',')
+				break;
+		}
+		if (bc != 0)
+			return retCode::EXPR_PAREN_MISMATCH;
+		subExpr = expr.substr(subStart, subEnd - subStart);
+		rv = ComputeExpr(subExpr, result, asgCt);
+		if (rv != retCode::EXPR_OK) {
+			textError(rv);   // invalid expression; print error message
+			return rv;
+		}
+		else {
+			if (asgCt == 0)
+				std::cout << " = ";
+			else {
+				/* print names of variables assigned values */
+				for (size_t ix = 0; ix < expr.size() && asgCt > 0; ix++) {
+					putchar(expr[ix]);
+					if (expr[ix] == '=')
+						asgCt--;
+				}
+			}
+
+			ShowLargeNumber(result, 6, true, hex);   // print value of expression
+			std::cout << '\n';
+
+		}
+		subStart = subEnd + 1;  /* move past , */
+	} /* end of while loop */
+
+	return rv;
+}
+
 /* format is IF (expression) REPEAT 
           or IF (expression) STOP 
 		  or IF (expression) THEN (expression) [ELSE (expression)]
@@ -2001,9 +2049,12 @@ return -1 if syntax is invalid
  return 3 if THEN or ELSE expression evaluated succesfully */
 static int ifCommand(const std::string &command) {
 	int ixx, ixx2, exprLen;
+	int asgCt = 0;  /* number of assignment operators*/
 	std::string expr;
 	Znum result;
+	int bc = 1;  /* bracket count */
 
+	/* find ( after IF */
 	for (ixx = 2; ixx < command.size(); ixx++)
 		if (command[ixx] == '(')
 			break;
@@ -2011,14 +2062,15 @@ static int ifCommand(const std::string &command) {
 		std::cout << "No ( after IF command \n";
 		return -1;
 	}
-	int bc = 1;  /* bracket count */
+
+	/* find matching ) after IF */
 	for (ixx2 = ixx + 1; ixx2 < command.size(); ixx2++) {
 		if (command[ixx2] == '(')
 			bc++;
 		if (command[ixx2] == ')') {
 			bc--;
 			if (bc == 0)
-				break;   /* found closing bracket */
+				break;   /* found matching closing bracket */
 		}
 	}
 	if (ixx2 >= command.size()) {
@@ -2026,14 +2078,16 @@ static int ifCommand(const std::string &command) {
 		return -1;
 	}
 
+	/* evaluate expression betwen brackets */
 	exprLen = ixx2 - ixx - 1;
 	expr = command.substr(ixx + 1, exprLen);
-	retCode rv = ComputeExpr(expr, result);
+	retCode rv = ComputeExpr(expr, result, asgCt);
 	if (rv != retCode::EXPR_OK) {
 		textError(rv);   // invalid expression; print error message
 		return -1;
 	}
-	 /* move ixx2 to next non-blank character */
+
+	/* move ixx2 to next non-blank character */
 	for (ixx2++; ixx2 < command.size() && isblank(command[ixx2]); ixx2++);
 	if (command.substr(ixx2) == "STOP") {
 		if (result != 0)
@@ -2049,15 +2103,19 @@ static int ifCommand(const std::string &command) {
 	}
 	if (command.substr(ixx2, 4) == "THEN") {
 		size_t ex1Start=ixx2+4, ex1End, ex2Start, ex2End;
-		int bc = 0;
-		while (ex1Start < command.size() && isblank(command[ex1Start]))
-			ex1Start++;  /* move past blank char*/
+
+		/* move ex1Start to next non-blank character */
+		for (ex1Start=ixx2+4; ex1Start < command.size() && isblank(command[ex1Start]); 
+			ex1Start++);
+	
 		if (ex1Start >= command.size() || command[ex1Start] != '(') {
 			std::cout << " THEN is not followed by ( \n";
 			return -1;  /* no ( after THEN so invalid */
 		}
 		ex1End = ex1Start + 1;
 		bc = 1;
+
+		/* find matching ) */
 		while (ex1End < command.size()) {
 			if (command[ex1End] == '(')
 				bc++;
@@ -2071,18 +2129,19 @@ static int ifCommand(const std::string &command) {
 			std::cout << "Matching ) not found \n";
 			return -1;   /* matching ) not found */
 		}
-		ex2Start = ex1End + 1;
+
+		/* move ex2Start to next non-blank character if any */
+		for (ex2Start = ex1End + 1; ex2Start < command.size() && isblank(command[ex2Start]);
+			ex2Start++);
 		if (ex2Start < command.size()) {
 			/* still some unprocessed characters */
-			while (ex2Start < command.size() && isblank(command[ex2Start]))
-				ex2Start++;  /* move past blank char*/
+
 			if (command.size() < ex2Start + 4 || command.substr(ex2Start, 4) != "ELSE") {
 				std::cout << "Format invalid. ELSE not found \n";
 				return -1;
 			}
 			ex2Start += 4;   /* move past ELSE */
-			while (ex2Start < command.size() && isblank(command[ex2Start]))
-				ex2Start++;  /* move past blank char*/
+			for (; ex2Start < command.size() && isblank(command[ex2Start]); ex2Start++);
 			if (ex2Start >= command.size() || command[ex2Start] != '(') {
 				std::cout << "ELSE not followed by ( \n";
 				return -1;  /* no ( after ELSE so invalid */
@@ -2112,24 +2171,12 @@ static int ifCommand(const std::string &command) {
 		else 
 			return 3;  /* no ELSE expression to evaluate */
 
-		retCode rv = ComputeExpr(expr, result);
-		if (rv != retCode::EXPR_OK) {
-			textError(rv);   // invalid expression; print error message
-			return -1;
-		}
-		else {
-			std::cout << " = ";
-			ShowLargeNumber(result, 6, true, hex);   // print value of expression
-			std::cout << '\n';
-			if (factorFlag > 0) {
-				doFactors(result, false); /* factorise Result, calculate number of divisors etc */
-				results.clear();  // get rid of unwanted results
-			}
-			return 3;  /* IF (...) THEN (...) ELSE (...) processed OK*/
-		}
+		retCode rv = ComputeMultiExpr(expr, result);
+		return 3;  /* IF (...) THEN (...) ELSE (...) processed OK*/
 	}
+
 	std::cout << "Neither STOP, REPEAT, nor THEN found \n";
-	return -1;  /* neither STOP nor REPEAT found */
+	return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
@@ -2279,23 +2326,14 @@ static int processCmd(const std::string &command) {
 		int repeat = 0;
 		Znum result;
 		retCode rv;
-		repeat = atoi(command.substr(6).data());
+		if (command.size() > 6)
+			repeat = atoi(command.substr(6).data());
+		else
+			repeat = 1;  /* repeat once if no count specified */
 		for (int count = 1; count <= repeat; count++) {
 			for (auto expr : exprList) {
 				/* recalculate each stored expression */
-				rv = ComputeExpr(expr, result);
-				if (rv != retCode::EXPR_OK) {
-					textError(rv);   // invalid expression; print error message
-				}
-				else {
-					std::cout << " = ";
-					ShowLargeNumber(result, 6, true, hex);   // print value of expression
-					std::cout << '\n';
-					if (factorFlag > 0) {
-						doFactors(result, false); /* factorise Result, calculate number of divisors etc */
-						results.clear();  // get rid of unwanted results
-					}
-				}
+				rv = ComputeMultiExpr(expr, result);
 			}
 		}
 		return 1;
@@ -2309,37 +2347,30 @@ static int processCmd(const std::string &command) {
 			exprList.push_back(command);
 			loop:
 			for (auto expr : exprList) {
-				if (expr.substr(0, 2) == "IF") {
+				if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
 					int rv2 = ifCommand(expr);  /* analyse stored command again */
 					if (rv2 == 2)
-						goto loop;  /* repeat stored expressions again */
-					else if (rv2 == 0 || rv2 == 1)
-						break;     /* expression is 0 or STOP specified */
+						goto loop;  /* repeat all stored expressions again */
+					else if (rv2 == 0)
+						continue;  /* expr = 0; do not perform STOP or LOOP */
+					else if (rv2 == 1)
+						break;     /* expression is not 0 and STOP specified */
 					else if (rv2 == 3)
-						continue;
+						continue;   /* THEN or ELSE expression has been evaluated */
 					else
+						throw std::logic_error ("unknown return code");
 						abort();  /* where are we? */
 				}
+
 				/* recalculate each stored expression */
-				retCode rv = ComputeExpr(expr, result);
-				if (rv != retCode::EXPR_OK) {
-					textError(rv);   // invalid expression; print error message
-				}
-				else {
-					std::cout << " = ";
-					ShowLargeNumber(result, 6, true, hex);   // print value of expression
-					std::cout << '\n';
-					if (factorFlag > 0) {
-						doFactors(result, false); /* factorise Result, calculate number of divisors etc */
-						results.clear();  // get rid of unwanted results
-					}
-				}
+				retCode rv = ComputeMultiExpr(expr, result);
 			}
 			return 1;  /* loop completed */
 		}
 		if (rv == 0 || rv == 3)
+			/* if command processed, now save it for possible loop */
 			exprList.push_back(command);  
-		/* to be completed */
+		/* to be completed for rv =-1, rv = 1*/
 		return 1;
 	}
 	default:
@@ -2352,8 +2383,9 @@ int main(int argc, char *argv[]) {
 	Znum Result;
 	retCode rv;
 	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0};
-	unsigned int control_word;
-	int err;
+	unsigned int control_word; /* save current state of fp control word here */
+	errno_t err;  /* error occurred if value not 0 */
+	int asgCt;  /* number of assignment operators */
 	int version[4]; /* version info from .exe file (taken from .rc resource file) */
 	std::string modified;  /* date & time program last modified */
 
@@ -2476,14 +2508,23 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			/* input is not a valid command; assume it is an expression */
 			auto start = clock();	// used to measure execution time
 
-			rv = ComputeExpr(expr, Result); /* analyse expression, compute value*/
+			rv = ComputeExpr(expr, Result, asgCt); /* analyse expression, compute value*/
 
 			if (rv != retCode::EXPR_OK) {
 				textError(rv);   // invalid expression; print error message
 			}
 			else {
 				exprList.push_back(expr);  /* save text of expression */
-				std::cout << " = ";
+				if (asgCt == 0)
+					std::cout << " = ";
+				else {
+					/* print names of variables assigned values */
+					for (size_t ix = 0; ix < expr.size() && asgCt > 0; ix++) {
+						putchar(expr[ix]);
+						if (expr[ix] == '=')
+							asgCt--;
+					}
+				}
 				ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 				std::cout << '\n';				
 				if (factorFlag > 0) {

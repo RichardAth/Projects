@@ -548,7 +548,13 @@ static unsigned __int64 R2(const unsigned __int64 n) {
 
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
-be +ve, 0 or -ve See https://oeis.org/A005875 */
+be +ve, 0 or -ve See https://oeis.org/A005875 
+R3(n) = 3*T(n) if n == 1,2,5,6 mod 8, 
+       = 2*T(n) if n == 3 mod 8, 
+	   = 0 if n == 7 mod 8 and 
+	   = R(n/4) if n == 0 mod 4, 
+	   where T(n) = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+*/
 unsigned __int64 R3(__int64 n) {
 	unsigned __int64 sum = 0;
 	factorsS sqf;
