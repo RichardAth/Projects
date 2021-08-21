@@ -2021,9 +2021,9 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
 				std::cout << " = ";
 			else {
 				/* print names of variables assigned values */
-				for (size_t ix = 0; ix < expr.size() && asgCt > 0; ix++) {
-					putchar(expr[ix]);
-					if (expr[ix] == '=')
+				for (size_t ix = 0; ix < subExpr.size() && asgCt > 0; ix++) {
+					putchar(subExpr[ix]);
+					if (subExpr[ix] == '=')
 						asgCt--;
 				}
 			}
@@ -2330,8 +2330,24 @@ static int processCmd(const std::string &command) {
 			repeat = atoi(command.substr(6).data());
 		else
 			repeat = 1;  /* repeat once if no count specified */
+
+		loop1:
 		for (int count = 1; count <= repeat; count++) {
 			for (auto expr : exprList) {
+				if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
+					int rv2 = ifCommand(expr);  /* analyse stored command again */
+					if (rv2 == 2)
+						goto loop1;  /* repeat all stored expressions again */
+					else if (rv2 == 0)
+						continue;  /* expr = 0; do not perform STOP or LOOP */
+					else if (rv2 == 1)
+						break;     /* expression is not 0 and STOP specified */
+					else if (rv2 == 3)
+						continue;   /* THEN or ELSE expression has been evaluated */
+					else
+						throw std::logic_error("unknown return code");
+					abort();  /* where are we? */
+				}
 				/* recalculate each stored expression */
 				rv = ComputeMultiExpr(expr, result);
 			}
@@ -2339,7 +2355,9 @@ static int processCmd(const std::string &command) {
 		return 1;
 	}
 	case 17: /* IF */ {
-		/*format is IF (expression) REPEAT or IF (expression) STOP */
+		/*format is IF (expression) REPEAT or IF (expression) STOP 
+		or IF (expression) THEN (expression[, expression ...])
+		                     ELSE (expression[, expression ...]) */
 		Znum result;
 		int rv = ifCommand(command);  /* analyse IF command */
 		if (rv == 2) {
