@@ -474,8 +474,8 @@ Znum llt(const Znum &p) {
 		getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
 		if (verbose > 0 && (i > 0) && (i & 0x7ff) == 0) { /* 7ff = 2047, print msg every 2048 iterations */
 			for (int j = 0; j < nchars; j++)
-				printf("\b");    // erase previous output
-			nchars = printf("%s llt iteration %lld %.2f%% complete", myTime(), i,
+				printf_s("\b");    // erase previous output
+			nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
 				(double)i*100.0/(exp-2) );
 			fflush(stdout);
 		}
@@ -574,7 +574,7 @@ void generatePrimes(unsigned long long int max_val) {
 
 	// after completing the for loop we have found all the primes < max_val
 	if (verbose > 0)
-		printf("  prime %9lld is %11lld\n", count, numsave);
+		printf_s("  prime %9lld is %11lld\n", count, numsave);
 	primeList[count] = ULLONG_MAX;		// set end marker
 	prime_list_count = (unsigned int)count;
 	primeListMax = primeList[count - 1];
@@ -672,7 +672,7 @@ static void textError(retCode rc) {
 	//		"Modulus must not be negative\n");
 	//	break;
 	default:
-		printf( "unknown error code: %d\n", (int)rc);
+		printf_s( "unknown error code: %d\n", (int)rc);
 		break;
 	}
 }
@@ -2456,10 +2456,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		std::cout << ver / 100000 << '.' ;    // next 2 digits
 		ver %= 100000;                        // remove next 2 digits
 		std::cout << ver << '\n';             // last 5 digits
+		auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
 #endif
 
-		auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
-		printf("locale is now: %s\n", setlocale(LC_ALL, NULL));
+		printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
 		std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
 			<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
 
@@ -2473,10 +2473,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		/* start of main loop. exit via EXIT command */
 		while (true) {
 			if (lang == 0) {
-				printf("enter expression to be processed, or HELP, or EXIT\n");
+				printf_s("enter expression to be processed, or HELP, or EXIT\n");
 			}
 			else
-				printf("ingrese la expresión para ser procesada, o AYUDA o SALIDA\n");
+				printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA\n");
 
 			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
@@ -2533,15 +2533,16 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 					std::cout << " = ";
 				else {
 					/* print names of variables assigned values */
-					for (size_t ix = 0; ix < expr.size() && asgCt > 0; ix++) {
+					for (size_t ix = 0, Ct2 = asgCt; ix < expr.size() && Ct2 > 0; ix++) {
 						putchar(expr[ix]);
 						if (expr[ix] == '=')
-							asgCt--;
+							Ct2--;
 					}
 				}
 				ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 				std::cout << '\n';				
-				if (factorFlag > 0) {
+				if (factorFlag > 0 && asgCt == 0) {
+					/* don't factorise result of an assignment statement */
 					doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
 					results.clear();  // get rid of unwanted results
 				}

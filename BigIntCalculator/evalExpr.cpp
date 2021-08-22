@@ -1563,7 +1563,7 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 			printTokens(tokens.data(), (int)tokens.size());
 			printf_s("expr contains: ");
 			for (auto c : expr) {
-				printf("%2x", c);
+				printf_s("%2x", c);
 			}
 			putchar('\n');
 		}
@@ -1805,7 +1805,7 @@ void printvars(std::string name) {
 		name.erase(0, 1);  /* remove leading spaces */
 	}
 	if (uvars.num == 0)
-		printf("No user variables defined \n");
+		printf_s("No user variables defined \n");
 	else
 		for (int i = 0; i < uvars.num; i++)
 			if (name.size() == 0 || strcmp(uvars.vars[i].name, name.c_str()) == 0)

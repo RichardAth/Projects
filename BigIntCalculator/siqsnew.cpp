@@ -193,7 +193,7 @@ static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 	strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
 		" congruence matrix using Block Lanczos algorithm.\n");
 
-	printf("%s", ptrLowerText);
+	printf_s("%s", ptrLowerText);
 }
 
 static void upOneLine(void) {
@@ -216,7 +216,7 @@ static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 	ptrSIQSStrings = ptrText;
 	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
-	printf("%s", ptrLowerText);
+	printf_s("%s", ptrLowerText);
 }
 
 // Append multiplier and factor base to SIQS string.
@@ -286,7 +286,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	else
 		upOneLine();
 
-	printf("%s", SIQSInfo);
+	printf_s("%s", SIQSInfo);
 	first = false;
 }
 
@@ -2366,7 +2366,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);  // append Mult & Factor base to SIQS string
-	printf("%s", lowerText);  // print Mult and Factor Base
+	printf_s("%s", lowerText);  // print Mult and Factor Base
 #endif
 
 	firstLimit = 2;
@@ -3063,7 +3063,7 @@ static void BlockLanczos(void)
 			else
 				upOneLine();
 
-			printf("%s", SIQSInfo);
+			printf_s("%s", SIQSInfo);
 			first = false;
 		}
 #endif

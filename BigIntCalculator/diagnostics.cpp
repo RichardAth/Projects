@@ -506,7 +506,7 @@ the interesting stack-frames being gone by the time you do the dump.  */
 	// Set up C++ signal handlers
 
 	if (f.abort) {
-		// Suppress the abort message (debug only, has no effect in release)
+		// Suppress the abort message (debug only?, has no effect in release)
 		_set_abort_behavior(0, _WRITE_ABORT_MSG);
 		// Catch an abnormal program termination
 		signal(SIGABRT, SigabrtHandler);
@@ -771,6 +771,7 @@ EXCEPTION_CONTINUE_EXECUTION       Return from UnhandledExceptionFilter and
 								   free to modify the continuation state by
 								   modifying the exception information supplied
 								   through its LPEXCEPTION_POINTERS parameter.
+								   BUT in practise control jumps straight to main.
 
 EXCEPTION_CONTINUE_SEARCH 0x0      Proceed with normal execution of
 								   UnhandledExceptionFilter. That means obeying
@@ -831,26 +832,26 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void) {
-	printf("Choose an exception type:\a\n");
-	printf("0 - SEH exception (access violation)\n");
-	printf("1 - terminate\n");
-	printf("2 - unexpected\n");
-	printf("3 - pure virtual method call\n");
-	printf("4 - invalid parameter\n");
-	printf("5 - new operator fault\n");
-	printf("6 - SIGABRT\n");
-	printf("7 - SIGFPE (divide error) \n");
-	printf("8 - SIGILL\n");
-	printf("9 - SIGINT\n");
-	printf("10 - SIGSEGV\n");
-	printf("11 - SIGTERM\n");
-	printf("12 - RaiseException\n");
-	printf("13 - throw C++ typed exception\n");
-	printf("14 - SEH exception (divide error) \n");
-	printf("15 - SIGFPE (overflow) \n");
-	printf("16 - SIGFPE (invalid) \n");
-	printf("17 - SIGFPE (raise) \n");
-	printf("Your choice >  ");
+	printf_s("Choose an exception type:\a\n");
+	printf_s("0 - SEH exception (access violation)\n");
+	printf_s("1 - terminate\n");
+	printf_s("2 - unexpected\n");
+	printf_s("3 - pure virtual method call\n");
+	printf_s("4 - invalid parameter\n");
+	printf_s("5 - new operator fault\n");
+	printf_s("6 - SIGABRT\n");
+	printf_s("7 - SIGFPE (divide error) \n");
+	printf_s("8 - SIGILL\n");
+	printf_s("9 - SIGINT\n");
+	printf_s("10 - SIGSEGV\n");
+	printf_s("11 - SIGTERM\n");
+	printf_s("12 - RaiseException\n");
+	printf_s("13 - throw C++ typed exception\n");
+	printf_s("14 - SEH exception (divide error) \n");
+	printf_s("15 - SIGFPE (overflow) \n");
+	printf_s("16 - SIGFPE (invalid) \n");
+	printf_s("17 - SIGFPE (raise) \n");
+	printf_s("Your choice >  ");
 
 	int ExceptionType = 9999;
 	char buffer[256];
@@ -888,8 +889,9 @@ void testerrors(void) {
 #pragma warning(disable : 6387)
 			// warning C6387: 'argument 1' might be '0': this does
 			// not adhere to the specification for the function 'printf'
-			printf(formatString);
+			int rc = printf_s(formatString);
 #pragma warning(default : 6387)   
+			printf_s("return code from printf_s is %d \n", rc);
 			break;
 		}
 	case 5: /* new operator fault */ {
@@ -907,7 +909,7 @@ void testerrors(void) {
 			// floating point exception ( /fp:except compiler option)
 			double x = 0, y = 1, z;
 			z = y / x;  /* generate divide error */
-			printf("z= %g \n", z); /* stop optimiser from removing test code */
+			printf_s("z= %g \n", z); /* stop optimiser from removing test code */
 			y++;
 			break;
 		}
@@ -942,17 +944,17 @@ void testerrors(void) {
 	case 14: /* SEH exception */ {
 			int x = 1, y = 0, z;
 			z = x / (2 - x - x);  /* divide by zero */
-			printf("z=%d\n", z);
+			printf_s("z=%d\n", z);
 			break;
 		}
 	case 15: /* floating point overflow */ {
 			double z = std::pow(DBL_MAX, 2);    /* generate overflow */
-			printf("z=%g\n", z);                /* if overflow not trapped z = inf. */
+			printf_s("z=%g\n", z);                /* if overflow not trapped z = inf. */
 			z = DBL_MAX;
-			printf("z=%g\n", z);
+			printf_s("z=%g\n", z);
 			z *= 100.0;                           /* if overflow not trapped z = inf. */
 			z -= 1.0;
-			printf("z=%g\n", z);
+			printf_s("z=%g\n", z);
 			break;
 		}
 	case 16: /* floating point invalid 
@@ -972,7 +974,7 @@ void testerrors(void) {
              Comparison via predicates involving < or >, when one or other of the
 			 operands is NaN. */ {
 			double z = std::acos(2);
-			printf("z=%g\n", z);    /* if error not trapped, Z = NaN */
+			printf_s("z=%g\n", z);    /* if error not trapped, Z = NaN */
 			break;
 		}
 	case 17: /* raise FPE */ {
@@ -981,7 +983,7 @@ void testerrors(void) {
 		}
 
 	default: {
-			printf("Unknown exception type %d specified. \n", ExceptionType);
+			printf_s("Unknown exception type %d specified. \n", ExceptionType);
 			break;
 		}
 

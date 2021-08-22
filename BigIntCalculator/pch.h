@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#define __STDC_WANT_LIB_EXT1__ 1  /* ask for printf_s etc */
 #include <cstdio>
 #include <string>
 #include <vector>

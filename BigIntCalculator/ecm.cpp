@@ -496,7 +496,7 @@ void showECMStatus(void) {
 	}
 
 	*ptrStatus++ = '\0';                 // add null terminator
-	printf("%s\n", status);              // send status to screen             
+	printf_s("%s\n", status);            // send status to screen             
 #ifdef log
 	fprintf_s(logfile, "%s\n", status);  // send status to log file
 #endif
@@ -753,7 +753,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		else
 			upOneLine();
 
-		printf("%s", ptrLowerText);        // send status to stdout (screen)
+		printf_s("%s", ptrLowerText);        // send status to stdout (screen)
 		first = false;
 #ifdef log
 		fprintf_s(logfile, "%s", ptrLowerText);   // send status to l,og file
