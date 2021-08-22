@@ -726,13 +726,8 @@ static void removeBlanks(std::string &msg) {
 
 /* remove initial & trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
 static void removeInitTrail(std::string &msg) {
-	for (size_t ix = 0; ix < msg.size(); ix++) {
-		if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {     // look for spaces, tabs, etc
-			msg.erase(ix, 1);      // remove space character
-			ix--;  // adjust index to take account of removed blank
-		}
-		else
-			break;  /* exit when 1st non-space char is found */
+	while (!msg.empty() && isspace(msg.front())) {
+		msg.erase(0, 1);      // remove 1st space character
 	}
 	while (!msg.empty() && isspace(msg.back())) {
 		msg.resize(msg.size() - 1);  /* remove trailing spaces */
@@ -1993,7 +1988,7 @@ retry:
 /* evaluate 1 or more expressions, separated by commas */
 static retCode ComputeMultiExpr(std::string expr, Znum result) {
 	std::string subExpr;
-	retCode rv;
+	retCode rv = retCode::EXPR_OK;
 	size_t subStart = 0, subEnd;
 	int bc = 0;   /* bracket count */
 	int asgCt = 0;   /* number of assignment operators */
@@ -2011,6 +2006,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
 		if (bc != 0)
 			return retCode::EXPR_PAREN_MISMATCH;
 		subExpr = expr.substr(subStart, subEnd - subStart);
+		removeInitTrail(subExpr);  /* remove initial & trailing blanks */
 		rv = ComputeExpr(subExpr, result, asgCt);
 		if (rv != retCode::EXPR_OK) {
 			textError(rv);   // invalid expression; print error message
@@ -2041,9 +2037,9 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
 /* format is IF (expression) REPEAT 
           or IF (expression) STOP 
 		  or IF (expression) THEN (expression) [ELSE (expression)]
-          [the ELSE (expression) part is optional]
+          the [ELSE (expression)] part is optional
 return -1 if syntax is invalid
- return 0 if expression is 0 
+ return 0 if expression is 0 for STOP or REPEAT
  return 1 if expression NE 0 and action is STOP
  return 2 if expression NE 0 and action is REPEAT 
  return 3 if THEN or ELSE expression evaluated succesfully */
