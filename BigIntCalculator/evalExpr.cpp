@@ -1109,21 +1109,15 @@ static void printTokens(const token expr[], const int exprLen) {
 			break;
 
 		case types::Operator: {
-			if (expr[ix].oper == opCode::leftb)
-				std::cout << '(';
-			else if (expr[ix].oper == opCode::fact) {
+			if (expr[ix].oper == opCode::fact) {
 				for (int i = 1; i <= expr[ix].value; i++)
 					std::cout << '!';
+				std::cout << ' ';
 			}
-			//else if (expr[ix].oper == opCode::dfact)
-			//	std::cout << "!!";
-			else if (expr[ix].oper == opCode::prim)
-				std::cout << '#';
-			else if (expr[ix].oper == opCode::rightb)
-				std::cout << ')';
 			else if (expr[ix].oper == opCode::unary_minus)
 				std::cout << " Unary - ";
 			else {
+				/* search for oper code in list of operators */
 				for (int ixx = 0; ixx < sizeof(operators) / sizeof(operators[0]); ixx++)
 					if (operators[ixx].operCode == expr[ix].oper) {
 						std::cout << operators[ixx].oper << ' ';
@@ -1134,10 +1128,9 @@ static void printTokens(const token expr[], const int exprLen) {
 		}
 
 		case types::uservar: {
-			size_t Userix = expr[ix].userIx;  /* get value from user variable */
-			Znum data = uvars.vars[Userix].data;
-			std::string name = uvars.vars[Userix].name;
-			std::cout << "User variable " << name << " = " << data << '\n';
+			size_t Userix = expr[ix].userIx;  /* get index value from user variable */
+			std::string name = uvars.vars[Userix].name; /* get name of user variable */
+			std::cout  << name << " ";
 			break;
 		}
 

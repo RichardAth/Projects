@@ -308,6 +308,7 @@ long long MulPrToLong(const Znum &x) {
 /* NumDigits(n,r): Number of digits of n in base r. Leading zeros are not counted  */
 long long ComputeNumDigits(const Znum &n, const Znum &radix)
 {
+	/* more accurate than mpz_sizeinbase */
 	Znum result = n;
 	long long digits = 0;
 	
@@ -2420,8 +2421,6 @@ int main(int argc, char *argv[]) {
 		/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
 		functions that actually work OK */
 		err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
-		//err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW | _EM_INVALID,
-			//MCW_EM);
 		/* trap hardware FP exceptions except inexact and underflow which are
 		considered to be normal, not errors. */
 		if (err) {
@@ -2529,22 +2528,18 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			}
 			else {
 				exprList.push_back(expr);  /* save text of expression */
-				if (asgCt == 0)
+				if (asgCt == 0) {
 					std::cout << " = ";
-				else {
-					/* print names of variables assigned values */
-					for (size_t ix = 0, Ct2 = asgCt; ix < expr.size() && Ct2 > 0; ix++) {
-						putchar(expr[ix]);
-						if (expr[ix] == '=')
-							Ct2--;
+					ShowLargeNumber(Result, 6, true, hex);   // print value of expression
+					std::cout << '\n';
+					if (factorFlag > 0 && asgCt == 0) {
+						/* don't factorise result of an assignment statement */
+						doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
+						results.clear();  // get rid of unwanted results
 					}
 				}
-				ShowLargeNumber(Result, 6, true, hex);   // print value of expression
-				std::cout << '\n';				
-				if (factorFlag > 0 && asgCt == 0) {
-					/* don't factorise result of an assignment statement */
-					doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
-					results.clear();  // get rid of unwanted results
+				else {
+					printvars(""); /* print variables names & values */
 				}
 			}
 

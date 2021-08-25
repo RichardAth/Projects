@@ -110,7 +110,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	if (!SymInitialize(process, nullptr, false))
 		//throw(std::logic_error("Unable to initialize symbol handler"));
 	{
-		std::cout << "dumpstack failure; Unable to initialize symbol handler\n";
+		std::cerr << "dumpstack failure; Unable to initialize symbol handler\n";
 		abort();
 	}
 	DWORD symOptions = SymGetOptions();
@@ -178,7 +178,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	SymCleanup(process);
 
 	// Display the string:
-	printf_s("%s %s", " Stack Trace; \n",
+	fprintf_s(stderr, "%s %s", " Stack Trace; \n",
 		builder.str().c_str());
 	return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -407,11 +407,13 @@ void SigfpeHandler(int sig, int num) {
 }
 
 void SigabrtHandler(int sig) {
-	fprintf(stderr, "Abort occurred\n");
+	fprintf(stderr, "Abort signal occurred\n");
 	StackTrace2();
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
+	Beep(2400, 1000);   // beep at 2400 Hz for 1 second
+	Sleep(20000);   /* wait 20 seconds*/
 	system("PAUSE");    // press any key to continue
 	exit(EXIT_FAILURE);
 }
@@ -440,7 +442,7 @@ void SigsegvHandler(int sig) {
 
 /* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) */
 void SigintHandler(int sig) {
-	fprintf(stderr, "Interrupt \n");
+	fprintf(stderr, "Interrupt signal\n");
 	StackTrace2();
 	//__debugbreak();     // try to enter debuggger (to look at call stack)
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
@@ -471,10 +473,10 @@ int handle_program_memory_depletion(size_t memsize)
 /* set up exception handlers; caller specifies which are required using flags */
 void SetProcessExceptionHandlers(flags f)
 {
-#ifndef _DEBUG
+//#ifndef _DEBUG
 	/* send errors to calling process */
-	SetErrorMode(SEM_FAILCRITICALERRORS);
-#endif
+	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+//#endif
 
 /* if you use C++ exception handling: install a translator function
 with set_se_translator() or use SetUnhandledExceptionFilter(). In the 
@@ -482,8 +484,13 @@ context of that function (but *not* afterwards), you can either do
 your stack dump, or save the CONTEXT record as a local copy. Note 
 that you must do the stack dump at the earliest opportunity, to avoid 
 the interesting stack-frames being gone by the time you do the dump.  */
-	if (f.UnEx)
+	if (f.UnEx) {
+		/* The system does display the critical-error-handler message box.*/
+		SetErrorMode(SEM_FAILCRITICALERRORS); 
+		// Suppress the abort message (debug only?, has no effect in release)
+		_set_abort_behavior(0, _WRITE_ABORT_MSG);
 		SetUnhandledExceptionFilter(filter2);
+	}
 
 	/* Catch pure virtual function calls.
 	Because there is one _purecall_handler for the whole process, 
@@ -644,9 +651,8 @@ void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
 		dwProcessId,   /* The identifier of the process for which the information 
 					   is to be generated*/
 		hFile,         /* A handle to the file in which the information is to be written*/
-		MiniDumpNormal,  /* A normal minidump contains just the information
-                           necessary to capture stack traces for all of the
-                          existing threads in a process. */
+		MiniDumpWithDataSegs,  /* includes all of the data sections from loaded modules 
+							    in order to capture global variable contents. */
 		&mei,          /* A pointer to a MINIDUMP_EXCEPTION_INFORMATION structure 
 					   describing the client exception that caused the minidump 
 					   to be generated. If the value of this parameter is NULL, 
