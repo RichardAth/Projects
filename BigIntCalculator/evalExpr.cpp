@@ -195,6 +195,7 @@ enum class fn_Code {
 	fn_minfact,
 	fn_maxfact,
 	fn_ispow,
+	fn_modsqrt,
 	fn_invalid = -1,
 };
 
@@ -207,7 +208,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would
  conflict with the C operator. Longer names must come before short ones
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 31> functionList{
+const static std::array <struct functions, 32> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -239,6 +240,7 @@ const static std::array <struct functions, 31> functionList{
 	"KR",		 2,  fn_Code::fn_kronecker,
 	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
 	"ISPOW",     1,  fn_Code::fn_ispow,
+	"MODSQRT",   2,  fn_Code::fn_modsqrt,
 };
 
 struct oper_list{
@@ -604,10 +606,10 @@ static Znum R3(Znum num) {
 		return 0;
 	if (num == 0)     // test here necessary to avoid infinite loop
 		return 1;
-	if (num % 8 == 7)
-		return 0;     // take short cut if possible
 	while ((num & 3) == 0)
 		num >>= 2;      // remove even factors. note that R3(4n) =R3(n)
+	if (num % 8 == 7)
+		return 0;     // take short cut if possible
 	squareFree(num, sq, sqf);
 
 	for (Znum k = 1; k*k <= num; k++) {
@@ -1054,6 +1056,29 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		else {
 			result = 0;
 		}
+		break;
+	}
+	case fn_Code::fn_modsqrt: {
+		std::vector <long long> roots;
+
+		/* we use Tonelli-shanks algorithm which only works for prime modulus,
+		therefore we restrict p to prime numbers only */
+		if (p1 < LLONG_MIN || p1 > LLONG_MAX ||
+			p2 <= 0 || p2 > LLONG_MAX)
+			return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
+		if (mpz_bpsw_prp(ZT(p2)) <= 0)
+			return retCode::EXPR_INVALID_PARAM;  /* p2 must be prime */
+
+		long long a = MulPrToLong(p1);
+		long long p = MulPrToLong(p2);
+		/* Solve the equation given a and p.  x^2 ≡ a (mod p) */
+		roots = primeModSqrt(a, p);
+		/* the result can be: no solution: roots is empty
+		                      one solution: zero 
+							  two solutions: x and p-x */
+		if (roots.empty())
+			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
+		result = roots[0];     /* ignore 2nd solution, if any */
 		break;
 	}
 

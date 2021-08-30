@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "factor.h"
 
 extern int verbose;
 
@@ -150,15 +151,6 @@ bool isPrime2(unsigned __int64 num) {
 	if (num == 2) return true;
 	if ((num & 1) == 0) return false; // even numbers other than 2 are not prime
 	return !primeFlags[num/2];
-
-	//unsigned __int64 index;
-	//int bit;
-
-	////index = num / 64;
-	//index = num >> 6;
-	////bit = (num % 64) / 2;
-	//bit = (num & 0x3f) >> 1;   // get last 6 bits, then divide by 2
-	//return (((primeFlags[index] >> bit) & 1) == 0);
 }
 
 
@@ -341,7 +333,7 @@ long long int PollardRho(long long int n)
 	std::random_device rd;   // non-deterministic generator
 	std::mt19937_64 gen(rd());  // to seed mersenne twister.
 	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
-
+	long long ctr = 0;     /* loop counter*/
 	/* no prime divisor for 1 */
 	if (n == 1) return n;
 
@@ -383,9 +375,12 @@ long long int PollardRho(long long int n)
 		 * with chosen x and c */
 		if (d == n) 
 			return PollardRho(n);
+		ctr++;
 	}
+
 	if (verbose >0)
-		std::cout << "Pollard Rho n = " << n << " factor = " << d << '\n';
+		std::cout << "Pollard Rho n = " << n << " factor = " << d 
+		<< " loop counter = " << ctr << '\n';
 
 	return d;
 }
@@ -564,12 +559,17 @@ unsigned __int64 R3(__int64 n) {
 		return 0;
 	if (n == 0)			 // test here necessary to avoid infinite loop
 		return 1;
-	if (n % 8 == 7)
-		return 0;        // take short cut if possible
 	while (n % 4 == 0)
 		n /= 4;         // remove even factors. note that R3(4n) =R3(n)
 
-	generatePrimes(1000003);  // this is more than enough primes to factorise any 64-bit number
+	/* Interesting note: removing factor 4 above changes the value of n%8 
+	so test for n%8 == 7 after doing that, whereas removing other factors to 
+	make n square-free would not change the result of this test */
+	if (n % 8 == 7)
+		return 0;        // take short cut if possible
+
+	generatePrimes(2097169);  // this is more than enough primes to factorise any 64-bit number
+	             
 	squareFree(n, sq, sqf); /* make n square-free, factors removed are in sqf */
 
 	/* calculate R3(n). For large n this method is not very efficient, but it is simple */
@@ -596,4 +596,108 @@ unsigned __int64 R3(__int64 n) {
 	}
 
 	return sum;
+}
+
+
+/*
+Square root modulo prime number using Tonelli–Shanks algorithm
+Solve the equation given a and p.
+	x^2 ≡ a mod p
+and return list of solutions. There will be either 0, 1 or 2 solutions
+see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
+(renamed the solution variable n to a)
+*/
+std::vector <long long> primeModSqrt(long long a, const unsigned long long p) {
+	std::vector <long long> result;
+	unsigned long long q, s, z, m, i, e;
+	unsigned long long c, t, R, b;
+
+	a %= p;
+	if (a < 0)
+		a += p;   /* normalise a so it's in range 0 to p-1 */
+
+	// Simple case
+	if (a == 0) {
+		result.push_back(0);
+		return result;
+	}
+
+	if (p == 2) {
+		result.push_back(a);  // a is 1
+		return result;
+	}
+
+	/* Check solution existence on odd prime. Because p is prime the Jacobi
+	symbol is the same as the Legendre symbol. */
+	if (jacobi(a, p) != 1)
+		return result;    // empty list; no solutions
+#ifdef _DEBUG
+	/* recheck existence of solution */
+	assert(modPower(a, (p - 1) / 2, p) == 1);
+#endif
+
+	// Simple case
+	if (p % 4 == 3) {
+		R = modPower(a, (p + 1) / 4, p);
+		result.push_back(R);
+		result.push_back(p - R);
+		return result;
+	}
+
+	// step 1: Factor p - 1 of the form q * 2 ^ s(with Q odd)
+	q = p - 1;
+	s = 0;
+	while (q % 2 == 0) {
+		s += 1;
+		q /= 2;
+	}
+
+	// step 2: Select a z which is a quadratic non resudue modulo p
+	z = 1;
+	while (jacobi(z, p) != -1) {
+		z += 1;
+	}
+
+	/* step 3 */
+	m = s;
+	c = modPower(z, q, p);
+	t = modPower(a, q, p);
+	R = modPower(a, (q + 1) / 2, p);
+
+	// Step 4: Search for a solution
+	while (t != 1) {
+		if (t == 0) {
+			R = 0;
+			break;
+		}
+		// Find the lowest i such that t ^ (2 ^ i) = 1 (mod p)
+		i = 0;
+		e = 1;
+		for (i = 0; i < m; i++) {
+			if (modPower(t, e, p) == 1)
+				break;
+			e *= 2;  /* e = 2^i */
+		}
+
+		// Update next value to iterate
+		long long temp = m - i - 1;
+		assert(temp < 64 && temp >= 0);  /* pow2 exponent must be within this range */
+		b = modPower(c, pow2((unsigned int)temp), p);
+
+		/* NB multiplication below could overflow if the intermediate product
+		exceeds 64 bits. modMult avoids this risk */
+		R = modMult(R, b, p);		           //R = (R * b) % p;
+		t = modMult(modMult(t, b, p), b, p);   // t = (t * b * b) % p; 
+		 /* NB apply modulus to intermediate result to avoid risk of overflow */
+		c = modMult(b, b, p);                  // c = (b * b) % p;
+		m = i;
+	}
+
+#ifdef _DEBUG
+	assert(modMult(R, R, p) == a);
+#endif
+
+	result.push_back(R);
+	result.push_back(p - R);
+	return result;
 }

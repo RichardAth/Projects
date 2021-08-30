@@ -362,3 +362,11 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor);
 
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
+
+// returns 2^exp. exp must be less than 64
+constexpr unsigned __int64 pow2(unsigned int exp) {
+	//assert(exp < 64);
+	return 1ULL << exp;  // exp must be less than 64
+}
+unsigned __int64 R3(__int64 n);
+std::vector <long long> primeModSqrt(long long a, const unsigned long long p);
