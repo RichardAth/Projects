@@ -65,115 +65,6 @@ int verbose = 0;
 
 HANDLE hConsole;       /* used by SetConsoleCursorPosition() function */
 
-/* list of operators, arranged in order of priority. Order is not exactly the
-same as C or Python. */
-enum class opCode {
-	fact        = 21,	// !   factorial 
-	//dfact       = 22,	// !!  double factorial
-	prim        = 23,	// #   primorial
-	unary_minus =  1,   // C and Python put unary minus above multiply, divide & modulus
-	not         = 16,   // C and Python put bitwise not with unary minus
-	power       =  0, 
-	multiply    =  2,
-	divide      =  3,
-	remainder   =  4,   // AKA modulus
-	comb        =  5,   // nCk, also known as binomial coefficient
-	plus        =  6,
-	minus       =  7,
-	shr         =  8,
-	shl         =  9,
-	not_greater = 10,
-	not_less    = 11,
-	greater     = 12,
-	less        = 13,
-	not_equal   = 14,
-	equal       = 15,
-	and         = 17,      // C and Python put AND before XOR before OR
-	xor         = 18,
-	or          = 19,
-	leftb       = 20,
-	rightb		= 24,              // right bracket (must be highest value)
-};
-
-/* list of operators. Priority values lower value = higher priority. Note: this 
-order is not the same as C or Python. The operator attributes are obtained by 
-using the opCode (cast to an integer) as the index. */
-
-struct attrs {
-	int pri;  /* operator precedence, 0 is highest, 99 is lowest */
-	bool left;   /* associativity ; true = left to right, false = right to left 
-		    operators with the same precedence must have the same associativity. */
-	bool pre;    /* true if unary operator e.g. - precedes expression, false if
-				    it follows e.g. !, otherwise not used */
-	int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
-};
-
-const static attrs opr[] = {
-	{2,  false, false, 2},  // 0 power (right to left)
-	{1,  false, true,  1},  // 1 unary minus (right to left)
-	{3,  true,  false, 2},  // 2 multiply
-	{3,  true,  false, 2},  // 3 divide
-	{3,  true,  false, 2},  // 4 remainder AKA modulus
-	{4,  true,  false, 2},  // 5 combination nCk, also known as binomial coefficient
-	{5,  true,  false, 2},  // 6 plus
-	{5,  true,  false, 2},  // 7 minus
-	{6,  true,  false, 2},  // 8 shift right
-	{6,  true,  false, 2},  // 9 shift left
-	{7,  true,  false, 2},  // 10 compare less or equal (not greater)
-	{7,  true,  false, 2},  // 11 compare greater or equal (not less)
-	{7,  true,  false, 2},  // 12 greater
-	{7,  true,  false, 2},  // 13 less
-	{8,  true,  false, 2},  // 14 not equal
-	{8,  true,  false, 2},  // 15 equal
-	{1,  false, true,  1},  // 16 NOT (unary operator ,right to left))
-	{9,  true,  false, 2},  // 17 AND
-	{10, true,  false, 2},  // 18 XOR
-	{11, true,  false, 2},  // 19 OR
-	{99, true,  false, 0},  // 20 left bracket
-	{0,  true,  false, 1},  // 21 ! factorial (unary operator)
-	{0,  true,  false, 1},  // 22 !! double factorial (unary operator)
-	{0,  true,  false, 1},  // 23 # primorial (unary operator)
-	{-1, true,  false, 0},  // 24 right bracket
-};
-
-/* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
-enum class retCode
-{
-	//EXPR_NUMBER_TOO_LOW,
-	EXPR_NUMBER_TOO_HIGH= -100,
-	EXPR_INTERM_TOO_HIGH ,
-	EXPR_DIVIDE_BY_ZERO,
-	EXPR_PAREN_MISMATCH,
-	EXPR_SYNTAX_ERROR,
-	EXPR_TOO_MANY_PAREN,
-	EXPR_INVALID_PARAM,
-	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME,
-	//EXPR_BREAK,
-	//EXPR_OUT_OF_MEMORY,
-	//EXPR_CANNOT_USE_X_IN_EXPONENT,
-	//EXPR_DEGREE_TOO_HIGH,
-	EXPR_EXPONENT_TOO_LARGE,
-	EXPR_EXPONENT_NEGATIVE,
-	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
-	//EXPR_CANNOT_LIFT,
-	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
-	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
-	//EXPR_BASE_MUST_BE_POSITIVE,
-	//EXPR_POWER_MUST_BE_POSITIVE,
-	//EXPR_MODULUS_MUST_BE_NONNEGATIVE,
-	//EXPR_VAR_OR_COUNTER_REQUIRED,
-	EXPR_OK = 0,
-	EXPR_FAIL = 1
-};
-
-enum class types { Operator, func, number, comma, error, end };
-
-struct token {
-	types typecode;
-	long long function;   /* contains function code index,  only when typecode = func */
-	opCode oper;    /* contains operator value, only when typecode = Operator*/
-	Znum value;     /* contains numeric value,  only when typecode = number*/
-};
 
 
 bool *primeFlags = NULL;
@@ -1020,6 +911,9 @@ static void doTests(void) {
 		"5#!!",           42849873690624000,  // # operator evaluated before !!
 		"$x = 99 ",                      99,  /* test user variables */
 		"$y = $x+1  ",                  100,
+		"modsqrt(2191, 23^3)",         1115,
+		"modsqrt(4142, 29^3)",         2333,
+		"modsqrt(3, 143)",               17,
 	};
 
 	results.clear();

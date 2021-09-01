@@ -16,3 +16,7 @@
 #include <fstream>
 #include <random>
 #include <mpir.h>
+
+#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
+#include <intsafe.h>
+#include <intrin.h>

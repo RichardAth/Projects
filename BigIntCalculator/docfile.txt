@@ -113,6 +113,10 @@ JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multipl
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
+MODSQRT(a, p)   : returns r such that r² = a (mod p). If no solution exists an error
+                  is reported. Generally there is more than 1 solution in the range 0 to
+                  p-1, but only the smallest positive solution is returned.
+                  
 
 [OTHER]
 other commands: 
@@ -132,7 +136,7 @@ V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 2 turns on even more messages.
 PRINT  Print the names and values of any user variables.
 LIST   Print all stored expressions.
-HELP (this command)
+HELP   (this command)
 EXIT
 
 [YAFU]

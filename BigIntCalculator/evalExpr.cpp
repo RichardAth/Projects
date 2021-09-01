@@ -123,35 +123,6 @@ const static attrs opr[] = {
 	{-1, true,  false, 0},  // 25 right bracket
 };
 
-/* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
-enum class retCode
-{
-	//EXPR_NUMBER_TOO_LOW,
-	EXPR_NUMBER_TOO_HIGH = -100,
-	EXPR_INTERM_TOO_HIGH,
-	EXPR_DIVIDE_BY_ZERO,
-	EXPR_PAREN_MISMATCH,
-	EXPR_SYNTAX_ERROR,
-	EXPR_TOO_MANY_PAREN,
-	EXPR_INVALID_PARAM,
-	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME,
-	//EXPR_BREAK,
-	//EXPR_OUT_OF_MEMORY,
-	//EXPR_CANNOT_USE_X_IN_EXPONENT,
-	//EXPR_DEGREE_TOO_HIGH,
-	EXPR_EXPONENT_TOO_LARGE,
-	EXPR_EXPONENT_NEGATIVE,
-	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
-	//EXPR_CANNOT_LIFT,
-	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
-	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
-	//EXPR_BASE_MUST_BE_POSITIVE,
-	//EXPR_POWER_MUST_BE_POSITIVE,
-	//EXPR_MODULUS_MUST_BE_NONNEGATIVE,
-	//EXPR_VAR_OR_COUNTER_REQUIRED,
-	EXPR_OK = 0,
-	EXPR_FAIL = 1
-};
 
 enum class types { Operator, func, number, comma, error, uservar, end };
 
@@ -234,13 +205,13 @@ const static std::array <struct functions, 32> functionList{
 	"N",         1,  fn_Code::fn_np,			// next prime
 	"BPSW",      1,  fn_Code::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff
 	"B",         1,  fn_Code::fn_pp,			// previous prime
-	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 primes
-	"R3",        1,  fn_Code::fn_r3,
+	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+	"R3",        1,  fn_Code::fn_r3,            // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  fn_Code::fn_jacobi,
 	"KR",		 2,  fn_Code::fn_kronecker,
 	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
 	"ISPOW",     1,  fn_Code::fn_ispow,
-	"MODSQRT",   2,  fn_Code::fn_modsqrt,
+	"MODSQRT",   2,  fn_Code::fn_modsqrt,        // find x such that x^2 = a mod p
 };
 
 struct oper_list{
@@ -828,7 +799,7 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 			return retCode::EXPR_DIVIDE_BY_ZERO;
 		if (p2 < 0) {
 			if (gcd(p1, p3) != 1)
-				return retCode::EXPR_EXPONENT_NEGATIVE;  // p1 and p3 not mutually prime
+				return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;  // p1 and p3 not mutually prime
 		}
 		/* note: negative exponent is only allowed if p1 & p3 are mutually prime,
 		i.e modular inverse of p1 wrt p3 exists. */
@@ -992,8 +963,8 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 			return retCode::EXPR_INVALID_PARAM;
 
 		if (p2 < 0) {
-			result = 0; /* for real numbers nroot(x, n) with n -ve would return
-						a number between 0 and 1. The floor of this value is 0 */
+			result = 0; /* for real numbers nroot(x, n) with n -ve = 1/(x^(-1/n))
+						   If x > 1 the floor of this value is 0 */
 			break;
 		}
 		if (p2 > INT_MAX) {
@@ -1061,21 +1032,25 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	case fn_Code::fn_modsqrt: {
 		std::vector <long long> roots;
 
+		/* this is a necessary condition, but not sufficient to guarantee 
+		a solution */
+		if (gcd(p1, p2) != 1)
+			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
+
 		/* we use Tonelli-shanks algorithm which only works for prime modulus,
 		therefore we restrict p to prime numbers only */
 		if (p1 < LLONG_MIN || p1 > LLONG_MAX ||
 			p2 <= 0 || p2 > LLONG_MAX)
 			return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
-		if (mpz_bpsw_prp(ZT(p2)) <= 0)
-			return retCode::EXPR_INVALID_PARAM;  /* p2 must be prime */
+		//if (mpz_bpsw_prp(ZT(p2)) <= 0)
+		//	return retCode::EXPR_INVALID_PARAM;  /* p2 must be prime */
 
 		long long a = MulPrToLong(p1);
 		long long p = MulPrToLong(p2);
 		/* Solve the equation given a and p.  x^2 ≡ a (mod p) */
-		roots = primeModSqrt(a, p);
+		roots = ModSqrt(a, p);
 		/* the result can be: no solution: roots is empty
-		                      one solution: zero 
-							  two solutions: x and p-x */
+		                      one  or more solutions */
 		if (roots.empty())
 			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
 		result = roots[0];     /* ignore 2nd solution, if any */

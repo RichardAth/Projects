@@ -197,6 +197,10 @@
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
     </ClCompile>
+    <ClCompile Include="Modsqrt.cpp">
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+    </ClCompile>
     <ClCompile Include="mpz_prp.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>

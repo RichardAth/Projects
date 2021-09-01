@@ -37,11 +37,6 @@ the text string a, function name, line number and source file name */
 	throw std::range_error(mesg);                \
 }
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
-
 extern bool *primeFlags;
 extern unsigned long long int primeListMax;
 extern unsigned long long *primeList;
@@ -237,6 +232,16 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	return rl;
 }
 
+// calculate a^n%mod
+unsigned __int64 modPowerBi(Znum a, Znum n, unsigned __int64 mod) {
+	Znum res;
+	Znum modz = mod;
+	unsigned long long r1;
+
+	mpz_powm(ZT(res), ZT(a), ZT(n), ZT(modz));
+	r1 = mpz_get_ui(ZT(res));		// since res <= mod, it will not overflow on conversion
+	return r1;
+}
 // n-1 = 2^s * d with d odd by factoring powers of 2 from n-1
 static bool witness(unsigned __int64 n, unsigned int s, unsigned __int64 d,
 	unsigned __int64 a)
@@ -385,7 +390,7 @@ long long int PollardRho(long long int n)
 	return d;
 }
 
-static unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
+unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 	unsigned  int count = 0, i = 0;
 
 	while (tnum > 1) {
@@ -596,108 +601,4 @@ unsigned __int64 R3(__int64 n) {
 	}
 
 	return sum;
-}
-
-
-/*
-Square root modulo prime number using Tonelli–Shanks algorithm
-Solve the equation given a and p.
-	x^2 ≡ a mod p
-and return list of solutions. There will be either 0, 1 or 2 solutions
-see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
-(renamed the solution variable n to a)
-*/
-std::vector <long long> primeModSqrt(long long a, const unsigned long long p) {
-	std::vector <long long> result;
-	unsigned long long q, s, z, m, i, e;
-	unsigned long long c, t, R, b;
-
-	a %= p;
-	if (a < 0)
-		a += p;   /* normalise a so it's in range 0 to p-1 */
-
-	// Simple case
-	if (a == 0) {
-		result.push_back(0);
-		return result;
-	}
-
-	if (p == 2) {
-		result.push_back(a);  // a is 1
-		return result;
-	}
-
-	/* Check solution existence on odd prime. Because p is prime the Jacobi
-	symbol is the same as the Legendre symbol. */
-	if (jacobi(a, p) != 1)
-		return result;    // empty list; no solutions
-#ifdef _DEBUG
-	/* recheck existence of solution */
-	assert(modPower(a, (p - 1) / 2, p) == 1);
-#endif
-
-	// Simple case
-	if (p % 4 == 3) {
-		R = modPower(a, (p + 1) / 4, p);
-		result.push_back(R);
-		result.push_back(p - R);
-		return result;
-	}
-
-	// step 1: Factor p - 1 of the form q * 2 ^ s(with Q odd)
-	q = p - 1;
-	s = 0;
-	while (q % 2 == 0) {
-		s += 1;
-		q /= 2;
-	}
-
-	// step 2: Select a z which is a quadratic non resudue modulo p
-	z = 1;
-	while (jacobi(z, p) != -1) {
-		z += 1;
-	}
-
-	/* step 3 */
-	m = s;
-	c = modPower(z, q, p);
-	t = modPower(a, q, p);
-	R = modPower(a, (q + 1) / 2, p);
-
-	// Step 4: Search for a solution
-	while (t != 1) {
-		if (t == 0) {
-			R = 0;
-			break;
-		}
-		// Find the lowest i such that t ^ (2 ^ i) = 1 (mod p)
-		i = 0;
-		e = 1;
-		for (i = 0; i < m; i++) {
-			if (modPower(t, e, p) == 1)
-				break;
-			e *= 2;  /* e = 2^i */
-		}
-
-		// Update next value to iterate
-		long long temp = m - i - 1;
-		assert(temp < 64 && temp >= 0);  /* pow2 exponent must be within this range */
-		b = modPower(c, pow2((unsigned int)temp), p);
-
-		/* NB multiplication below could overflow if the intermediate product
-		exceeds 64 bits. modMult avoids this risk */
-		R = modMult(R, b, p);		           //R = (R * b) % p;
-		t = modMult(modMult(t, b, p), b, p);   // t = (t * b * b) % p; 
-		 /* NB apply modulus to intermediate result to avoid risk of overflow */
-		c = modMult(b, b, p);                  // c = (b * b) % p;
-		m = i;
-	}
-
-#ifdef _DEBUG
-	assert(modMult(R, R, p) == a);
-#endif
-
-	result.push_back(R);
-	result.push_back(p - R);
-	return result;
 }
