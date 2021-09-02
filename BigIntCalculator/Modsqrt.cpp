@@ -1,14 +1,14 @@
 ﻿#include "pch.h"
 #include "factor.h"
 
-// calculate x^n
+__int64 ChineseRem(__int64 a1, __int64 n1, __int64 a2, __int64 n2);
+
+// calculate x^n. Returns a Big Integer so should be no overflow problem.
 Znum powerBi(const __int64 x, unsigned __int64 n) {
 	Znum result;
 	mpz_ui_pow_ui(ZT(result), x, n);
 	return result;
 }
-
-__int64 ChineseRem(__int64 a1, __int64 n1, __int64 a2, __int64 n2);
 
 // simulate parallel assignment. temp is used to ensure correct result
 // if newa and b are the same variable. It is recommended that all variables 
@@ -259,29 +259,46 @@ otherwise there may be no solution.*/
 std::vector <long long> ModSqrt2(long long c, const unsigned long long p, 
 	const int lambda) {
 	std::vector <long long> roots;
-	long long a, r1, r2, root, Beta, x;
+	long long r1, r2, root, x;
+	//long long a, Beta;
 	long long mod = power(p, lambda);
 	std::vector <long long> rx;
-	if (p % 4 == 1) {
-		a = (p - 1) / 4;
-		Beta = power(p, lambda - 1) * a;   /* β = a* p^(λ-1) */
-		r1 = modPowerBi(powerBi(c, a)+3, Beta, mod);  /* (c^a  +3)^β (mod p^λ)*/
-		r2 = modPower(c, (Beta + 1) / 2, mod);       /* c^((β+1)/2) (mod p^λ)      */
-		root = modMult(r1, r2, mod);    /* get final product */
-		roots.push_back(root);
-		roots.push_back(mod - root);    /* get 2nd root */
+
+	/* must treat 2 as a special case */
+	if (p == 2) {
+		if (c% mod == 1) {
+			roots.push_back(1);  
+			roots.push_back(mod - 1);  /* get 2nd root */
+		}
+		return roots;
 	}
-	else {
+
+	//if (p % 4 == 1) {
+	//	a = (p - 1) / 4;
+	//	Beta = power(p, lambda - 1) * a;   /* β = a* p^(λ-1) */
+	//	r1 = modPowerBi(powerBi(c, a)+3, Beta, mod);  /* (c^a  +3)^β (mod p^λ)*/
+	//	r2 = modPower(c, (Beta + 1) / 2, mod);       /* c^((β+1)/2) (mod p^λ)      */
+	//	root = modMult(r1, r2, mod);    /* get final product */
+	//	roots.push_back(root);
+	//	roots.push_back(mod - root);    /* get 2nd root */
+	//}
+	//else {
 		rx = primeModSqrt(c, p);
-		assert(!rx.empty());
-		x = std::min(rx[0], rx[1]);
+		if (rx.empty()) {
+			roots.clear();
+			return roots;     /* there are no solutions */
+		}
+		if (rx.size() > 1)
+			x = std::min(rx[0], rx[1]);
+		else
+			x = rx[0];
 		r1 = modPower(x, power(p, lambda - 1), mod);
-		r2 = modPower(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
+		r2 = modPowerBi(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
 		root = modMult(r1, r2, mod);    /* get final product */
 		roots.push_back(root);
 		roots.push_back(mod - root);    /* get 2nd root */
-	}
-	return (roots);
+	//}
+	return roots;
 }
 
 /*
@@ -387,19 +404,31 @@ std::vector <long long> primeModSqrt(long long a, const unsigned long long p) {
 	return result;
 }
 
-/* to find the moduluar square root modulo m where m is not prime we need to 
+/* Solve the equation given a and m.
+	x^2 ≡ a mod m
+to find the moduluar square root modulo m where m is not prime we need to 
 find the square root modulo each prime factor p1, p2 ... of m. We can combine 
 one root for each prime factor using the Chinese remainder theorem. 
 If m has x prime factors there are 2^x combinations giving 2^x roots. */
-std::vector <long long> ModSqrt(long long a, const unsigned long long m) {
+std::vector <long long> ModSqrt(const long long aa, const unsigned long long m) {
 	factorsS pFactors;
 	int numFactors;
 	long long cMod = 1;
-	long long p; 
+	long long p, a; 
 	int e;
 
 	std::vector <long long> pRoots, cRoots, cRoots2;
 	generatePrimes(std::max(llSqrt(m), 393203ULL));
+
+	a = aa % m;
+	if (a < 0)
+		a += m;  /* normalise a so it's in range 0 to m-1 */
+
+	// Simple case
+	if (a == 0) {
+		cRoots.push_back(0);
+		return cRoots;
+	}
 
 	numFactors = primeFactors(m, pFactors);
 
@@ -412,17 +441,19 @@ std::vector <long long> ModSqrt(long long a, const unsigned long long m) {
 		p = pFactors.factorlist[i][0];
 		e = (int)pFactors.factorlist[i][1];
 		if (e != 1) {
-			pRoots = ModSqrt2(a, p, e);
+			pRoots = ModSqrt2(a, p, e);   /*find roots such that r^2 = a mod p^e */
 		}
 		else 
 			pRoots = primeModSqrt(a, p);   /*find roots such that r^2 = a mod p */
+
 		if (pRoots.empty()) {
 			cRoots.clear();   /* there are no solutions */
 			return cRoots;
 		}
+
 		if (cRoots.empty()) {
-			cMod = p;         /* 1st time round, initialise combined modulus*/
-			cRoots = pRoots;  /* and combined roots */
+			cMod = power(p, e);    /* 1st time round, initialise combined modulus*/
+			cRoots = pRoots;      /* and combined roots */
 		}
 		else {
 			/* generate a new set of combined roots, by taking each root of the 
@@ -430,10 +461,10 @@ std::vector <long long> ModSqrt(long long a, const unsigned long long m) {
 			   the combined set doubles in size each time round. */
 			for (auto r1: cRoots)
 				for (auto r2 : pRoots) {
-					cRoots2.push_back(ChineseRem(r1, cMod, r2, p));
+					cRoots2.push_back(ChineseRem(r1, cMod, r2, power(p, e)));
 				}
 
-			cMod *= p;    /* update combined modulus & roots */
+			cMod *= power(p, e);    /* update combined modulus & roots */
 			cRoots.swap(cRoots2);
 		}
 	}
@@ -441,12 +472,9 @@ std::vector <long long> ModSqrt(long long a, const unsigned long long m) {
 	/* sort roots into ascending order */
 	std::sort(cRoots.begin(), cRoots.end());
 #ifdef _DEBUG
-	long long x2 = a % m;
-	if (x2 < 0)
-		x2 += m;
 	for (long long r : cRoots) {
 		long long x1 = r * r%m;
-		if (x1 != x2)
+		if (x1 != a)
 			std::cerr << "Invalid root a = " << a << " m = " << m << " root = " << r << '\n';
 	}
 #endif

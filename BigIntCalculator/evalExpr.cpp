@@ -1040,17 +1040,15 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		/* we use Tonelli-shanks algorithm which only works for prime modulus,
 		therefore we restrict p to prime numbers only */
 		if (p1 < LLONG_MIN || p1 > LLONG_MAX ||
-			p2 <= 0 || p2 > LLONG_MAX)
+			p2 <= 1 || p2 > LLONG_MAX)
 			return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
-		//if (mpz_bpsw_prp(ZT(p2)) <= 0)
-		//	return retCode::EXPR_INVALID_PARAM;  /* p2 must be prime */
 
 		long long a = MulPrToLong(p1);
 		long long p = MulPrToLong(p2);
 		/* Solve the equation given a and p.  x^2 ≡ a (mod p) */
 		roots = ModSqrt(a, p);
 		/* the result can be: no solution: roots is empty
-		                      one  or more solutions */
+		                      or one  or more solutions */
 		if (roots.empty())
 			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
 		result = roots[0];     /* ignore 2nd solution, if any */

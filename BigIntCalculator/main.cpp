@@ -1026,12 +1026,6 @@ static void doTests(void) {
 	printSummary();
 }
 
-/* generate large random number, up to 128 bits */
-//static void largeRand(Znum &a) {
-//	a = ((long long)rand() << 32) + rand();
-//	a <<= 64;
-//	a += ((long long)rand() << 32) + rand();
-//}
 
 //find a random 'strong' prime of size 'bits'
 //follows the Handbook of applied cryptography
@@ -1680,6 +1674,57 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
+/* find modular square roots by brute force */
+static std::vector<long long> ModSqrtBF(long long a, long long m) {
+	std::vector <long long> roots;
+	a = a % m;
+	if (a < 0)
+		a += m;  /* normalise a so it's in range 0 to m-1 */
+	for (long long r = 1; r < m; r++) {
+		if (r*r%m == a)
+			roots.push_back(r);
+	}
+	return roots;
+}
+
+
+static bool test9once(long long a, long long m) {
+	std::vector <long long> roots, r2;
+	roots = ModSqrt(a, m);
+	r2 = ModSqrtBF(a, m);
+	if (r2 != roots) {
+		printf_s("a = %lld, m = %lld, results don't match! \nGot: ", a, m);
+		for (auto r : roots) {
+			printf_s("%lld, ", r);
+		}
+		if (r2.empty())
+			printf_s("\nActually no solutions\n");
+		else {
+			printf_s("\n should be: ");
+			for (auto r : r2) {
+				printf_s("%lld, ", r);
+			}
+			putchar('\n');
+		}
+		return false;
+	}
+	else
+		return true;
+}
+
+/* test modular square root */
+static void doTests9(void) {
+
+	test9once(99, 107);      // roots are 45 and 62
+	test9once(3, 22);        // roots are 5 & 17
+	test9once(99, 100);      // no roots
+	test9once(2191, 12167);  // roots are 1115, 11052
+	test9once(4142, 24389);  // roots are 2333, 22056
+	test9once(3, 143);       // roots are 17, 61, 82, 126
+	test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
+	test9once(9, 44);       // roots are 3 & 19
+}
+
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -2110,20 +2155,20 @@ static int processCmd(const std::string &command) {
 				helpfunc("AYUDA");
 			return 1;
 		}
-	case 4: /* E */
-		{ lang = 0; return 1; }           // english
-	case 5: /* S */
-		{ lang = 1; return 1; }	          // spanish (Español)
+	case 4: /* E */ {
+		 lang = 0; return 1; }           // english
+	case 5: /* S */ { 
+		lang = 1; return 1; }	          // spanish (Español)
 	case 6: /* F */ { 
 		/* will not throw an exception if input has fat finger syndrome.
 			If no valid digits found, sets factorFlag to 0 */
 		factorFlag = atoi(command.substr(1).data());
 		std::cout << "factor set to " << factorFlag << '\n';
 		return 1; }  
-	case 7: /* X */
-		{ hex = true; return 1; }         // hexadecimal output
-	case 8: /* D */
-		{ hex = false; return 1; }        // decimal output
+	case 7: /* X */ { 
+		hex = true; return 1; }         // hexadecimal output
+	case 8: /* D */ { 
+		hex = false; return 1; }        // decimal output
 	case 9: /* TEST */ {
 			/* there are a number of commands that begin with TEST */
 			if (command == "TEST") {
@@ -2131,16 +2176,16 @@ static int processCmd(const std::string &command) {
 				return 1;
 			}
 
-			int ttype = command.data()[4] - '0';  /* for TEST2 ttype = 2, etc*/
+			int ttype = command.data()[4] ;  /* for TEST2 ttype = 2, etc*/
 			switch (ttype) {
-			case 2: {
+			case '2': {
 				if (command.size() > 5)
 					doTests2(command.substr(6));         // do basic tests 
 				else
 					doTests2("");
 				return 1;
 			}
-			case 3:
+			case '3':
 	#ifdef BIGNBR
 				{
 					doTests3();         // do basic tests 
@@ -2149,19 +2194,19 @@ static int processCmd(const std::string &command) {
 	#else
 				return 0;
 	#endif
-			case 4: {
-					doTests4();         // do R3 tests 
+			case '4': {
+					doTests4();         // factorise Mersenne numbers 
 					return 1;
 				}
-			case 5: {
+			case '5': {
 					doTests5();         // do YAFU tests 
 					return 1;
 				}
-			case 6: {
+			case '6': {
 					doTests6();         // do Msieve tests 
 					return 1;
 				}
-			case 7: {
+			case '7': {
 					/* Lucas-Lehmer test */
 					if (command.size() > 5)
 						doTests7(command.substr(6));
@@ -2169,8 +2214,12 @@ static int processCmd(const std::string &command) {
 						doTests7("");
 					return 1;
 				}
-			case 8: {
+			case '8': {
 				testerrors();
+				return 1;
+			}
+			case '9': {
+				doTests9();
 				return 1;
 			}
 			default:
