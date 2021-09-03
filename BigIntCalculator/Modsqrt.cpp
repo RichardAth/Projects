@@ -255,7 +255,11 @@ otherwise there may be no solution.*/
 }
  
 
-/* find x such that x^2 ≡ c mod p^lambda*/
+/* find x such that x^2 ≡ c mod p^lambda 
+  the method used was partly derived from Wikipedia but the cases where c=0, 
+  and where p=2 are all my own work. I have not seen descriptions that cover these
+  cases let alone working code that does what this does ANYWHERE and, believe 
+  me, I looked. */
 std::vector <long long> ModSqrt2(long long c, const unsigned long long p, 
 	const int lambda) {
 	std::vector <long long> roots;
@@ -264,8 +268,24 @@ std::vector <long long> ModSqrt2(long long c, const unsigned long long p,
 	long long mod = power(p, lambda);
 	std::vector <long long> rx;
 
-	/* must treat 2 as a special case */
-	if (p == 2) {
+	c %= power(p, lambda);
+	if (c < 0)
+		c += mod;  /* ensure c is in range 0 to mod-1 */
+
+	/* treat c=0 as special case */
+	if (c == 0) {
+		r1 = power(p, (lambda + 1) / 2);  /* smallest non-zero root is the
+										   smallest power of p >= sqrt(mod) */
+		r2 = 0;
+		while (r2 < mod) {
+			roots.push_back(r2);  
+			r2 += r1;  /* the roots form an arithmetic progression: 0, r1, 2*r1, 3*r1 etc */
+		}
+		return roots;
+	}
+
+	/* must treat p=2 as a special case */
+	if (p == 2 && c != 0) {
 		if (c% mod == 1) {
 			roots.push_back(1);  
 			roots.push_back(mod - 1);  /* get 2nd root */
@@ -273,6 +293,9 @@ std::vector <long long> ModSqrt2(long long c, const unsigned long long p,
 		return roots;
 	}
 
+	// code below (derived from Wikpedia) works for p=4i+1 but the more general
+	// method is better IMHO because the intermediate products are smaller so less
+	// overflow possibilities to deal with
 	//if (p % 4 == 1) {
 	//	a = (p - 1) / 4;
 	//	Beta = power(p, lambda - 1) * a;   /* β = a* p^(λ-1) */
@@ -283,13 +306,17 @@ std::vector <long long> ModSqrt2(long long c, const unsigned long long p,
 	//	roots.push_back(mod - root);    /* get 2nd root */
 	//}
 	//else {
-		rx = primeModSqrt(c, p);
+
+	/* this part was derived from Wikipedia 
+	see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#Tonelli's_algorithm_will_work_on_mod_p^k
+	The explanation there is not very clear but I got working code out of it */
+		rx = primeModSqrt(c, p);   /* rx^2 ≡ c (mod p) */
 		if (rx.empty()) {
 			roots.clear();
 			return roots;     /* there are no solutions */
 		}
 		if (rx.size() > 1)
-			x = std::min(rx[0], rx[1]);
+			x = std::min(rx[0], rx[1]);  /* take smaller root */
 		else
 			x = rx[0];
 		r1 = modPower(x, power(p, lambda - 1), mod);
@@ -408,32 +435,26 @@ std::vector <long long> primeModSqrt(long long a, const unsigned long long p) {
 	x^2 ≡ a mod m
 to find the moduluar square root modulo m where m is not prime we need to 
 find the square root modulo each prime factor p1, p2 ... of m. We can combine 
-one root for each prime factor using the Chinese remainder theorem. 
-If m has x prime factors there are 2^x combinations giving 2^x roots. */
+one root for each prime factor using the Chinese remainder theorem (CRT). 
+If m has x unique prime factors there are generally 2^x combinations giving 2^x roots. 
+The idea to use CRT came from a Stack Overflow answer */
 std::vector <long long> ModSqrt(const long long aa, const unsigned long long m) {
 	factorsS pFactors;
 	int numFactors;
 	long long cMod = 1;
 	long long p, a; 
 	int e;
-
 	std::vector <long long> pRoots, cRoots, cRoots2;
-	generatePrimes(std::max(llSqrt(m), 393203ULL));
 
 	a = aa % m;
 	if (a < 0)
 		a += m;  /* normalise a so it's in range 0 to m-1 */
 
-	// Simple case
-	if (a == 0) {
-		cRoots.push_back(0);
-		return cRoots;
-	}
-
-	numFactors = primeFactors(m, pFactors);
-
-	if (gcd(a, m) != 1)
+	if ( a != 0 && gcd(a, m) != 1)
 		return cRoots;   /* return empty list; no solutions */
+
+	generatePrimes(std::max(llSqrt(m), 393203ULL));
+	numFactors = primeFactors(m, pFactors);
 
 	/* get roots for each prime factor of modulus separately */
 	for (int i = 0; i < numFactors; i++) {

@@ -1034,24 +1034,33 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 
 		/* this is a necessary condition, but not sufficient to guarantee 
 		a solution */
-		if (gcd(p1, p2) != 1)
+		if (p1%p2 != 0 && gcd(p1, p2) != 1)
 			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
 
-		/* we use Tonelli-shanks algorithm which only works for prime modulus,
-		therefore we restrict p to prime numbers only */
 		if (p1 < LLONG_MIN || p1 > LLONG_MAX ||
 			p2 <= 1 || p2 > LLONG_MAX)
-			return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
+		return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
 
 		long long a = MulPrToLong(p1);
 		long long p = MulPrToLong(p2);
 		/* Solve the equation given a and p.  x^2 ≡ a (mod p) */
 		roots = ModSqrt(a, p);
+		if (verbose > 0) {
+			if (roots.empty())
+				printf_s("modsqrt(%lld, %lld) has no roots \n", a, p);
+			else {
+				printf_s("modsqrt(%lld, %lld) = ", a, p);
+				for (long long r : roots)
+					printf_s("%lld, ", r);
+				putchar('\n');
+			}
+		}
 		/* the result can be: no solution: roots is empty
 		                      or one  or more solutions */
 		if (roots.empty())
 			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
 		result = roots[0];     /* ignore 2nd solution, if any */
+
 		break;
 	}
 

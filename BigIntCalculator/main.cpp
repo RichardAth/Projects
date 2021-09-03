@@ -1680,7 +1680,7 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	a = a % m;
 	if (a < 0)
 		a += m;  /* normalise a so it's in range 0 to m-1 */
-	for (long long r = 1; r < m; r++) {
+	for (long long r = 0; r < m; r++) {
 		if (r*r%m == a)
 			roots.push_back(r);
 	}
@@ -1708,8 +1708,19 @@ static bool test9once(long long a, long long m) {
 		}
 		return false;
 	}
-	else
+	else {
+		if (verbose > 0) {
+			if (roots.empty())
+				printf_s("modsqrt(%lld, %lld) has no roots \n", a, m);
+			else {
+				printf_s("modsqrt(%lld, %lld) = ", a, m);
+				for (long long r : roots)
+					printf_s("%lld, ", r);
+				putchar('\n');
+			}
+		}
 		return true;
+	}
 }
 
 /* test modular square root */
@@ -1722,7 +1733,15 @@ static void doTests9(void) {
 	test9once(4142, 24389);  // roots are 2333, 22056
 	test9once(3, 143);       // roots are 17, 61, 82, 126
 	test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	test9once(9, 44);       // roots are 3 & 19
+	test9once(9, 44);        // roots are 3 & 19
+	test9once(0, 44);        // roots are zero, 22
+	test9once(0, 4);         // roots are 0, 2
+	test9once(0, 9);         // roots are 0, 3, 6
+	test9once(0, 8);         // roots are 0, 4
+	test9once(0, 27);         // roots are 0, 9, 18
+	test9once(0, 16);        // roots are 0, 4, 8, 12
+	test9once(0, 32);        // roots are 0, 8, 16, 24
+	test9once(0, 176);       // roots are zero, 44, 88, 132
 }
 
 
