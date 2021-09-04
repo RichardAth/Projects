@@ -566,7 +566,7 @@ squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z ca
 be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875.txt*/
 static Znum R3(Znum num) {
 
-	if (num < 200000000000000) {
+	if (num < 20'000'000'000'000'000) {
 		__int64 llnum = MulPrToLong(num);
 		return R3(llnum);
 	}
@@ -755,15 +755,6 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
 
 		return retCode::EXPR_OK;
 	}
-	//case opCode::dfact: {
-	//	if (firstArg > 11081)
-	//		return retCode::EXPR_INTERM_TOO_HIGH;
-	//	if (firstArg < 0)
-	//		return retCode::EXPR_INVALID_PARAM;
-	//	long long temp = llabs(MulPrToLong(firstArg));
-	//	mpz_2fac_ui(ZT(result), temp);  // get double factorial
-	//	return retCode::EXPR_OK;
-	//}
 	case opCode::prim: {
 		if (firstArg > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -924,7 +915,7 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 
-						 /* legendre & kronecker are in fact implemented as aliases of jacobi in MPIR */
+	/* legendre & kronecker are in fact implemented as aliases of jacobi in MPIR */
 	case fn_Code::fn_legendre:
 	case fn_Code::fn_jacobi:
 	case fn_Code::fn_kronecker: {
@@ -1030,28 +1021,22 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 	case fn_Code::fn_modsqrt: {
-		std::vector <long long> roots;
+		std::vector <Znum> roots;
 
 		/* this is a necessary condition, but not sufficient to guarantee 
 		a solution */
 		if (p1%p2 != 0 && gcd(p1, p2) != 1)
 			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
 
-		if (p1 < LLONG_MIN || p1 > LLONG_MAX ||
-			p2 <= 1 || p2 > LLONG_MAX)
-		return retCode::EXPR_INVALID_PARAM;  /* parameter not in range */
-
-		long long a = MulPrToLong(p1);
-		long long p = MulPrToLong(p2);
-		/* Solve the equation given a and p.  x^2 ≡ a (mod p) */
-		roots = ModSqrt(a, p);
+		/* Solve the equation given p1 and p2.  x^2 ≡ p1 (mod p2) */
+		roots = ModSqrt(p1, p2);
 		if (verbose > 0) {
 			if (roots.empty())
-				printf_s("modsqrt(%lld, %lld) has no roots \n", a, p);
+				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p1, p2);
 			else {
-				printf_s("modsqrt(%lld, %lld) = ", a, p);
-				for (long long r : roots)
-					printf_s("%lld, ", r);
+				gmp_printf("modsqrt(%Zd, %Zd) = ", p1, p2);
+				for (Znum r : roots)
+					gmp_printf("%Zd, ", r);
 				putchar('\n');
 			}
 		}

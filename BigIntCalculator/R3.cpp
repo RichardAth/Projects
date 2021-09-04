@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "factor.h"
+#include "showtime.h"
 
 extern int verbose;
 
@@ -71,6 +72,11 @@ constexpr __int64 power(const __int64 x, unsigned int n) {
 	}
 	return(r);
 }
+Znum power(const Znum &x, unsigned long long n) {
+	Znum res;
+	mpz_pow_ui(ZT(res), ZT(x), n);
+	return res;
+}
 
 // calculate the product of all the factors in the list
 unsigned __int64 FactorMult(const factorsS f) {
@@ -138,6 +144,10 @@ int jacobi(__int64 k, unsigned __int64 n) {
 
 }
 
+int jacobi(const Znum &k, const Znum &n) {
+	return mpz_jacobi(ZT(k), ZT(n));
+}
+
 // fast way to check for primes, but generatePrimes must have been called first.
 // true indicates a prime number
 bool isPrime2(unsigned __int64 num) {
@@ -174,6 +184,12 @@ unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int6
 		x = mpz_fdiv_r_ui(rem, res_t, mod);  //  x = res_t % mod
 	}
 	return x;
+}
+Znum modMult(const Znum &a, const Znum &b, Znum mod) {
+	Znum res;
+	res = a * b;
+	mpz_mod(ZT(res), ZT(res), ZT(mod));
+	return res;
 }
 
 // calculate x^n%mod
@@ -233,7 +249,7 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 }
 
 // calculate a^n%mod
-unsigned __int64 modPowerBi(Znum a, Znum n, unsigned __int64 mod) {
+unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod) {
 	Znum res;
 	Znum modz = mod;
 	unsigned long long r1;
@@ -242,6 +258,12 @@ unsigned __int64 modPowerBi(Znum a, Znum n, unsigned __int64 mod) {
 	r1 = mpz_get_ui(ZT(res));		// since res <= mod, it will not overflow on conversion
 	return r1;
 }
+Znum modPower(const Znum &a, const Znum &n, const Znum &mod) {
+	Znum res;
+	mpz_powm(ZT(res), ZT(a), ZT(n), ZT(mod));
+	return res;
+}
+
 // n-1 = 2^s * d with d odd by factoring powers of 2 from n-1
 static bool witness(unsigned __int64 n, unsigned int s, unsigned __int64 d,
 	unsigned __int64 a)
@@ -331,8 +353,11 @@ static bool isPrimeMR(unsigned __int64 n)
 
 /* method to return prime divisor for n 
 adapted from: 
-https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ */
-long long int PollardRho(long long int n)
+https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ 
+This method generally works but for very large n it may be too slow. It uses a 
+truly random number generator so could give different results given the same 
+value of n */
+long long int PollardRho(long long int n, int depth)
 {
 	/* initialize random seed */
 	std::random_device rd;   // non-deterministic generator
@@ -379,13 +404,13 @@ long long int PollardRho(long long int n)
 		/* retry if the algorithm fails to find prime factor
 		 * with chosen x and c */
 		if (d == n) 
-			return PollardRho(n);
+			return PollardRho(n, depth+1);
 		ctr++;
 	}
 
 	if (verbose >0)
 		std::cout << "Pollard Rho n = " << n << " factor = " << d 
-		<< " loop counter = " << ctr << '\n';
+		<< " loop counter =" << ctr << " depth=" << depth << '\n';
 
 	return d;
 }
@@ -443,7 +468,6 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 				it must have exactly two prime factors. We can use the Pollard Rho algorithm
 				to get these factors.*/
 				long long factor;
-				//PollardFactor(tnum, factor);
 				factor = PollardRho(tnum);
 #ifdef _DEBUG
 				assert(tnum%factor == 0);
@@ -583,6 +607,9 @@ unsigned __int64 R3(__int64 n) {
 			sum += 2;  // note: n is a perfect square
 		else
 			sum += 2 * R2(n - k * k);
+		if ((k & 0xfff) == 0) {
+			printf_s("%s R3: %g%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+		}
 	}
 	sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2
 	/* we now have sum = R3(n) */

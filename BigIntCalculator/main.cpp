@@ -1690,8 +1690,36 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 
 static bool test9once(long long a, long long m) {
 	std::vector <long long> roots, r2;
+	std::vector <Znum> r3;
+	Znum az = a;
+	Znum mz = m;
+	bool error = false;
 	roots = ModSqrt(a, m);
 	r2 = ModSqrtBF(a, m);
+	r3 = ModSqrt(az, mz);
+	if (r3.size() != r2.size())
+		error = true;
+	else{
+		for (int i = 0; i < roots.size(); i++) {
+			if (r2[i] != r3[i])
+				error = true;
+		}
+	}
+	if (error) {
+		printf_s("a = %lld, m = %lld, Znum results don't match! \nGot: ", a, m);
+		for (auto r : r3) {
+			gmp_printf("%Zd, ", r);
+		}
+		if (r2.empty())
+			printf_s("\nActually no solutions\n");
+		else {
+			printf_s("\n should be: ");
+			for (auto r : r2) {
+				printf_s("%lld, ", r);
+			}
+			putchar('\n');
+		}
+	}
 	if (r2 != roots) {
 		printf_s("a = %lld, m = %lld, results don't match! \nGot: ", a, m);
 		for (auto r : roots) {
@@ -1733,7 +1761,7 @@ static void doTests9(void) {
 	test9once(4142, 24389);  // roots are 2333, 22056
 	test9once(3, 143);       // roots are 17, 61, 82, 126
 	test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	test9once(9, 44);        // roots are 3 & 19
+	test9once(9, 44);        // roots are 3, 19, 25, 41
 	test9once(0, 44);        // roots are zero, 22
 	test9once(0, 4);         // roots are 0, 2
 	test9once(0, 9);         // roots are 0, 3, 6
