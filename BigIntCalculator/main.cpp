@@ -191,8 +191,10 @@ long long MulPrToLong(const Znum &x) {
 			rv = 0;
 		return rv;
 	}
-	else
+	else {
+		StackTrace2();
 		throw std::range_error("big number cannot be converted to 64-bit integer");
+	}
 	return 0;
 }
 

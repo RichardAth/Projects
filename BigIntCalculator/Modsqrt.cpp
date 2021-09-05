@@ -377,8 +377,8 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &p, const int lambda) {
 	std::vector <Znum> roots;
 	Znum r1, r2, root, x, c;
 	//long long a, Beta;
-	Znum modz = power(p, lambda);
-	long long mod = MulPrToLong(modz);  /* could get overflow? */
+	Znum mod = power(p, lambda);
+
 	std::vector <Znum> rx;
 
 	c  = cc%mod;
@@ -420,7 +420,7 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &p, const int lambda) {
 	else
 		x = rx[0];
 	r1 = modPower(x, power(p, lambda - 1), mod);
-	r2 = modPowerBi(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
+	r2 = modPower(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
 	root = modMult(r1, r2, mod);    /* get final product */
 	roots.push_back(root);
 	roots.push_back(mod - root);    /* get 2nd root */
