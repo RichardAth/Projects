@@ -204,24 +204,30 @@ __int64 ExtChineseRem(__int64 a1, unsigned __int64 n1, __int64 a2, unsigned __in
 }
 
 /* find x such that x ≡ a1 (mod n1) and x ≡ a2 (mod n2)
-	x will be in the range 0 to n1*n2 */
+	x will be in the range 0 to n1*n2 
+	if there is no solution an exception will be thrown */
 __int64 ChineseRem(__int64 a1, __int64 n1, __int64 a2, __int64 n2) {
 	__int64 m1, m2, llgcd, llgcd2 = 0, x = 0;
 	static Znum bt1, bt2, bx, bm1, bm2, t3;
 
 /* We use the extended Euclidian algorithm to find integers m1 and m2 such that
 m1*n1 + m2 * n2 = gcd(n1, n2)
-A solution is given by x = a1 * m2*n2 + a2 * m1*n1, provided that n1 and n2 are co - prime
+A solution is given by x = a1 * m2*n2 + a2 * m1*n1, provided that n1 and n2 are co-prime
 
-if n1 and n2 are not co - prime,
+if n1 and n2 are not co-prime,
 x = (a1*m2*n2 + a2 * m1*n1) / gcd(n1, n2)   ONLY if both a1 and a2 are multiples of the gcd,
 otherwise there may be no solution.*/
 
 	llgcd = extendedGcd(n1, n2, &m1, &m2);
 	if (llgcd != 1) {
 		if ((a1%llgcd != 0) || (a2%llgcd != 0)) {
-			if (a1%llgcd != a2 % llgcd)
-				return 0;   // there is no solution
+			if (a1%llgcd != a2 % llgcd) {
+				char buf[4000];  /* guess how big buffer should be; if it's too small the
+								 message will be truncated */
+				snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %lld, %lld, %lld, %lld",
+					a1, n1, a2, n2);
+				ThrowExc(buf);  /* throw an exception */
+			}
 			else {
 				x = ExtChineseRem(a1, n1, a2, n2);  // solution exists, use ext version to get it
 				if (x == 0) {
@@ -267,14 +273,19 @@ x will be in the range 0 to n1*n2. n1 and n2 must be mutually prime
 We use the extended Euclidian algorithm to find integers m1 and m2 such that
 m1*n1 + m2*n2 = gcd(n1,n2)
 A solution is given by x = a1*m2*n2 + a2*m1*n1, provided n1 and n2 are co-prime
+N.B. if n1 and n2 are not co-prime an exception will be thrown
 */
 void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, Znum &x) {
 
 	Znum m1, m2, gcd, t2;
 	mpz_gcdext(ZT(gcd), ZT(m1), ZT(m2), ZT(n1), ZT(n2));
-#ifdef _DEBUG
-	assert(gcd == 1);
-#endif
+	if (gcd != 1) {
+		char buf[4000];  /* guess how big buffer should be; if it's too small the
+						 message will be truncated */
+		gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd",
+			a1, n1, a2, n2);
+		ThrowExc(buf);  /* throw an exception */
+	}
 	x = a1 * m2*n2 + a2 * m1*n1;
 
 	t2 = abs(n1*n2);
@@ -288,8 +299,6 @@ void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, 
 	}
 	return;
 }
-
-
 
 /* find x such that x^2 ≡ c mod p^lambda 
   the method used was partly derived from Wikipedia but the cases where c=0, 
@@ -524,8 +533,9 @@ std::vector <long long> primeModSqrt(long long a, const unsigned long long p) {
 
 std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 	std::vector <Znum> result;
-	Znum q, s, z, m, i, e, a;
+	Znum q, z, m, i, e, a;
 	Znum c, t, R, b;
+	long long s;
 
 	a = aa % p;
 	if (a < 0)
