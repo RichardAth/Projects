@@ -370,18 +370,16 @@ constexpr unsigned __int64 pow2(unsigned int exp) {
 	return 1ULL << exp;  // exp must be less than 64
 }
 unsigned __int64 R3(__int64 n);
-std::vector <long long> primeModSqrt(long long a, const unsigned long long p);
 std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p);
-std::vector <long long> ModSqrt(long long a, const unsigned long long m);
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
-Znum modMult(const Znum &a, const Znum &b, Znum mod);
+Znum             modMult(const Znum &a, const Znum &b, Znum mod);
 // calculate a^n%mod using 'bigints'   
 unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod);
-Znum modPower(const Znum &a, const Znum &n, const Znum &mod);
+Znum             modPower(const Znum &a, const Znum &n, const Znum &mod);
 unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod);
 constexpr __int64 power(const __int64 x, unsigned int n);
-Znum power(const Znum &x, unsigned long long n);
+Znum              power(const Znum &x, unsigned long long n);
 int jacobi(__int64 k, unsigned __int64 n);
 int jacobi(const Znum &k, const Znum &n);
 

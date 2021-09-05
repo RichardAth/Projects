@@ -1691,18 +1691,18 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 
 
 static bool test9once(long long a, long long m) {
-	std::vector <long long> roots, r2;
+	std::vector <long long> r2;
 	std::vector <Znum> r3;
 	Znum az = a;
 	Znum mz = m;
 	bool error = false;
-	roots = ModSqrt(a, m);
+
 	r2 = ModSqrtBF(a, m);
 	r3 = ModSqrt(az, mz);
 	if (r3.size() != r2.size())
 		error = true;
 	else{
-		for (int i = 0; i < roots.size(); i++) {
+		for (int i = 0; i < r2.size(); i++) {
 			if (r2[i] != r3[i])
 				error = true;
 		}
@@ -1721,36 +1721,20 @@ static bool test9once(long long a, long long m) {
 			}
 			putchar('\n');
 		}
-	}
-	if (r2 != roots) {
-		printf_s("a = %lld, m = %lld, results don't match! \nGot: ", a, m);
-		for (auto r : roots) {
-			printf_s("%lld, ", r);
-		}
-		if (r2.empty())
-			printf_s("\nActually no solutions\n");
-		else {
-			printf_s("\n should be: ");
-			for (auto r : r2) {
-				printf_s("%lld, ", r);
-			}
-			putchar('\n');
-		}
 		return false;
 	}
-	else {
-		if (verbose > 0) {
-			if (roots.empty())
+	
+	if (verbose > 0) {
+			if (r2.empty())
 				printf_s("modsqrt(%lld, %lld) has no roots \n", a, m);
 			else {
 				printf_s("modsqrt(%lld, %lld) = ", a, m);
-				for (long long r : roots)
+				for (long long r : r2)
 					printf_s("%lld, ", r);
 				putchar('\n');
 			}
 		}
-		return true;
-	}
+	return true;
 }
 
 /* test modular square root */
