@@ -65,8 +65,7 @@ extern limb *const MontgomeryMultR1;
 
 //extern int groupLen;
 
-void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod);
-//void FactoringSIQSx(const Znum &NbrToFactor, Znum &Factor);
+void ModInvBigNbr(const Znum &num, Znum &inv, const Znum &mod);
 void FactoringSIQS(const Znum &NbrToFactor, Znum &Factor);
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
@@ -85,21 +84,21 @@ void modmultInt(const limb *factorBig, int factorInt, limb *result);
 void AdjustModN(Znum &Nbr, const Znum &Modulus);
 void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
 
-void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
+//void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
 
 void ChSignBigNbr(int nbr[], int length);
-void ChSignBigNbrB(int nbr[], int length);
-int BigNbrLen(const long long Nbr[], int nbrLen);
+//void ChSignBigNbrB(int nbr[], int length);
+//int BigNbrLen(const long long Nbr[], int nbrLen);
 void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
 mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor);
 void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod);
 void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
-int modPower(int NbrMod, int Expon, int currentPrime);
+//int modPower(int NbrMod, int Expon, int currentPrime);
 // calculate a^n%mod using 'bigints'   
-unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
-	unsigned __int64 mod);
+//unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
+//	unsigned __int64 mod);
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);

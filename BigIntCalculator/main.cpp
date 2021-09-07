@@ -15,12 +15,11 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #pragma fenv_access (on)
 
 #include "pch.h"
-#include "bignbr.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
 #include "factor.h"
-#include <stack>
+
 #include "diagnostic.h"
 
 //#define BIGNBR       // define to include bignbr tests 
@@ -1154,6 +1153,14 @@ static void doTests2(const std::string &params) {
 }
 
 #ifdef BIGNBR
+
+/* generate large random number, up to 128 bits */
+static void largeRand(Znum &a) {
+	a = ((long long)rand() << 32) + rand();
+	a <<= 64;
+	a += ((long long)rand() << 32) + rand();
+}
+
 /*  1. check basic arithmetic operators for BigIntegers
 	2. test BigInteger multiplication with larger numbers
 	3. BigInteger division with larger numbers
@@ -2450,7 +2457,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 		processIni(argv[0]); // read .ini file if it exists
 
-		/* start of main loop. exit via EXIT command */
+		/* start of main loop. Normal exit is via EXIT command */
 		while (true) {
 			if (lang == 0) {
 				printf_s("enter expression to be processed, or HELP, or EXIT\n");
@@ -2464,7 +2471,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			getline(std::cin, expr);    // expression may include spaces
 			if (breakSignal) {
 				Sleep(10000);   /* wait 10 seconds */
-				break;     /* Program interrupted */
+				break;     /* Program interrupted: ctrl-c or ctrl-break */
 			}
 			strToUpper(expr, expr);		// convert to UPPER CASE 
 			removeInitTrail(expr);       // remove initial & trailing spaces
@@ -2491,7 +2498,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			int cmdCode = processCmd(expr);  /* is input a command? */
 			if (breakSignal)
-				break;     /* Program interrupted */
+				break;    /* Program interrupted: ctrl-c or ctrl-break */
 			if (cmdCode == 2) 
 				break;    // EXIT command
 			if (cmdCode == 1) {
@@ -2546,7 +2553,9 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 		return EXIT_SUCCESS;  // EXIT command entered
 	}
+
 #undef max  /* remove max defined in windows.h  because of name clash */
+
 	/* code below catches C++ 'throw' type exceptions */
 	catch (const std::exception& e) {
 		printf_s("\n*** standard exception caught, message '%s'\n", e.what());

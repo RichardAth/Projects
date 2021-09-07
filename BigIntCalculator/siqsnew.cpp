@@ -2169,7 +2169,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
 		halfCurrentPrime = (currentPrime - 1) / 2;
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
-		int jacobi = modPower(NbrMod, halfCurrentPrime, currentPrime);
+		int jacobi = (int)modPower(NbrMod, halfCurrentPrime, currentPrime);
 		double dp = (double)currentPrime;
 		double logp = log(dp) / dp;
 
@@ -2279,11 +2279,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^BITS_PER_INT_GROUP)^6 mod currentPrime
 
 			if ((currentPrime & 3) == 3) {
-				SqrRootMod = modPower(NbrMod, (currentPrime + 1) / 4, currentPrime);
+				SqrRootMod = (int)modPower(NbrMod, (currentPrime + 1) / 4, currentPrime);
 			}
 			else if ((currentPrime & 7) == 5) {   // currentPrime = 5 (mod 8)
 				SqrRootMod =
-					modPower(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
+					(int)modPower(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
 				dRem = (double)2 * NbrMod * (double)SqrRootMod;
 				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod - 1;
@@ -2310,11 +2310,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 				do {
 					X++;
-					Z = modPower(X, Q, currentPrime);
+					Z = (int)modPower(X, Q, currentPrime);
 				} while (modPower(Z, Power2, currentPrime) == 1);
 
 				Y = Z;
-				X = modPower(NbrMod, (Q - 1) / 2, currentPrime);
+				X = (int)modPower(NbrMod, (Q - 1) / 2, currentPrime);
 				dBase = (double)NbrMod * (double)X;
 				V = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 				dBase = (double)V * (double)X;
@@ -2328,7 +2328,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 						D = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 						T1++;
 					}
-					D = modPower(Y, 1 << (E - T1 - 1), currentPrime);
+					D = (int)modPower(Y, 1LL << (E - T1 - 1), currentPrime);
 					dBase = (double)D * (double)D;
 					Y1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 					E = T1;
@@ -3794,7 +3794,7 @@ static void sieveThread(Znum &result) {
 			congruencesFound < matrixBLength);
 	}
 #if 0
-}
+
 
 catch (ArithmeticException ae)
 {

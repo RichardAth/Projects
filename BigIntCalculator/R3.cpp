@@ -42,8 +42,8 @@ extern bool *primeFlags;
 extern unsigned long long int primeListMax;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 void generatePrimes(unsigned long long int max_val);
+constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -164,8 +164,8 @@ bool isPrime2(unsigned __int64 num) {
 */
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod)
 {
-	unsigned __int64 x = 0, retval;
-	HRESULT  res;
+	unsigned __int64 x = 0, retval=0;
+	HRESULT  res =0;
 
 	static bool firsttime = true;
 	static mpz_t al, res_t, rem;
@@ -351,69 +351,7 @@ static bool isPrimeMR(unsigned __int64 n)
 
 }
 
-/* method to return prime divisor for n 
-adapted from: 
-https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ 
-This method generally works but for very large n it may be too slow. It uses a 
-truly random number generator so could give different results given the same 
-value of n */
-long long int PollardRho(long long int n, int depth)
-{
-	/* initialize random seed */
-	std::random_device rd;   // non-deterministic generator
-	std::mt19937_64 gen(rd());  // to seed mersenne twister.
-	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
-	long long ctr = 0;     /* loop counter*/
-	/* no prime divisor for 1 */
-	if (n == 1) return n;
 
-	/* even number means one of the divisors is 2 */
-	if (n % 2 == 0) return 2;
-
-	/* we will pick from the range [2, N) */
-	
-	long long int x, y;
-	x = dist(gen);  // x is in range 1 to max
-	x = x % (n - 2) + 2;  // x is in range 2 to n-1
-	y = x; 
-	
-
-	/* the constant in f(x).
-	 * Algorithm can be re-run with a different c
-	 * if it throws failure for a composite. */
-	long long int c = dist(gen);  // c is in range 1 to max
-		c = c% (n - 1) + 1;  // c is in range 1 to n-1
-
-	/* Initialize candidate divisor (or result) */
-	long long int d = 1;
-
-	/* until the prime factor isn't obtained.
-	   If n is prime, return n */
-	while (d == 1)
-	{
-		/* Tortoise Move: x(i+1) = f(x(i)) */
-		x = (modPower(x, 2, n) + c + n) % n;
-
-		/* Hare Move: y(i+1) = f(f(y(i))) */
-		y = (modPower(y, 2, n) + c + n) % n;
-		y = (modPower(y, 2, n) + c + n) % n;
-
-		/* check gcd of |x-y| and n */
-		d = gcd(abs(x - y), n);
-
-		/* retry if the algorithm fails to find prime factor
-		 * with chosen x and c */
-		if (d == n) 
-			return PollardRho(n, depth+1);
-		ctr++;
-	}
-
-	if (verbose >0)
-		std::cout << "Pollard Rho n = " << n << " factor = " << d 
-		<< " loop counter =" << ctr << " depth=" << depth << '\n';
-
-	return d;
-}
 
 unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 	unsigned  int count = 0, i = 0;

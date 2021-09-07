@@ -349,7 +349,7 @@ extern bool yafu;
 extern int verbose;
 
 void showECMStatus(void);
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n, int depth = 0);
 long long MulPrToLong(const Znum &x);
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
