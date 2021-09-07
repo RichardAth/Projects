@@ -64,6 +64,7 @@ int verbose = 0;
 #endif
 
 HANDLE hConsole;       /* used by SetConsoleCursorPosition() function */
+HWND handConsole;      /* handle to console window */
 
 
 
@@ -1707,6 +1708,7 @@ static bool test9once(long long a, long long m) {
 				error = true;
 		}
 	}
+
 	if (error) {
 		printf_s("a = %lld, m = %lld, Znum results don't match! \nGot: ", a, m);
 		for (auto r : r3) {
@@ -1752,10 +1754,12 @@ static void doTests9(void) {
 	test9once(0, 4);         // roots are 0, 2
 	test9once(0, 9);         // roots are 0, 3, 6
 	test9once(0, 8);         // roots are 0, 4
-	test9once(0, 27);         // roots are 0, 9, 18
+	test9once(0, 27);        // roots are 0, 9, 18
 	test9once(0, 16);        // roots are 0, 4, 8, 12
 	test9once(0, 32);        // roots are 0, 8, 16, 24
 	test9once(0, 176);       // roots are zero, 44, 88, 132
+	test9once(1, 121550625);
+	test9once(0, 121550625);  // 11025 different roots!
 }
 
 
@@ -2405,6 +2409,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for console window
+		handConsole = GetConsoleWindow();
 		if (hConsole == INVALID_HANDLE_VALUE)
 		{
 			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
@@ -2457,6 +2462,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 		retry:
 			getline(std::cin, expr);    // expression may include spaces
+			if (breakSignal) {
+				Sleep(10000);   /* wait 10 seconds */
+				break;     /* Program interrupted */
+			}
 			strToUpper(expr, expr);		// convert to UPPER CASE 
 			removeInitTrail(expr);       // remove initial & trailing spaces
 
@@ -2481,6 +2490,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
 			int cmdCode = processCmd(expr);  /* is input a command? */
+			if (breakSignal)
+				break;     /* Program interrupted */
 			if (cmdCode == 2) 
 				break;    // EXIT command
 			if (cmdCode == 1) {
@@ -2525,6 +2536,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 			SetThreadExecutionState(ES_CONTINUOUS);
 			/* now go back to start of loop */
+			if (breakSignal)
+				break;     /* Program interrupted */
 
 		} /* end of while loop */
 
@@ -2533,26 +2546,29 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 		return EXIT_SUCCESS;  // EXIT command entered
 	}
-
+#undef max  /* remove max defined in windows.h  because of name clash */
 	/* code below catches C++ 'throw' type exceptions */
 	catch (const std::exception& e) {
 		printf_s("\n*** standard exception caught, message '%s'\n", e.what());
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
-		system("PAUSE");               // press any key to continue
+		std::cout << "Press ENTER to continue...";
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		exit(EXIT_FAILURE);
 	}
 
 	catch (const char *str) {
 		printf_s("\n*** Caught exception: <%s> \n", str);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
-		system("PAUSE");               // press any key to continue
+		std::cout << "Press ENTER to continue...";
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		exit(EXIT_FAILURE);
 	}
 
 	catch (int e) {
 		printf_s("\n*** Caught exception: <%d> \n", e);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
-		system("PAUSE");               // press any key to continue
+		std::cout << "Press ENTER to continue...";
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		exit(EXIT_FAILURE);
 
 	}
@@ -2563,7 +2579,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		/* most likely to be a SEH-type exception */
 		printf_s("\n*** unknown exception ocurred\n");
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
-		system("PAUSE");               // press any key to continue
+		std::cout << "Press ENTER to continue...";
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 		exit(EXIT_FAILURE);
 	}
 }

@@ -330,32 +330,31 @@ Repeated factors: No or Yes
 };
 
 
-void showECMStatus(void);
-
 extern int lang;    // 0 English, 1 = Spanish
 extern std::string YafuPath;
 extern std::string yafuprog;
 extern std::string MsievePath;
 extern std::string MsieveProg;
-void delfile(const std::string &path, const char * FileName);
-void writeIni(void);
+extern bool breakSignal;
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
-long long MulPrToLong(const Znum &x);
-bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
-long long int PollardRho(long long int n, int depth = 0);
 extern int ElipCurvNo;            // Elliptic Curve Number
-
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 extern bool msieve;
 extern bool yafu;
 extern int verbose;
+
+void showECMStatus(void);
+unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+long long int PollardRho(long long int n, int depth = 0);
+long long MulPrToLong(const Znum &x);
+bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
+void delfile(const std::string &path, const char * FileName);
+void writeIni(void);
 bool callMsieve(const Znum &num, fList&Factors);
 bool callYafu(const Znum &num, fList&Factors);
 void generatePrimes(unsigned long long int max_val);

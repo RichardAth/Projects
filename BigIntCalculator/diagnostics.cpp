@@ -18,13 +18,13 @@
 #include <algorithm>
 #include <iterator>
 
- /* Kludge */
- //#ifdef __cplusplus 
- //EXTERN_C{
- //#endif
+ 
 #include <minidumpapiset.h>
-
 #include "diagnostic.h"
+
+bool breakSignal = false;
+extern HANDLE hConsole;
+extern HWND handConsole;
 
 /* used for minidump */
 struct module_data {
@@ -59,7 +59,6 @@ public:
 	}
 };
 
-
 class get_mod_info {
 	HANDLE process;
 	static const int buffer_length = 4096;
@@ -86,13 +85,7 @@ public:
 	}
 };
 
-
-// if you use C++ exception handling: install a translator function
-// with set_se_translator(). In the context of that function (but *not*
-// afterwards), you can either do your stack dump, or save the CONTEXT
-// record as a local copy. Note that you must do the stack dump at the
-// earliest opportunity, to avoid the interesting stack-frames being gone
-// by the time you do the dump.
+/* walkbaack through call stack */
 DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 {
 	HANDLE process = GetCurrentProcess();
@@ -178,8 +171,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	SymCleanup(process);
 
 	// Display the string:
-	fprintf_s(stderr, "%s %s", " Stack Trace; \n",
-		builder.str().c_str());
+	fprintf_s(stderr, " Stack Trace; \n%s", builder.str().c_str());
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -401,7 +393,9 @@ void SigfpeHandler(int sig, int num) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+#undef max   /* remove max defined in windows.h because of name clash */
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
 	return;
 }
@@ -413,8 +407,9 @@ void SigabrtHandler(int sig) {
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	Beep(2400, 1000);   // beep at 2400 Hz for 1 second
-	Sleep(20000);   /* wait 20 seconds*/
-	system("PAUSE");    // press any key to continue
+	Sleep(2000);   /* wait 2 seconds*/
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
@@ -425,7 +420,8 @@ void SigillHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
@@ -436,20 +432,37 @@ void SigsegvHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
-/* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) */
+/* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) 
+Also activated when the console window is closed 
+When a CTRL+C interrupt occurs, Win32 operating systems generate a new thread to 
+specifically handle that interrupt. This can cause a single-thread application 
+to become multithreaded and cause unexpected behavior. */
 void SigintHandler(int sig) {
-	fprintf(stderr, "Interrupt signal\n");
-	StackTrace2();
-	//__debugbreak();     // try to enter debuggger (to look at call stack)
-	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	createMiniDump(ep);
-	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	//system("PAUSE");    // press any key to continue
-	exit(EXIT_FAILURE);
+	breakSignal = true;     /* Main program can check this. Allows it to minimise
+							strange behaviour before it terminates */
+	/* use a message box so as not to mess up any output from main program which 
+	is still running. */
+	int r = MessageBoxA(handConsole, "Press YES to terminate program, NO to continue", 
+		"Interrupt", MB_YESNO);
+	switch (r){
+	case IDYES: {  /* YES selected */
+		exit (EXIT_FAILURE);
+	}
+	case IDNO: { /* NO selected */
+		/* re-register signal handler */
+		signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
+		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+		return;  /* main program continues, but cannot get any more input from stdin */
+	}
+
+	default:
+		abort();    /* should never get to here!! */
+	}
 }
 
 void SigtermHandler(int sig) {
@@ -459,14 +472,16 @@ void SigtermHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
 int handle_program_memory_depletion(size_t memsize)
 {
 	// Your code
-	system("PAUSE");   /* temporary */
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	return 0;
 }
 
@@ -519,7 +534,11 @@ the interesting stack-frames being gone by the time you do the dump.  */
 		signal(SIGABRT, SigabrtHandler);
 	}
 
-	// Catch interrupt handler
+	/* Catch interrupt handler. When a CTRL+C interrupt occurs, Win32 operating 
+	systems generate a new thread to specifically handle that interrupt. This can 
+	cause a single-thread application, to become multithreaded and cause 
+	unexpected behavior.
+	*/
 	if (f.interrupt) {
 		signal(SIGINT,   SigintHandler);     // interrupt (Ctrl - C)
 		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
@@ -857,6 +876,7 @@ void testerrors(void) {
 	printf_s("15 - SIGFPE (overflow) \n");
 	printf_s("16 - SIGFPE (invalid) \n");
 	printf_s("17 - SIGFPE (raise) \n");
+	printf_s("18 - SIGBREAK \n");
 	printf_s("Your choice >  ");
 
 	int ExceptionType = 9999;
@@ -987,6 +1007,10 @@ void testerrors(void) {
 			raise(SIGFPE);  
 			break;
 		}
+	case 18: /* raise Break signal */ {
+		raise(SIGBREAK);
+		break;
+	}
 
 	default: {
 			printf_s("Unknown exception type %d specified. \n", ExceptionType);
