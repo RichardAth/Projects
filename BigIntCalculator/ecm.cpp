@@ -496,7 +496,7 @@ void showECMStatus(void) {
 	}
 
 	*ptrStatus++ = '\0';                 // add null terminator
-	printf("%s\n", status);              // send status to screen             
+	printf_s("%s\n", status);            // send status to screen             
 #ifdef log
 	fprintf_s(logfile, "%s\n", status);  // send status to log file
 #endif
@@ -677,17 +677,21 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		for (int k = (kx - 1)*mult + 1; k <= kx*mult; k++) {
 			/* for curve no 1, k = 1 to 5, curve no 2, k = 6 to 10, etc*/
 			LehmanZ(zN, k, Zfactor);
-			if (Zfactor > LIMB_RANGE) {
+			//if (Zfactor > LIMB_RANGE) {
+			if (Zfactor > 1) {
 				foundByLehman = true;     // Factor found.
 #ifdef log
 				gmp_fprintf(logfile, "Lehman factor found. k = %d  N=  %Zd factor = %Zd \n",
 					k, ZT(zN), ZT(Zfactor));
 #endif
+				if (verbose > 1)
+					gmp_printf("Lehman factor found. k = %d  N=  %Zd factor = %Zd \n",
+						k, ZT(zN), ZT(Zfactor));
 				return FACTOR_FOUND;
 			}
-			else if (Zfactor > 1)
+			/*else if (Zfactor > 1)
 				std::cout << "Ignored small Lehman factor found. k = " << k << " N= " << zN
-				<< " factor = " << Zfactor << '\n';
+				<< " factor = " << Zfactor << '\n';*/
 		}
 
 		/* set L1, L2, LS, Paux and nbrPrimes according to value of ElipCurvNo */
@@ -724,40 +728,41 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 
 #ifdef __EMSCRIPTEN__
 		/* print status message */
-		ptrText = ptrLowerText;  // Point after number that is being factored.
-		auto elapsedTime = (int)(tenths() - originalTenthSecond);
-		GetDHMSt(&ptrText, elapsedTime);
-		strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
-		ptrText += strlen(ptrText);
-		ptrText += sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
+		if (ElipCurvNo > 1 || verbose > 0) {
+			ptrText = ptrLowerText;  // Point after number that is being factored.
+			auto elapsedTime = (int)(tenths() - originalTenthSecond);
+			GetDHMSt(&ptrText, elapsedTime);
+			strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
+			ptrText += strlen(ptrText);
+			ptrText += sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
 
-		strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
-		ptrText += strlen(ptrText);
- 		ptrText += sprintf(ptrText, "%5lld", L1);       // Show first bound.
+			strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
+			ptrText += strlen(ptrText);
+ 			ptrText += sprintf(ptrText, "%5lld", L1);       // Show first bound.
 
-		strcpy(ptrText, lang ? " y B2=" : " and B2=");
-		ptrText += strlen(ptrText);
-		ptrText += sprintf(ptrText, "%7lld \n", L2); // Show second bound.
+			strcpy(ptrText, lang ? " y B2=" : " and B2=");
+			ptrText += strlen(ptrText);
+			ptrText += sprintf(ptrText, "%7lld \n", L2); // Show second bound.
 
-		if (first) {
-			if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
-			{
-				fprintf_s(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
-				Beep(750, 1000);
+			if (first) {
+				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+				{
+					fprintf_s(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+					Beep(750, 1000);
+				}
+				coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
+				coordScreen.Y = csbi.dwCursorPosition.Y;
+				if (csbi.dwCursorPosition.Y >= csbi.dwSize.Y - 1)
+					coordScreen.Y--;  // if window is full, allow for text scrolling up
 			}
-			coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
-			coordScreen.Y = csbi.dwCursorPosition.Y;
-			if (csbi.dwCursorPosition.Y >= csbi.dwSize.Y - 1)
-				coordScreen.Y--;  // if window is full, allow for text scrolling up
-		}
-		else
-			upOneLine();
+			else
+				upOneLine();
 
-		printf("%s", ptrLowerText);        // send status to stdout (screen)
-		first = false;
+			printf_s("%s", ptrLowerText);        // send status to stdout (screen)
+			first = false;
 #ifdef log
-		fprintf_s(logfile, "%s", ptrLowerText);   // send status to l,og file
-		fflush(logfile);
+			fprintf_s(logfile, "%s", ptrLowerText);   // send status to l,og file
+			fflush(logfile);
 #endif
 #if 0
 		primalityString =
@@ -796,6 +801,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		lowerTextArea.setText(
 			primalityString + ElipCurvNo + "\n" + UpperLine + "\n" + LowerLine);
 #endif
+		}
 #endif
 
 		//  Compute A0 <- 2 * (ElipCurvNo+1)*modinv(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N

@@ -1,4 +1,6 @@
 ﻿#include "pch.h"
+#include "factor.h"
+#include "showtime.h"
 
 extern int verbose;
 
@@ -36,17 +38,12 @@ the text string a, function name, line number and source file name */
 	throw std::range_error(mesg);                \
 }
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
-
 extern bool *primeFlags;
 extern unsigned long long int primeListMax;
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 void generatePrimes(unsigned long long int max_val);
+constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -74,6 +71,11 @@ constexpr __int64 power(const __int64 x, unsigned int n) {
 		p = pnew;
 	}
 	return(r);
+}
+Znum power(const Znum &x, unsigned long long n) {
+	Znum res;
+	mpz_pow_ui(ZT(res), ZT(x), n);
+	return res;
 }
 
 // calculate the product of all the factors in the list
@@ -142,6 +144,10 @@ int jacobi(__int64 k, unsigned __int64 n) {
 
 }
 
+int jacobi(const Znum &k, const Znum &n) {
+	return mpz_jacobi(ZT(k), ZT(n));
+}
+
 // fast way to check for primes, but generatePrimes must have been called first.
 // true indicates a prime number
 bool isPrime2(unsigned __int64 num) {
@@ -150,15 +156,6 @@ bool isPrime2(unsigned __int64 num) {
 	if (num == 2) return true;
 	if ((num & 1) == 0) return false; // even numbers other than 2 are not prime
 	return !primeFlags[num/2];
-
-	//unsigned __int64 index;
-	//int bit;
-
-	////index = num / 64;
-	//index = num >> 6;
-	////bit = (num % 64) / 2;
-	//bit = (num & 0x3f) >> 1;   // get last 6 bits, then divide by 2
-	//return (((primeFlags[index] >> bit) & 1) == 0);
 }
 
 
@@ -167,8 +164,8 @@ bool isPrime2(unsigned __int64 num) {
 */
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod)
 {
-	unsigned __int64 x = 0, retval;
-	HRESULT  res;
+	unsigned __int64 x = 0, retval=0;
+	HRESULT  res =0;
 
 	static bool firsttime = true;
 	static mpz_t al, res_t, rem;
@@ -187,6 +184,12 @@ unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int6
 		x = mpz_fdiv_r_ui(rem, res_t, mod);  //  x = res_t % mod
 	}
 	return x;
+}
+Znum modMult(const Znum &a, const Znum &b, Znum mod) {
+	Znum res;
+	res = a * b;
+	mpz_mod(ZT(res), ZT(res), ZT(mod));
+	return res;
 }
 
 // calculate x^n%mod
@@ -243,6 +246,22 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	rl = mpz_get_ui(res);		// since res <= mod, it will not overflow on conversion
 
 	return rl;
+}
+
+// calculate a^n%mod
+unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod) {
+	Znum res;
+	Znum modz = mod;
+	unsigned long long r1;
+
+	mpz_powm(ZT(res), ZT(a), ZT(n), ZT(modz));
+	r1 = mpz_get_ui(ZT(res));		// since res <= mod, it will not overflow on conversion
+	return r1;
+}
+Znum modPower(const Znum &a, const Znum &n, const Znum &mod) {
+	Znum res;
+	mpz_powm(ZT(res), ZT(a), ZT(n), ZT(mod));
+	return res;
 }
 
 // n-1 = 2^s * d with d odd by factoring powers of 2 from n-1
@@ -332,65 +351,9 @@ static bool isPrimeMR(unsigned __int64 n)
 
 }
 
-/* method to return prime divisor for n 
-adapted from: 
-https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/ */
-long long int PollardRho(long long int n)
-{
-	/* initialize random seed */
-	std::random_device rd;   // non-deterministic generator
-	std::mt19937_64 gen(rd());  // to seed mersenne twister.
-	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
 
-	/* no prime divisor for 1 */
-	if (n == 1) return n;
 
-	/* even number means one of the divisors is 2 */
-	if (n % 2 == 0) return 2;
-
-	/* we will pick from the range [2, N) */
-	
-	long long int x, y;
-	x = dist(gen);  // x is in range 1 to max
-	x = x % (n - 2) + 2;  // x is in range 2 to n-1
-	y = x; 
-	
-
-	/* the constant in f(x).
-	 * Algorithm can be re-run with a different c
-	 * if it throws failure for a composite. */
-	long long int c = dist(gen);  // c is in range 1 to max
-		c = c% (n - 1) + 1;  // c is in range 1 to n-1
-
-	/* Initialize candidate divisor (or result) */
-	long long int d = 1;
-
-	/* until the prime factor isn't obtained.
-	   If n is prime, return n */
-	while (d == 1)
-	{
-		/* Tortoise Move: x(i+1) = f(x(i)) */
-		x = (modPower(x, 2, n) + c + n) % n;
-
-		/* Hare Move: y(i+1) = f(f(y(i))) */
-		y = (modPower(y, 2, n) + c + n) % n;
-		y = (modPower(y, 2, n) + c + n) % n;
-
-		/* check gcd of |x-y| and n */
-		d = gcd(abs(x - y), n);
-
-		/* retry if the algorithm fails to find prime factor
-		 * with chosen x and c */
-		if (d == n) 
-			return PollardRho(n);
-	}
-	if (verbose >0)
-		std::cout << "Pollard Rho n = " << n << " factor = " << d << '\n';
-
-	return d;
-}
-
-static unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
+unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 	unsigned  int count = 0, i = 0;
 
 	while (tnum > 1) {
@@ -443,7 +406,6 @@ static unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 				it must have exactly two prime factors. We can use the Pollard Rho algorithm
 				to get these factors.*/
 				long long factor;
-				//PollardFactor(tnum, factor);
 				factor = PollardRho(tnum);
 #ifdef _DEBUG
 				assert(tnum%factor == 0);
@@ -548,7 +510,13 @@ static unsigned __int64 R2(const unsigned __int64 n) {
 
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
-be +ve, 0 or -ve See https://oeis.org/A005875 */
+be +ve, 0 or -ve See https://oeis.org/A005875 
+R3(n) = 3*T(n) if n == 1,2,5,6 mod 8, 
+       = 2*T(n) if n == 3 mod 8, 
+	   = 0 if n == 7 mod 8 and 
+	   = R(n/4) if n == 0 mod 4, 
+	   where T(n) = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+*/
 unsigned __int64 R3(__int64 n) {
 	unsigned __int64 sum = 0;
 	factorsS sqf;
@@ -558,12 +526,17 @@ unsigned __int64 R3(__int64 n) {
 		return 0;
 	if (n == 0)			 // test here necessary to avoid infinite loop
 		return 1;
-	if (n % 8 == 7)
-		return 0;        // take short cut if possible
 	while (n % 4 == 0)
 		n /= 4;         // remove even factors. note that R3(4n) =R3(n)
 
-	generatePrimes(1000003);  // this is more than enough primes to factorise any 64-bit number
+	/* Interesting note: removing factor 4 above changes the value of n%8 
+	so test for n%8 == 7 after doing that, whereas removing other factors to 
+	make n square-free would not change the result of this test */
+	if (n % 8 == 7)
+		return 0;        // take short cut if possible
+
+	generatePrimes(2097169);  // this is more than enough primes to factorise any 64-bit number
+	             
 	squareFree(n, sq, sqf); /* make n square-free, factors removed are in sqf */
 
 	/* calculate R3(n). For large n this method is not very efficient, but it is simple */
@@ -572,6 +545,9 @@ unsigned __int64 R3(__int64 n) {
 			sum += 2;  // note: n is a perfect square
 		else
 			sum += 2 * R2(n - k * k);
+		if ((k & 0xfff) == 0) {
+			printf_s("%s R3: %g%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+		}
 	}
 	sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2
 	/* we now have sum = R3(n) */

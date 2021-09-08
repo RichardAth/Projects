@@ -107,11 +107,3 @@ void SubtBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &
 void modmultInt(const Znum &factorBig, int factorInt, Znum &result) {
 	result = (factorBig * factorInt) % zN;
 }
-
-/***********************************************************************/
-/* NAME: ModInvBigNbr                                                  */
-/* PURPOSE: Find the inverse of num modulo M.  num.inv ≡  1 (mod m)    */
-/***********************************************************************/
-void ModInvBigNbr(const Znum &num, Znum &inv, const Znum &mod) {
-	mpz_invert(ZT(inv), ZT(num), ZT(mod));
-}

@@ -142,7 +142,7 @@ int modPower (int NbrMod, int Expon, int currentPrime) {
 }
 
 /* get modular inverse of num wrt mod*/
-void ModInvBigNbr(Znum &num, Znum &inv, Znum &mod) {
+void ModInvBigNbr(const Znum &num, Znum &inv, const Znum &mod) {
 	auto rv = mpz_invert(ZT(inv), ZT(num), ZT(mod));
 	assert(rv != 0);
 }
@@ -458,7 +458,6 @@ Output: 0 = probable prime.
         2 = composite: does not pass 2-SPRP test.
         3 = composite: does not pass BPSW test.
 ***********************************************************************/
-
 int PrimalityTest(const Znum &Value, long long upperBound) {
 	int i, ctr;
 	Znum Mult1, Mult3, Mult4;

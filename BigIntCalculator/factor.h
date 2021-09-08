@@ -15,11 +15,6 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef __GNUC__
-#include "gmp.h"
-#else
-#include "mpir.h"
-#endif
 #include "boost/multiprecision/gmp.hpp" 
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
@@ -79,6 +74,7 @@ public:
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 
 	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
+	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 
 	/* methods that are in the class */
 
@@ -329,32 +325,31 @@ Repeated factors: No or Yes
 };
 
 
-void showECMStatus(void);
-
 extern int lang;    // 0 English, 1 = Spanish
 extern std::string YafuPath;
 extern std::string yafuprog;
 extern std::string MsievePath;
 extern std::string MsieveProg;
-void delfile(const std::string &path, const char * FileName);
-void writeIni(void);
+extern bool breakSignal;
 
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
-long long MulPrToLong(const Znum &x);
-bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
-long long int PollardRho(long long int n);
 extern int ElipCurvNo;            // Elliptic Curve Number
-
 extern unsigned long long *primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 extern bool msieve;
 extern bool yafu;
 extern int verbose;
+
+void showECMStatus(void);
+constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+long long int PollardRho(long long int n, int depth = 0);
+long long MulPrToLong(const Znum &x);
+bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
+void delfile(const std::string &path, const char * FileName);
+void writeIni(void);
 bool callMsieve(const Znum &num, fList&Factors);
 bool callYafu(const Znum &num, fList&Factors);
 void generatePrimes(unsigned long long int max_val);
@@ -362,3 +357,79 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor);
 
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
+
+// returns 2^exp. exp must be less than 64
+constexpr unsigned __int64 pow2(unsigned int exp) {
+	//assert(exp < 64);
+	return 1ULL << exp;  // exp must be less than 64
+}
+unsigned __int64 R3(__int64 n);
+std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p);
+unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
+Znum             modMult(const Znum &a, const Znum &b, Znum mod);
+// calculate a^n%mod using 'bigints'   
+unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
+	unsigned __int64 mod);
+Znum             modPower(const Znum &a, const Znum &n, const Znum &mod);
+unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod);
+constexpr __int64 power(const __int64 x, unsigned int n);
+Znum              power(const Znum &x, unsigned long long n);
+int jacobi(__int64 k, unsigned __int64 n);
+int jacobi(const Znum &k, const Znum &n);
+
+
+/* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
+enum class retCode
+{
+	//EXPR_NUMBER_TOO_LOW,
+	EXPR_NUMBER_TOO_HIGH = -100,
+	EXPR_INTERM_TOO_HIGH,
+	EXPR_DIVIDE_BY_ZERO,
+	EXPR_PAREN_MISMATCH,
+	EXPR_SYNTAX_ERROR,
+	EXPR_TOO_MANY_PAREN,
+	EXPR_INVALID_PARAM,
+	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME,
+	//EXPR_BREAK,
+	//EXPR_OUT_OF_MEMORY,
+	//EXPR_CANNOT_USE_X_IN_EXPONENT,
+	//EXPR_DEGREE_TOO_HIGH,
+	EXPR_EXPONENT_TOO_LARGE,
+	EXPR_EXPONENT_NEGATIVE,
+	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
+	//EXPR_CANNOT_LIFT,
+	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
+	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
+	//EXPR_BASE_MUST_BE_POSITIVE,
+	//EXPR_POWER_MUST_BE_POSITIVE,
+	//EXPR_MODULUS_MUST_BE_NONNEGATIVE,
+	//EXPR_VAR_OR_COUNTER_REQUIRED,
+	EXPR_OK = 0,
+	EXPR_FAIL = 1
+};
+
+struct factorsS {
+	int factorcount;           // number of unique prime factors
+	__int64 factorlist[19][2]; // prime factor, exponent
+};
+
+unsigned int primeFactors(unsigned __int64 tnum, factorsS &f);
+
+/* throw exception. For a list of exception classes derived from std:: exception
+see https://en.cppreference.com/w/cpp/error/exception
+range_error can be used to report range errors (that is, situations where a
+result of a computation cannot be represented by the destination type)
+a is a text string e.g. "integer overflow". The message generated includes
+the text string a, function name, line number and source file name */
+#define ThrowExc(a)                              \
+{                                                \
+	std::string line = std::to_string(__LINE__); \
+	std::string mesg = a;                        \
+    mesg += " " ;                                \
+	mesg += __func__;                            \
+	mesg += " line ";  mesg += line;             \
+	mesg += " in file "; mesg += __FILE__;       \
+	throw std::range_error(mesg);                \
+}
+
+unsigned long long llSqrt(const unsigned long long n);

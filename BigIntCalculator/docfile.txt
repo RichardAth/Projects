@@ -13,8 +13,19 @@ they are easy to calculate once the factors are known.
 Any number can be expressed as the sum of 4 or fewer squares. Usually there are
 many ways of doing this. One way is displayed.
 
+Numeric values can be stored in variables which must have names beginning with $ or _
+and contain only letters, digits $ or _ characters. Names are not case-sensitive. 
+Assign values to variables using the assignment operator =
+e.g.
+$p= n(200)
+$x = 2^$p-1
+
+the result will be:
+$P = 211
+$X = 3291009114642412084309938365114701009965471731267159726697218047
+
 You can get help on the following topics by entering "HELP <topic>";
-expression  function  yafu  msieve  other  test  background
+expression  function  yafu  msieve  other  test  loop   background
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
@@ -39,6 +50,13 @@ C         : binomial coefficient. nCk = n!/(k!*(n-k)!) but is more efficient
 above NOT and unary -, which are above ^ (exponentiation)
 The normal rules for operator precedence and use of brackets to over-ride the 
 default order of evaluation apply.
+
+User variables can be created and used like multiple memories in a pocket calculator.
+Numeric values can be stored in these variables which must have names beginning with 
+$ or _ and contain only letters, digits $ or _ characters. Names are not case-sensitive. 
+Assign values to variables using the assignment operator = 
+Assignment statements are also expressions which return the value to the right of the =
+operator.
 
 for a list of functions enter HELP FUNCTION
 
@@ -95,19 +113,30 @@ JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multipl
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
+MODSQRT(a, p)   : returns r such that r² = a (mod p). If no solution exists an error
+                  is reported. Generally there is more than 1 solution in the range 0 to
+                  p-1, but only the smallest positive solution is returned.
+                  
 
 [OTHER]
 other commands: 
 X    : hexadecimal o/p, 
 D    : decimal o/p
-F    : do factorisation, 
-N    : Don't factorise 
+F n  : control factorisation, 
+       n = 0 : just evaluate expression, no factorisation
+       n = 1 : evaluate expression, factorise resulting value, but don't do no. of
+               divisors, etc.
+       n = 2 : evaluate expression, factorise resulting value, then get no. of 
+               divisors, sum of divisors, totient, möbius, sum of squares.
+       initial setting is n = 2.
 S    : switch to Spanish, 
 E    : switch to English
 V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 1 turns on many messages that show more of what is happening internally.
        n = 2 turns on even more messages.
-HELP (this command)
+PRINT  Print the names and values of any user variables.
+LIST   Print all stored expressions.
+HELP   (this command)
 EXIT
 
 [YAFU]
@@ -403,7 +432,44 @@ B. Test whether the number is prime:
       factorise it using YAFU
  
 sample timing:
-2^311+1 (94 digits)
+2^311-1 (94 digits)
 YAFU on             10 min 
 MSIEVE on           5 min
 builtin ECM & SIQS 57 min
+[LOOP]
+Simple lists of expressions can be executed repeatedly using the REPEAT n
+command e.g.
+$p=n($p)
+REPEAT 1000
+
+will generate 1000 primes. (If $p has no value assigned initially it defaults 
+to 0). Obviously REPEAT is pointless unless some variable used in the loop
+is assigned a new value within the loop.
+
+The LOOP command is used if some initial expressions are not to be repeated
+e.g.
+
+$p=151
+LOOP
+$p=n($p)
+REPEAT 1000
+
+An alternative to the simple REPEAT is the IF command e.g.
+$p=151
+LOOP
+$p=n($p)
+IF ($p < 10000) REPEAT
+
+The IF command is processed as follows:
+1.  The expression in brackets is evaluated. 
+2.  If the value is not zero the specified action is performed, otherwise no 
+    action is taken. The action can be REPEAT  which goes back to the start 
+    of the loop, or STOP which terminates the loop.
+    The loop can contain many IF commands.
+
+the LIST command will output all the saved expressions. Expressions entered
+before the last LOOP command are not shown.
+
+Note that invalid expressions and commands other than IF are not saved, and there 
+is no way to edit saved expressions. It is only possible to delete them all using 
+the LOOP command and start again.

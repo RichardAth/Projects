@@ -15,8 +15,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "pch.h"
-#define WIN32_LEAN_AND_MEAN
-//#include <windows.h>
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"
@@ -530,10 +528,10 @@ u and v are UNSIGNED, caller must use llabs or similar if necessary.
 Note: mathematically gcd(a,b) = gcd(-a,b) = gcd(b,-a) = gcd (-a,-b)
 Note: GCD (greatest common denominator) is also known as HCF (Highest Common Factor).
 */
-unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
+constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
 {
-	unsigned char result;
-	unsigned long shift, su, sv;
+	unsigned char result=0;
+	unsigned long shift=0, su=0, sv=0;
 	if (u == 0) return v;
 	if (v == 0) return u;
 	result = _BitScanForward64(&shift, u | v);  // count any common factor 2s
@@ -581,6 +579,70 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 			<< " cycle_size = " << cycle_size << " x = " << x << '\n';
 	}
 	return;
+}
+
+/* method to return prime divisor for n
+adapted from:
+https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
+This method generally works but for very large n it may be too slow. It uses a
+truly random number generator so could give different results given the same
+value of n */
+long long int PollardRho(long long int n, int depth)
+{
+	/* initialize random seed */
+	std::random_device rd;   // non-deterministic generator
+	std::mt19937_64 gen(rd());  // to seed mersenne twister.
+	std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
+	long long ctr = 0;     /* loop counter*/
+	/* no prime divisor for 1 */
+	if (n == 1) return n;
+
+	/* even number means one of the divisors is 2 */
+	if (n % 2 == 0) return 2;
+
+	/* we will pick from the range [2, N) */
+
+	long long int x, y;
+	x = dist(gen);  // x is in range 1 to max
+	x = x % (n - 2) + 2;  // x is in range 2 to n-1
+	y = x;
+
+
+	/* the constant in f(x).
+	 * Algorithm can be re-run with a different c
+	 * if it throws failure for a composite. */
+	long long int c = dist(gen);  // c is in range 1 to max
+	c = c % (n - 1) + 1;  // c is in range 1 to n-1
+
+/* Initialize candidate divisor (or result) */
+	long long int d = 1;
+
+	/* until the prime factor isn't obtained.
+	   If n is prime, return n */
+	while (d == 1)
+	{
+		/* Tortoise Move: x(i+1) = f(x(i)) */
+		x = (modPower(x, 2, n) + c + n) % n;
+
+		/* Hare Move: y(i+1) = f(f(y(i))) */
+		y = (modPower(y, 2, n) + c + n) % n;
+		y = (modPower(y, 2, n) + c + n) % n;
+
+		/* check gcd of |x-y| and n */
+		d = gcd(abs(x - y), n);
+
+		/* retry if the algorithm fails to find prime factor
+		 * with chosen x and c */
+		if (d == n)
+			return PollardRho(n, depth + 1);
+		ctr++;
+	}
+
+	if (verbose > 0)
+		std::cout << "Pollard Rho n = " << n << " factor = " << d
+		<< " loop counter =" << ctr << " depth=" << depth << '\n';
+
+	return d;
 }
 
 /* trial division & Pollard-Rho. Uses first 33333 primes */
@@ -654,6 +716,8 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	const long long PollardLimit = MaxP*MaxP*MaxP;
 
 	Factors.set(toFactor);   /* initialise factor list */
+	if (toFactor <= 3)
+		return true;   /* toFactor is 1 or prime so we can stop now*/
 
 	if ((long long)primeListMax <MaxP) {  // get primes
 		generatePrimes(MaxP);  // takes a while, but only needed on 1st call
@@ -1215,6 +1279,7 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 		auto rv = factor(numberZ, vfactors);
 		if (!rv)
 			return false;  // failed to factorise number
+		
 		if (quads != nullptr) {
 			ComputeFourSquares(vfactors, quads, numberZ); 
 			// get a, b, c, d such that sum of their squares = numberZ

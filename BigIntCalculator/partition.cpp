@@ -1,10 +1,6 @@
 #include "pch.h"
 
-#ifdef __GNUC__
-#include "gmp.h"
-#else
-#include "mpir.h"
-#endif
+
 #include "boost/multiprecision/gmp.hpp" 
 #define ZT(a) a.backend().data()
 typedef boost::multiprecision::mpz_int Znum;    /* big integer */

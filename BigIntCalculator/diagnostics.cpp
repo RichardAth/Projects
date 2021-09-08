@@ -18,13 +18,13 @@
 #include <algorithm>
 #include <iterator>
 
- /* Kludge */
- //#ifdef __cplusplus 
- //EXTERN_C{
- //#endif
+ 
 #include <minidumpapiset.h>
-
 #include "diagnostic.h"
+
+bool breakSignal = false;
+extern HANDLE hConsole;
+extern HWND handConsole;
 
 /* used for minidump */
 struct module_data {
@@ -59,7 +59,6 @@ public:
 	}
 };
 
-
 class get_mod_info {
 	HANDLE process;
 	static const int buffer_length = 4096;
@@ -86,13 +85,7 @@ public:
 	}
 };
 
-
-// if you use C++ exception handling: install a translator function
-// with set_se_translator(). In the context of that function (but *not*
-// afterwards), you can either do your stack dump, or save the CONTEXT
-// record as a local copy. Note that you must do the stack dump at the
-// earliest opportunity, to avoid the interesting stack-frames being gone
-// by the time you do the dump.
+/* walkbaack through call stack */
 DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 {
 	HANDLE process = GetCurrentProcess();
@@ -110,7 +103,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	if (!SymInitialize(process, nullptr, false))
 		//throw(std::logic_error("Unable to initialize symbol handler"));
 	{
-		std::cout << "dumpstack failure; Unable to initialize symbol handler\n";
+		std::cerr << "dumpstack failure; Unable to initialize symbol handler\n";
 		abort();
 	}
 	DWORD symOptions = SymGetOptions();
@@ -178,8 +171,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 	SymCleanup(process);
 
 	// Display the string:
-	printf_s("%s %s", " Stack Trace; \n",
-		builder.str().c_str());
+	fprintf_s(stderr, " Stack Trace; \n%s", builder.str().c_str());
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -401,18 +393,23 @@ void SigfpeHandler(int sig, int num) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+#undef max   /* remove max defined in windows.h because of name clash */
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
 	return;
 }
 
 void SigabrtHandler(int sig) {
-	fprintf(stderr, "Abort occurred\n");
+	fprintf(stderr, "Abort signal occurred\n");
 	StackTrace2();
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	Beep(2400, 1000);   // beep at 2400 Hz for 1 second
+	Sleep(2000);   /* wait 2 seconds*/
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
@@ -423,7 +420,8 @@ void SigillHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
@@ -434,20 +432,37 @@ void SigsegvHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
-/* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) */
+/* handles ctrl-C (SIGINT) & ctrl-Break (SIGBREAK) 
+Also activated when the console window is closed 
+When a CTRL+C interrupt occurs, Win32 operating systems generate a new thread to 
+specifically handle that interrupt. This can cause a single-thread application 
+to become multithreaded and cause unexpected behavior. */
 void SigintHandler(int sig) {
-	fprintf(stderr, "Interrupt \n");
-	StackTrace2();
-	//__debugbreak();     // try to enter debuggger (to look at call stack)
-	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
-	createMiniDump(ep);
-	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	//system("PAUSE");    // press any key to continue
-	exit(EXIT_FAILURE);
+	breakSignal = true;     /* Main program can check this. Allows it to minimise
+							strange behaviour before it terminates */
+	/* use a message box so as not to mess up any output from main program which 
+	is still running. */
+	int r = MessageBoxA(handConsole, "Press YES to terminate program, NO to continue", 
+		"Interrupt", MB_YESNO);
+	switch (r){
+	case IDYES: {  /* YES selected */
+		exit (EXIT_FAILURE);
+	}
+	case IDNO: { /* NO selected */
+		/* re-register signal handler */
+		signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
+		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+		return;  /* main program continues, but cannot get any more input from stdin */
+	}
+
+	default:
+		abort();    /* should never get to here!! */
+	}
 }
 
 void SigtermHandler(int sig) {
@@ -457,24 +472,26 @@ void SigtermHandler(int sig) {
 	EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
 	createMiniDump(ep);
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
-	system("PAUSE");    // press any key to continue
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	exit(EXIT_FAILURE);
 }
 
 int handle_program_memory_depletion(size_t memsize)
 {
 	// Your code
-	system("PAUSE");   /* temporary */
+	std::cout << "Press ENTER to continue...";
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	return 0;
 }
 
 /* set up exception handlers; caller specifies which are required using flags */
 void SetProcessExceptionHandlers(flags f)
 {
-#ifndef _DEBUG
+//#ifndef _DEBUG
 	/* send errors to calling process */
-	SetErrorMode(SEM_FAILCRITICALERRORS);
-#endif
+	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+//#endif
 
 /* if you use C++ exception handling: install a translator function
 with set_se_translator() or use SetUnhandledExceptionFilter(). In the 
@@ -482,8 +499,13 @@ context of that function (but *not* afterwards), you can either do
 your stack dump, or save the CONTEXT record as a local copy. Note 
 that you must do the stack dump at the earliest opportunity, to avoid 
 the interesting stack-frames being gone by the time you do the dump.  */
-	if (f.UnEx)
+	if (f.UnEx) {
+		/* The system does display the critical-error-handler message box.*/
+		SetErrorMode(SEM_FAILCRITICALERRORS); 
+		// Suppress the abort message (debug only?, has no effect in release)
+		_set_abort_behavior(0, _WRITE_ABORT_MSG);
 		SetUnhandledExceptionFilter(filter2);
+	}
 
 	/* Catch pure virtual function calls.
 	Because there is one _purecall_handler for the whole process, 
@@ -506,13 +528,17 @@ the interesting stack-frames being gone by the time you do the dump.  */
 	// Set up C++ signal handlers
 
 	if (f.abort) {
-		// Suppress the abort message (debug only, has no effect in release)
+		// Suppress the abort message (debug only?, has no effect in release)
 		_set_abort_behavior(0, _WRITE_ABORT_MSG);
 		// Catch an abnormal program termination
 		signal(SIGABRT, SigabrtHandler);
 	}
 
-	// Catch interrupt handler
+	/* Catch interrupt handler. When a CTRL+C interrupt occurs, Win32 operating 
+	systems generate a new thread to specifically handle that interrupt. This can 
+	cause a single-thread application, to become multithreaded and cause 
+	unexpected behavior.
+	*/
 	if (f.interrupt) {
 		signal(SIGINT,   SigintHandler);     // interrupt (Ctrl - C)
 		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
@@ -563,7 +589,7 @@ the interesting stack-frames being gone by the time you do the dump.  */
 describing the client exception that caused the minidump to be generated. If 
 the value of this parameter is NULL, no exception information is included in 
 the minidump file 
-the dump file will be placed inthe TEMP directory.
+the dump file will be placed in the TEMP directory.
 The file name is crashdumpHHMMSS.dmp so that each dump has a unique name and will
 not overwrite earlier dumps. */
 void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
@@ -644,9 +670,8 @@ void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
 		dwProcessId,   /* The identifier of the process for which the information 
 					   is to be generated*/
 		hFile,         /* A handle to the file in which the information is to be written*/
-		MiniDumpNormal,  /* A normal minidump contains just the information
-                           necessary to capture stack traces for all of the
-                          existing threads in a process. */
+		MiniDumpWithDataSegs,  /* includes all of the data sections from loaded modules 
+							    in order to capture global variable contents. */
 		&mei,          /* A pointer to a MINIDUMP_EXCEPTION_INFORMATION structure 
 					   describing the client exception that caused the minidump 
 					   to be generated. If the value of this parameter is NULL, 
@@ -716,7 +741,7 @@ const char *getText(const int errorcode) {
 			return "Integer Overflow";
 		}
 	case EXCEPTION_PRIV_INSTRUCTION: {
-			return "Priviledged Instruction";
+			return "Privileged Instruction";
 		}
 	case EXCEPTION_IN_PAGE_ERROR: {
 			return "In-page error";
@@ -771,6 +796,7 @@ EXCEPTION_CONTINUE_EXECUTION       Return from UnhandledExceptionFilter and
 								   free to modify the continuation state by
 								   modifying the exception information supplied
 								   through its LPEXCEPTION_POINTERS parameter.
+								   BUT in practise control jumps straight to main.
 
 EXCEPTION_CONTINUE_SEARCH 0x0      Proceed with normal execution of
 								   UnhandledExceptionFilter. That means obeying
@@ -831,26 +857,27 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void) {
-	printf("Choose an exception type:\n");
-	printf("0 - SEH exception (access violation)\n");
-	printf("1 - terminate\n");
-	printf("2 - unexpected\n");
-	printf("3 - pure virtual method call\n");
-	printf("4 - invalid parameter\n");
-	printf("5 - new operator fault\n");
-	printf("6 - SIGABRT\n");
-	printf("7 - SIGFPE (divide error) \n");
-	printf("8 - SIGILL\n");
-	printf("9 - SIGINT\n");
-	printf("10 - SIGSEGV\n");
-	printf("11 - SIGTERM\n");
-	printf("12 - RaiseException\n");
-	printf("13 - throw C++ typed exception\n");
-	printf("14 - SEH exception (divide error) \n");
-	printf("15 - SIGFPE (overflow) \n");
-	printf("16 - SIGFPE (invalid) \n");
-	printf("17 - SIGFPE (raise) \n");
-	printf("Your choice >  ");
+	printf_s("Choose an exception type:\a\n");
+	printf_s("0 - SEH exception (access violation)\n");
+	printf_s("1 - terminate\n");
+	printf_s("2 - unexpected\n");
+	printf_s("3 - pure virtual method call\n");
+	printf_s("4 - invalid parameter\n");
+	printf_s("5 - new operator fault\n");
+	printf_s("6 - SIGABRT\n");
+	printf_s("7 - SIGFPE (divide error) \n");
+	printf_s("8 - SIGILL\n");
+	printf_s("9 - SIGINT\n");
+	printf_s("10 - SIGSEGV\n");
+	printf_s("11 - SIGTERM\n");
+	printf_s("12 - RaiseException\n");
+	printf_s("13 - throw C++ typed exception\n");
+	printf_s("14 - SEH exception (divide error) \n");
+	printf_s("15 - SIGFPE (overflow) \n");
+	printf_s("16 - SIGFPE (invalid) \n");
+	printf_s("17 - SIGFPE (raise) \n");
+	printf_s("18 - SIGBREAK \n");
+	printf_s("Your choice >  ");
 
 	int ExceptionType = 9999;
 	char buffer[256];
@@ -869,13 +896,11 @@ void testerrors(void) {
 			break;
 		}
 	case 1: /* terminate */ {
-			// Call terminate
-			terminate();
+			terminate();  // Call terminate
 			break;
 		}
 	case 2: /* unexpected */ {
-			// Call unexpected
-			unexpected();
+			unexpected();    // Call unexpected
 			break;
 		}
 	case 3: /* pure virtual method call */ {
@@ -890,8 +915,9 @@ void testerrors(void) {
 #pragma warning(disable : 6387)
 			// warning C6387: 'argument 1' might be '0': this does
 			// not adhere to the specification for the function 'printf'
-			printf(formatString);
+			int rc = printf_s(formatString);
 #pragma warning(default : 6387)   
+			printf_s("return code from printf_s is %d \n", rc);
 			break;
 		}
 	case 5: /* new operator fault */ {
@@ -902,15 +928,14 @@ void testerrors(void) {
 			break;
 		}
 	case 6: /* SIGABRT */ {
-			// Call abort
-			abort();
+			abort();    // Call abort
 			break;
 		}
 	case 7: /* SIGFPE */ {
 			// floating point exception ( /fp:except compiler option)
 			double x = 0, y = 1, z;
 			z = y / x;  /* generate divide error */
-			printf("z= %g \n", z); /* stop optimiser from removing test code */
+			printf_s("z= %g \n", z); /* stop optimiser from removing test code */
 			y++;
 			break;
 		}
@@ -945,17 +970,17 @@ void testerrors(void) {
 	case 14: /* SEH exception */ {
 			int x = 1, y = 0, z;
 			z = x / (2 - x - x);  /* divide by zero */
-			printf("z=%d\n", z);
+			printf_s("z=%d\n", z);
 			break;
 		}
 	case 15: /* floating point overflow */ {
-			double z = std::pow(DBL_MAX, 2);
-			printf("z=%g\n", z);
+			double z = std::pow(DBL_MAX, 2);    /* generate overflow */
+			printf_s("z=%g\n", z);                /* if overflow not trapped z = inf. */
 			z = DBL_MAX;
-			printf("z=%g\n", z);
-			z *= 100.0;
+			printf_s("z=%g\n", z);
+			z *= 100.0;                           /* if overflow not trapped z = inf. */
 			z -= 1.0;
-			printf("z=%g\n", z);
+			printf_s("z=%g\n", z);
 			break;
 		}
 	case 16: /* floating point invalid 
@@ -963,8 +988,8 @@ void testerrors(void) {
 			 operation to be performed. Examples are (see IEEE 754, section 7):
 
              Addition or subtraction: &infin; - &infin;. (But &infin; + &infin; = &infin;).
-             Multiplication: 0 &middot; &infin;.
-             Division: 0/0 or &infin;/&infin;.
+             Multiplication: 0  x infin .
+             Division: 0/0 or  infin/infin .
              Remainder: x REM y, where y is zero or x is infinite.
              Square root if the operand is less then zero. More generally, any 
 			 mathematical function evaluated outside its domain produces this exception.
@@ -975,16 +1000,20 @@ void testerrors(void) {
              Comparison via predicates involving < or >, when one or other of the
 			 operands is NaN. */ {
 			double z = std::acos(2);
-			printf("z=%g\n", z);
+			printf_s("z=%g\n", z);    /* if error not trapped, Z = NaN */
 			break;
 		}
 	case 17: /* raise FPE */ {
 			raise(SIGFPE);  
 			break;
 		}
+	case 18: /* raise Break signal */ {
+		raise(SIGBREAK);
+		break;
+	}
 
 	default: {
-			printf("Unknown exception type %d specified. \n", ExceptionType);
+			printf_s("Unknown exception type %d specified. \n", ExceptionType);
 			break;
 		}
 
