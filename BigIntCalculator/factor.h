@@ -15,11 +15,6 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef __GNUC__
-#include "gmp.h"
-#else
-#include "mpir.h"
-#endif
 #include "boost/multiprecision/gmp.hpp" 
 #define ZT(a) a.backend().data()
 #define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */

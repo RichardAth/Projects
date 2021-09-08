@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <windows.h>
 #include "factor.h"
-const char * myTime(void);  // get time as hh:mm:ss
+#include "showtime.h"
 
 /* Note: the path specified here can be overwritten by a path specified in the .ini file */
 #ifndef _DEBUG

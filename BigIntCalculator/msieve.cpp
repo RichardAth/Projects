@@ -1,7 +1,7 @@
 #include "pch.h"
 
 #include "factor.h"
-const char * myTime(void);  // get time as hh:mm:ss
+#include "showtime.h"
 bool changepath(std::string &path, std::string &prog);
 
 /* output from Msieve -h option:

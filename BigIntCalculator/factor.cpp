@@ -15,8 +15,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "pch.h"
-#define WIN32_LEAN_AND_MEAN
-//#include <windows.h>
 #include <intrin.h>
 #include "showtime.h"
 #include "factor.h"

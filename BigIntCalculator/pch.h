@@ -17,7 +17,11 @@
 #include <cstdlib>
 #include <fstream>
 #include <random>
-#include <mpir.h>
+#ifdef __GNUC__
+#include "gmp.h"
+#else
+#include "mpir.h"
+#endif
 
 #define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
 #include <intsafe.h>
