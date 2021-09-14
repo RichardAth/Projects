@@ -77,7 +77,7 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &p, const int lambda) {
 		return roots;
 	}
 
-	/* must treat p=2 as a special case */
+	/* must treat p=2 as a special case. No roots unless c is 1 */
 	if (p == 2 && c != 0) {
 		if (c% mod == 1) {
 			roots.push_back(1);
@@ -98,6 +98,8 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &p, const int lambda) {
 		x = std::min(rx[0], rx[1]);  /* take smaller root */
 	else
 		x = rx[0];
+	/* the calculation is done in stages, applyin modulus each time, to avoid
+	 trying to generate enormous intermediate values */
 	r1 = modPower(x, power(p, lambda - 1), mod);
 	r2 = modPower(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
 	root = modMult(r1, r2, mod);    /* get final product */

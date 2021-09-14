@@ -37,6 +37,48 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 char * getFileName(const char *filter, HWND owner);
 void printvars(std::string name);
 
+
+int lang = 0;             // 0 English, 1 = Spanish
+
+bool hex = false;		// set true if output is in hex
+int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
+						   2 = get totient, number of divisors etc after factorisation */
+/* verbose value is used to turn off or on optional messages; 
+higher value = more messages */
+#ifdef _DEBUG
+int verbose = 1;       /* default 1 if compiled in debug mode */
+#else
+int verbose = 0;
+#endif
+
+HANDLE hConsole;       /* used by SetConsoleCursorPosition() function */
+HWND handConsole;      /* handle to console window */
+
+bool *primeFlags = NULL;
+unsigned long long *primeList = NULL;
+unsigned int prime_list_count = 0;
+unsigned long long int primeListMax = 0;
+
+std::vector <std::string> exprList;  /* expressions stored here as text once
+									   they are validated */
+
+/* name of sound file played at end of processing a command or expression
+ if the elapsed time > 10 seconds */
+std::string endsound = "c:/Windows/Media/Alarm09.wav";
+
+/* name of sound file played when prompt for input is displayed */
+std::string attsound = "c:/Windows/Media/chimes.wav";
+
+/* external functions */
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt);
+
+/* function declarations, only for functions that have forward references */
+long long MulPrToLong(const Znum &x);
+bool getBit(const unsigned long long int x, const bool array[]);
+void generatePrimes(unsigned long long int max_val);
+static void textError(retCode rc);
+
+
 /* get time in format hh:mm:ss */
 const char * myTime(void) {
 	static char timestamp[10];   // time in format hh:mm:ss
@@ -48,41 +90,6 @@ const char * myTime(void) {
 	strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
 	return timestamp;
 }
-
-int lang = 0;             // 0 English, 1 = Spanish
-
-bool hex = false;		// set true if output is in hex
-int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
-						   2 = get totient, number of divisors etc after factorisation */
-/* verbose value is used to turn off or on optional messages; 
-higher value = more messages */
-#ifdef _DEBUG
-int verbose = 1;
-#else
-int verbose = 0;
-#endif
-
-HANDLE hConsole;       /* used by SetConsoleCursorPosition() function */
-HWND handConsole;      /* handle to console window */
-
-
-
-bool *primeFlags = NULL;
-unsigned long long *primeList = NULL;
-unsigned int prime_list_count = 0;
-unsigned long long int primeListMax = 0;
-
-std::vector <std::string> exprList;  /* expressions store here as text once
-									   they are validated */
-
-/* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt);
-
-/* function declarations, only for functions that have forward references */
-long long MulPrToLong(const Znum &x);
-bool getBit(const unsigned long long int x, const bool array[]);
-void generatePrimes(unsigned long long int max_val);
-static void textError(retCode rc);
 
 // find leftmost 1 bit of number. Bits are numbered from 63 to 0
 // An intrinsic is used that gets the bit number directly.
@@ -588,11 +595,11 @@ static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 	auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
 
 	if (elSec > 10.0)
-		PlaySound(TEXT("c:/Windows/Media/Alarm09.wav"), NULL,
+		PlaySoundA(endsound.c_str(), NULL,
 			SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 
 	if (elSec <= 60.0) {
-		std::cout << elSec << " seconds\n";
+		printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
 	}
 	else {
 		/* round to nearest second */
@@ -928,7 +935,8 @@ static void doTests(void) {
 		auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
 			std::cout << "test " << i + 1 << " failed\n" <<
-				"expected " << testvalues[i].text << " = " << testvalues[i].expected_result << '\n';
+				"expected " << testvalues[i].text << " = " 
+				<< testvalues[i].expected_result << '\n';
 			std::cout << "got " << result << '\n';
 			Beep(750, 1000);
 		}
@@ -1797,6 +1805,8 @@ void writeIni(void) {
 	newStr << "msieve-path=" << MsievePath << '\n';
 	newStr << "msieve-prog=" << MsieveProg << '\n';
 	newStr << "helpfile=" << helpFilePath << '\n';
+	newStr << "endsound=" << endsound << '\n';
+	newStr << "attsound=" << attsound << '\n';
 	newStr.close();
 
 	  // delete any previous .old
@@ -1813,8 +1823,8 @@ void writeIni(void) {
 }
 
 /* read the .ini file and update paths. 
-path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog= 
-or helpfile=
+path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog=, 
+helpfile=, endsound= or attsound=
 Paths are not case-sensitive. 
 Anything else is saved and is copied if the .ini file is updated 
 
@@ -1869,7 +1879,12 @@ static void processIni(const char * arg) {
 			else if (_strnicmp("helpfile=", buffer.c_str(), 9) == 0) {
 				helpFilePath = buffer.substr(9);
 			}
-
+			else if (_strnicmp("endsound=", buffer.c_str(), 9) == 0) {
+				endsound = buffer.substr(9);
+			}
+			else if (_strnicmp("attsound=", buffer.c_str(), 9) == 0) {
+				attsound = buffer.substr(9);
+			}
 			else inifile.push_back(buffer);  // save anything not recognised
 		}
 		iniStr.close();
@@ -2415,8 +2430,8 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for console window
-		handConsole = GetConsoleWindow();
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
+		handConsole = GetConsoleWindow();            // get handle for console window
 		if (hConsole == INVALID_HANDLE_VALUE)
 		{
 			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
@@ -2425,7 +2440,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-		printf_s("%s Bigint calculator Version %d.%d \n", myTime(), version[0], version[1]);
+		printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(), 
+			version[0], version[1], version[2], version[3]);
 		std::cout << "last modified on " << modified << '\n';
 
 
@@ -2465,7 +2481,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			else
 				printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA\n");
 
-			PlaySound(TEXT("c:/Windows/Media/chimes.wav"), NULL, 
+			PlaySoundA(attsound.c_str(), NULL,
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 		retry:
 			getline(std::cin, expr);    // expression may include spaces
