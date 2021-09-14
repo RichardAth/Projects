@@ -236,6 +236,29 @@ will display a windows explorer style window where you can navigate to the corre
 folder then click on any file. The new path to the ggnfs files will then be saved
 in the ggnfs_dir parameter of the YAFU.ini file.
 
+Use of BigIntCalculator.ini file
+
+This file contains the file paths for various files used by the calculator
+
+Anything not recognised as a parameter to be used is ignored. The path names 
+and executable file names for YAFU and Msieve can be specified, also the name
+of the help file used by the HELP command and the names of two sound files.
+
+The "attsound" file is played when prompting for input and the "endsound" file
+is played when processing a command or expression that took more than 10 seconds
+is completed.
+
+A typical file looks like:
+
+    %file originally created on 26/07/2020 at 19:53:52
+    yafu-path=C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
+    yafu-prog=yafu-x64.exe
+    msieve-path=C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
+    msieve-prog=msieve.exe
+    helpfile=C:\Users\admin99\Source\Repos\RichardAth\Projects\BigIntCalculator\docfile.txt
+    endsound=c:/Windows/Media/Alarm09.wav
+    attsound=c:/Windows/Media/chimes.wav
+
 
  ALTERNATIVES
 
@@ -318,7 +341,7 @@ Gcd(m,n)                            Greatest common divisor of m and n.
 Modinv(m,n)                         inverse of m modulo n, only valid when gcd(m,n)=1.
 Modpow(m,n,r)                       finds m^n modulo r. more efficient than (m^n)%r
                                     NB. If n is -ve, the value is only defined if the 
-                                    inverse of m with respect to r exitst, i.e. only 
+                                    inverse of m with respect to r exists, i.e. only 
                                     if gcd(m, r) is 1
 Totient(n)                          finds the number of positive integers less than n 
                                     which are relatively prime to n.
