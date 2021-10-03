@@ -32,7 +32,7 @@ extern Znum zR, zR2, zNI, zN;
 /* external function declaration */
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
-// declaration for external function
+
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 char * getFileName(const char *filter, HWND owner);
 void printvars(std::string name);
@@ -70,7 +70,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt);
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr);
 
 /* function declarations, only for functions that have forward references */
 long long MulPrToLong(const Znum &x);
@@ -1692,7 +1692,8 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
-/* find modular square roots by brute force */
+/* find modular square roots by brute force. Incredibly simple compared to the 
+  faster more sophisticated method. */
 static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	std::vector <long long> roots;
 	a = a % m;
@@ -1705,16 +1706,17 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	return roots;
 }
 
-
+/* calculate modular square roots using 2 different methods & compare results. 
+   Return true if results match, otherwise false. */
 static bool test9once(long long a, long long m) {
 	std::vector <long long> r2;
 	std::vector <Znum> r3;
-	Znum az = a;
-	Znum mz = m;
+	Znum az = a;   /* change type from 64-bit to extended precision */
+	Znum mz = m;   /* change type from 64-bit to extended precision */
 	bool error = false;
 
-	r2 = ModSqrtBF(a, m);
-	r3 = ModSqrt(az, mz);
+	r2 = ModSqrtBF(a, m);  /* brute forec method */
+	r3 = ModSqrt(az, mz);  /* sophisticated (faster) method */
 	if (r3.size() != r2.size())
 		error = true;
 	else{
@@ -1756,25 +1758,33 @@ static bool test9once(long long a, long long m) {
 
 /* test modular square root */
 static void doTests9(void) {
+	bool rv = true;
 
-	test9once(99, 107);      // roots are 45 and 62
-	test9once(3, 22);        // roots are 5 & 17
-	test9once(99, 100);      // no roots
-	test9once(2191, 12167);  // roots are 1115, 11052
-	test9once(4142, 24389);  // roots are 2333, 22056
-	test9once(3, 143);       // roots are 17, 61, 82, 126
-	test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	test9once(9, 44);        // roots are 3, 19, 25, 41
-	test9once(0, 44);        // roots are zero, 22
-	test9once(0, 4);         // roots are 0, 2
-	test9once(0, 9);         // roots are 0, 3, 6
-	test9once(0, 8);         // roots are 0, 4
-	test9once(0, 27);        // roots are 0, 9, 18
-	test9once(0, 16);        // roots are 0, 4, 8, 12
-	test9once(0, 32);        // roots are 0, 8, 16, 24
-	test9once(0, 176);       // roots are zero, 44, 88, 132
-	test9once(1, 121550625);
-	test9once(0, 121550625);  // 11025 different roots!
+	rv &= test9once(99, 107);      // roots are 45 and 62
+	rv &= test9once(3, 22);        // roots are 5 & 17
+	rv &= test9once(99, 100);      // no roots
+	rv &= test9once(2191, 12167);  // roots are 1115, 11052
+	rv &= test9once(4142, 24389);  // roots are 2333, 22056
+	rv &= test9once(3, 143);       // roots are 17, 61, 82, 126
+	rv &= test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
+	rv &= test9once(9, 44);        // roots are 3, 19, 25, 41
+	rv &= test9once(0, 44);        // roots are zero, 22
+	rv &= test9once(0, 4);         // roots are 0, 2
+	rv &= test9once(0, 9);         // roots are 0, 3, 6
+	rv &= test9once(0, 8);         // roots are 0, 4
+	rv &= test9once(0, 27);        // roots are 0, 9, 18
+	rv &= test9once(0, 16);        // roots are 0, 4, 8, 12
+	rv &= test9once(0, 32);        // roots are 0, 8, 16, 24
+	rv &= test9once(0, 176);       // roots are zero, 44, 88, 132
+	rv &= test9once(1, 121550625); // roots are 1, 15491251, 51021251, 55038124,
+								   // 66512501, 70529374, 106059374, 121550624,
+	rv &= test9once(0, 121550625); // 11025 different roots!
+	rv &= test9once(8, 28);        // roots are 6, 8, 20, 22
+
+	if (rv)
+		std::cout << "All modular square root tests completed successfully. \n";
+	else
+		std::cout << "One or more modular square root tests failed. \n";
 }
 
 
@@ -1920,7 +1930,7 @@ retry:
 			if (std::toupper(expr[0]) == 'N')
 				return;
 		}
-		newpathC = getFileName("Text\0*.TXT\0\0", NULL);
+		newpathC = getFileName("Text\0*.TXT\0\0", handConsole);
 		if (newpathC ==NULL) {
 			std::cout << "command cancelled \n";
 			return;
@@ -2405,6 +2415,7 @@ int main(int argc, char *argv[]) {
 	int asgCt;  /* number of assignment operators */
 	int version[4]; /* version info from .exe file (taken from .rc resource file) */
 	std::string modified;  /* date & time program last modified */
+	bool multiV = false;
 
 	try {
 		f.UnEx = 1;        /* set unhandled exception 'filter' */
@@ -2531,14 +2542,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			/* input is not a valid command; assume it is an expression */
 			auto start = clock();	// used to measure execution time
 
-			rv = ComputeExpr(expr, Result, asgCt); /* analyse expression, compute value*/
+			rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 
 			if (rv != retCode::EXPR_OK) {
 				textError(rv);   // invalid expression; print error message
 			}
 			else {
 				exprList.push_back(expr);  /* save text of expression */
-				if (asgCt == 0) {
+				if (asgCt == 0 && !multiV) {
 					std::cout << " = ";
 					ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 					std::cout << '\n';
@@ -2549,6 +2560,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 					}
 				}
 				else {
+					if (multiV) {
+						std::cout << " = ";
+						for (auto r : roots) {
+							std::cout << r << ", ";
+						}
+						putchar('\n');
+					}
+					if (asgCt != 0)
 					printvars(""); /* print variables names & values */
 				}
 			}

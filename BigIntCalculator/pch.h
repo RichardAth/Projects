@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <random>
+#include <algorithm>
 #ifdef __GNUC__
 #include "gmp.h"
 #else

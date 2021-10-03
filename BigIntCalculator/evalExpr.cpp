@@ -25,14 +25,18 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 bool getBit(const unsigned long long int x, const bool array[]);
 void biperm(int n, Znum &result);  
 Znum llt(const Znum &p);
+size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
+	int level, bool dump);
 
+/* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
 int get_uvar(const char *name, Znum data);
 static void free_uvars();
 
-
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
+std::vector <Znum> roots;   /* used by functions that return multiple values */
+bool multiValue = false;
 
 typedef struct        // used for user variables
 {
@@ -86,7 +90,7 @@ order is not the same as C or Python. The operator attributes are obtained by
 using the opCode (cast to an integer) as the index. */
 
 struct attrs {
-	int pri;  /* operator precedence, 0 is highest, 99 is lowest */
+	int pri;     /* operator precedence, 0 is highest, 99 is lowest */
 	bool left;   /* associativity ; true = left to right, false = right to left
 			operators with the same precedence must have the same associativity. */
 	bool pre;    /* true if unary operator e.g. - precedes expression, false if
@@ -167,6 +171,7 @@ enum class fn_Code {
 	fn_maxfact,
 	fn_ispow,
 	fn_modsqrt,
+	fn_invtot,
 	fn_invalid = -1,
 };
 
@@ -179,7 +184,7 @@ struct  functions {
 /* list of function names. No function name can begin with C because this would
  conflict with the C operator. Longer names must come before short ones
  that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 32> functionList{
+const static std::array <struct functions, 33> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
 	"MODINV",    2,  fn_Code::fn_modinv,
@@ -196,6 +201,7 @@ const static std::array <struct functions, 32> functionList{
 	"MINFACT",   1,  fn_Code::fn_minfact,
 	"MAXFACT",   1,  fn_Code::fn_maxfact,
 	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
+	"InvTot",    1,  fn_Code::fn_invtot,         // inverse totient
 	"F",         1,  fn_Code::fn_fib,			// fibonacci
 	"LLT",	     1,  fn_Code::fn_llt,           // lucas-Lehmer test
 	"LE",		 2,  fn_Code::fn_legendre,
@@ -257,9 +263,12 @@ const static struct oper_list operators[]{
 		{"=", opCode::assign,        12},      // assignment
 };
 
-
-/* forward references */
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
+
+// returns true if num is a perfect square.
+bool isPerfectSquare(const Znum &num) {
+	return (mpz_perfect_square_p(ZT(num)) != 0); /* true if num is a perfect square */
+}
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1)
 where p=prime factor and e=exponent.*/
@@ -1021,12 +1030,6 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		break;
 	}
 	case fn_Code::fn_modsqrt: {
-		std::vector <Znum> roots;
-
-		/* this is a necessary condition, but not sufficient to guarantee 
-		a solution */
-		if (p1%p2 != 0 && gcd(p1, p2) != 1)
-			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
 
 		/* Solve the equation given p1 and p2.  x^2 ≡ p1 (mod p2) */
 		roots = ModSqrt(p1, p2);
@@ -1044,8 +1047,28 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		                      or one  or more solutions */
 		if (roots.empty())
 			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
-		result = roots[0];     /* ignore 2nd solution, if any */
 
+		result = roots[0];     /* ignore 2nd solution, if any */
+		multiValue = true;     /* indicate multiple return values */
+
+		break;
+	}
+	case fn_Code::fn_invtot: {
+		std::vector<unsigned long long> *resultsP;
+
+		/* have to limit p1 to small values, otherwise risk rumnning out of memory */
+		if (p1 > INT_MAX) 
+			return retCode::EXPR_INVALID_PARAM;
+		/* get list of numbers x1, x2, ... such that totient(x) = p1 */
+		auto size = inverseTotient(MulPrToLong(p1), &resultsP, false, 0, false);
+		if (size == 0)
+			return retCode::EXPR_INVALID_PARAM;
+		roots.clear();
+		for (size_t i = 0; i < size; i++) {
+			roots.push_back((*resultsP)[i]); /* copy results */
+		}
+		result = roots[0];
+		multiValue = true;     /* indicate multiple return values */
 		break;
 	}
 
@@ -1077,10 +1100,10 @@ static void nextsep(token expr[], int &ix) {
 }
 
 /* print tokens in readable form */
-static void printTokens(const token expr[], const int exprLen) {
-	if (exprLen == 0)
+static void printTokens(const std::vector <token> expr) {
+	if (expr.size() == 0)
 		return;   /* if no tokens to print do nothing but exit*/
-	for (int ix = 0; ix < exprLen; ix++) {
+	for (int ix = 0; ix < expr.size(); ix++) {
 		switch (expr[ix].typecode) {
 		case types::number:
 			std::cout << expr[ix].value << ' ';
@@ -1380,8 +1403,10 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 /* evaluate an expression in reverse polish form. Returns EXPR_OK or error code.
 If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
-(this would indicate a syntax error not detected earlier) */
-static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
+(this would indicate a syntax error not detected earlier) 
+If the final operation is a function call that returns multiple values,
+multiValue is set to true, otherwise it is false*/
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
 	std::stack <token> nums;   /* this stack holds both numbers and user variables */
 	Znum val;
 	Znum args[4];
@@ -1393,20 +1418,22 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 	temp.typecode = types::number;
 
 	for (index = 0; index < rPlen; index++) {
-		/* push numbers onto stack */
-		if (rPolish[index].typecode == types::number) {
-			nums.push(rPolish[index]);
-		}
-		else if (rPolish[index].typecode == types::uservar) {
-			nums.push(rPolish[index]);
-		}
+		multiValue = false;     /* changed to true if function returns multiple values */
 
+		switch (rPolish[index].typecode) {
+		case types::number:
+		case types::uservar:
+		{  	/* push number onto stack */
+			nums.push(rPolish[index]);
+			break;
+		}
+	
 		/* operators and functions are processed by taking the operand values
-		   from the stack, executing the operation or function and putting
-		   the returned value onto the stack. If there are insuffficient values
-		   on the stack or if the operator or function returns an error code
-		   exit immediately. */
-		else if (rPolish[index].typecode == types::func) {
+			from the stack, executing the operation or function and putting
+			the returned value onto the stack. If there are insuffficient values
+			on the stack or if the operator or function returns an error code
+			exit immediately. */
+		case types::func: {
 			fn_Code fnCode = functionList[rPolish[index].function].fCode;
 			int NoOfArgs = functionList[rPolish[index].function].NoOfParams;
 
@@ -1427,60 +1454,63 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 			if (retcode != retCode::EXPR_OK)
 				return retcode;
 			temp.typecode = types::number;
-			temp.value = val;
+			temp.value = val;   /* copy value returned by function */
 			nums.push(temp);  /* put value returned by function onto stack */
+			break;
 		}
 
-		else if (rPolish[index].typecode == types::Operator) {
-			opCode oper = rPolish[index].oper;
+		case types::Operator: {
+				opCode oper = rPolish[index].oper;
 
-			int NoOfArgs = opr[(int)oper].numOps;
-			if (NoOfArgs > nums.size())
-				return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
-			if (oper == opCode::assign) {
-				temp = nums.top();
-				nums.pop();
-				if (nums.top().typecode != types::uservar)
-					return retCode::EXPR_SYNTAX_ERROR;
-				size_t Userix = nums.top().userIx;
+				int NoOfArgs = opr[(int)oper].numOps;
+				if (NoOfArgs > nums.size())
+					return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
+				if (oper == opCode::assign) {
+					temp = nums.top();
+					nums.pop();
+					if (nums.top().typecode != types::uservar)
+						return retCode::EXPR_SYNTAX_ERROR;
+					size_t Userix = nums.top().userIx;
 
-				if (temp.typecode == types::number)
-					uvars.vars[Userix].data = temp.value;
-				else if (temp.typecode == types::uservar)
-					uvars.vars[Userix].data =
-					uvars.vars[temp.userIx].data;
-				else
-					return retCode::EXPR_SYNTAX_ERROR;
-				nums.pop();  /* remove variable from stack */
-				nums.push(temp);  /* put value back on stack */
-			} 
-			else {
-				for (; NoOfArgs > 0; NoOfArgs--) {
-					/* copy operand(s) from number stack to args */
-					if (nums.top().typecode == types::number)
-						args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
-					else {
-						size_t Userix = nums.top().userIx;
-						args[NoOfArgs - 1] = uvars.vars[Userix].data;
+					if (temp.typecode == types::number)
+						uvars.vars[Userix].data = temp.value;
+					else if (temp.typecode == types::uservar)
+						uvars.vars[Userix].data =
+						uvars.vars[temp.userIx].data;
+					else
+						return retCode::EXPR_SYNTAX_ERROR;
+					nums.pop();  /* remove variable from stack */
+					nums.push(temp);  /* put value back on stack */
+				}
+				else {
+					for (; NoOfArgs > 0; NoOfArgs--) {
+						/* copy operand(s) from number stack to args */
+						if (nums.top().typecode == types::number)
+							args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
+						else {
+							size_t Userix = nums.top().userIx;
+							args[NoOfArgs - 1] = uvars.vars[Userix].data;
+						}
+						nums.pop();  /* remove top value from stack */
 					}
-					nums.pop();  /* remove top value from stack */
-				}
 
-				if (oper == opCode::fact) {
-					/* get 2nd operand for multifactorial. In this special case
-					 the 2nd operand is in the operator token, not a number token */
-					args[1] = rPolish[index].value;
+					if (oper == opCode::fact) {
+						/* get 2nd operand for multifactorial. In this special case
+						 the 2nd operand is in the operator token, not a number token */
+						args[1] = rPolish[index].value;
+					}
+					retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
+					if (rc != retCode::EXPR_OK)
+						return rc;
+					temp.typecode = types::number;
+					temp.value = val;
+					nums.push(temp);  /* put generated value onto stack */
 				}
-				retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
-				if (rc != retCode::EXPR_OK)
-					return rc;
-				temp.typecode = types::number;
-				temp.value = val;
-				nums.push(temp);  /* put generated value onto stack */
+				break;
 			}
+		default:
+				abort(); /* unrecognised token */
 		}
-		else
-			abort(); /* unrecognised token */
 	}
 
 
@@ -1491,6 +1521,8 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 			size_t Userix = nums.top().userIx;  /* get value from user variable */
 			result = uvars.vars[Userix].data;
 		}
+		if (multiV != nullptr)
+			*multiV = multiValue;
 		return retCode::EXPR_OK;
 	}
 	else
@@ -1516,7 +1548,7 @@ Added 5/6/2021
 		one number on the stack at the end, or at any time there are not enough
 		numbers on the stack to perform an operation an error is reported.
 		(this would indicate a syntax error not detected earlier)*/
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;
@@ -1527,16 +1559,16 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 		int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish);
 		/* convert expression to reverse polish */
 		if (ircode == EXIT_SUCCESS) {
-			rv = evalExpr(rPolish, Result);
+			rv = evalExpr(rPolish, Result, multiV);
 			if (rv != retCode::EXPR_OK && verbose > 0) {
 				std::cout << "Expression could not be evaluated \n";
-				printTokens(rPolish.data(), (int)rPolish.size());
+				printTokens(rPolish);
 			}
 		}
 		else {
 			if (verbose > 0) {
 				std::cout << "** error: could not convert to reverse polish \n";
-				printTokens(rPolish.data(), (int)rPolish.size());
+				printTokens(rPolish);
 			}
 			return retCode::EXPR_SYNTAX_ERROR;
 		}
@@ -1545,12 +1577,13 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 		if (verbose > 0) {
 			std::cout << "** error: could not tokenise expression «"
 				<< expr << "»\n";
-			printTokens(tokens.data(), (int)tokens.size());
-			printf_s("expr contains: ");
-			for (auto c : expr) {
-				printf_s("%2x", c);
-			}
-			putchar('\n');
+			printTokens(tokens);
+			std::cout << "expr contains \"" << expr << "\" \n";
+			//printf_s("expr contains: \"%s\" \n", expr.c_str());
+			//for (auto c : expr) {
+			//	printf_s("%2x", c);
+			//}
+			//putchar('\n');
 		}
 	}
 
@@ -1731,7 +1764,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
 /* create a new user variable with name 'name', initialise it
 and return its location in the global uvars structure */
-int new_uvar(const char *name) {
+static int new_uvar(const char *name) {
 	if (uvars.num == uvars.alloc) {
 		//need more room for variables
 		if (uvars.num == 0) 
@@ -1751,7 +1784,7 @@ int new_uvar(const char *name) {
 
 //look for 'name' in the global uvars structure
 //if found, copy in data and return 0 else return 1
-int set_uvar(const char *name, const Znum &data) {
+static int set_uvar(const char *name, const Znum &data) {
 	int i;
 
 	for (i = 0; i < uvars.num; i++) {
@@ -1766,7 +1799,7 @@ int set_uvar(const char *name, const Znum &data) {
 
 /* look for 'name' in the global uvars structure
    if found, copy out data and return index else return -1 if not found */
-int get_uvar(const char *name, Znum data)
+static int get_uvar(const char *name, Znum data)
 {
 	int i;
 

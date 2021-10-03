@@ -1,4 +1,6 @@
 ﻿#include "pch.h"
+
+#include <map>
 #include "factor.h"
 #include "showtime.h"
 
@@ -566,4 +568,278 @@ unsigned __int64 R3(__int64 n) {
 	}
 
 	return sum;
+}
+
+/* calculate number of divisors of n, also returns the list of prime factors
+See also related function factors which which returns a list of all factors.
+*/
+unsigned __int64 NoOfDivisors(__int64 num, factorsS &f) {
+	unsigned int count;
+	unsigned __int64 result = 1;
+
+	count = primeFactors(num, f);
+
+	for (unsigned int i = 0; i < count; i++)
+		result *= (f.factorlist[i][1] + 1);
+	return result;
+}
+
+/* generate list of all divisors of tnum
+N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
+the value returned is the number of divisors.
+*/
+size_t DivisorList(unsigned __int64 tnum, std::vector <__int64> &divlist) {
+
+	factorsS f;
+	size_t noofdivs;
+	size_t ctr = 0, ct2, ccpy;
+
+	/* get number of divisors, and factorlist */
+	noofdivs = NoOfDivisors(tnum, f);
+	divlist.resize(noofdivs);
+	divlist[ctr++] = 1;  // 1st divisor
+
+	for (size_t i = 0; i < f.factorcount; i++) {
+		ct2 = 0;
+		ccpy = ctr;
+		for (int x = 1; x <= f.factorlist[i][1]; x++) {
+			for (size_t j = 0; j < ctr; j++)
+				divlist[j + ccpy] = divlist[j + ct2] * f.factorlist[i][0];
+			ct2 += ctr;
+			ccpy += ctr;
+		}
+		ctr = ccpy;
+	}
+
+	std::sort(divlist.begin(), divlist.end());
+#ifdef _DEBUG
+	/*	printf_s("divisors of %lld are: ", tnum);
+		for (int i = 0; i < noofdivs; i++) {
+			printf_s("%lld ", divlist[i]);
+		}
+		putchar('\n');*/
+#endif
+	return noofdivs;
+}
+
+/* return true if smallest factor of num > prime */
+static bool minimumFactor(unsigned __int64 num, unsigned __int64 prime) {
+	int i = 0;
+	unsigned __int64 minfactor;
+	for (unsigned i = 0; i < prime_list_count; i++) {
+		if (primeList[i] * primeList[i] > num) {
+			minfactor = num;   // num is prime
+			break;
+		}
+		if (num%primeList[i] == 0) {
+			minfactor = primeList[i];
+			break;
+		}
+	}
+	return (minfactor > prime);
+}
+
+static std::map <__int64, std::vector <unsigned __int64>> InvTot;
+static void dumptCacheNew(__int64 n, std::map <__int64, std::vector<unsigned __int64>>InvTot) {
+
+	for (auto it : InvTot) {
+		printf_s("%3lld", it.first);
+		for (auto it2 : it.second) {
+			printf_s(" %3lld,", it2);
+		}
+		putchar('\n');
+	}
+}
+
+/* create a list of numbers such that the totient of each number in the list
+is n. value returned is the number of items in the list, which may be zero.
+If the value returned is zero the address in *result may be undefined, otherwise
+result points to the list of numbers.
+The numbers returned in result are always greater than n, so for large values
+of n integer overflow is a possibility.
+The algorithm used is based on https://www.insa.nic.in/writereaddata/UpLoadedFiles/IJPAM/20005a81_22.pdf
+Alternative link: http://hal.inria.fr/docs/00/71/89/75/PDF/TOT.pdf
+
+Note: this function is recursive, and uses memoisation, otherwise
+stack overflow or ridiculously long execution time could be a problem.
+
+To clear the cache afterwards call inverseTotient with n <=0
+*/
+size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
+	int level, bool dump) {
+	const unsigned __int64 sqrtn = llSqrt(n);
+
+	std::vector <unsigned __int64>rest_solution, *r_s = NULL;
+	unsigned __int64 prime_power, rest_phi;
+	unsigned __int64 noofdivisors;
+	std::vector <unsigned __int64> max_primes;
+	unsigned __int64 prime_phi, prime, rest_sol_count;
+	size_t primecount = 0;
+	std::vector <__int64> divisorList;
+	HRESULT rv;
+
+	if (n <= 0) {   // n <= 0 signifies that cache memory is to be freed
+		if (dump)
+			dumptCacheNew(n, InvTot);
+		InvTot.clear();
+		*result = nullptr;
+		return 0;
+	}
+
+	if (sqrtn >= primeListMax)   // generate prime list if necessary
+		generatePrimes(sqrtn + 10);
+
+	/* If this is the 1st call: initialise cache. Each entry in the cache consists
+	of a list of numbers for which the totient is n. */
+	if (InvTot.size() == 0) {
+
+		/* Note: InvTot.insert (std::make_pair(a, b)) creates an entry where
+		InvTot[a] contains a vector of size b. */
+
+		// special, set up a list with just 1 value (1)
+		InvTot.insert(std::make_pair(0, 1));
+		InvTot[0][0] = 1;
+
+		// only 1 and 2 have 1 as totient value
+		InvTot.insert(std::make_pair(1, 2));
+		InvTot[1][0] = 1;
+		InvTot[1][1] = 2;
+
+
+		// 3, 4 and 6 have 2 as totient value
+		InvTot.insert(std::make_pair(2, 3));
+		InvTot[2][0] = 3;
+		InvTot[2][1] = 4;
+		InvTot[2][2] = 6;
+	}
+
+	/* is the result we need already in the cache? */
+	auto cp = InvTot.find(n);
+
+	if (cp != InvTot.end()) {
+		*result = &cp->second;
+		return cp->second.size();  // return number of numbers in result
+	}
+
+	if ((n & 1) == 1) {
+		*result = nullptr;
+		return 0;  // there are no odd totient values other than 1
+	}
+
+	if (debug || dump)
+		printf_s("evaluating inv.tot(%lld) level %d\n", n, level);
+
+	/* add result about to be calculated to cache*/
+	InvTot.insert(std::make_pair(n, 0));  // initially just have key value and zero-length vector
+
+#ifdef _DEBUG
+	if (dump)
+		dumptCacheNew(n, InvTot);
+#endif
+
+	/* get all the divisors of n */
+	noofdivisors = DivisorList(n, divisorList);
+
+	max_primes.clear();              // reset size to zero
+	max_primes.reserve(noofdivisors / 2);  // guess the new size
+	/* make a list of all primes which are  = some divisor+1 */
+	for (int i = 0; i < noofdivisors; i++) {
+		/* test whether divisor+1 is prime. use fast prime check if possible */
+		if (((divisorList[i] + 1 < (__int64)primeListMax) && isPrime2(divisorList[i] + 1)) ||
+			((divisorList[i] + 1 >= (__int64)primeListMax) && (isPrimeMR(divisorList[i] + 1))))
+			max_primes.push_back(divisorList[i] + 1);
+	}
+	primecount = max_primes.size();
+
+	/* step through the list of primes, starting with the largest */
+	for (ptrdiff_t ii = primecount - 1; ii >= 0; ii--) {
+
+		prime = max_primes[ii];
+		prime_phi = prime - 1; /* totient of a prime p = p-1 */
+		prime_power = prime;  /* initially, prime_power = prime^1 */
+
+		while (n%prime_phi == 0) {
+			//#ifdef _DEBUG
+			//		printf_s("ii = %d, prime =%lld, prime_phi=%lld, prime_power=%lld\n",
+			//			ii, prime, prime_phi, prime_power);
+			//
+			//#endif
+			rest_phi = n / prime_phi;
+
+			/* note: this is a recursive call. If prime is 2, prime_phi is 1 and
+			rest_phi = n so in this case inverseTotient will return the values
+			previously calculated. This is why we start with the largest prime
+			and end with 2.
+			(If inverseTotient does not find the result needed in the cache, it
+			will need to calculate it & add it to the cache ) */
+			rest_sol_count = inverseTotient(rest_phi, &r_s, debug, level + 1, dump);
+			if (rest_sol_count != 0) {
+#ifdef _DEBUG
+				if (debug) {
+					printf_s("inv.tot of %lld are: ", rest_phi);
+					for (int i = 0; i < std::min(rest_sol_count, 10ULL); i++)
+						printf_s("%lld, ", (*r_s)[i]);
+					printf_s("\ncount= %lld\n", rest_sol_count);
+				}
+#endif
+				/* copy inverse totients to local variable rest_solution. This is
+				a deep copy, so later changes to list referenced by r_s don't matter.*/
+				rest_solution = *r_s;
+
+				// find all numbers in rest_solution which have no prime factor <= prime
+				for (int iii = 0; iii < rest_sol_count; iii++) {
+					if (rest_solution[iii] > 1) {  // unless number being factored is 1
+						if (minimumFactor(rest_solution[iii], prime)) {
+							unsigned __int64 temp;
+							rv = ULongLongMult(prime_power, rest_solution[iii],
+								&temp);
+							if (rv != S_OK) {
+								ThrowExc("integer overflow: ")
+							}
+							InvTot[n].push_back(temp);  // add new inv. totient value
+#ifdef _DEBUG
+							if (debug) {
+								printf_s("inv. totient for %lld: %lld ",
+									n, temp);
+								printf_s("(%lld * %lld)\n", prime_power, rest_solution[iii]);
+							}
+#endif
+						}
+					}
+					else {    /* rest_solution[iii] is 1. In this case we DON'T test
+							  whether it is greater than prime */
+						InvTot[n].push_back(prime_power);
+#ifdef _DEBUG
+						if (debug)
+							printf_s("inv. totient for %lld: %lld\n",
+								n, prime_power);
+#endif
+					}
+				}  // end of for loop
+			} // end of "if (rest_sol_count != 0)"
+
+			if (prime > n / prime_phi)
+				break;     // try to avoid overflow for large primes
+
+			/* calculate next power of prime */
+			rv = ULongLongMult(prime_power, prime, &prime_power); //prime_power *= prime;
+			if (rv != S_OK) {
+				ThrowExc("integer overflow: ")
+			}
+			prime_phi *= prime;   // totient of p^k = p^(k-1) * (p-1)
+		} // end of "while (n%prime_phi == 0)"
+	}  // end of "for (ptrdiff_t ii = primecount - 1; ii >= 0; ii--)"
+
+	/* sort values of inverse totient (not really necessary)*/
+	std::sort(InvTot[n].begin(), InvTot[n].end());
+
+	*result = &InvTot[n]; /* note that function returns a pointer into
+							the cache, which therefore cannot be freed yet*/
+	if (debug || dump) {
+		if (InvTot.size() <= 12)
+			dumptCacheNew(n, InvTot);
+		printf_s("** completed invTot(%lld) level %d\n", n, level);
+	}
+
+	return InvTot[n].size();  // return number of numbers in result
 }

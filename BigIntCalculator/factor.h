@@ -331,7 +331,7 @@ extern std::string yafuprog;
 extern std::string MsievePath;
 extern std::string MsieveProg;
 extern bool breakSignal;
-
+extern std::vector <Znum> roots;   /* used by functions that return multiple values */
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
@@ -433,3 +433,4 @@ the text string a, function name, line number and source file name */
 }
 
 unsigned long long llSqrt(const unsigned long long n);
+bool isPerfectSquare(const Znum &num);

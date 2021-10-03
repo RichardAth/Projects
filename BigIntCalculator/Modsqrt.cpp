@@ -98,7 +98,7 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &p, const int lambda) {
 		x = std::min(rx[0], rx[1]);  /* take smaller root */
 	else
 		x = rx[0];
-	/* the calculation is done in stages, applyin modulus each time, to avoid
+	/* the calculation is done in stages, applying modulus each time, to avoid
 	 trying to generate enormous intermediate values */
 	r1 = modPower(x, power(p, lambda - 1), mod);
 	r2 = modPower(c, (power(p, lambda) - 2 * power(p, lambda - 1) + 1) / 2, mod);
@@ -145,6 +145,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 #ifdef _DEBUG
 	/* recheck existence of solution */
 	{
+		/* check that a^((p-1)/2) ≡ 1 (mod p)*/
 		Znum x1, p2;
 		p2 = (p - 1) / 2;
 		mpz_powm(ZT(x1), ZT(a), ZT(p2), ZT(p));
@@ -160,7 +161,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 		return result;
 	}
 
-	// step 1: Factor p - 1 of the form q * 2 ^ s(with Q odd)
+	// Tonelli-Shanks step 1: Factor p - 1 of the form q * 2 ^ s(with Q odd)
 	q = p - 1;
 	s = 0;
 	while (ZisEven(q)) {
@@ -196,7 +197,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 		}
 
 		// Update next value to iterate
-		long long temp = MulPrToLong (m - i - 1);  /* could get overflow? */
+		long long temp = m - i - 1;  
 
 		b = modPower(c, pow2bi(temp), p); /* b = c^(2^(m-i-1)) mod p */
 
@@ -233,7 +234,7 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 	if (a < 0)
 		a += m;  /* normalise a so it's in range 0 to m-1 */
 
-	if (a != 0 && gcd(a, m) != 1)
+	if (a != 0 && !isPerfectSquare(gcd(a, m)))
 		return cRoots;   /* return empty list; no solutions */
 
 	auto rv = factorise(m, pFactors, nullptr);

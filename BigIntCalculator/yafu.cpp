@@ -3,6 +3,8 @@
 #include "factor.h"
 #include "showtime.h"
 
+extern HWND handConsole;      /* handle to console window */
+
 /* Note: the path specified here can be overwritten by a path specified in the .ini file */
 #ifndef _DEBUG
 std::string YafuPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
@@ -84,7 +86,7 @@ bool changepath(std::string &path, std::string &prog) {
 	std::string newprog;
 	std::string::size_type n;
 
-	newpathC = getFileName("Program Files\0*.exe\0\0", NULL);
+	newpathC = getFileName("Program Files\0*.exe\0\0", handConsole);
 	if (newpathC == NULL) {
 		std::cout << "command cancelled \n";
 		return false;
