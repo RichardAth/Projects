@@ -766,7 +766,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int method=0) {
+static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -777,7 +777,7 @@ static bool factortest(const Znum &x3, const int method=0) {
 
 	sum.numsize = (int)ComputeNumDigits(x3, 10);
 
-	std::cout << "\nTest: factorise ";
+	std::cout << "\nTest " << testnum << ": factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
 	if (method == 0) {
@@ -797,6 +797,7 @@ static bool factortest(const Znum &x3, const int method=0) {
 	
 	/* get number of digits in 2nd largest factor */
 	sum.sndFac = factorlist.sndFac();
+
 	if (method == 0) {
 		/* check that sum of squares is correct */
 		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
@@ -815,19 +816,24 @@ static bool factortest(const Znum &x3, const int method=0) {
 		if (method == 0)
 			factorlist.prCounts();   // print counts
 
+		std::cout << "test " << testnum << " completed at ";
+
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
+		sum.testNum = testnum;
 		results.push_back(sum);
 		return false;   // not prime
 	}
 	else {
 		std::cout << "is prime \n";
+		std::cout << "test " << testnum << " completed at ";
 		sum.NumFacs = 1;
 		sum.totalFacs = 1;
 		sum.sndFac = 0;
+		sum.testNum = testnum;
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
@@ -949,67 +955,84 @@ static void doTests(void) {
 		i *= 10;
 		mpz_nextprime(ZT(x2), ZT(i));  // get next prime
 		x3 = x1*x2;
-		factortest(x3);
-		results.back().testNum = ++testcnt;
-		x3++;
-		factortest(x3);
-		results.back().testNum = ++testcnt;
+		testcnt++;
+		factortest(x3, testcnt);
 
+		x3++;
+		testcnt++;
+		factortest(x3, testcnt);
 	}
 
 	/* tests below have shown a problem with pollard-rho for certain numbers */
-	factortest(99999999973789); // = 6478429 * 15435841
-	results.back().testNum = ++testcnt;
-	factortest(183038861417);   // =  408229 *   448373
-	results.back().testNum = ++testcnt;
-	factortest(183475587821);   // =  409477 *   448073
-	results.back().testNum = ++testcnt;
-	factortest(181919916457);   // =  400307 *   454451
-	results.back().testNum = ++testcnt;
-	factortest(199996999457);   // =  441361 *   453137
-	results.back().testNum = ++testcnt;
-	factortest(204493418837);   // =  401209 *   509693
-	results.back().testNum = ++testcnt;
+	long long int PollRho[] = {99999999973789, 183038861417, 183475587821,
+		181919916457, 199996999457, 204493418837 };
+	for (int i = 0; i < sizeof(PollRho) / sizeof(PollRho[0]); i++) {
+		testcnt++;
+		factortest(PollRho[i], testcnt);
+	}
+
+	//testcnt++;
+	//factortest(99999999973789, testcnt); // = 6478429 * 15435841
+	//results.back().testNum = testcnt;
+	//testcnt++;
+	//factortest(183038861417, testcnt);   // =  408229 *   448373
+	//results.back().testNum = testcnt;
+	//testcnt++;
+	//factortest(183475587821, testcnt);   // =  409477 *   448073
+	//results.back().testNum = testcnt;
+	//testcnt++;
+	//factortest(181919916457, testcnt);   // =  400307 *   454451
+	//results.back().testNum = testcnt;
+	//testcnt++;
+	//factortest(199996999457, testcnt);   // =  441361 *   453137
+	//results.back().testNum = testcnt;
+	//factortest(204493418837, testcnt);   // =  401209 *   509693
+	//results.back().testNum = testcnt;
 
 	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
 	x3 -= 1;                        // x3 = 10^20-1
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x3, testcnt);
+
 	x3 += 2;
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(10^10)^2-1", x3, asgCt);  // test power of large number-1
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
 	ComputeExpr("120#-1", x3, asgCt);
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^15)^2", x3, asgCt);  // test power of large number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^6+20)^1667", x3, asgCt);  // test power of large prime number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^7)^3*n(10^8)^2", x3, asgCt);  // test powers of two large prime number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
+	ComputeExpr("n(10^15)^2", x3, asgCt);  // test power of large number
+	factortest(x3, testcnt);
+
+	testcnt++;
+	ComputeExpr("n(10^6+20)^1667", x3, asgCt);  // test power of large prime number
+	factortest(x3, testcnt);
+
+	testcnt++;
+	ComputeExpr("n(10^7)^3*n(10^8)^2", x3, asgCt);  // test powers of two large prime number
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(3*10^9+50)*n(3*10^10+500)", x3, asgCt);  // test Lehman factorisation
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	x3 = 0;
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(10^15)^3*n(10^14)", x3, asgCt);  // test Lehman factorisation
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
 	/* test using carmichael numbers. note that 1st example has no small factors  */
 	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
 		60977817398996785 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
-		factortest(carmichael[i]);
-		results.back().testNum = ++testcnt;
+		testcnt++;
+		factortest(carmichael[i], testcnt);
 	}
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
@@ -1018,17 +1041,17 @@ static void doTests(void) {
 	x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
 	/* in general numbers > about 110 digits cannot be factorised in a reasonable time 
 	but this one can, because a special algorithm just for Carmichael numbers is used. */
-	factortest(x4);   // 397-digit Carmichael number
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x4, testcnt);   // 397-digit Carmichael number
 	std::cout << "factorised 397-digit Carmichael number \n";
 
+	testcnt++;
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
 	ComputeExpr("n(2^97)*n(2^105)", x3, asgCt);
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
@@ -1496,9 +1519,8 @@ static void doTests4(void) {
 		std::cout << "\ntest " << px + 1 << " of " << pmax+1 ;
 		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
 		m--;                // get 2^p -1
-		if (factortest(m)) /* factorise m, calculate number of divisors etc */
+		if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
 			std::cout << "2^" << primeList[px] << " - 1 is prime \n";
-		results.back().testNum = px + 1;
 	}
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
@@ -1509,14 +1531,12 @@ static void doTests4(void) {
 /* tests using only YAFU for factorisation */
 static void doTests5(void) {
 	results.clear();
-	int testcnt = 0, asgCt;
+	int testcnt = 1, asgCt;
 
 	Znum num = 49728103; // 7001 * 7103
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 1
+	factortest(num, testcnt, 1);  // test 1
 
-	// factorise 127 digit number
+	// factorise 127 digit number   test 2
 	/*  =                               280673 
 	*                              2756 163353 
 	*                            598990 818061 
@@ -1525,56 +1545,50 @@ static void doTests5(void) {
 	* 33637 310674 071348 724927 955857 253537  
 	*117445 937227 520353 139789 517076 610399  
 	(7 factors)   */
+	testcnt++;
 	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", 
 		num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 2
+	factortest(num, testcnt, 1);
 
-	//factorise 57 digit number
+	//factorise 57 digit number      test 3
 	/* P6 = 280673
 	  P12 = 598990818061
 	  P10 = 2756163353
 	  P13 = 4527716228491
 	  P18 = 248158049830971629
 	*/
+	testcnt++;
 	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 3
+	factortest(num, testcnt, 1);
 
-	//factorise 80 digit number (about 3 minutes)
+	//factorise 80 digit number (about 3 minutes)   test 4
 	/* P49 = 2412329883909990626764837681505523221799246895133
        P32 = 18138544144503826077310252140817
     */
+	testcnt++;
 	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";   // test 4
+	factortest(num, testcnt, 1);
 
-	//factorise 85 digit number (about 7 mins)
+	//factorise 85 digit number (about 7 mins)   // test 5
 	/* factors are 1485325304578290487744454354798448608807999 and 
                    1263789702211268559063981919736415575710439 */
+	testcnt++;
 	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 5
+	factortest(num, testcnt, 1);
 
-	// factorise 94 digit number (about 60 mins)
+	// factorise 94 digit number (about 60 mins)    test 6
 	/* factors are 10910042366770069935194172108679294830357131379375349 and 
                    859735020008609871428759089831769060699941 */
+	testcnt++;
 	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 6
+	factortest(num, testcnt, 1);
 
-	//factorise 100 digit number - takes many hours
+	//factorise 100 digit number - takes many hours    test 7
 	/* factor are 618162834186865969389336374155487198277265679 and
 	              4660648728983566373964395375209529291596595400646068307 */
+	testcnt++;
 	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 7
+	factortest(num, testcnt, 1);
 
 	printSummary();    // print summary - 1 line per test
 
@@ -1588,49 +1602,48 @@ static void doTests6(void) {
 	Znum m;
 	msieve = true;
 	yafu = false;
-	int testcnt = 0;
+	int testcnt = 1;
 
 	results.clear();
 
 	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 84 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 84 digits
 	/* p7  factor: 1121297
 	   p38 factor: 31133636305610209482201109050392404721
 	   p40 factor: 6955979459776540052280934851589652278783
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 89 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 89 digits
 	/* p26 factor: 40122362455616221971122353
        p63 factor: 396645227028138890415611220710757921643910743103031701971222447 */
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 94 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 94 digits
 	/* p7  factor: 5344847
 	   p31 factor: 2647649373910205158468946067671
 	   p57 factor: 294803681348959296477194164064643062187559537539328375831
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 95 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 95 digits
 	/* p8  factor: 10960009
 	   p17 factor: 14787970697180273
 	   p25 factor: 3857194764289141165278097
 	   p47 factor: 26693012026551688286164949958620483258358551879
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 107 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 107 digits
 	/* p34 factor: 2927455476800301964116805545194017
 	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
     */
@@ -2520,6 +2533,11 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 				expr += cont;    /* append continuation line to previous input */
 			}
 
+			if (breakSignal) {
+				Sleep(10000);   /* wait 10 seconds */
+				break;     /* Program interrupted: ctrl-c or ctrl-break */
+			}
+
 			// prevent the sleep idle time-out.
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
@@ -2566,6 +2584,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 							std::cout << r << ", ";
 						}
 						putchar('\n');
+						std::cout << "found " << roots.size() << " results \n";
 					}
 					if (asgCt != 0)
 					printvars(""); /* print variables names & values */
@@ -2577,11 +2596,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			PrintTimeUsed(elapsed, "time used = ");
 			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 			SetThreadExecutionState(ES_CONTINUOUS);
-			/* now go back to start of loop */
+
 			if (breakSignal)
 				break;     /* Program interrupted */
 
+			/* now go back to start of loop */
 		} /* end of while loop */
+
+		/* get to here when we break out of main loop, usually by EXIT command */
 
 		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 		SetThreadExecutionState(ES_CONTINUOUS);
@@ -2593,6 +2615,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 	/* code below catches C++ 'throw' type exceptions */
 	catch (const std::exception& e) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** standard exception caught, message '%s'\n", e.what());
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2601,6 +2627,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	}
 
 	catch (const char *str) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** Caught exception: <%s> \n", str);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2609,6 +2639,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	}
 
 	catch (int e) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** Caught exception: <%d> \n", e);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2621,6 +2655,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		// this executes if f() throws any other unrelated type
 		// This catch block probably only would be executed under /EHa compiler option 
 		/* most likely to be a SEH-type exception */
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** unknown exception ocurred\n");
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";

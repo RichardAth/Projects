@@ -181,9 +181,10 @@ struct  functions {
 	fn_Code  fCode;        // integer code for function
 };
 
-/* list of function names. No function name can begin with C because this would
- conflict with the C operator. Longer names must come before short ones
- that start with the same letters to avoid mismatches */
+/* list of function names. No function name can begin with C, SHL, SHR, NOT, 
+ AND, OR, XOR because this would conflict with the operator. 
+ Longer names must come before short ones that start with the same letters to 
+ avoid mismatches */
 const static std::array <struct functions, 33> functionList{
 	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
 	"MODPOW",    3,  fn_Code::fn_modpow,
@@ -1056,13 +1057,18 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 	case fn_Code::fn_invtot: {
 		std::vector<unsigned long long> *resultsP;
 
-		/* have to limit p1 to small values, otherwise risk rumnning out of memory */
-		if (p1 > INT_MAX) 
+		/* have to limit p1 to small values, otherwise risk running out of memory.
+		   this also eliminates any possibility of integer overflow. */
+		if (p1 > UINT_MAX | p1 < 0) 
 			return retCode::EXPR_INVALID_PARAM;
-		/* get list of numbers x1, x2, ... such that totient(x) = p1 */
+		/* get list of numbers x1, x2, ... such that totient(x) = p1.
+		if p1 is zero InverseTotient just clears its cache. */
 		auto size = inverseTotient(MulPrToLong(p1), &resultsP, false, 0, false);
-		if (size == 0)
+		if (size == 0) {
+			if (verbose > 0)
+				std::cout << "Inverse Totient has no solutions \n";
 			return retCode::EXPR_INVALID_PARAM;
+		}
 		roots.clear();
 		for (size_t i = 0; i < size; i++) {
 			roots.push_back((*resultsP)[i]); /* copy results */

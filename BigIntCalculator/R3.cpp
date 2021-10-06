@@ -571,7 +571,6 @@ unsigned __int64 R3(__int64 n) {
 }
 
 /* calculate number of divisors of n, also returns the list of prime factors
-See also related function factors which which returns a list of all factors.
 */
 unsigned __int64 NoOfDivisors(__int64 num, factorsS &f) {
 	unsigned int count;
@@ -657,6 +656,8 @@ If the value returned is zero the address in *result may be undefined, otherwise
 result points to the list of numbers.
 The numbers returned in result are always greater than n, so for large values
 of n integer overflow is a possibility.
+A rough limit for the maximum value is 2(n^2) and the minimum is n+1. Since there
+are upper and lower limits the number of values to be returned is finite.
 The algorithm used is based on https://www.insa.nic.in/writereaddata/UpLoadedFiles/IJPAM/20005a81_22.pdf
 Alternative link: http://hal.inria.fr/docs/00/71/89/75/PDF/TOT.pdf
 
@@ -664,6 +665,8 @@ Note: this function is recursive, and uses memoisation, otherwise
 stack overflow or ridiculously long execution time could be a problem.
 
 To clear the cache afterwards call inverseTotient with n <=0
+If debug = true extra information is sent to stdout.
+If dump = true some contents of the cache are output.
 */
 size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
 	int level, bool dump) {
@@ -683,6 +686,8 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 			dumptCacheNew(n, InvTot);
 		InvTot.clear();
 		*result = nullptr;
+		if (verbose > 0)
+			std::cout << "Inverse Totient cache cleared \n";
 		return 0;
 	}
 
