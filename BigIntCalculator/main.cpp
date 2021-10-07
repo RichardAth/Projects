@@ -2418,84 +2418,131 @@ static int processCmd(const std::string &command) {
 	}
 }
 
+/* initialisation code, executed once at start of program execution */
+static void initialise(int argc, char *argv[]) {
+	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
+	unsigned int control_word; /* save current state of fp control word here */
+	errno_t err;  /* error occurred if value not 0 */
+	int version[4]; /* version info from .exe file (taken from .rc resource file) */
+	std::string modified;  /* date & time program last modified */
+
+	f.UnEx = 1;        /* set unhandled exception 'filter' */
+	f.abort = 1;       /* trap abort (as a signal) */
+	f.sigterm = 1;     /* trap terminate signal */
+	f.sigill = 1;      /* trap 'illegal' signal */
+	f.interrupt = 1;   /* trap interrupt signal */
+	//f.sigsegv = 1;     /* trap segment violation signal */
+#ifdef _DEBUG
+	/* only seems to work properly if compiled in debug mode */
+	f.InvParam = 1;    /* trap invalid parameters on library calls */
+#endif
+	//f.sigfpe = 1;      /* trap floating point error signal */
+	SetProcessExceptionHandlers(f);
+
+	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
+        functions that actually work OK */
+	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
+	/* trap hardware FP exceptions except inexact and underflow which are
+	considered to be normal, not errors. */
+	if (err) {
+		printf_s("could not set FP control word\n");
+		exit (-1);
+	}
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
+	handConsole = GetConsoleWindow();            // get handle for console window
+	if (hConsole == INVALID_HANDLE_VALUE)
+	{
+		fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
+		Beep(750, 1000);
+		exit (EXIT_FAILURE);
+	}
+
+	VersionInfo(argv[0], version, modified); /* get version info from .exe file */
+	printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(),
+		version[0], version[1], version[2], version[3]);
+	std::cout << "last modified on " << modified << '\n';
+
+#ifdef __GNUC__
+	printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+	setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
+#endif
+
+#ifdef _MSC_FULL_VER
+/* For example, if the version number of the Visual C++ compiler is 15.00.20706.01,
+the _MSC_FULL_VER macro evaluates to 150020706 */
+	long long ver = _MSC_FULL_VER;
+	std::cout << "MSVC version: " << ver / 10000000 << '.';  // 1st 2 digits
+	ver %= 10000000;                      // remove 1st 2 digits
+	std::cout << ver / 100000 << '.';    // next 2 digits
+	ver %= 100000;                        // remove next 2 digits
+	std::cout << ver << '\n';             // last 5 digits
+
+	auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
+#endif
+
+	printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
+	std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
+		<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
+
+#ifdef __MPIR_VERSION
+	std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
+		<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
+#endif
+
+	processIni(argv[0]); // read .ini file if it exists
+
+	return;
+}
+
+/* get input from stdin . Any continuation lines are appended to 1st line.
+Initial & trailing spaces are removed. ctrl-c or ctrl-break will force
+function to return, with or without input, but only after a 10 sec delay.*/
+static void myGetline(std::string &expr) {
+retry:
+	getline(std::cin, expr);    // expression may include spaces
+	if (breakSignal) {
+		Sleep(10000);   /* wait 10 seconds */
+		return;     /* Program interrupted: ctrl-c or ctrl-break */
+	}
+	strToUpper(expr, expr);		// convert to UPPER CASE 
+	removeInitTrail(expr);       // remove initial & trailing spaces
+
+	if (expr.empty()) {
+		Beep(3000, 250);     /* audible alarm instead of error msg */
+		goto retry;          /* input is zero-length; go back*/
+	}
+
+	/* check for continuation character. If found get continuation line(s) */
+	while (expr.back() == '\\') {   /* ends with continuation character? */
+		std::string cont;
+		std::cout << "continue: ";
+		getline(std::cin, cont);   /* get continuation line */
+		strToUpper(cont, cont);   // convert to UPPER CASE 
+		while (!cont.empty() && isspace(cont.back())) {
+			cont.resize(cont.size() - 1);   /* remove trailing space */
+		}
+		expr.resize(expr.size() - 1); /* remove trailing \ char */
+		expr += cont;    /* append continuation line to previous input */
+	}
+
+	if (breakSignal) {
+		Sleep(10000);   /* wait 10 seconds */
+		return;     /* Program interrupted: ctrl-c or ctrl-break */
+	}
+
+}
+
 int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
 	retCode rv;
-	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0};
-	unsigned int control_word; /* save current state of fp control word here */
-	errno_t err;  /* error occurred if value not 0 */
 	int asgCt;  /* number of assignment operators */
-	int version[4]; /* version info from .exe file (taken from .rc resource file) */
-	std::string modified;  /* date & time program last modified */
 	bool multiV = false;
 
 	try {
-		f.UnEx = 1;        /* set unhandled exception 'filter' */
-		f.abort = 1;       /* trap abort (as a signal) */
-		f.sigterm = 1;     /* trap terminate signal */
-		f.sigill = 1;      /* trap 'illegal' signal */
-		f.interrupt = 1;   /* trap interrupt signal */
-		//f.sigsegv = 1;     /* trap segment violation signal */
-	#ifdef _DEBUG
-		/* only seems to work properly if compiled in debug mode */
-		f.InvParam = 1;    /* trap invalid parameters on library calls */
-	#endif
-		//f.sigfpe = 1;      /* trap floating point error signal */
-		SetProcessExceptionHandlers(f);
 
-		/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
-		functions that actually work OK */
-		err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
-		/* trap hardware FP exceptions except inexact and underflow which are
-		considered to be normal, not errors. */
-		if (err) {
-			printf_s("could not set FP control word\n");
-			return -1;
-		}
-
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
-		handConsole = GetConsoleWindow();            // get handle for console window
-		if (hConsole == INVALID_HANDLE_VALUE)
-		{
-			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
-			Beep(750, 1000);
-			return EXIT_FAILURE;
-		}
-
-		VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-		printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(), 
-			version[0], version[1], version[2], version[3]);
-		std::cout << "last modified on " << modified << '\n';
-
-
-#ifdef __GNUC__
-		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
-#endif
-
-#ifdef _MSC_FULL_VER
-/* For example, if the version number of the Visual C++ compiler is 15.00.20706.01, 
-the _MSC_FULL_VER macro evaluates to 150020706 */
-		long long ver = _MSC_FULL_VER;
-		std::cout << "MSVC version: " << ver / 10000000 << '.';  // 1st 2 digits
-		ver %= 10000000;                      // remove 1st 2 digits
-		std::cout << ver / 100000 << '.' ;    // next 2 digits
-		ver %= 100000;                        // remove next 2 digits
-		std::cout << ver << '\n';             // last 5 digits
-		auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
-#endif
-
-		printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
-		std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
-			<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
-
-#ifdef __MPIR_VERSION
-		std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
-			<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
-#endif
-
-		processIni(argv[0]); // read .ini file if it exists
+		initialise(argc, argv);  /* initialisation code only executed once */
 
 		/* start of main loop. Normal exit is via EXIT command */
 		while (true) {
@@ -2507,36 +2554,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			PlaySoundA(attsound.c_str(), NULL,
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-		retry:
-			getline(std::cin, expr);    // expression may include spaces
-			if (breakSignal) {
-				Sleep(10000);   /* wait 10 seconds */
-				break;     /* Program interrupted: ctrl-c or ctrl-break */
-			}
-			strToUpper(expr, expr);		// convert to UPPER CASE 
-			removeInitTrail(expr);       // remove initial & trailing spaces
 
-			if (expr.empty()) {
-				Beep(3000, 250);     /* audible alarm instead of error msg */
-				goto retry;          /* input is zero-length; go back*/
-			}
-
-			while (expr.back() == '\\') {   /* ends with continuation character? */
-				std::string cont;  
-				std::cout << "continue: ";
-				getline(std::cin, cont);   /* get continuation line */
-				strToUpper(cont, cont);   // convert to UPPER CASE 
-				while (!cont.empty() && isspace(cont.back())) {
-					cont.resize(cont.size() - 1);   /* remove trailing space */
-				}
-				expr.resize(expr.size() - 1); /* remove trailing \ char */
-				expr += cont;    /* append continuation line to previous input */
-			}
-
-			if (breakSignal) {
-				Sleep(10000);   /* wait 10 seconds */
-				break;     /* Program interrupted: ctrl-c or ctrl-break */
-			}
+			myGetline(expr);  /* get input from stdin */
+			if (breakSignal)
+				break;    /* Program interrupted: ctrl-c or ctrl-break */
 
 			// prevent the sleep idle time-out.
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -2571,14 +2592,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 					std::cout << " = ";
 					ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 					std::cout << '\n';
-					if (factorFlag > 0 && asgCt == 0) {
-						/* don't factorise result of an assignment statement */
+					if (factorFlag > 0) {
 						doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
 						results.clear();  // get rid of unwanted results
 					}
 				}
 				else {
 					if (multiV) {
+						/* expression returned multiple values */
 						std::cout << " = ";
 						for (auto r : roots) {
 							std::cout << r << ", ";
