@@ -1267,7 +1267,8 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 				if (expr[exprIndex].oper == opCode::minus && !leftNumber) {
 					expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
 					expr[exprIndex].numops = 1;            /* adjust number of operands */
-					expr[exprIndex].function = sizeof(operators) / sizeof(operators[0]) - 1;
+					/* unary - is last operator in list, change index in token from - to unary - */
+					expr[exprIndex].function = sizeof(operators) / sizeof(operators[0]) - 1; 
 				}
 
 				bool left = operators[expr[exprIndex].function].left; /* assocativity*/
@@ -1398,32 +1399,6 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 			on the stack or if the operator or function returns an error code
 			exit immediately. */
 		case types::func: 
-			{
-				opCode oper = rPolish[index].oper;
-				int NoOfArgs = rPolish[index].numops;
-
-				if (NoOfArgs > nums.size())
-					return retCode::EXPR_SYNTAX_ERROR;
-
-				for (; NoOfArgs > 0; NoOfArgs--) {
-					/* copy function parameters from number stack to args */
-					if (nums.top().typecode == types::number)
-						args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
-					else {
-						size_t userIx = nums.top().userIx;
-						args[NoOfArgs - 1] = uvars.vars[userIx].data;
-					}
-					nums.pop();  /* remove top value from stack */
-				}
-				retcode = ComputeSubExpr(oper, args[0], args[1], args[2], val);
-				if (retcode != retCode::EXPR_OK)
-					return retcode;
-				temp.typecode = types::number;
-				temp.value = val;   /* copy value returned by function */
-				nums.push(temp);  /* put value returned by function onto stack */
-				break;
-			}
-
 		case types::Operator:
 			{
 				opCode oper = rPolish[index].oper;
@@ -1470,8 +1445,8 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 					if (retcode != retCode::EXPR_OK)
 						return retcode;
 					temp.typecode = types::number;
-					temp.value = val;
-					nums.push(temp);  /* put generated value onto stack */
+					temp.value = val;  /* put value returned by function or operator */
+					nums.push(temp);  /*  onto stack */
 				}
 				break;
 			}
