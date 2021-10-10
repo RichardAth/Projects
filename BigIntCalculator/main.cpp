@@ -896,6 +896,7 @@ static void doTests(void) {
 		"sumdigits(123456789, 6)",         19,
 		"revdigits(1234567890, 10)",  987654321, 
 		"factconcat(2, 11!)", 22222222333355711,
+		"le(22, 7)",                        1,
 		"17c7",                         19448,    // binomial coefficient
 		"(17!) / ((17-7)!*7!)",         19448,
 		"4 ^ 3 ^ 2",                   262144,    // NB expoentiation is right to left evaluation
@@ -971,23 +972,6 @@ static void doTests(void) {
 		factortest(PollRho[i], testcnt);
 	}
 
-	//testcnt++;
-	//factortest(99999999973789, testcnt); // = 6478429 * 15435841
-	//results.back().testNum = testcnt;
-	//testcnt++;
-	//factortest(183038861417, testcnt);   // =  408229 *   448373
-	//results.back().testNum = testcnt;
-	//testcnt++;
-	//factortest(183475587821, testcnt);   // =  409477 *   448073
-	//results.back().testNum = testcnt;
-	//testcnt++;
-	//factortest(181919916457, testcnt);   // =  400307 *   454451
-	//results.back().testNum = testcnt;
-	//testcnt++;
-	//factortest(199996999457, testcnt);   // =  441361 *   453137
-	//results.back().testNum = testcnt;
-	//factortest(204493418837, testcnt);   // =  401209 *   509693
-	//results.back().testNum = testcnt;
 
 	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
@@ -2568,9 +2552,10 @@ int main(int argc, char *argv[]) {
 			if (cmdCode == 2) 
 				break;    // EXIT command
 			if (cmdCode == 1) {
+				// command has been fully processed; go back to start of loop
 				// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 				SetThreadExecutionState(ES_CONTINUOUS);
-				continue; // command has been fully processed; go back to start of loop
+				continue;
 			}
 			if (cmdCode != 0) {
 				fprintf_s(stderr, "Invalid return code %x from processCmd \n", cmdCode);
