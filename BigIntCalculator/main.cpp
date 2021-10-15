@@ -689,15 +689,11 @@ static void doFactors(const Znum &Result, bool test) {
 		factorlist.print(Result < 0);   /* print factors */
 		std::cout << '\n';
 		if (factorFlag > 1) {
-			if (abs(Result) != 1) {
-				auto divisors = factorlist.NoOfDivs();
-				std::cout << "Number of Divisors = ";
-				ShowLargeNumber(divisors, 6, false, false);
-			}
-			else
-				std::cout << "Number of Divisors = 1";   // treat n=1 as special case
+			auto divisors = factorlist.NoOfDivs();
+			std::cout << "Number of Divisors = ";
+			ShowLargeNumber(divisors, 6, false, false);
 
-			auto divisors = factorlist.DivisorSum();
+			divisors = factorlist.DivisorSum();
 			std::cout << "\nSum of Divisors    = ";
 			ShowLargeNumber(divisors, 6, false, false);
 			divisors = factorlist.totient();

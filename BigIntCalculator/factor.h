@@ -78,7 +78,9 @@ public:
 
 	/* methods that are in the class */
 
-// Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent.
+/* Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent. 
+  Euler's totient function counts the positive integers up to a given integer n that 
+  are relatively prime to n */
 	Znum totient() const {
     // this only works if factorisation is complete!
 		Znum result = 1, term;
@@ -196,13 +198,15 @@ also http://oeis.org/A004018 */
 		return b * 4;
 	}
 
-/* calculate number of divisors of n, given its list of prime factors.
-NB for n=1 function returns 2, but correct value would be 1.
-From just the exponents we can't distinguish n=1 from n=prime */
+/* calculate number of divisors of n (including 1 and n itself), given its list 
+   of prime factors. */
 	Znum NoOfDivs() const {
 		Znum result = 1;
 		if (this->f.empty())
 			return 0;
+		/* n=1 is a special case */
+		if (this->f.size() == 1 && this->f[0].Factor == 1)
+			return 1;
 		for (auto i : this->f) {
 			result *= i.exponent + 1;
 		}

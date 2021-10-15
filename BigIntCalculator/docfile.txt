@@ -117,7 +117,7 @@ MODSQRT(a, p)   : returns r such that r² = a (mod p). If no solution exists an e
                   is reported. Generally there is more than 1 solution in the range 0 to
                   p-1, but only the smallest positive solution is returned.
 INVTOT(x)       : finds n such that totient(n) = x. There may be no such value, or 
-                  many values. x is limited to 2^31-1 because large values use 
+                  many values. x is limited to 10^10 because large values use 
                   too much memory and could hang the PC.
 
 [OTHER]

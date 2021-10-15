@@ -253,8 +253,6 @@ static Znum ComputeTotient(const Znum &n) {
 static Znum ComputeNumDivs(const Znum &n) {
 	fList factorlist;
 
-	if (n == 1)
-		return 1;  // 1 only has one divisor. NoOfDivs can't handle that case
 	auto rv = factorise(n, factorlist, nullptr);
 	if (rv) {
 		auto divisors = factorlist.NoOfDivs();
@@ -696,20 +694,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		// invert sign of shift
 		return ShiftLeft(p1, -p2, result);
 	}
-	case opCode::not: {   // Perform binary NOT 
+	case opCode::not: /* Perform binary NOT */ {   
 		//result = -1 - p1;  // assumes 2s complement binary numbers
 		mpz_com(ZT(result), ZT(p1));
 		return retCode::EXPR_OK;
 	}
-	case opCode::and: {  // Perform binary AND.
+	case opCode::and: /* Perform binary AND. */ {  
 		mpz_and(ZT(result), ZT(p1), ZT(p2));
 		return retCode::EXPR_OK;
 	}
-	case opCode:: or : {   // Perform binary OR.
+	case opCode::or:  /* Perform binary OR. */ {   
 		mpz_ior(ZT(result), ZT(p1), ZT(p2));
 		return retCode::EXPR_OK;
 	}
-	case opCode::xor: {   // Perform binary XOR.
+	case opCode::xor: /*  Perform binary XOR. */ {   
 		mpz_xor(ZT(result), ZT(p1), ZT(p2));
 		return retCode::EXPR_OK;
 	}
@@ -788,7 +786,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		break;
 	}
 
-	case opCode::fn_sumdigits: /* Sum of digits of n in base r.*/ {	// SumDigits(n, r) : 
+	case opCode::fn_sumdigits: /* Sum of digits of p1 in base r.*/ {	// SumDigits(n, r) : 
 		result = ComputeSumDigits(p1, p2);
 		break;
 	}
@@ -802,11 +800,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	}
 
 	case opCode::fn_isprime: {  // isprime
-						/* -1 indicates probably prime, 0 = composite */
+		/* -1 indicates probably prime, 0 = composite */
 		result = PrimalityTest(abs(p1));
 		break;
 	}
-	case opCode::fn_fib: {		// fibonacci
+	case opCode::fn_fib: /* fibonacci */ {	
 		if (p1 > 95700 || p1 < -95700)
 		{  /* result would exceed 20,000 digits */
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -822,7 +820,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		if (neg) { result = -result; } /* flip sign for even -ve number */
 		break;
 	}
-	case opCode::fn_luc: {		// lucas number
+	case opCode::fn_luc: /* lucas number */ {
 		if (p1 < 0) {
 			return retCode::EXPR_INVALID_PARAM;
 		}
@@ -946,7 +944,16 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 			std::cout << "prime \n";
 		break;
 	}
-	case opCode::fn_aprcl: {
+	case opCode::fn_aprcl: /* Adleman–Pomerance–Rumely primality test  */ {
+
+		/*  the Adleman–Pomerance–Rumely primality test is an algorithm for 
+		determining whether a number is prime. Unlike other, more efficient 
+		algorithms for this purpose, it avoids the use of random numbers, so it 
+		is a deterministic primality test. It is named after its inventors, 
+		Leonard Adleman, Carl Pomerance, and Robert Rumely. 
+		It was later improved by Henri Cohen and Hendrik Willem Lenstra, commonly 
+		referred to as APR-CL*/
+
 		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
 		result = mpz_aprtcle(ZT(p1), verbose);
 		if (result == 0)
@@ -957,19 +964,19 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 			printf_s("prime \n");
 		break;
 	}
-	case opCode::fn_numfact: {
+	case opCode::fn_numfact: /* number of factors */ {
 		result = ComputeNumFact(p1);
 		break;
 	}
-	case opCode::fn_minfact: {
+	case opCode::fn_minfact: /* smallest factor*/ {
 		result = ComputeMinFact(p1);
 		break;
 	}
-	case opCode::fn_maxfact: {
+	case opCode::fn_maxfact: /* largest factor */ {
 		result = ComputeMaxFact(p1);
 		break;
 	}
-	case opCode::fn_ispow: {
+	case opCode::fn_ispow: /* check whether or not p1 is a perfect power */ {
 		/* return -1 if p1 is a perfect power, otherwise 0 */
 		long long MaxP = 393'203;  // use 1st  33333 primes
 		if ((long long)primeListMax < MaxP) {  // get primes
@@ -1014,7 +1021,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 
 		/* have to limit p1 to small values, otherwise risk running out of memory.
 		   this also eliminates any possibility of integer overflow. */
-		if (p1 > UINT_MAX | p1 < 0)
+		if (p1 > 10000000000 | p1 < 0)
 			return retCode::EXPR_INVALID_PARAM;
 		/* get list of numbers x1, x2, ... such that totient(x) = p1.
 		if p1 is zero InverseTotient just clears its cache. */
@@ -1759,7 +1766,8 @@ static int get_uvar(const char *name, Znum data)
 }
 
 static void free_uvars() {
-	uvars.vars.clear();
+	uvars.vars.clear();           /* reset size to 0 */
+	uvars.vars.shrink_to_fit();   /* try to release memory */
 	uvars.num = 0;  
 	uvars.alloc = 0;
 }
