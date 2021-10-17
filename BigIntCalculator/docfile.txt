@@ -114,11 +114,11 @@ KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
 MODSQRT(a, p)   : returns r such that r² = a (mod p). If no solution exists an error
-                  is reported. Generally there is more than 1 solution in the range 0 to
-                  p-1, but only the smallest positive solution is returned.
+                  is reported. Generally there is more than 1 solution in the range 0 
+                  to p-1, but only the smallest positive solution is returned.
 INVTOT(x)       : finds n such that totient(n) = x. There may be no such value, or 
-                  many values. x is limited to 10^10 because large values use 
-                  too much memory and could hang the PC.
+                  many values. x is limited to 10^15 because large values use too 
+                  much memory and could hang the PC.
 
 [OTHER]
 other commands: 

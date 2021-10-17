@@ -354,7 +354,7 @@ static bool isPrimeMR(unsigned __int64 n)
 }
 
 
-
+/* get prime factors of tnum */
 unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 	unsigned  int count = 0, i = 0;
 
@@ -570,13 +570,19 @@ unsigned __int64 R3(__int64 n) {
 	return sum;
 }
 
-/* calculate number of divisors of n, also returns the list of prime factors
+/* calculate number of divisors of num, also returns the list of prime factors.
 */
 unsigned __int64 NoOfDivisors(__int64 num, factorsS &f) {
 	unsigned int count;
 	unsigned __int64 result = 1;
 
-	count = primeFactors(num, f);
+	if (num <= 0)
+		return 0;      /* num should be > 0 */
+
+	count = primeFactors(num, f);   /* get prime factors of num */
+
+	if (num == 1)
+		return 1;  /* this is a special case */
 
 	for (unsigned int i = 0; i < count; i++)
 		result *= (f.factorlist[i][1] + 1);
@@ -589,7 +595,7 @@ the value returned is the number of divisors.
 */
 size_t DivisorList(unsigned __int64 tnum, std::vector <__int64> &divlist) {
 
-	factorsS f;
+	factorsS f;         /* list of factors of tnum*/
 	size_t noofdivs;
 	size_t ctr = 0, ct2, ccpy;
 
@@ -638,8 +644,11 @@ static bool minimumFactor(unsigned __int64 num, unsigned __int64 prime) {
 	return (minfactor > prime);
 }
 
+/* store memoised value for inverse totient here */
 static std::map <__int64, std::vector <unsigned __int64>> InvTot;
-static void dumptCacheNew(__int64 n, std::map <__int64, std::vector<unsigned __int64>>InvTot) {
+static long long hitcount = 0;
+
+static void dumpCache(__int64 n, std::map <__int64, std::vector<unsigned __int64>>InvTot) {
 
 	for (auto it : InvTot) {
 		printf_s("%3lld", it.first);
@@ -683,11 +692,15 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 
 	if (n <= 0) {   // n <= 0 signifies that cache memory is to be freed
 		if (dump)
-			dumptCacheNew(n, InvTot);
-		InvTot.clear();
-		*result = nullptr;
+			dumpCache(n, InvTot);
+
 		if (verbose > 0)
-			std::cout << "Inverse Totient cache cleared \n";
+			std::cout << "Inverse Totient cache cleared (contained "
+			<< InvTot.size() << " entries) \n" << "hit count = " << hitcount << '\n';
+		    
+		InvTot.clear();
+		hitcount = 0;
+		*result = nullptr;
 		return 0;
 	}
 
@@ -722,6 +735,7 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 	auto cp = InvTot.find(n);
 
 	if (cp != InvTot.end()) {
+		hitcount++;
 		*result = &cp->second;
 		return cp->second.size();  // return number of numbers in result
 	}
@@ -739,7 +753,7 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 
 #ifdef _DEBUG
 	if (dump)
-		dumptCacheNew(n, InvTot);
+		dumpCache(n, InvTot);
 #endif
 
 	/* get all the divisors of n */
@@ -842,7 +856,7 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 							the cache, which therefore cannot be freed yet*/
 	if (debug || dump) {
 		if (InvTot.size() <= 12)
-			dumptCacheNew(n, InvTot);
+			dumpCache(n, InvTot);
 		printf_s("** completed invTot(%lld) level %d\n", n, level);
 	}
 

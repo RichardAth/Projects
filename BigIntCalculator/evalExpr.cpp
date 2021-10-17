@@ -1021,7 +1021,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 
 		/* have to limit p1 to small values, otherwise risk running out of memory.
 		   this also eliminates any possibility of integer overflow. */
-		if (p1 > 10000000000 | p1 < 0)
+		if (p1 > 1'000'000'000'000'000 | p1 < 0)
 			return retCode::EXPR_INVALID_PARAM;
 		/* get list of numbers x1, x2, ... such that totient(x) = p1.
 		if p1 is zero InverseTotient just clears its cache. */

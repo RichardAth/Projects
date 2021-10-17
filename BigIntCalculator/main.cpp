@@ -36,6 +36,7 @@ void yafuParam(const std::string &command);      /*process YAFU commands */
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 char * getFileName(const char *filter, HWND owner);
 void printvars(std::string name);
+void doTests9(void);  /* modular square root test */
 
 
 int lang = 0;             // 0 English, 1 = Spanish
@@ -400,7 +401,7 @@ Znum llt(const Znum &p) {
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
 	double root = sqrt((double)n);
-	unsigned long long  iroot = llround(n);
+	unsigned long long  iroot = llround(root);
 	while (iroot*iroot > n)
 		iroot--;
 	return iroot;
@@ -1685,101 +1686,6 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
-/* find modular square roots by brute force. Incredibly simple compared to the 
-  faster more sophisticated method. */
-static std::vector<long long> ModSqrtBF(long long a, long long m) {
-	std::vector <long long> roots;
-	a = a % m;
-	if (a < 0)
-		a += m;  /* normalise a so it's in range 0 to m-1 */
-	for (long long r = 0; r < m; r++) {
-		if (r*r%m == a)
-			roots.push_back(r);
-	}
-	return roots;
-}
-
-/* calculate modular square roots using 2 different methods & compare results. 
-   Return true if results match, otherwise false. */
-static bool test9once(long long a, long long m) {
-	std::vector <long long> r2;
-	std::vector <Znum> r3;
-	Znum az = a;   /* change type from 64-bit to extended precision */
-	Znum mz = m;   /* change type from 64-bit to extended precision */
-	bool error = false;
-
-	r2 = ModSqrtBF(a, m);  /* brute forec method */
-	r3 = ModSqrt(az, mz);  /* sophisticated (faster) method */
-	if (r3.size() != r2.size())
-		error = true;
-	else{
-		for (int i = 0; i < r2.size(); i++) {
-			if (r2[i] != r3[i])
-				error = true;
-		}
-	}
-
-	if (error) {
-		printf_s("a = %lld, m = %lld, Znum results don't match! \nGot: ", a, m);
-		for (auto r : r3) {
-			gmp_printf("%Zd, ", r);
-		}
-		if (r2.empty())
-			printf_s("\nActually no solutions\n");
-		else {
-			printf_s("\n should be: ");
-			for (auto r : r2) {
-				printf_s("%lld, ", r);
-			}
-			putchar('\n');
-		}
-		return false;
-	}
-	
-	if (verbose > 0) {
-			if (r2.empty())
-				printf_s("modsqrt(%lld, %lld) has no roots \n", a, m);
-			else {
-				printf_s("modsqrt(%lld, %lld) = ", a, m);
-				for (long long r : r2)
-					printf_s("%lld, ", r);
-				putchar('\n');
-			}
-		}
-	return true;
-}
-
-/* test modular square root */
-static void doTests9(void) {
-	bool rv = true;
-
-	rv &= test9once(99, 107);      // roots are 45 and 62
-	rv &= test9once(3, 22);        // roots are 5 & 17
-	rv &= test9once(99, 100);      // no roots
-	rv &= test9once(2191, 12167);  // roots are 1115, 11052
-	rv &= test9once(4142, 24389);  // roots are 2333, 22056
-	rv &= test9once(3, 143);       // roots are 17, 61, 82, 126
-	rv &= test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	rv &= test9once(9, 44);        // roots are 3, 19, 25, 41
-	rv &= test9once(0, 44);        // roots are zero, 22
-	rv &= test9once(0, 4);         // roots are 0, 2
-	rv &= test9once(0, 9);         // roots are 0, 3, 6
-	rv &= test9once(0, 8);         // roots are 0, 4
-	rv &= test9once(0, 27);        // roots are 0, 9, 18
-	rv &= test9once(0, 16);        // roots are 0, 4, 8, 12
-	rv &= test9once(0, 32);        // roots are 0, 8, 16, 24
-	rv &= test9once(0, 176);       // roots are zero, 44, 88, 132
-	rv &= test9once(1, 121550625); // roots are 1, 15491251, 51021251, 55038124,
-								   // 66512501, 70529374, 106059374, 121550624,
-	rv &= test9once(0, 121550625); // 11025 different roots!
-	rv &= test9once(8, 28);        // roots are 6, 8, 20, 22
-
-	if (rv)
-		std::cout << "All modular square root tests completed successfully. \n";
-	else
-		std::cout << "One or more modular square root tests failed. \n";
-}
-
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -2582,8 +2488,19 @@ int main(int argc, char *argv[]) {
 					if (multiV) {
 						/* expression returned multiple values */
 						std::cout << " = ";
-						for (auto r : roots) {
-							std::cout << r << ", ";
+						if (roots.size() <= 30 ) 
+							/* print all results if < 30 values */
+							for (auto r : roots) {
+								std::cout << r << ", ";
+							}
+						else { /* print 1st 10 and last 10 results */
+							for (int i = 0; i < 10; i++) {
+								std::cout << roots[i] << ", " ;
+							}
+							std::cout << "\n ... \n";
+							for (size_t i = roots.size()-10; i < roots.size(); i++) {
+								std::cout << roots[i] << ", ";
+							}
 						}
 						putchar('\n');
 						std::cout << "found " << roots.size() << " results \n";
