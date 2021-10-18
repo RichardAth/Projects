@@ -84,6 +84,7 @@ enum class opCode {
 	rightb      = 25,       // right bracket 
 /* functions */
 	fn_gcd      = 100,
+	fn_lcm,
 	fn_modpow,
 	fn_modinv,
 	fn_totient,
@@ -130,9 +131,8 @@ struct  functions {
  AND, OR, XOR because this would conflict with the operator. 
  Longer names must come before short ones that start with the same letters to 
  avoid mismatches */
-const static std::array <struct functions, 33> functionList{
-	"GCD",       2,  opCode::fn_gcd,			// name, number of parameters, code
-	"MODPOW",    3,  opCode::fn_modpow,
+const static struct functions functionList[]{
+	"MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
 	"MODINV",    2,  opCode::fn_modinv,
 	"TOTIENT",   1,  opCode::fn_totient,
 	"SUMDIVS",   1,  opCode::fn_sumdivs,
@@ -148,6 +148,8 @@ const static std::array <struct functions, 33> functionList{
 	"MAXFACT",   1,  opCode::fn_maxfact,
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
+	"GCD",       2,  opCode::fn_gcd,
+	"LCM",       2,  opCode::fn_lcm,
 	"F",         1,  opCode::fn_fib,			// fibonacci
 	"LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
 	"LE",		 2,  opCode::fn_legendre,
@@ -584,8 +586,7 @@ e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK.
 For functions, do any further checks needed on the parameter values, then 
 evaluate the function. Only ModPow uses all 3 parameters. Some functions can 
 generate error codes. */
-static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
-	const Znum &p2, const Znum &p3, Znum &result) {
+static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &p, Znum &result) {
 
 	int rv;
 	Znum temp;
@@ -594,134 +595,134 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	switch (stackOper) {
 
 	case opCode::comb: {  // calculate nCk AKA binomial coefficient
-		if (p2 > INT_MAX)
+		if (p[1] > INT_MAX)
 			return retCode::EXPR_NUMBER_TOO_HIGH;
-		if (p2 < 1)
+		if (p[1] < 1)
 			return retCode::EXPR_INVALID_PARAM;
-		long long k = MulPrToLong(p2);
-		mpz_bin_ui(ZT(result), ZT(p1), k);
+		long long k = MulPrToLong(p[1]);
+		mpz_bin_ui(ZT(result), ZT(p[0]), k);
 		return retCode::EXPR_OK;
 	}
 	case opCode::plus: {
-		result = p1 + p2;
+		result = p[0] + p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::minus: {
-		result = p1 - p2;
+		result = p[0] - p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::unary_minus: {
-		result = -p1;
+		result = -p[0];
 		return retCode::EXPR_OK;
 	}
 	case opCode::divide: {
-		if (p2 == 0)
+		if (p[1] == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = p1 / p2;
+		result = p[0] / p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::multiply: {
-		auto resultsize = NoOfBits(p1) + NoOfBits(p2);
+		auto resultsize = NoOfBits(p[0]) + NoOfBits(p[1]);
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		result = p1 * p2;
+		result = p[0] * p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::remainder: {
-		if (p2 == 0)
+		if (p[1] == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = p1 % p2;
+		result = p[0] % p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::power: {
-		if (p2 > INT_MAX)
+		if (p[1] > INT_MAX)
 			return retCode::EXPR_EXPONENT_TOO_LARGE;
-		if (p2 < 0)
+		if (p[1] < 0)
 			return retCode::EXPR_EXPONENT_NEGATIVE;
-		long long exp = MulPrToLong(p2);
-		auto resultsize = (NoOfBits(p1) - 1)* exp;  // estimate number of bits for result
+		long long exp = MulPrToLong(p[1]);
+		auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		mpz_pow_ui(ZT(result), ZT(p1), exp);
+		mpz_pow_ui(ZT(result), ZT(p[0]), exp);
 		return retCode::EXPR_OK;
 	}
 	case opCode::equal: {
-		if (p1 == p2)
+		if (p[0] == p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_equal: {
-		if (p1 != p2)
+		if (p[0] != p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::greater: {
-		if (p1 > p2)
+		if (p[0] > p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_greater: {
-		if (p1 <= p2)
+		if (p[0] <= p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::less: {
-		if (p1 < p2)
+		if (p[0] < p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_less: {
-		if (p1 <= p2)
+		if (p[0] <= p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::shl: {
-		return ShiftLeft(p1, p2, result);
+		return ShiftLeft(p[0], p[1], result);
 	}
 	case opCode::shr: {
 		// invert sign of shift
-		return ShiftLeft(p1, -p2, result);
+		return ShiftLeft(p[0], -p[1], result);
 	}
 	case opCode::not: /* Perform binary NOT */ {   
-		//result = -1 - p1;  // assumes 2s complement binary numbers
-		mpz_com(ZT(result), ZT(p1));
+		//result = -1 - p[0];  // assumes 2s complement binary numbers
+		mpz_com(ZT(result), ZT(p[0]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::and: /* Perform binary AND. */ {  
-		mpz_and(ZT(result), ZT(p1), ZT(p2));
+		mpz_and(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::or:  /* Perform binary OR. */ {   
-		mpz_ior(ZT(result), ZT(p1), ZT(p2));
+		mpz_ior(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::xor: /*  Perform binary XOR. */ {   
-		mpz_xor(ZT(result), ZT(p1), ZT(p2));
+		mpz_xor(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
 		/* hard-coded limits allow size limit check before calculating the factorial */
 		int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
 			 38536, 42873, 47172 };
-		if (p1 < 0)
+		if (p[0] < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		if (p1 > LLONG_MAX)
+		if (p[0] > LLONG_MAX)
 			return retCode::EXPR_NUMBER_TOO_HIGH;
 
-		long long temp = llabs(MulPrToLong(p1));
-		long long t2 = MulPrToLong(p2);
+		long long temp = llabs(MulPrToLong(p[0]));
+		long long t2 = MulPrToLong(p[1]);
 		if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
 			/* more than 20,000 digits in base 10 */
 			return retCode::EXPR_INTERM_TOO_HIGH;
@@ -734,35 +735,39 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		return retCode::EXPR_OK;
 	}
 	case opCode::prim: {
-		if (p1 > 46340)
+		if (p[0] > 46340)
 			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (p1 < 0)
+		if (p[0] < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(p1));
+		long long temp = llabs(MulPrToLong(p[0]));
 		mpz_primorial_ui(ZT(result), temp);  // get primorial
 		return retCode::EXPR_OK;
 	}
 
 	case opCode::fn_gcd: /* GCD */ {
-		//mpz_gcd(ZT(result), ZT(p1), ZT(p2));
-		result = gcd(p1, p2);
+		//mpz_gcd(ZT(result), ZT(p[0]), ZT(p[1]));
+		result = gcd(p[0], p[1]);
+		break;
+	}
+	case opCode::fn_lcm: /* Least Common Multiple */ {
+		result = lcm(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_modpow: {						// MODPOW
-		if (p3 == 0)
+		if (p[2] == 0)
 			return retCode::EXPR_DIVIDE_BY_ZERO;
-		if (p2 < 0) {
-			if (gcd(p1, p3) != 1)
-				return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;  // p1 and p3 not mutually prime
+		if (p[1] < 0) {
+			if (gcd(p[0], p[2]) != 1)
+				return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
 		}
-		/* note: negative exponent is only allowed if p1 & p3 are mutually prime,
-		i.e modular inverse of p1 wrt p3 exists. */
-		mpz_powm(ZT(result), ZT(p1), ZT(p2), ZT(p3));
+		/* note: negative exponent is only allowed if p[0] & p[2] are mutually prime,
+		i.e modular inverse of p[0] wrt p[2] exists. */
+		mpz_powm(ZT(result), ZT(p[0]), ZT(p[1]), ZT(p[2]));
 		break;
 	}
 	case opCode::fn_modinv: /* modular inverse */ {
 		/* if an inverse doesn’t exist the return value is zero and rop is undefined*/
-		rv = mpz_invert(ZT(result), ZT(p1), ZT(p2));
+		rv = mpz_invert(ZT(result), ZT(p[0]), ZT(p[1]));
 		if (rv == 0) {
 			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
 		}
@@ -770,46 +775,46 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	}
 
 	case opCode::fn_totient: {			// totient
-		if (p1 < 1) return retCode::EXPR_INVALID_PARAM;
-		result = ComputeTotient(p1);
+		if (p[0] < 1) return retCode::EXPR_INVALID_PARAM;
+		result = ComputeTotient(p[0]);
 		break;
 	}
 	case opCode::fn_numdivs: {		// NUMDIVS
-		if (p1 < 1) {
+		if (p[0] < 1) {
 			return retCode::EXPR_INVALID_PARAM;
 		}
-		result = ComputeNumDivs(p1);
+		result = ComputeNumDivs(p[0]);
 		break;
 	}
 	case opCode::fn_sumdivs: {		// SUMDIVS
-		result = ComputeSumDivs(p1);
+		result = ComputeSumDivs(p[0]);
 		break;
 	}
 
-	case opCode::fn_sumdigits: /* Sum of digits of p1 in base r.*/ {	// SumDigits(n, r) : 
-		result = ComputeSumDigits(p1, p2);
+	case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+		result = ComputeSumDigits(p[0], p[1]);
 		break;
 	}
-	case opCode::fn_numdigits: /* number of digits of p1 in base p2 */ {
-		result = ComputeNumDigits(p1, p2);
+	case opCode::fn_numdigits: /* number of digits of p[0] in base p[1] */ {
+		result = ComputeNumDigits(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_revdigits: {	// revdigits
-		result = ComputeRevDigits(p1, p2);
+		result = ComputeRevDigits(p[0], p[1]);
 		break;
 	}
 
 	case opCode::fn_isprime: {  // isprime
 		/* -1 indicates probably prime, 0 = composite */
-		result = PrimalityTest(abs(p1));
+		result = PrimalityTest(abs(p[0]));
 		break;
 	}
 	case opCode::fn_fib: /* fibonacci */ {	
-		if (p1 > 95700 || p1 < -95700)
+		if (p[0] > 95700 || p[0] < -95700)
 		{  /* result would exceed 20,000 digits */
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		}
-		long long temp = MulPrToLong(ZT(p1));
+		long long temp = MulPrToLong(ZT(p[0]));
 		bool neg = false;
 		if (temp < 0) {
 			/* is it a "negafibonacci" number? */
@@ -821,33 +826,33 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		break;
 	}
 	case opCode::fn_luc: /* lucas number */ {
-		if (p1 < 0) {
+		if (p[0] < 0) {
 			return retCode::EXPR_INVALID_PARAM;
 		}
-		if (p1 > 95700)
+		if (p[0] > 95700)
 		{
 			return retCode::EXPR_INTERM_TOO_HIGH;
 		}
-		long long temp = MulPrToLong(p1);
+		long long temp = MulPrToLong(p[0]);
 		mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
 		break;
 	}
 
 	case opCode::fn_part: /* number of partitions */ {
-		if (p1 < 0 || p1 > 1000000) {
+		if (p[0] < 0 || p[0] > 1000000) {
 			return retCode::EXPR_INVALID_PARAM;
 			// note: biperm is limited to values <= 1,000,000
 		}
-		int temp = (int)MulPrToLong(p1);
+		int temp = (int)MulPrToLong(p[0]);
 		biperm(temp, result);   // calculate number of partitions
 		break;
 	}
 	case opCode::fn_np: /* next prime */ {
-		mpz_nextprime(ZT(result), ZT(p1));  // get next prime
+		mpz_nextprime(ZT(result), ZT(p[0]));  // get next prime
 		break;
 	}
 	case opCode::fn_pp: /* previous prime */ {
-		retcode = ComputeBack(p1, result);  // get previous prime
+		retcode = ComputeBack(p[0], result);  // get previous prime
 		if (retcode != retCode::EXPR_OK) {
 			return retcode;   // error: number < 3
 		}
@@ -855,26 +860,26 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	}
 
 	case opCode::fn_primePi: /* count primes <= n */ {
-		if (p1 > max_prime) {
+		if (p[0] > max_prime) {
 			return retCode::EXPR_INVALID_PARAM;
 		}
-		result = primePi(p1);
+		result = primePi(p[0]);
 		break;
 	}
 	case opCode::fn_concatfact:  /*Concatenates the prime factors of n according to
 						  the mode in m */ {
-		if (p1 < 0 || p1 > 3) {
+		if (p[0] < 0 || p[0] > 3) {
 			return retCode::EXPR_INVALID_PARAM;  // mode value invalid
 		}
-		result = FactConcat(p1, p2);
+		result = FactConcat(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_r2: {
-		result = R2(p1);
+		result = R2(p[0]);
 		break;
 	}
 	case opCode::fn_r3: {
-		result = R3(p1);
+		result = R3(p[0]);
 		break;
 	}
 
@@ -882,19 +887,19 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	case opCode::fn_legendre:
 	case opCode::fn_jacobi:
 	case opCode::fn_kronecker: {
-		result = mpz_jacobi(ZT(p1), ZT(p2));
+		result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
 		break;
 	}
 
 	case opCode::fn_llt: /* lucas-lehmer primality test */ {
 		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
-		if (p1 >= 0 && p1 <= INT_MAX) {
-			result = llt(p1);
-			if (verbose > 0 || p1 >= 216091) {
+		if (p[0] >= 0 && p[0] <= INT_MAX) {
+			result = llt(p[0]);
+			if (verbose > 0 || p[0] >= 216091) {
 				if (result == 1)
-					std::cout << "*** 2^" << p1 << " -1 is prime! ***\n";
+					std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
 				else
-					std::cout << "2^" << p1 << " -1 is not prime \n";
+					std::cout << "2^" << p[0] << " -1 is not prime \n";
 			}
 		}
 		else /* for large numbers LLT takes a very long time!! */
@@ -902,40 +907,40 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		break;
 	}
 	case opCode::fn_sqrt: {
-		if (p1 < 0) return retCode::EXPR_INVALID_PARAM;
-		mpz_sqrt(ZT(result), ZT(p1));  /* result = square root of p1*/
+		if (p[0] < 0) return retCode::EXPR_INVALID_PARAM;
+		mpz_sqrt(ZT(result), ZT(p[0]));  /* result = square root of p[0]*/
 		break;
 	}
 	case opCode::fn_nroot: {
 		/* for real numbers nroot (x, n)  = x^(1/n) has a discontinuity at n=0,
 		so the function is considered to be undefined for n=0 */
-		if (p2 == 0) return retCode::EXPR_INVALID_PARAM;
+		if (p[1] == 0) return retCode::EXPR_INVALID_PARAM;
 
 		/* odd root of a -ve number is -ve so allow it. Even root would be a complex
 		number so don't allow it */
-		if (p1 < 0 && mpz_even_p(ZT(p2)))
+		if (p[0] < 0 && mpz_even_p(ZT(p[1])))
 			return retCode::EXPR_INVALID_PARAM;
 
-		if (p2 < 0) {
+		if (p[1] < 0) {
 			result = 0; /* for real numbers nroot(x, n) with n -ve = 1/(x^(-1/n))
 						   If x > 1 the floor of this value is 0 */
 			break;
 		}
-		if (p2 > INT_MAX) {
-			/* if p2 is very large the nth root would be close to 1  for +ve p1
-			or -1 for -ve p1 and odd p2 */
+		if (p[1] > INT_MAX) {
+			/* if p[1] is very large the nth root would be close to 1  for +ve p[0]
+			or -1 for -ve p[0] and odd p[1] */
 			return retCode::EXPR_NUMBER_TOO_HIGH;
 		}
 
-		long long temp = MulPrToLong(ZT(p2));
-		mpz_root(ZT(result), ZT(p1), temp);  /* result = nth root of p1*/
+		long long temp = MulPrToLong(ZT(p[1]));
+		mpz_root(ZT(result), ZT(p[0]), temp);  /* result = nth root of p[0]*/
 		break;
 	}
 	case opCode::fn_bpsw: /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
 		primality test */ {
-		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
+		if (p[0] <= 1) return retCode::EXPR_INVALID_PARAM;
 
-		result = mpz_bpsw_prp(ZT(p1));
+		result = mpz_bpsw_prp(ZT(p[0]));
 		if (result == 0)
 			std::cout << "composite \n";
 		else if (result == 1)
@@ -954,8 +959,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		It was later improved by Henri Cohen and Hendrik Willem Lenstra, commonly 
 		referred to as APR-CL*/
 
-		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
-		result = mpz_aprtcle(ZT(p1), verbose);
+		if (p[0] <= 1) return retCode::EXPR_INVALID_PARAM;
+		result = mpz_aprtcle(ZT(p[0]), verbose);
 		if (result == 0)
 			printf_s("composite \n");
 		else if (result == 1)
@@ -965,27 +970,27 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		break;
 	}
 	case opCode::fn_numfact: /* number of factors */ {
-		result = ComputeNumFact(p1);
+		result = ComputeNumFact(p[0]);
 		break;
 	}
 	case opCode::fn_minfact: /* smallest factor*/ {
-		result = ComputeMinFact(p1);
+		result = ComputeMinFact(p[0]);
 		break;
 	}
 	case opCode::fn_maxfact: /* largest factor */ {
-		result = ComputeMaxFact(p1);
+		result = ComputeMaxFact(p[0]);
 		break;
 	}
-	case opCode::fn_ispow: /* check whether or not p1 is a perfect power */ {
-		/* return -1 if p1 is a perfect power, otherwise 0 */
+	case opCode::fn_ispow: /* check whether or not p[0] is a perfect power */ {
+		/* return -1 if p[0] is a perfect power, otherwise 0 */
 		long long MaxP = 393'203;  // use 1st  33333 primes
 		if ((long long)primeListMax < MaxP) {  // get primes
 			generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 		}
 		Znum base;
-		long long exp = PowerCheck(p1, base, 2);
+		long long exp = PowerCheck(p[0], base, 2);
 		if (exp > 1) {
-			std::cout << p1 << " = " << base << "^" << exp << '\n';
+			std::cout << p[0] << " = " << base << "^" << exp << '\n';
 			result = -1;
 		}
 		else {
@@ -994,13 +999,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 		break;
 	}
 	case opCode::fn_modsqrt: /* modular square root */ {
-		/* Solve the equation given p1 and p2.  x^2 ≡ p1 (mod p2) */
-		roots = ModSqrt(p1, p2);
+		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
+		roots = ModSqrt(p[0], p[1]);
 		if (verbose > 0) {
 			if (roots.empty())
-				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p1, p2);
+				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
 			else {
-				gmp_printf("modsqrt(%Zd, %Zd) = ", p1, p2);
+				gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
 				for (Znum r : roots)
 					gmp_printf("%Zd, ", r);
 				putchar('\n');
@@ -1019,13 +1024,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const Znum &p1,
 	case opCode::fn_invtot: /* inverse totient */ {
 		std::vector<unsigned long long> *resultsP;
 
-		/* have to limit p1 to small values, otherwise risk running out of memory.
+		/* have to limit p[0] to small values, otherwise risk running out of memory.
 		   this also eliminates any possibility of integer overflow. */
-		if (p1 > 1'000'000'000'000'000 | p1 < 0)
+		if (p[0] > 1'000'000'000'000'000 | p[0] < 0)
 			return retCode::EXPR_INVALID_PARAM;
-		/* get list of numbers x1, x2, ... such that totient(x) = p1.
-		if p1 is zero InverseTotient just clears its cache. */
-		auto size = inverseTotient(MulPrToLong(p1), &resultsP, false, 0, false);
+		/* get list of numbers x1, x2, ... such that totient(x) = p[0].
+		if p[0] is zero InverseTotient just clears its cache. */
+		auto size = inverseTotient(MulPrToLong(p[0]), &resultsP, false, 0, false);
 		if (size == 0) {
 			if (verbose > 0)
 				std::cout << "Inverse Totient has no solutions \n";
@@ -1381,7 +1386,7 @@ multiValue is set to true, otherwise it is false*/
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
 	std::stack <token> nums;   /* this stack holds both numbers and user variables */
 	Znum val;
-	Znum args[4];
+	std::vector <Znum> args;
 	int index = 0;
 	int rPlen = (int)rPolish.size();
 	retCode retcode;
@@ -1432,13 +1437,14 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 					nums.push(temp);  /* put value back on stack */
 				}
 				else {
+					args.clear();
 					for (; NoOfArgs > 0; NoOfArgs--) {
 						/* copy operand(s) from number stack to args */
 						if (nums.top().typecode == types::number)
-							args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
+							args.insert(args.begin(), nums.top().value); /* use top value from stack*/
 						else {
 							size_t Userix = nums.top().userIx;
-							args[NoOfArgs - 1] = uvars.vars[Userix].data;
+							args.insert (args.begin(), uvars.vars[Userix].data);
 						}
 						nums.pop();  /* remove top value from stack */
 					}
@@ -1446,9 +1452,9 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 					if (oper == opCode::fact) {
 						/* get 2nd operand for multifactorial. In this special case
 						 the 2nd operand is in the operator token, not a number token */
-						args[1] = rPolish[index].value;
+						args.push_back(rPolish[index].value);
 					}
-					retcode = ComputeSubExpr(oper, args[0], args[1], args[2], val);
+					retcode = ComputeSubExpr(oper, args, val);
 					if (retcode != retCode::EXPR_OK)
 						return retcode;
 					temp.typecode = types::number;
@@ -1651,7 +1657,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
 		else {
 			/* try to match function name. Names are not case-sensitive */
-			for (ptrdiff_t ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
+			for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
 					/* we have a match */

@@ -435,6 +435,13 @@ the text string a, function name, line number and source file name */
 	mesg += " in file "; mesg += __FILE__;       \
 	throw std::range_error(mesg);                \
 }
+/* similar to throwExc but is compatible with constexpr functions */
+#define ThrowExs(a)                              \
+{												 \
+	char mesg[180] = { 0 };					     \
+	sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
+	throw std::range_error(mesg);                \
+}
 
 unsigned long long llSqrt(const unsigned long long n);
 bool isPerfectSquare(const Znum &num);

@@ -474,7 +474,7 @@ void generatePrimes(unsigned long long int max_val) {
 		num += 2;	// advance to next possible prime
 	}
 
-	// after completing the for loop we have found all the primes < max_val
+	// after completing the while loop we have found all the primes < max_val
 	if (verbose > 0)
 		printf_s("  prime %9lld is %11lld\n", count, numsave);
 	primeList[count] = ULLONG_MAX;		// set end marker
@@ -927,6 +927,11 @@ static void doTests(void) {
 		"modsqrt(2191, 23^3)",         1115,
 		"modsqrt(4142, 29^3)",         2333,
 		"modsqrt(3, 143)",               17,
+		"minfact(99)",                    3,
+		"maxfact(99)",                    11,
+		"numfact(99)",                     2,
+		"lcm(12,20)",                     60,
+		"pi(500)",                        95,
 	};
 
 	results.clear();

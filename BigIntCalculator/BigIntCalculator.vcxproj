@@ -72,7 +72,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
@@ -158,6 +160,7 @@
     <ClCompile Include="bignbr.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="bigint.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
@@ -169,70 +172,91 @@
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
       <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</FloatingPointExceptions>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="ecm.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
     </ClCompile>
     <ClCompile Include="evalExpr.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="factor.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
     </ClCompile>
     <ClCompile Include="FileVersionInfo.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="karatsuba.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="modmult.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="modmultz.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="Modsqrt.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="mpz_prp.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="partition.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="R3.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
     </ClCompile>
     <ClCompile Include="showtime.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="siqsnew.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
     </ClCompile>
     <ClCompile Include="msieve.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="sqroot.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -241,10 +265,12 @@
       <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</FloatingPointExceptions>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ClCompile Include="yafu.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

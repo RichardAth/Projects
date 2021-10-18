@@ -16,29 +16,6 @@ extern int verbose;
 #include <intsafe.h>
 #include <intrin.h>
 
-/* throw exception. For a list of exception classes derived from std:: exception
-see https://en.cppreference.com/w/cpp/error/exception
-range_error can be used to report range errors (that is, situations where a
-result of a computation cannot be represented by the destination type)
-a is a text string e.g. "integer overflow". The message generated includes
-the text string a, function name, line number and source file name */
-#define ThrowExc(a)                              \
-{                                                \
-	std::string line = std::to_string(__LINE__); \
-	std::string mesg = a;                        \
-    mesg += " " ;                                \
-	mesg += __func__;                            \
-	mesg += " line ";  mesg += line;             \
-	mesg += " in file "; mesg += __FILE__;       \
-	throw std::range_error(mesg);                \
-}
-/* similar to throwExc but is compatible with constexpr functions */
-#define ThrowExs(a)                              \
-{												 \
-	char mesg[180] = { 0 };					     \
-	sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
-	throw std::range_error(mesg);                \
-}
 
 extern bool *primeFlags;
 extern unsigned long long int primeListMax;
