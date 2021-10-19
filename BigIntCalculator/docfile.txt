@@ -68,13 +68,13 @@ N(n)            : Next probable prime after n
 P(n)            : Unrestricted Partition Number (number of decompositions of n 
                   into sums of integers without regard to order)
 Pi(n)           : Number of primes <= n
-Gcd(m, n)       : Greatest common divisor of m and n.
-Lcm(m, n)       : Least common multiple of m and n
+Gcd(m, n ...)   : Greatest common divisor of m, n ...
+Lcm(m, n ...)   : Least common multiple of m, n ...
 Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
 Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
-IsPrime(n)      : returns zero if n is not probable prime, -1 if it is.
+IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie–PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
                   considered to be 100% reliable for numbers up to 10000 digits
@@ -463,11 +463,22 @@ LOOP
 $p=n($p)
 IF ($p < 10000) REPEAT
 
+format is IF (expression) REPEAT 
+          or IF (expression) STOP 
+		  or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
+          the [ELSE (expression ...)] part is optional
+
 The IF command is processed as follows:
-1.  The expression in brackets is evaluated. 
+1.  The expression in brackets after IF is evaluated. 
 2.  If the value is not zero the specified action is performed, otherwise no 
     action is taken. The action can be REPEAT  which goes back to the start 
-    of the loop, or STOP which terminates the loop.
+    of the loop, or STOP which terminates the loop, or a series of expressions
+    separated by commas.
+3   If the value is zero any expressions following the ELSE are evaluated.
+  
+    Remember that assignment statements are also expressions, so mini-programs
+    can be created. However, nested IFs are not possible.
+
     The loop can contain many IF commands.
 
 the LIST command will output all the saved expressions. Expressions entered

@@ -148,8 +148,8 @@ const static struct functions functionList[]{
 	"MAXFACT",   1,  opCode::fn_maxfact,
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
-	"GCD",       2,  opCode::fn_gcd,
-	"LCM",       2,  opCode::fn_lcm,
+	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
+	"LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
 	"F",         1,  opCode::fn_fib,			// fibonacci
 	"LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
 	"LE",		 2,  opCode::fn_legendre,
@@ -584,8 +584,8 @@ NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
 e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. 
 For functions, do any further checks needed on the parameter values, then 
-evaluate the function. Only ModPow uses all 3 parameters. Some functions can 
-generate error codes. */
+evaluate the function. gcd and lcm functions have a variable number of parameters. 
+Some functions can generate error codes. */
 static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &p, Znum &result) {
 
 	int rv;
@@ -746,11 +746,19 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::fn_gcd: /* GCD */ {
 		//mpz_gcd(ZT(result), ZT(p[0]), ZT(p[1]));
-		result = gcd(p[0], p[1]);
+		result = p[0];
+		/* gcd has 1 or mor parameters */
+		for (int ix = 1; ix < p.size(); ix++) {
+			result = gcd(result, p[ix]);
+		}
 		break;
 	}
 	case opCode::fn_lcm: /* Least Common Multiple */ {
-		result = lcm(p[0], p[1]);
+		result = p[0];
+		/* lcm has 1 or more parameters */
+		for (int ix = 1; ix < p.size(); ix++) {
+			result = lcm(result, p[ix]);
+		}
 		break;
 	}
 	case opCode::fn_modpow: {						// MODPOW
@@ -1251,20 +1259,30 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			}
 			int paramLen = 0;
 			int ix3 = 0;
-			for (int pcount = 1; pcount <= numparams; pcount++) {
+			int pcount = 1;
+			for (; ; pcount++) {
 
 				/* find delimiter marking end of parameter*/
 				nextsep(expr + exprIndex + 2 + ix3, paramLen); // get next , or )
 				if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
 					return EXIT_FAILURE; /* parameter sep. not found */
+				if (paramLen == 0)
+					return EXIT_FAILURE;  /* syntax error */
 				int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
 				if (rv != EXIT_SUCCESS)
 					return rv;  /* syntax error? */
 				ix3 += (paramLen + 1); // move ix3 past , or )
+
+				if (expr[exprIndex + 1 + ix3].typecode == types::Operator &&
+					expr[exprIndex + 1 + ix3].oper == opCode::rightb)
+					break; /* ) found */
 			}
-			if (expr[exprIndex + 1 + ix3].typecode != types::Operator ||
-				expr[exprIndex + 1 + ix3].oper != opCode::rightb)
-				return EXIT_FAILURE; /* no ) when required */
+			if (numparams == SHORT_MAX) {
+				/* variable number of parameters; use actual number */
+				expr[exprIndex].numops = pcount;  
+			}
+			else if (pcount != numparams)
+				return EXIT_FAILURE;  /* wrong number of parameters */
 
 			rPolish.push_back(expr[exprIndex]); /* copy function token to output */
 			exprIndex += (ix3 + 1); /* move past ) after function name */
@@ -1418,14 +1436,17 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 				int NoOfArgs = rPolish[index].numops;
 				if (NoOfArgs > nums.size())
 					return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
+
 				if (oper == opCode::assign) {
 					/* assignment operator is fully processed here */
 					temp = nums.top();  /* remove top token from stack */
 					nums.pop();
+
 					if (nums.top().typecode != types::uservar)
 						return retCode::EXPR_SYNTAX_ERROR;
 					size_t Userix = nums.top().userIx;
 
+					/* store new value in user variable */
 					if (temp.typecode == types::number)
 						uvars.vars[Userix].data = temp.value;
 					else if (temp.typecode == types::uservar)
@@ -1443,7 +1464,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 						if (nums.top().typecode == types::number)
 							args.insert(args.begin(), nums.top().value); /* use top value from stack*/
 						else {
-							size_t Userix = nums.top().userIx;
+							size_t Userix = nums.top().userIx;      /* use top variable from stack's value */
 							args.insert (args.begin(), uvars.vars[Userix].data);
 						}
 						nums.pop();  /* remove top value from stack */
