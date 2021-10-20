@@ -85,6 +85,7 @@ APRCL(n)        : Adleman–Pomerance–Rumely primality test. returns zero if n is
                   If the number is > 6021 digits it reverts to the BPSW test.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n)      : Sum of positive divisors of n either prime or composite.
+Divisors(n)     : Get list of divisors of n, either prime or composite. 
 NumDigits(n, r) : Number of digits of n in base r.
 SumDigits(n, r) : Sum of digits of n in base r.
 RevDigits(n, r) : finds the value obtained by writing backwards the digits of n 

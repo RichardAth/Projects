@@ -99,24 +99,25 @@ enum class opCode {
 	fn_luc,
 	fn_primePi,
 	fn_part,
-	fn_np,
-	fn_pp,
+	fn_np,                /* next prime*/
+	fn_pp,                /* previous prime */
 	fn_r2,
 	fn_r3,
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
 	fn_llt,
-	fn_sqrt,
-	fn_nroot,
-	fn_bpsw,
-	fn_aprcl,
-	fn_numfact,
-	fn_minfact,
-	fn_maxfact,
-	fn_ispow,
-	fn_modsqrt,
-	fn_invtot,
+	fn_sqrt,              /* square root */
+	fn_nroot,             /* nth root */
+	fn_bpsw,              /* primality test */
+	fn_aprcl,             /* primality test */
+	fn_numfact,           /* number of factors */
+	fn_minfact,           /* smallest factor */
+	fn_maxfact,           /* largest factor */
+	fn_ispow,             /* check if perfect power */
+	fn_modsqrt,           /* modular square root */
+	fn_invtot,            /* inverse totient */
+	fn_divisors,          /* list of divisors */
 	fn_invalid = -1,
 };
 
@@ -146,6 +147,8 @@ const static struct functions functionList[]{
 	"NUMFACT",   1,  opCode::fn_numfact,
 	"MINFACT",   1,  opCode::fn_minfact,
 	"MAXFACT",   1,  opCode::fn_maxfact,
+	"MODSQRT",   2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
 	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
@@ -157,15 +160,14 @@ const static struct functions functionList[]{
 	"PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
 	"P",         1,  opCode::fn_part,			// number of partitions
 	"N",         1,  opCode::fn_np,			// next prime
-	"BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff
+	"BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
 	"B",         1,  opCode::fn_pp,			// previous prime
 	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
-	"R3",        1,  opCode::fn_r3,            // number of ways n can be expressed as sum of 3 squares
+	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  opCode::fn_jacobi,
 	"KR",		 2,  opCode::fn_kronecker,
-	"APRCL",     1,  opCode::fn_aprcl,          // APR-CL prime test
+	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
 	"ISPOW",     1,  opCode::fn_ispow,
-	"MODSQRT",   2,  opCode::fn_modsqrt,        // find x such that x^2 = a mod p
 };
 
 /* list of operators.  */
@@ -184,7 +186,8 @@ work correctly
 ** must precede *,
 << and <= must precede <
 >> and >= must precede > in this list.
-unary plus is NOT in this list. */
+unary plus is NOT in this list. 
+unary minus is last entry */
 const static struct oper_list operators[]{
 		{"C",	 opCode::comb,	      4,  true,  false, 2},  // combination nCk, also known as binomial coefficient
 		{ "^",   opCode::power,       2,  false, false, 2},
@@ -214,6 +217,7 @@ const static struct oper_list operators[]{
 		{ "(",   opCode::leftb,      99, true,  false, 0},      // left bracket
 		{ ")",   opCode::rightb,     -1, true,  false, 0},      // right bracket
 		{"=",    opCode::assign,     12, false, false, 2},      // assignment
+		/* unary - must be the last entry */
         {"U-",   opCode::unary_minus, 1, false, true,  1 },     // unary -
 };
 
@@ -261,6 +265,57 @@ static Znum ComputeNumDivs(const Znum &n) {
 		return divisors;
 	}
 	else return 0;
+}
+
+/* generate list of all divisors of tnum
+N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
+the value returned is the number of divisors.
+*/
+static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
+
+	fList f;          /* prime factors of tnum */
+	Znum divisors;    /* number of divisors */
+	long long numdiv;
+	size_t ctr = 0, ct2, ccpy;
+	long long numfactors;  /* number of unique factors */
+
+	divlist.clear();
+
+	auto rv = factorise(tnum, f, nullptr);
+	if (rv) {
+		divisors = f.NoOfDivs();
+		numdiv = MulPrToLong(divisors);
+		numfactors = f.fsize();
+	}
+	else return 0;
+
+	divlist.resize(numdiv);
+
+	divlist[ctr++] = 1;  // 1st divisor
+
+	for (long long i = 0; i < numfactors; i++) {
+		ct2 = 0;
+		ccpy = ctr;
+		for (int x = 1; x <= f.f[i].exponent; x++) {
+			for (size_t j = 0; j < ctr; j++)
+				divlist[j + ccpy] = divlist[j + ct2] * f.f[i].Factor;
+			ct2 += ctr;
+			ccpy += ctr;
+		}
+		ctr = ccpy;
+	}
+
+	std::sort(divlist.begin(), divlist.end());
+#ifdef _DEBUG
+	//if (verbose > 0) {
+	//	gmp_printf("divisors of %Zd are: ", tnum);
+	//	for (int i = 0; i < numdiv; i++) {
+	//		gmp_printf("%Zd ", divlist[i]);
+	//	}
+	//	putchar('\n');
+	//}
+#endif
+	return numdiv;
 }
 
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1)
@@ -1052,7 +1107,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		multiValue = true;     /* indicate multiple return values */
 		break;
 	}
-
+	case opCode::fn_divisors: /* list of divisors */ {
+		result = DivisorList(p[0], roots);
+		multiValue = true;     /* indicate multiple return values */
+		break;
+	}
 
 	default:
 		abort();	// should never get here

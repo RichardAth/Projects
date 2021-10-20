@@ -75,6 +75,7 @@ public:
 
 	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
+	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 
 	/* methods that are in the class */
 
