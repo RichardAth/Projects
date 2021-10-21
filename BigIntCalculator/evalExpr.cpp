@@ -293,6 +293,9 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
 	divlist[ctr++] = 1;  // 1st divisor
 
+	if (tnum <= 1)
+		return 1;
+
 	for (long long i = 0; i < numfactors; i++) {
 		ct2 = 0;
 		ccpy = ctr;
@@ -411,7 +414,7 @@ number of bits to shift is negative, this is actually a right shift. If result w
 be too large an error is reported. */
 static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
 	if (bits > LLONG_MAX || bits < LLONG_MIN)
-		return retCode::EXPR_INVALID_PARAM;
+		return retCode::INVALID_PARAM;
 
 	long long shift = MulPrToLong(bits);
 
@@ -424,7 +427,7 @@ static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
 	// using multiplication or division
 	if (shift > 0) {
 		if (NoOfBits(first) + shift > 66439) // more than 66439 bits -> more than 20,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		mpz_mul_2exp(ZT(result), ZT(first), shift);
 		return retCode::EXPR_OK;
 	}
@@ -483,7 +486,7 @@ static int PrimalityTestSmall(const long long Value) {
 /*  B(n): Previous probable prime before n */
 static retCode ComputeBack(const Znum &n, Znum &p) {
 	if (n < 3)
-		return retCode::EXPR_INVALID_PARAM;  // 2 is the smallest prime
+		return retCode::NUMBER_TOO_LOW;  // 2 is the smallest prime
 	if (n == 3) {
 		p = 2;
 		return retCode::EXPR_OK;
@@ -637,7 +640,7 @@ static Znum R3(Znum num) {
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
-e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. 
+e.g. DIVIDE_BY_ZERO otherwise return EXPR_OK. 
 For functions, do any further checks needed on the parameter values, then 
 evaluate the function. gcd and lcm functions have a variable number of parameters. 
 Some functions can generate error codes. */
@@ -651,9 +654,9 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::comb: {  // calculate nCk AKA binomial coefficient
 		if (p[1] > INT_MAX)
-			return retCode::EXPR_NUMBER_TOO_HIGH;
+			return retCode::NUMBER_TOO_HIGH;
 		if (p[1] < 1)
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_LOW;
 		long long k = MulPrToLong(p[1]);
 		mpz_bin_ui(ZT(result), ZT(p[0]), k);
 		return retCode::EXPR_OK;
@@ -672,32 +675,35 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::divide: {
 		if (p[1] == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
+			return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+		/* use truncation division */
 		result = p[0] / p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::multiply: {
 		auto resultsize = NoOfBits(p[0]) + NoOfBits(p[1]);
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		result = p[0] * p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::remainder: {
 		if (p[1] == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = p[0] % p[1];
+			return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+		//result = p[0] % p[1];
+		/* use truncation division */
+		mpz_tdiv_r(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::power: {
 		if (p[1] > INT_MAX)
-			return retCode::EXPR_EXPONENT_TOO_LARGE;
+			return retCode::EXPONENT_TOO_LARGE;
 		if (p[1] < 0)
-			return retCode::EXPR_EXPONENT_NEGATIVE;
+			return retCode::EXPONENT_NEGATIVE;
 		long long exp = MulPrToLong(p[1]);
 		auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		mpz_pow_ui(ZT(result), ZT(p[0]), exp);
 		return retCode::EXPR_OK;
 	}
@@ -772,28 +778,29 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
 			 38536, 42873, 47172 };
 		if (p[0] < 0)
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_LOW;
 		if (p[0] > LLONG_MAX)
-			return retCode::EXPR_NUMBER_TOO_HIGH;
+			return retCode::NUMBER_TOO_HIGH;
 
 		long long temp = llabs(MulPrToLong(p[0]));
 		long long t2 = MulPrToLong(p[1]);
 		if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
 			/* more than 20,000 digits in base 10 */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 
 		mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
 		if (ZT(result)->_mp_size > 1039)
 			/* more than 20,000 digits in base 10 */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 
 		return retCode::EXPR_OK;
 	}
 	case opCode::prim: {
 		if (p[0] > 46340)
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		if (p[0] < 0)
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_LOW;
+
 		long long temp = llabs(MulPrToLong(p[0]));
 		mpz_primorial_ui(ZT(result), temp);  // get primorial
 		return retCode::EXPR_OK;
@@ -818,10 +825,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_modpow: {						// MODPOW
 		if (p[2] == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;
+			return retCode::DIVIDE_BY_ZERO;
 		if (p[1] < 0) {
 			if (gcd(p[0], p[2]) != 1)
-				return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
+				return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
 		}
 		/* note: negative exponent is only allowed if p[0] & p[2] are mutually prime,
 		i.e modular inverse of p[0] wrt p[2] exists. */
@@ -832,19 +839,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		/* if an inverse doesn’t exist the return value is zero and rop is undefined*/
 		rv = mpz_invert(ZT(result), ZT(p[0]), ZT(p[1]));
 		if (rv == 0) {
-			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
+			return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;
 		}
 		break;
 	}
 
 	case opCode::fn_totient: {			// totient
-		if (p[0] < 1) return retCode::EXPR_INVALID_PARAM;
+		if (p[0] < 1) 
+			return retCode::NUMBER_TOO_LOW;;
 		result = ComputeTotient(p[0]);
 		break;
 	}
 	case opCode::fn_numdivs: {		// NUMDIVS
 		if (p[0] < 1) {
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_LOW;
 		}
 		result = ComputeNumDivs(p[0]);
 		break;
@@ -875,7 +883,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	case opCode::fn_fib: /* fibonacci */ {	
 		if (p[0] > 95700 || p[0] < -95700)
 		{  /* result would exceed 20,000 digits */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		}
 		long long temp = MulPrToLong(ZT(p[0]));
 		bool neg = false;
@@ -890,11 +898,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_luc: /* lucas number */ {
 		if (p[0] < 0) {
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_LOW;
 		}
 		if (p[0] > 95700)
 		{
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		}
 		long long temp = MulPrToLong(p[0]);
 		mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
@@ -902,8 +910,12 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 
 	case opCode::fn_part: /* number of partitions */ {
-		if (p[0] < 0 || p[0] > 1000000) {
-			return retCode::EXPR_INVALID_PARAM;
+		if (p[0] > 1000000) {
+			return retCode::NUMBER_TOO_HIGH;
+			// note: biperm is limited to values <= 1,000,000
+		}
+		if (p[0] < 0) {
+			return retCode::NUMBER_TOO_LOW;
 			// note: biperm is limited to values <= 1,000,000
 		}
 		int temp = (int)MulPrToLong(p[0]);
@@ -924,7 +936,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::fn_primePi: /* count primes <= n */ {
 		if (p[0] > max_prime) {
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::NUMBER_TOO_HIGH;
 		}
 		result = primePi(p[0]);
 		break;
@@ -932,7 +944,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	case opCode::fn_concatfact:  /*Concatenates the prime factors of n according to
 						  the mode in m */ {
 		if (p[0] < 0 || p[0] > 3) {
-			return retCode::EXPR_INVALID_PARAM;  // mode value invalid
+			return retCode::INVALID_PARAM;  // mode value invalid
 		}
 		result = FactConcat(p[0], p[1]);
 		break;
@@ -956,33 +968,34 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::fn_llt: /* lucas-lehmer primality test */ {
 		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
-		if (p[0] >= 0 && p[0] <= INT_MAX) {
-			result = llt(p[0]);
-			if (verbose > 0 || p[0] >= 216091) {
-				if (result == 1)
-					std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
-				else
-					std::cout << "2^" << p[0] << " -1 is not prime \n";
-			}
+		if (p[0] > INT_MAX)
+			return retCode::NUMBER_TOO_HIGH;
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;
+
+		result = llt(p[0]);
+		if (verbose > 0 || p[0] >= 216091) {
+			if (result == 1)
+				std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
+			else
+				std::cout << "2^" << p[0] << " -1 is not prime \n";
 		}
-		else /* for large numbers LLT takes a very long time!! */
-			return retCode::EXPR_NUMBER_TOO_HIGH;
 		break;
 	}
 	case opCode::fn_sqrt: {
-		if (p[0] < 0) return retCode::EXPR_INVALID_PARAM;
+		if (p[0] < 0) return retCode::INVALID_PARAM;
 		mpz_sqrt(ZT(result), ZT(p[0]));  /* result = square root of p[0]*/
 		break;
 	}
 	case opCode::fn_nroot: {
 		/* for real numbers nroot (x, n)  = x^(1/n) has a discontinuity at n=0,
 		so the function is considered to be undefined for n=0 */
-		if (p[1] == 0) return retCode::EXPR_INVALID_PARAM;
+		if (p[1] == 0) return retCode::INVALID_PARAM;
 
 		/* odd root of a -ve number is -ve so allow it. Even root would be a complex
 		number so don't allow it */
 		if (p[0] < 0 && mpz_even_p(ZT(p[1])))
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::INVALID_PARAM;
 
 		if (p[1] < 0) {
 			result = 0; /* for real numbers nroot(x, n) with n -ve = 1/(x^(-1/n))
@@ -992,7 +1005,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[1] > INT_MAX) {
 			/* if p[1] is very large the nth root would be close to 1  for +ve p[0]
 			or -1 for -ve p[0] and odd p[1] */
-			return retCode::EXPR_NUMBER_TOO_HIGH;
+			return retCode::NUMBER_TOO_HIGH;
 		}
 
 		long long temp = MulPrToLong(ZT(p[1]));
@@ -1001,7 +1014,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_bpsw: /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
 		primality test */ {
-		if (p[0] <= 1) return retCode::EXPR_INVALID_PARAM;
+		if (p[0] <= 1) 
+			return retCode::NUMBER_TOO_LOW;
 
 		result = mpz_bpsw_prp(ZT(p[0]));
 		if (result == 0)
@@ -1022,7 +1036,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		It was later improved by Henri Cohen and Hendrik Willem Lenstra, commonly 
 		referred to as APR-CL*/
 
-		if (p[0] <= 1) return retCode::EXPR_INVALID_PARAM;
+		if (p[0] <= 1) 
+			return retCode::NUMBER_TOO_LOW;
 		result = mpz_aprtcle(ZT(p[0]), verbose);
 		if (result == 0)
 			printf_s("composite \n");
@@ -1063,6 +1078,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_modsqrt: /* modular square root */ {
 		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
+		if (p[1] <= 0)
+			return retCode::NUMBER_TOO_LOW;  /* modulus must be +ve */
 		roots = ModSqrt(p[0], p[1]);
 		if (verbose > 0) {
 			if (roots.empty())
@@ -1077,7 +1094,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		/* the result can be: no solution: roots is empty
 							  or one  or more solutions */
 		if (roots.empty())
-			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
+			return retCode::INVALID_PARAM;  /* no solution exists */
 
 		result = roots[0];     /* ignore 2nd solution, if any */
 		multiValue = true;     /* indicate multiple return values */
@@ -1089,15 +1106,17 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 		/* have to limit p[0] to small values, otherwise risk running out of memory.
 		   this also eliminates any possibility of integer overflow. */
-		if (p[0] > 1'000'000'000'000'000 | p[0] < 0)
-			return retCode::EXPR_INVALID_PARAM;
+		if (p[0] > 1'000'000'000'000'000)
+			return retCode::NUMBER_TOO_HIGH;
+		if (p[0] <= 0)
+			return retCode::NUMBER_TOO_LOW;
 		/* get list of numbers x1, x2, ... such that totient(x) = p[0].
 		if p[0] is zero InverseTotient just clears its cache. */
 		auto size = inverseTotient(MulPrToLong(p[0]), &resultsP, false, 0, false);
 		if (size == 0) {
 			if (verbose > 0)
 				std::cout << "Inverse Totient has no solutions \n";
-			return retCode::EXPR_INVALID_PARAM;
+			return retCode::INVALID_PARAM;
 		}
 		roots.clear();
 		for (size_t i = 0; i < size; i++) {
@@ -1108,6 +1127,9 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		break;
 	}
 	case opCode::fn_divisors: /* list of divisors */ {
+		if (p[0] < 1) {
+			return retCode::NUMBER_TOO_LOW;
+		}
 		result = DivisorList(p[0], roots);
 		multiValue = true;     /* indicate multiple return values */
 		break;
@@ -1494,7 +1516,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 
 				int NoOfArgs = rPolish[index].numops;
 				if (NoOfArgs > nums.size())
-					return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
+					return retCode::SYNTAX_ERROR;  /* not enough operands on stack*/
 
 				if (oper == opCode::assign) {
 					/* assignment operator is fully processed here */
@@ -1502,7 +1524,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 					nums.pop();
 
 					if (nums.top().typecode != types::uservar)
-						return retCode::EXPR_SYNTAX_ERROR;
+						return retCode::SYNTAX_ERROR;
 					size_t Userix = nums.top().userIx;
 
 					/* store new value in user variable */
@@ -1511,7 +1533,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 					else if (temp.typecode == types::uservar)
 						uvars.vars[Userix].data = uvars.vars[temp.userIx].data;
 					else
-						return retCode::EXPR_SYNTAX_ERROR;  /* wrong type of token on stack */
+						return retCode::SYNTAX_ERROR;  /* wrong type of token on stack */
 
 					nums.pop();  /* remove variable from stack */
 					nums.push(temp);  /* put value back on stack */
@@ -1561,7 +1583,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 		return retCode::EXPR_OK;
 	}
 	else
-		return retCode::EXPR_SYNTAX_ERROR;  /* too many operands on stack*/
+		return retCode::SYNTAX_ERROR;  /* too many operands on stack*/
 }
 
 /*
@@ -1605,7 +1627,7 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
 				std::cout << "** error: could not convert to reverse polish \n";
 				printTokens(rPolish);
 			}
-			return retCode::EXPR_SYNTAX_ERROR;
+			return retCode::SYNTAX_ERROR;
 		}
 	}
 	else {
@@ -1628,8 +1650,8 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
 /* convert expression to ´tokens´. A token is basically either a number, operator,
 function name or comma. Brackets are classed as operators.
 Syntax is not checked properly at this stage but if there is anything that cannot
-be tokenised EXPR_SYNTAX_ERROR is returned. If left & right brackets don't match up
-EXPR_PAREN_MISMATCH is returned.
+be tokenised SYNTAX_ERROR is returned. If left & right brackets don't match up
+PAREN_MISMATCH is returned.
 The normal return value is EXPR_OK.
 */
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt) {
@@ -1777,7 +1799,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 	
 
 		if (nxtToken.typecode == types::error)
-			return retCode::EXPR_SYNTAX_ERROR;  /* unable to tokenise expression*/
+			return retCode::SYNTAX_ERROR;  /* unable to tokenise expression*/
 		else
 			tokens.push_back(nxtToken);
 	}
@@ -1789,11 +1811,11 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 		if (t.typecode == types::Operator && t.oper == opCode::rightb) {
 			brackets--;
 			if (brackets < 0)
-				return retCode::EXPR_PAREN_MISMATCH;
+				return retCode::PAREN_MISMATCH;
 		}
 	}
 	if (brackets > 0)
-		return retCode::EXPR_PAREN_MISMATCH;
+		return retCode::PAREN_MISMATCH;
 
 	nxtToken.typecode = types::end;
 	tokens.push_back(nxtToken);

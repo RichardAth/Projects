@@ -32,8 +32,9 @@ You can enter expressions that use the following operators, also functions
 and parentheses:
 ^ or **   : exponentiation (the exponent must be greater than or equal to zero).
 *         : multiplication
-/         : integer division
-%         : modulus (remainder from integer division)
+/         : integer division (rounded towards zero if necessary)
+%         : modulus (remainder from integer division, has the same sign as the 
+            dividend)
 +         : addition
 -         : subtraction
 SHL or << : Shift left the number of bits specified on the right operand.

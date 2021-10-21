@@ -489,38 +489,39 @@ void generatePrimes(unsigned long long int max_val) {
 static void textError(retCode rc) {
 	/*
 	error codes currently used:
-	EXPR_NUMBER_TOO_HIGH
-	EXPR_INTERM_TOO_HIGH,		
-	EXPR_DIVIDE_BY_ZERO,        
-	EXPR_PAREN_MISMATCH,		
-	EXPR_SYNTAX_ERROR,			
-	EXPR_TOO_MANY_PAREN,		
-	EXPR_INVALID_PARAM,	
-	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME
-	EXPR_EXPONENT_TOO_LARGE,
-	EXPR_EXPONENT_NEGATIVE,				
+	NUMBER_TOO_LOW,
+	NUMBER_TOO_HIGH,
+	INTERM_TOO_HIGH,		
+	DIVIDE_BY_ZERO,        
+	PAREN_MISMATCH,		
+	SYNTAX_ERROR,			
+	TOO_MANY_PAREN,		
+	INVALID_PARAM,	
+	ARGUMENTS_NOT_RELATIVELY_PRIME
+	EXPONENT_TOO_LARGE,
+	EXPONENT_NEGATIVE,				
 	EXPR_OK = 0
 	*/
 	switch (rc)
 	{
-	//case EXPR_NUMBER_TOO_LOW:
-	//	std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
-	//	break;
-	case retCode::EXPR_NUMBER_TOO_HIGH:
+	case retCode::NUMBER_TOO_LOW:
+		std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
+		break;
+	case retCode::NUMBER_TOO_HIGH:
 		std::cout << (lang ? "Número muy grande \n" :
 			"Number too high \n");
 		break;
-	case retCode::EXPR_INTERM_TOO_HIGH:
+	case retCode::INTERM_TOO_HIGH:
 		std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
 			"Intermediate number too high (more than 20000 digits)\n");
 		break;
-	case retCode::EXPR_DIVIDE_BY_ZERO:
+	case retCode::DIVIDE_BY_ZERO:
 		std::cout << (lang ? "División por cero\n" : "Division by zero\n");
 		break;
-	case retCode::EXPR_PAREN_MISMATCH:
+	case retCode::PAREN_MISMATCH:
 		std::cout << (lang ? "Error de paréntesis\n" : "Parenthesis mismatch\n");
 		break;
-	case retCode::EXPR_SYNTAX_ERROR:
+	case retCode::SYNTAX_ERROR:
 		if (lang) 	{
 			std::cout << ( "Error de sintaxis\n");
 		}
@@ -528,27 +529,27 @@ static void textError(retCode rc) {
 			std::cout << ("Syntax error\n");
 		}
 		break;
-	case retCode::EXPR_TOO_MANY_PAREN:
+	case retCode::TOO_MANY_PAREN:
 		std::cout << (lang ? "Demasiados paréntesis\n" : "Too many parenthesis\n");
 		break;
-	case retCode::EXPR_INVALID_PARAM:
+	case retCode::INVALID_PARAM:
 		std::cout << (lang ? "Parámetro inválido\n" : "Invalid parameter\n");
 		break;
-	case retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME:
+	case retCode::ARGUMENTS_NOT_RELATIVELY_PRIME:
 		std::cout << (lang ? "MCD de los argumentos no es 1\n" : "GCD of arguments is not 1\n");
 		break;
 	/*case EXPR_BREAK:
 		std::cout << (lang ? "Detenido por el usuario\n" : "Stopped by use\nr");
 		break;*/
-	case retCode::EXPR_EXPONENT_NEGATIVE: {
+	case retCode::EXPONENT_NEGATIVE: {
 		std::cout << "Exponent is negative\n";
 		break;
 	}
-	case retCode::EXPR_EXPONENT_TOO_LARGE: {
+	case retCode::EXPONENT_TOO_LARGE: {
 		std::cout << "Exponent exceeds 2^31-1\n";
 		break;
 	}
-	/*case EXPR_VAR_OR_COUNTER_REQUIRED:
+	/*case retCode::EXPR_VAR_OR_COUNTER_REQUIRED:
 		if (lang)
 		{
 			std::cout <<  "La expresión \n";
@@ -558,18 +559,18 @@ static void textError(retCode rc) {
 			std::cout << "Expression #\n";
 		}
 		break;*/
-	//case EXPR_BASE_MUST_BE_POSITIVE:
+	//case retCode::EXPR_BASE_MUST_BE_POSITIVE:
 	//	std::cout << (lang ? "La base debe ser mayor que cero\n" :
 	//		"Base must be greater than zero\n");
 	//	break;
-	//case EXPR_POWER_MUST_BE_POSITIVE:
+	//case retCode::EXPR_POWER_MUST_BE_POSITIVE:
 	//	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
 	//		"Power must be greater than zero\n");
 	//	break;
-	//case EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
+	//case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
 	//	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
 	//	break;
-	//case EXPR_MODULUS_MUST_BE_NONNEGATIVE:
+	//case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
 	//	std::cout << (lang ? "El módulo no debe ser negativo\n" :
 	//		"Modulus must not be negative\n");
 	//	break;
@@ -1917,7 +1918,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
 				break;
 		}
 		if (bc != 0)
-			return retCode::EXPR_PAREN_MISMATCH;
+			return retCode::PAREN_MISMATCH;
 		subExpr = expr.substr(subStart, subEnd - subStart);
 		removeInitTrail(subExpr);  /* remove initial & trailing blanks */
 		rv = ComputeExpr(subExpr, result, asgCt);
