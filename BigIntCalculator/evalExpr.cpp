@@ -118,6 +118,7 @@ enum class opCode {
 	fn_modsqrt,           /* modular square root */
 	fn_invtot,            /* inverse totient */
 	fn_divisors,          /* list of divisors */
+	fn_primroot,          /* lowest primitive root */
 	fn_invalid = -1,
 };
 
@@ -151,6 +152,7 @@ const static struct functions functionList[]{
 	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
+	"PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
 	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
 	"LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
 	"F",         1,  opCode::fn_fib,			// fibonacci
@@ -635,6 +637,47 @@ static Znum R3(Znum num) {
 	}
 
 	return sum;
+}
+
+/* find smallest primitive root of num. return -1 for error */
+static Znum primRoot(const Znum &num) {
+	fList factorlist, totF;
+	std::vector <Znum> powers;
+	Znum mp;    /* mp = a^p mod num*/
+	bool skip = false;
+
+	if (num <= 1)
+		return -1;    /* don't allow -ve, 0, or 1 values */
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, nullptr);
+	assert(rv);
+	if (!factorlist.hasPrimitiveRoot()) {
+		return -1;  /* there are no primitive roots */
+	 }
+	Znum tot = factorlist.totient();   /* get totient of num */
+	rv = factorise(tot, totF, nullptr);
+	assert(rv);
+	for (int x = 0; x < totF.fsize(); x++)
+		powers.push_back(tot / totF.f[x].Factor);
+
+	/* test numbers 2 to num-1 */
+	for (Znum a = 2; a < num; a++) {
+		if (gcd(a, num) != 1 || isPerfectSquare(a))
+			continue; /* maybe save time by perfect square test? */
+		skip = false;
+		for (auto p : powers) {
+			mp = modPower(a, p, num);
+			if (mp == 1) {
+				/* a is not a primitive root */
+				skip = true;
+				break;
+			}
+		}
+		if (!skip)
+			return a;  /* a passes tests; it is a primitive root */
+	}
+
+	return -1;  /* should never reach this point */
 }
 
 /* process one operator with 1 or 2 operands.
@@ -1133,6 +1176,12 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		result = DivisorList(p[0], roots);
 		multiValue = true;     /* indicate multiple return values */
 		break;
+	}
+	case opCode::fn_primroot: /* lowest primitive root */ {
+		result = primRoot(p[0]);
+		if (result <= 0)
+			return retCode::INVALID_PARAM;
+		else break;
 	}
 
 	default:

@@ -76,6 +76,7 @@ public:
 	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
+	friend Znum primRoot(const Znum &num);
 
 	/* methods that are in the class */
 
@@ -325,6 +326,28 @@ Repeated factors: No or Yes
 		if (!this->f.empty())
 			return this->f.back().Factor ;
 		else return -1;  /* error - factor list is empty */
+	}
+
+	/* if n is 2, 4, an odd prime power, or twice an odd prime power it has
+       primitive roots, otherwise it does not. An odd prime is any prime
+       other than 2. Returns true or false, requires list of prime factors */
+	bool hasPrimitiveRoot() const {
+		if (this->f.size() == 1) {
+			/* only 1 factor */
+			if (this->f[0].Factor > 2)
+				return true;  /* n is an odd prime power */
+			else if (this->f[0].exponent <= 2)
+					return true;  /* n = 2 or 4 */
+				else return false;  /* n is higher power of 2 */
+		}
+		else if (this->f.size() == 2) {
+			if (this->f[0].Factor == 2 && this->f[0].exponent == 1)
+				return true;  /* n is twice an odd prime */
+			else
+				return false;  /* not twice an odd prime power */
+		}
+		else
+			return false;  /* n is not in any category that has primitive roots */
 	}
 
 };

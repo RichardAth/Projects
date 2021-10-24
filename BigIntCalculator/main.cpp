@@ -933,6 +933,7 @@ static void doTests(void) {
 		"numfact(99)",                     2,
 		"lcm(12,20)",                     60,
 		"pi(500)",                        95,
+		"primroot(761)",                   6,   /* primitive root */
 	};
 
 	results.clear();
