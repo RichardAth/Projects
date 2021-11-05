@@ -940,8 +940,6 @@ static void doTests(void) {
 
 	auto start = clock();	// used to measure execution time
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
-		//removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
-		/* but it is not necessary to convert to upper case */
 
 		auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
@@ -2388,9 +2386,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	return;
 }
 
-/* get input from stdin . Any continuation lines are appended to 1st line.
-Initial & trailing spaces are removed. ctrl-c or ctrl-break will force
-function to return, with or without input, but only after a 10 sec delay.*/
+/* get input from stdin. Any continuation lines are appended to 1st line.
+Initial & trailing spaces are removed. Letters are converted to upper case. 
+ctrl-c or ctrl-break will force the function to return, with or without input, 
+but only after a 10 sec delay.*/
 static void myGetline(std::string &expr) {
 retry:
 	getline(std::cin, expr);    // expression may include spaces
@@ -2495,13 +2494,13 @@ int main(int argc, char *argv[]) {
 					if (multiV) {
 						/* expression returned multiple values */
 						std::cout << " = ";
-						if (roots.size() <= 30 ) 
-							/* print all results if < 30 values */
+						if (roots.size() <= 31 ) 
+							/* print all results if <= 31 values */
 							for (auto r : roots) {
 								std::cout << r << ", ";
 							}
-						else { /* print 1st 10 and last 10 results */
-							for (int i = 0; i < 10; i++) {
+						else { /* print 1st 20 and last 10 results */
+							for (int i = 0; i < 20; i++) {
 								std::cout << roots[i] << ", " ;
 							}
 							std::cout << "\n ... \n";

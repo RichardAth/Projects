@@ -639,10 +639,11 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
-/* find smallest primitive root of num. return -1 for error */
+/* find smallest primitive root of num. return -1 for error 
+see https://en.wikipedia.org/wiki/Primitive_root_modulo_n */
 static Znum primRoot(const Znum &num) {
 	fList factorlist, totF;
-	std::vector <Znum> powers;
+	std::vector <Znum> powers;  /* values of exponent that we need to use in testing */
 	Znum mp;    /* mp = a^p mod num*/
 	bool skip = false;
 
@@ -655,16 +656,19 @@ static Znum primRoot(const Znum &num) {
 		return -1;  /* there are no primitive roots */
 	 }
 	Znum tot = factorlist.totient();   /* get totient of num */
-	rv = factorise(tot, totF, nullptr);
+	rv = factorise(tot, totF, nullptr); /* get factors of totient */
 	assert(rv);
 	for (int x = 0; x < totF.fsize(); x++)
 		powers.push_back(tot / totF.f[x].Factor);
+	/* powers contains 1 value for each prime factor of the totient. */
 
 	/* test numbers 2 to num-1 */
 	for (Znum a = 2; a < num; a++) {
 		if (gcd(a, num) != 1 || isPerfectSquare(a))
 			continue; /* maybe save time by perfect square test? */
 		skip = false;
+		/* note that we only need to test certain values of p. We don't need to
+		 test all values from 1 to num. */
 		for (auto p : powers) {
 			mp = modPower(a, p, num);
 			if (mp == 1) {
