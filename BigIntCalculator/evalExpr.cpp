@@ -228,7 +228,7 @@ enum class types { Operator, func, number, comma, error, uservar, end };
 struct token {
 	types typecode;
 	int function;   /* contains function code index, when typecode = func 
-					   contains operator inndex when typecode = Operator */
+					   contains operator index when typecode = Operator */
 	opCode oper;    /* contains operator value, only when typecode = Operator or func */
 	Znum value;     /* contains numeric value,  only when typecode = number */
 	size_t userIx;  /* index into user variable list (only when typecode = uservar) */
@@ -269,7 +269,7 @@ static Znum ComputeNumDivs(const Znum &n) {
 	else return 0;
 }
 
-/* generate list of all divisors of tnum
+/* generate sorted list of all divisors of tnum
 N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
 */
@@ -284,13 +284,14 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 	divlist.clear();
 
 	auto rv = factorise(tnum, f, nullptr);
-	if (rv) {
-		divisors = f.NoOfDivs();
-		numdiv = MulPrToLong(divisors);
-		numfactors = f.fsize();
-	}
-	else return 0;
 
+	if (!rv) {
+		return 0;
+	}
+
+	divisors = f.NoOfDivs();
+	numdiv = MulPrToLong(divisors);   /* number of divisors of tnum */
+	numfactors = f.fsize();           /* number of unique prime factors of tnum */
 	divlist.resize(numdiv);
 
 	divlist[ctr++] = 1;  // 1st divisor
@@ -1815,13 +1816,15 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 			for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
-					/* we have a match */
+					/* we have a match to a function name */
 					nxtToken.typecode = types::func;
 					nxtToken.function = int(ix);        /* save index into functionList*/
 					nxtToken.numops = functionList[ix].NoOfParams;     
 					nxtToken.oper = functionList[ix].fCode;  
-					exprIndex += (int)strlen(functionList[ix].fname); // move exprIndex past function name
-					break;
+					exprIndex += (int)strlen(functionList[ix].fname); 
+					            /* move exprIndex past function name */
+					goto next;  /* go to finish processing this token, then 
+								process rest of expr */
 				}
 			}
 
@@ -1837,9 +1840,12 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 				}
 
 				int length = exprIndex - exprIndexAux;
-				assert(length < 40);
-				char uid[40];
+				char uid[40];  /* buffer contains name of user-defined identifier */
 				Znum temp;
+
+				if (length >= sizeof(uid))  /* user id cannot exceed 39 characters */
+					return retCode::SYNTAX_ERROR;  /* unable to tokenise expression*/
+
 				strcpy_s(uid, sizeof(uid), expr.substr(exprIndexAux, length).data());
 				int rv = get_uvar(uid, temp); /* does variable exist already? */
 				if (rv < 0) {
@@ -1850,7 +1856,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 			}
 		}
 	
-
+next:
 		if (nxtToken.typecode == types::error)
 			return retCode::SYNTAX_ERROR;  /* unable to tokenise expression*/
 		else
@@ -1887,7 +1893,7 @@ static int new_uvar(const char *name) {
 
 		uvars.vars.resize(uvars.alloc);
 	}
-	/* copy variable name, then setvariable's value to 0 */
+	/* copy variable name, then set variable's value to 0 */
 	strcpy_s(uvars.vars[uvars.num].name, sizeof(uvars.vars[uvars.num].name),
 		name);
 	uvars.vars[uvars.num].data = 0;

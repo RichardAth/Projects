@@ -386,9 +386,8 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 				to get these factors.*/
 				long long factor;
 				factor = PollardRho(tnum);
-#ifdef _DEBUG
 				assert(tnum%factor == 0);
-#endif
+
 				if (factor > 1) {
 					tnum /= factor;
 					/* save smaller factor 1st in factorlist */

@@ -388,7 +388,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
 
 // returns 2^exp. exp must be less than 64
 constexpr unsigned __int64 pow2(unsigned int exp) {
-	//assert(exp < 64);
+	assert(exp < 64);
 	return 1ULL << exp;  // exp must be less than 64
 }
 unsigned __int64 R3(__int64 n);
