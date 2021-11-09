@@ -661,7 +661,7 @@ static Znum primRoot(const Znum &num) {
 	assert(rv);
 	for (int x = 0; x < totF.fsize(); x++)
 		powers.push_back(tot / totF.f[x].Factor);
-	/* powers contains 1 value for each prime factor of the totient. */
+	/* powers contains 1 value for each unique prime factor of the totient. */
 
 	/* test numbers 2 to num-1 */
 	for (Znum a = 2; a < num; a++) {
@@ -671,7 +671,7 @@ static Znum primRoot(const Znum &num) {
 		/* note that we only need to test certain values of p. We don't need to
 		 test all values from 1 to num. */
 		for (auto p : powers) {
-			mp = modPower(a, p, num);
+			mp = modPower(a, p, num);   /* mp = a^p mod num*/
 			if (mp == 1) {
 				/* a is not a primitive root */
 				skip = true;

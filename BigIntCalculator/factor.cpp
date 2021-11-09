@@ -764,7 +764,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			Factors.f[i].upperBound = -1; // Indicate that number is prime.
 			continue;
 		}
-		if (result > 1) {  /* number is a pseudo-prime */
+		if (result > 1) {  /* number is a pseudo-prime, but is NOT prime */
 			size_t fsave = Factors.f.size();
 			if (factorCarmichael(Zpower, Factors)) {
 				Factors.carm += (int)(Factors.f.size() - fsave); // record any increase in number of factors;

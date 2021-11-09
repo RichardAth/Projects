@@ -456,7 +456,8 @@ void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 Output: 0 = probable prime.
         1 = composite: not 2-Fermat pseudoprime.
         2 = composite: does not pass 2-SPRP test.
-        3 = composite: does not pass BPSW test.
+        3 = composite: does not pass BPSW test, but passes other tests.
+return value 2 or 3 indicates a pseudoprime e.g. carmichael number
 ***********************************************************************/
 int PrimalityTest(const Znum &Value, long long upperBound) {
 	int i, ctr;
@@ -486,7 +487,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 				return 2;       // Composite. Not 2-strong probable prime.
 			}
 			if (Mult4 == Value - 1) {
-				i = -1;         // Number is strong pseudoprime.
+				i = -1;         // Number is 2-strong pseudoprime.
 				break;
 			}
 			Mult1 = Mult4;
@@ -499,14 +500,16 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 		}
 	}
 
-	/* consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
+	/* Number passes 2-SPRP test. Now perform a further test to see whether it is
+	really prime or not.
+	consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
 	than Miller-Rabin because;
-	1.	There are no known BPSW pseudoprimes
+	1. There are no known BPSW pseudoprimes
 	2. It's faster than Miller-Rabin */
 
 	int rv2 = mpz_bpsw_prp(ZT(Value));
 	if (rv2 >= 1)
-		return 0;  // probably prime;
+		return 0;  // 'almost' certainly prime;
 	else if(rv2 == 0)
 		return 3;  // composite - fails BPSW test
 

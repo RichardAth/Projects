@@ -23,6 +23,22 @@ typedef boost::multiprecision::mpz_int Znum;
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum &n, const Znum &radix);
 void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex);
+
+/* counters showing how the factors were found */
+struct counters {
+	int pm1 = 0;           // power + / -1
+	int tdiv = 0;          // trial division
+	int prho = 0;          // Pollard-rho
+	int ecm = 0;           // elliptic curve
+	int siqs = 0;          // SIQS
+	int msieve = 0;        // Msieve
+	int yafu = 0;          // YAFU
+	int carm = 0;          // Carmichael
+	int leh = 0;           // Lehman:
+	int power = 0;		   // perfect power
+
+};
+
 class zFactors {
 public:
 	Znum Factor;
@@ -348,6 +364,22 @@ Repeated factors: No or Yes
 		}
 		else
 			return false;  /* n is not in any category that has primitive roots */
+	}
+
+	/* copy counters */
+	struct counters getCtrs() const {
+		struct counters temp;
+		temp.carm   = this->carm;    // Carmichael
+		temp.ecm    = this->ecm;     // elliptic curve
+		temp.leh    = this->leh;     // Lehman
+		temp.msieve = this->msieve;  // Msieve
+		temp.pm1    = this->pm1;     // power + / -1
+		temp.power  = this->power;   // perfect power
+		temp.prho   = this->prho;    // Pollard-rho
+		temp.siqs   = this->siqs;    // SIQS
+		temp.tdiv   = this->tdiv;    // trial division
+		temp.yafu   = this->yafu;    // YAFU
+		return temp;
 	}
 
 };

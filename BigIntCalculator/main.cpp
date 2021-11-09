@@ -644,6 +644,7 @@ struct summary {
 	int totalFacs;		// total number of factors (=1 for a prime number)
 	int testNum;		// test number (if applicable)
 	int sndFac;		    // number of decimal digits in 2nd largest factor
+	struct counters ctrs;
 };
 
 std::vector <summary> results;
@@ -652,9 +653,11 @@ std::vector <summary> results;
 static void printSummary(void) {
 	long long sec, min, hour;
 	double elSec;
-	printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac\n");
+	/* print column headings */
+	printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
+	printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv \n");
 	for (auto res : results) {
-		/* round to nearest second */
+		/* truncate elapsed time to nearest second */
 		sec = (long long)std::floor(res.time); // convert to an integer
 		min = sec / 60;  // min may be 0
 		elSec = res.time - min * 60;         // get seconds including fractional part
@@ -667,7 +670,13 @@ static void printSummary(void) {
 		else
 			printf_s("%.2f ", elSec);
 
-		printf_s("     %8d   %8d     %8d\n", res.NumFacs, res.totalFacs, res.sndFac);
+		/* print counters showing how factors were found */
+		printf_s("     %8d   %8d     %8d", res.NumFacs, res.totalFacs, res.sndFac);
+		printf_s("    %3d %3d %3d %3d %3d %3d ",
+			res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
+			res.ctrs.pm1, res.ctrs.ecm);
+		printf_s("%3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+			res.ctrs.msieve);
 	}
 }
 
@@ -755,6 +764,7 @@ static void doFactors(const Znum &Result, bool test) {
 			sum.NumFacs = (int)factorlist.fsize();
 			/* get number of digits in 2nd largest factor */
 			sum.sndFac = factorlist.sndFac();
+			sum.ctrs = factorlist.getCtrs();
 			results.push_back(sum);
 		}
 	}
@@ -813,6 +823,8 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 		if (method == 0)
 			factorlist.prCounts();   // print counts
+		else
+			sum.ctrs.yafu = sum.totalFacs;
 
 		std::cout << "test " << testnum << " completed at ";
 
@@ -822,6 +834,8 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
 		sum.testNum = testnum;
+		if (method != 0)
+			sum.ctrs = factorlist.getCtrs();
 		results.push_back(sum);
 		return false;   // not prime
 	}
@@ -1013,13 +1027,23 @@ static void doTests(void) {
 	ComputeExpr("n(10^15)^3*n(10^14)", x3, asgCt);  // test Lehman factorisation
 	factortest(x3, testcnt);
 
-	/* test using carmichael numbers. note that 1st example has no small factors  */
-	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
-		60977817398996785 };
+	/* test using carmichael numbers.  */
+	unsigned long long int carmichael[] = { 90256390764228001, 18118463305678126129, 
+		18265521244069461529,  18349357898532971521, 18308657203978189969 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
 		testcnt++;
 		factortest(carmichael[i], testcnt);
 	}
+
+	testcnt++;
+	ComputeExpr("16344221851913485532689", x3, asgCt);
+	testcnt++;
+	factortest(x3, testcnt);  /* 23 digit carmichael number */
+
+	testcnt++;
+	ComputeExpr("56897193526942024370326972321", x3, asgCt);
+	testcnt++;
+	factortest(x3, testcnt);  /* 29 digit pseudo-prime number */
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
 	ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
@@ -1581,16 +1605,18 @@ static void doTests5(void) {
 	return;
 }
 
-/* tests using only Msieve for factorisation. Factorise selected Mersenne numbers */
-static void doTests6(void) {
+/* tests using Msieve for factorisation. Factorise selected Mersenne numbers 
+if useMsieve = false use only YAFU. Normal yafu & msieve flags are ignored. */
+static void doTests6(bool useMsieve = true) {
 	bool yafusave = yafu;
 	bool msievesave = msieve;
 	Znum m;
-	msieve = true;
-	yafu = false;
+	msieve = useMsieve;
+	yafu = !useMsieve;
 	int testcnt = 1;
 
 	results.clear();
+	auto start = clock();	// used to measure execution time
 
 	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
 	m--;                // get 2^p -1
@@ -1627,15 +1653,19 @@ static void doTests6(void) {
 	*/
 
 	testcnt++;
-	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
+	mpz_ui_pow_ui(ZT(m), 2, 349);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m, testcnt);      // 107 digits
+	factortest(m, testcnt);      // 106 digits
 	/* p34 factor: 2927455476800301964116805545194017
 	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
     */
 	
 	yafu = yafusave;
 	msieve = msievesave;
+
+	auto end = clock();              // measure amount of time used
+	auto elapsed = (double)end - start;
+	PrintTimeUsed(elapsed, "tests completed time used = ");
 	printSummary();           // print 1 line per test
 }
 
@@ -2165,18 +2195,18 @@ static int processCmd(const std::string &command) {
 					return 1;
 				}
 	#else
-				return 0;
+				return 0;  /* Bignbr tests omitted */
 	#endif
 			case '4': {
 					doTests4();         // factorise Mersenne numbers 
 					return 1;
 				}
 			case '5': {
-					doTests5();         // do YAFU tests 
+					doTests6(false);         // do YAFU tests 
 					return 1;
 				}
 			case '6': {
-					doTests6();         // do Msieve tests 
+					doTests6(true);         // do Msieve tests 
 					return 1;
 				}
 			case '7': {
