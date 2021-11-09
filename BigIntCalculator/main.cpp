@@ -834,7 +834,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
 		sum.testNum = testnum;
-		if (method != 0)
+		if (method == 0)
 			sum.ctrs = factorlist.getCtrs();
 		results.push_back(sum);
 		return false;   // not prime

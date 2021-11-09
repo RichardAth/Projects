@@ -599,8 +599,7 @@ static void subtFromAbsValue(limb *pLimbs, int *pNbrLimbs, int subt) {
 }
 
 /* i = (i-subt)/divisor. Assume (without checking) that divisor > 0.
-Does not appear to handle -ve divisor 
-used for operator overloading */
+Does not appear to handle -ve divisor */
 void subtractdivide(BigInteger &i, int subt, int divisor)
 {
 	int nbrLimbs = i.nbrLimbs;
@@ -963,7 +962,7 @@ void LLToBig(BigInteger &num, long long LL, int exp) {
 }
 
 /* shift first left by the number of bits specified in shiftCtr. A -ve value
-in shiftCtr causes a right shift.
+in shiftCtr causes a right shift. Used for operator overloading
 Right Shifts simulate 2s complement arithmetic right shift.
 Mathematically, the shift result is equivalent to result = first * 2^shiftCtr,
 whether ShiftCtr is +ve or -ve. */

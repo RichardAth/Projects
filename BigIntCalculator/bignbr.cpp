@@ -12,9 +12,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-//#include <string>
-//#include <vector>
-//#include <cmath>
+
 #include "pch.h"
 #include "bignbr.h"
 #include "factor.h"
@@ -47,6 +45,7 @@ void ChSignBigNbrB(int nbr[], int length)
 	nbr[ctr] = carry - nbr[ctr];  /* last word does not have most significant bit masked off */
 }
 
+/* get number of limbs in Nbr */
 int BigNbrLen(const long long Nbr[], int nbrLen) {
 	int ix;
 	for (ix = nbrLen; ix > 0; ix--) {
