@@ -123,5 +123,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="x64\Release\BigIntCalculator.ini" />
+    <None Include="..\..\..\..\..\Documents\my word docs\inverse_totient.docx">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -25,14 +25,18 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 bool getBit(const unsigned long long int x, const bool array[]);
 void biperm(int n, Znum &result);  
 Znum llt(const Znum &p);
+size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
+	int level, bool dump);
 
+/* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
 int get_uvar(const char *name, Znum data);
 static void free_uvars();
 
-
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
+std::vector <Znum> roots;   /* used by functions that return multiple values */
+bool multiValue = false;
 
 typedef struct        // used for user variables
 {
@@ -50,92 +54,37 @@ typedef struct
 //user variables
 uvars_t uvars ;
 
-/* list of operators, arranged in order of priority. Order is not exactly the
-same as C or Python. */
+/* list of operators, arranged in order of priority, order is not exactly the
+same as C or Python. Followed by list of function codes*/
 enum class opCode {
-	fact = 21,	// !   factorial 
-	//dfact       = 22,	// !!  double factorial
-	prim = 23,	// #   primorial
-	unary_minus = 1,   // C and Python put unary minus above multiply, divide & modulus
-	not = 16,   // C and Python put bitwise not with unary minus
-	power = 0,
-	multiply = 2,
-	divide = 3,
-	remainder = 4,   // AKA modulus
-	comb = 5,   // nCk, also known as binomial coefficient
-	plus = 6,
-	minus = 7,
-	shr = 8,
-	shl = 9,
+	fact        = 21,	// !   factorial 
+	prim        = 23,	// #   primorial
+	unary_minus = 1,    // C and Python put unary minus above multiply, divide & modulus
+	not         = 16,   // C and Python put bitwise not with unary minus
+	power       = 0,
+	multiply    = 2,
+	divide      = 3,
+	remainder   = 4,   // AKA modulus
+	comb        = 5,   // nCk, also known as binomial coefficient
+	plus        = 6,
+	minus       = 7,
+	shr         = 8,   // right shift
+	shl         = 9,   // left shift
 	not_greater = 10,
-	not_less = 11,
-	greater = 12,
-	less = 13,
-	not_equal = 14,
-	equal = 15,
-	and = 17,      // C and Python put AND before XOR before OR
-	xor = 18,
-	or = 19,
-	leftb = 20,
-	assign = 24,              /* assignment operator */
-	rightb = 25,              // right bracket (must be highest value)
-};
-
-/* list of operators. Priority values lower value = higher priority. Note: this
-order is not the same as C or Python. The operator attributes are obtained by
-using the opCode (cast to an integer) as the index. */
-
-struct attrs {
-	int pri;  /* operator precedence, 0 is highest, 99 is lowest */
-	bool left;   /* associativity ; true = left to right, false = right to left
-			operators with the same precedence must have the same associativity. */
-	bool pre;    /* true if unary operator e.g. - precedes expression, false if
-					it follows e.g. !, otherwise not used */
-	int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
-};
-
-const static attrs opr[] = {
-	{2,  false, false, 2},  // 0 power (right to left)
-	{1,  false, true,  1},  // 1 unary minus (right to left)
-	{3,  true,  false, 2},  // 2 multiply
-	{3,  true,  false, 2},  // 3 divide
-	{3,  true,  false, 2},  // 4 remainder AKA modulus
-	{4,  true,  false, 2},  // 5 combination nCk, also known as binomial coefficient
-	{5,  true,  false, 2},  // 6 plus
-	{5,  true,  false, 2},  // 7 minus
-	{6,  true,  false, 2},  // 8 shift right
-	{6,  true,  false, 2},  // 9 shift left
-	{7,  true,  false, 2},  // 10 compare less or equal (not greater)
-	{7,  true,  false, 2},  // 11 compare greater or equal (not less)
-	{7,  true,  false, 2},  // 12 greater
-	{7,  true,  false, 2},  // 13 less
-	{8,  true,  false, 2},  // 14 not equal
-	{8,  true,  false, 2},  // 15 equal
-	{1,  false, true,  1},  // 16 NOT (unary operator ,right to left))
-	{9,  true,  false, 2},  // 17 AND
-	{10, true,  false, 2},  // 18 XOR
-	{11, true,  false, 2},  // 19 OR
-	{99, true,  false, 0},  // 20 left bracket
-	{0,  true,  false, 1},  // 21 ! factorial (unary operator)
-	{0,  true,  false, 1},  // 22 !! double factorial (unary operator)
-	{0,  true,  false, 1},  // 23 # primorial (unary operator)
-	{12, false, false, 2},  // 24 assignment
-	{-1, true,  false, 0},  // 25 right bracket
-};
-
-
-enum class types { Operator, func, number, comma, error, uservar, end };
-
-struct token {
-	types typecode;
-	long long function;   /* contains function code index,  only when typecode = func */
-	opCode oper;    /* contains operator value, only when typecode = Operator */
-	Znum value;     /* contains numeric value,  only when typecode = number */
-	size_t userIx;  /* index into user variable list (only when typecode = uservar) */
-};
-
-enum class fn_Code {
-	fn_gcd,
+	not_less    = 11,
+	greater     = 12,
+	less        = 13,
+	not_equal   = 14,
+	equal       = 15,
+	and         = 17,      // C and Python put AND before XOR before OR
+	xor         = 18,
+	or          = 19,
+	leftb       = 20,
+	assign      = 24,       /* assignment operator */
+	rightb      = 25,       // right bracket 
+/* functions */
+	fn_gcd      = 100,
+	fn_lcm,
 	fn_modpow,
 	fn_modinv,
 	fn_totient,
@@ -150,116 +99,148 @@ enum class fn_Code {
 	fn_luc,
 	fn_primePi,
 	fn_part,
-	fn_np,
-	fn_pp,
+	fn_np,                /* next prime*/
+	fn_pp,                /* previous prime */
 	fn_r2,
 	fn_r3,
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
 	fn_llt,
-	fn_sqrt,
-	fn_nroot,
-	fn_bpsw,
-	fn_aprcl,
-	fn_numfact,
-	fn_minfact,
-	fn_maxfact,
-	fn_ispow,
-	fn_modsqrt,
+	fn_sqrt,              /* square root */
+	fn_nroot,             /* nth root */
+	fn_bpsw,              /* primality test */
+	fn_aprcl,             /* primality test */
+	fn_numfact,           /* number of factors */
+	fn_minfact,           /* smallest factor */
+	fn_maxfact,           /* largest factor */
+	fn_ispow,             /* check if perfect power */
+	fn_modsqrt,           /* modular square root */
+	fn_invtot,            /* inverse totient */
+	fn_divisors,          /* list of divisors */
+	fn_primroot,          /* lowest primitive root */
 	fn_invalid = -1,
 };
+
 
 struct  functions {
 	char fname[11];        // maximum name length 10 chars (allow for null terminator)
 	int  NoOfParams;       // number of parameters 
-	fn_Code  fCode;        // integer code for function
+	opCode  fCode;        // integer code for function
 };
 
-/* list of function names. No function name can begin with C because this would
- conflict with the C operator. Longer names must come before short ones
- that start with the same letters to avoid mismatches */
-const static std::array <struct functions, 32> functionList{
-	"GCD",       2,  fn_Code::fn_gcd,			// name, number of parameters, code
-	"MODPOW",    3,  fn_Code::fn_modpow,
-	"MODINV",    2,  fn_Code::fn_modinv,
-	"TOTIENT",   1,  fn_Code::fn_totient,
-	"SUMDIVS",   1,  fn_Code::fn_sumdivs,
-	"SUMDIGITS", 2,  fn_Code::fn_sumdigits,
-	"SQRT",      1,  fn_Code::fn_sqrt,
-	"NUMDIGITS", 2,  fn_Code::fn_numdigits,
-	"NUMDIVS",   1,  fn_Code::fn_numdivs,
-	"NROOT",     2,  fn_Code::fn_nroot,
-	"REVDIGITS", 2,  fn_Code::fn_revdigits,
-	"ISPRIME",   1,	 fn_Code::fn_isprime,
-	"NUMFACT",   1,  fn_Code::fn_numfact,
-	"MINFACT",   1,  fn_Code::fn_minfact,
-	"MAXFACT",   1,  fn_Code::fn_maxfact,
-	"FactConcat",2,  fn_Code::fn_concatfact,     // FactConcat must come before F
-	"F",         1,  fn_Code::fn_fib,			// fibonacci
-	"LLT",	     1,  fn_Code::fn_llt,           // lucas-Lehmer test
-	"LE",		 2,  fn_Code::fn_legendre,
-	"L",         1,  fn_Code::fn_luc,			// Lucas Number
-	"PI",		 1,  fn_Code::fn_primePi,		// prime-counting function. PI must come before P
-	"P",         1,  fn_Code::fn_part,			// number of partitions
-	"N",         1,  fn_Code::fn_np,			// next prime
-	"BPSW",      1,  fn_Code::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff
-	"B",         1,  fn_Code::fn_pp,			// previous prime
-	"R2",		 1,  fn_Code::fn_r2,			// number of ways n can be expressed as sum of 2 squares
-	"R3",        1,  fn_Code::fn_r3,            // number of ways n can be expressed as sum of 3 squares
-	"JA",		 2,  fn_Code::fn_jacobi,
-	"KR",		 2,  fn_Code::fn_kronecker,
-	"APRCL",     1,  fn_Code::fn_aprcl,          // APR-CL prime test
-	"ISPOW",     1,  fn_Code::fn_ispow,
-	"MODSQRT",   2,  fn_Code::fn_modsqrt,        // find x such that x^2 = a mod p
+/* list of function names. No function name can begin with C, SHL, SHR, NOT, 
+ AND, OR, XOR because this would conflict with the operator. 
+ Longer names must come before short ones that start with the same letters to 
+ avoid mismatches */
+const static struct functions functionList[]{
+	"MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
+	"MODINV",    2,  opCode::fn_modinv,
+	"TOTIENT",   1,  opCode::fn_totient,
+	"SUMDIVS",   1,  opCode::fn_sumdivs,
+	"SUMDIGITS", 2,  opCode::fn_sumdigits,
+	"SQRT",      1,  opCode::fn_sqrt,
+	"NUMDIGITS", 2,  opCode::fn_numdigits,
+	"NUMDIVS",   1,  opCode::fn_numdivs,
+	"NROOT",     2,  opCode::fn_nroot,
+	"REVDIGITS", 2,  opCode::fn_revdigits,
+	"ISPRIME",   1,	 opCode::fn_isprime,
+	"NUMFACT",   1,  opCode::fn_numfact,
+	"MINFACT",   1,  opCode::fn_minfact,
+	"MAXFACT",   1,  opCode::fn_maxfact,
+	"MODSQRT",   2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
+	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
+	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
+	"PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
+	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
+	"LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
+	"F",         1,  opCode::fn_fib,			// fibonacci
+	"LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
+	"LE",		 2,  opCode::fn_legendre,
+	"L",         1,  opCode::fn_luc,			// Lucas Number
+	"PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
+	"P",         1,  opCode::fn_part,			// number of partitions
+	"N",         1,  opCode::fn_np,			// next prime
+	"BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
+	"B",         1,  opCode::fn_pp,			// previous prime
+	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
+	"JA",		 2,  opCode::fn_jacobi,
+	"KR",		 2,  opCode::fn_kronecker,
+	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
+	"ISPOW",     1,  opCode::fn_ispow,
 };
 
+/* list of operators.  */
 struct oper_list{
-	char oper[4];
+	char oper[4];       /* operator as ascii string*/
 	opCode operCode;
-	int operPrio;
+	int pri;     /* operator precedence, 0 is highest, 99 is lowest */
+	bool left;   /* associativity ; true = left to right, false = right to left
+		operators with the same precedence must have the same associativity. */
+	bool pre;    /* true if unary operator e.g. - precedes expression, false if
+					it follows e.g. !, otherwise not used */
+	int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 /* list of operators with corresponding codes and priority. For the search to
 work correctly
-!! must precede !,
 ** must precede *,
 << and <= must precede <
 >> and >= must precede > in this list.
-unary minus and unary plus are NOT in this list. */
+unary plus is NOT in this list. 
+unary minus is last entry */
 const static struct oper_list operators[]{
-		{"C",	 opCode::comb,	      3},
-		{ "^",   opCode::power,       0},
-		{ "**",  opCode::power,       0},     // can use ^ or ** for exponent
-		{ "*",   opCode::multiply,    2},
-		{ "/",   opCode::divide,      2},
-		{ "%",   opCode::remainder,   2},
-		{ "+",   opCode::plus,        4},
-		{ "-",   opCode::minus,       4},
-		{ "SHL", opCode::shl,         5},
-		{ "<<",  opCode::shl,         5},     // can use << or SHL for left shift
-		{ "SHR", opCode::shr,         5},
-		{ ">>",  opCode::shr,         5},     // can use SHR or >> for right shift
-		{ "<=",  opCode::not_greater, 6},
-		{ ">=",  opCode::not_less,    6},
-		{ ">",   opCode::greater,     6},	  // to avoid mismatches > and < must come after >> and <<
-		{ "<",   opCode::less,        6},
-		{ "!=",  opCode::not_equal,   7},
-		{ "==",  opCode::equal,       7},
-		{ "NOT", opCode::not,         1},      // bitwise NOT
-		{ "AND", opCode::and,         9},      // bitwise AND
-		{ "OR",  opCode:: or,        11},      // bitwise OR
-		{ "XOR", opCode::xor,        10},      // bitwise exclusive or
-	  //{ "!!",  opCode::dfact,       1},      // double factorial
-		{ "!",   opCode::fact,        1},      // multi-factorial
-		{ "#",   opCode::prim,        1},      // primorial
-		{ "(",   opCode::leftb,      12},      // left bracket
-		{ ")",   opCode::rightb,      0},      // left bracket
-		{"=", opCode::assign,        12},      // assignment
+		{"C",	 opCode::comb,	      4,  true,  false, 2},  // combination nCk, also known as binomial coefficient
+		{ "^",   opCode::power,       2,  false, false, 2},
+		{ "**",  opCode::power,       2,  false, false, 2},   // can use ^ or ** for exponent
+		{ "*",   opCode::multiply,    3,  true,  false, 2},
+		{ "/",   opCode::divide,      3,  true,  false, 2},
+		{ "%",   opCode::remainder,   3,  true,  false, 2},
+		{ "+",   opCode::plus,        5,  true,  false, 2},
+		{ "-",   opCode::minus,       5,  true,  false, 2},
+		{ "SHL", opCode::shl,         6,  true,  false, 2},
+		{ "<<",  opCode::shl,         6,  true,  false, 2},     // can use << or SHL for left shift
+		{ "SHR", opCode::shr,         6,  true,  false, 2},
+		{ ">>",  opCode::shr,         6,  true,  false, 2},     // can use SHR or >> for right shift
+		{ "<=",  opCode::not_greater, 7,  true,  false, 2},
+		{ ">=",  opCode::not_less,    7,  true,  false, 2},
+		{ ">",   opCode::greater,     7,  true,  false, 2},	  // to avoid mismatches > and < must come after >> and <<
+		{ "<",   opCode::less,        7,  true,  false, 2},
+		{ "!=",  opCode::not_equal,   8,  true,  false, 2},
+		{ "==",  opCode::equal,       8,  true,  false, 2},
+		{ "NOT", opCode::not,         1,  false, true,  1},      // bitwise NOT
+		{ "AND", opCode::and,         9,  true,  false, 2},      // bitwise AND
+		{ "OR",  opCode:: or,        11,  true,  false, 2},      // bitwise OR
+		{ "XOR", opCode::xor,        10,  true,  false, 2},      // bitwise exclusive or
+	  //{ "!!",  opCode::dfact,       0,  true,  false, 1},      // double factorial
+		{ "!",   opCode::fact,        0,  true,  false, 1},      // multi-factorial
+		{ "#",   opCode::prim,        0,  true,  false, 1},      // primorial
+		{ "(",   opCode::leftb,      99, true,  false, 0},      // left bracket
+		{ ")",   opCode::rightb,     -1, true,  false, 0},      // right bracket
+		{"=",    opCode::assign,     12, false, false, 2},      // assignment
+		/* unary - must be the last entry */
+        {"U-",   opCode::unary_minus, 1, false, true,  1 },     // unary -
 };
 
+enum class types { Operator, func, number, comma, error, uservar, end };
 
-/* forward references */
+struct token {
+	types typecode;
+	int function;   /* contains function code index, when typecode = func 
+					   contains operator index when typecode = Operator */
+	opCode oper;    /* contains operator value, only when typecode = Operator or func */
+	Znum value;     /* contains numeric value,  only when typecode = number */
+	size_t userIx;  /* index into user variable list (only when typecode = uservar) */
+	short numops;   /* number of operands/parameters */
+};
+
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
+
+// returns true if num is a perfect square.
+bool isPerfectSquare(const Znum &num) {
+	return (mpz_perfect_square_p(ZT(num)) != 0); /* true if num is a perfect square */
+}
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1)
 where p=prime factor and e=exponent.*/
@@ -280,14 +261,67 @@ static Znum ComputeTotient(const Znum &n) {
 static Znum ComputeNumDivs(const Znum &n) {
 	fList factorlist;
 
-	if (n == 1)
-		return 1;  // 1 only has one divisor. NoOfDivs can't handle that case
 	auto rv = factorise(n, factorlist, nullptr);
 	if (rv) {
 		auto divisors = factorlist.NoOfDivs();
 		return divisors;
 	}
 	else return 0;
+}
+
+/* generate sorted list of all divisors of tnum
+N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
+the value returned is the number of divisors.
+*/
+static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
+
+	fList f;          /* prime factors of tnum */
+	Znum divisors;    /* number of divisors */
+	long long numdiv;
+	size_t ctr = 0, ct2, ccpy;
+	long long numfactors;  /* number of unique factors */
+
+	divlist.clear();
+
+	auto rv = factorise(tnum, f, nullptr);
+
+	if (!rv) {
+		return 0;
+	}
+
+	divisors = f.NoOfDivs();
+	numdiv = MulPrToLong(divisors);   /* number of divisors of tnum */
+	numfactors = f.fsize();           /* number of unique prime factors of tnum */
+	divlist.resize(numdiv);
+
+	divlist[ctr++] = 1;  // 1st divisor
+
+	if (tnum <= 1)
+		return 1;
+
+	for (long long i = 0; i < numfactors; i++) {
+		ct2 = 0;
+		ccpy = ctr;
+		for (int x = 1; x <= f.f[i].exponent; x++) {
+			for (size_t j = 0; j < ctr; j++)
+				divlist[j + ccpy] = divlist[j + ct2] * f.f[i].Factor;
+			ct2 += ctr;
+			ccpy += ctr;
+		}
+		ctr = ccpy;
+	}
+
+	std::sort(divlist.begin(), divlist.end());
+#ifdef _DEBUG
+	//if (verbose > 0) {
+	//	gmp_printf("divisors of %Zd are: ", tnum);
+	//	for (int i = 0; i < numdiv; i++) {
+	//		gmp_printf("%Zd ", divlist[i]);
+	//	}
+	//	putchar('\n');
+	//}
+#endif
+	return numdiv;
 }
 
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1)
@@ -383,7 +417,7 @@ number of bits to shift is negative, this is actually a right shift. If result w
 be too large an error is reported. */
 static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
 	if (bits > LLONG_MAX || bits < LLONG_MIN)
-		return retCode::EXPR_INVALID_PARAM;
+		return retCode::INVALID_PARAM;
 
 	long long shift = MulPrToLong(bits);
 
@@ -396,7 +430,7 @@ static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
 	// using multiplication or division
 	if (shift > 0) {
 		if (NoOfBits(first) + shift > 66439) // more than 66439 bits -> more than 20,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		mpz_mul_2exp(ZT(result), ZT(first), shift);
 		return retCode::EXPR_OK;
 	}
@@ -455,7 +489,7 @@ static int PrimalityTestSmall(const long long Value) {
 /*  B(n): Previous probable prime before n */
 static retCode ComputeBack(const Znum &n, Znum &p) {
 	if (n < 3)
-		return retCode::EXPR_INVALID_PARAM;  // 2 is the smallest prime
+		return retCode::NUMBER_TOO_LOW;  // 2 is the smallest prime
 	if (n == 3) {
 		p = 2;
 		return retCode::EXPR_OK;
@@ -606,247 +640,300 @@ static Znum R3(Znum num) {
 	return sum;
 }
 
+/* find smallest primitive root of num. return -1 for error 
+see https://en.wikipedia.org/wiki/Primitive_root_modulo_n */
+static Znum primRoot(const Znum &num) {
+	fList factorlist, totF;
+	std::vector <Znum> powers;  /* values of exponent that we need to use in testing */
+	Znum mp;    /* mp = a^p mod num*/
+	bool skip = false;
+
+	if (num <= 1)
+		return -1;    /* don't allow -ve, 0, or 1 values */
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, nullptr);
+	assert(rv);
+	if (!factorlist.hasPrimitiveRoot()) {
+		return -1;  /* there are no primitive roots */
+	 }
+	Znum tot = factorlist.totient();   /* get totient of num */
+	rv = factorise(tot, totF, nullptr); /* get factors of totient */
+	assert(rv);
+	for (int x = 0; x < totF.fsize(); x++)
+		powers.push_back(tot / totF.f[x].Factor);
+	/* powers contains 1 value for each prime factor of the totient. */
+
+	/* test numbers 2 to num-1 */
+	for (Znum a = 2; a < num; a++) {
+		if (gcd(a, num) != 1 || isPerfectSquare(a))
+			continue; /* maybe save time by perfect square test? */
+		skip = false;
+		/* note that we only need to test certain values of p. We don't need to
+		 test all values from 1 to num. */
+		for (auto p : powers) {
+			mp = modPower(a, p, num);
+			if (mp == 1) {
+				/* a is not a primitive root */
+				skip = true;
+				break;
+			}
+		}
+		if (!skip)
+			return a;  /* a passes tests; it is a primitive root */
+	}
+
+	return -1;  /* should never reach this point */
+}
+
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
-e.g. EXPR_DIVIDE_BY_ZERO otherwise return EXPR_OK. */
-static retCode ComputeSubExpr(const opCode stackOper, const Znum &firstArg,
-	const Znum &secondArg, Znum &result) {
+e.g. DIVIDE_BY_ZERO otherwise return EXPR_OK. 
+For functions, do any further checks needed on the parameter values, then 
+evaluate the function. gcd and lcm functions have a variable number of parameters. 
+Some functions can generate error codes. */
+static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &p, Znum &result) {
+
+	int rv;
+	Znum temp;
+	retCode retcode = retCode::EXPR_OK;
 
 	switch (stackOper) {
 
 	case opCode::comb: {  // calculate nCk AKA binomial coefficient
-		if (secondArg > INT_MAX)
-			return retCode::EXPR_NUMBER_TOO_HIGH;
-		if (secondArg < 1)
-			return retCode::EXPR_INVALID_PARAM;
-		long long k = MulPrToLong(secondArg);
-		mpz_bin_ui(ZT(result), ZT(firstArg), k);
+		if (p[1] > INT_MAX)
+			return retCode::NUMBER_TOO_HIGH;
+		if (p[1] < 1)
+			return retCode::NUMBER_TOO_LOW;
+		long long k = MulPrToLong(p[1]);
+		mpz_bin_ui(ZT(result), ZT(p[0]), k);
 		return retCode::EXPR_OK;
 	}
 	case opCode::plus: {
-		result = firstArg + secondArg;
+		result = p[0] + p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::minus: {
-		result = firstArg - secondArg;
+		result = p[0] - p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::unary_minus: {
-		result = -firstArg;
+		result = -p[0];
 		return retCode::EXPR_OK;
 	}
 	case opCode::divide: {
-		if (secondArg == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = firstArg / secondArg;
+		if (p[1] == 0)
+			return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+		/* use truncation division */
+		result = p[0] / p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::multiply: {
-		auto resultsize = NoOfBits(firstArg) + NoOfBits(secondArg);
+		auto resultsize = NoOfBits(p[0]) + NoOfBits(p[1]);
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
-		result = firstArg * secondArg;
+			return retCode::INTERM_TOO_HIGH;
+		result = p[0] * p[1];
 		return retCode::EXPR_OK;
 	}
 	case opCode::remainder: {
-		if (secondArg == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;  // result would be infinity
-		result = firstArg % secondArg;
+		if (p[1] == 0)
+			return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+		//result = p[0] % p[1];
+		/* use truncation division */
+		mpz_tdiv_r(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::power: {
-		if (secondArg > INT_MAX)
-			return retCode::EXPR_EXPONENT_TOO_LARGE;
-		if (secondArg < 0)
-			return retCode::EXPR_EXPONENT_NEGATIVE;
-		long long exp = MulPrToLong(secondArg);
-		auto resultsize = (NoOfBits(firstArg) - 1)* exp;  // estimate number of bits for result
+		if (p[1] > INT_MAX)
+			return retCode::EXPONENT_TOO_LARGE;
+		if (p[1] < 0)
+			return retCode::EXPONENT_NEGATIVE;
+		long long exp = MulPrToLong(p[1]);
+		auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
 		if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-			return retCode::EXPR_INTERM_TOO_HIGH;
-		mpz_pow_ui(ZT(result), ZT(firstArg), exp);
+			return retCode::INTERM_TOO_HIGH;
+		mpz_pow_ui(ZT(result), ZT(p[0]), exp);
 		return retCode::EXPR_OK;
 	}
 	case opCode::equal: {
-		if (firstArg == secondArg)
+		if (p[0] == p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_equal: {
-		if (firstArg != secondArg)
+		if (p[0] != p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::greater: {
-		if (firstArg > secondArg)
+		if (p[0] > p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_greater: {
-		if (firstArg <= secondArg)
+		if (p[0] <= p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::less: {
-		if (firstArg < secondArg)
+		if (p[0] < p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::not_less: {
-		if (firstArg <= secondArg)
+		if (p[0] <= p[1])
 			result = -1;
 		else
 			result = 0;
 		return retCode::EXPR_OK;
 	}
 	case opCode::shl: {
-		return ShiftLeft(firstArg, secondArg, result);
+		return ShiftLeft(p[0], p[1], result);
 	}
 	case opCode::shr: {
 		// invert sign of shift
-		return ShiftLeft(firstArg, -secondArg, result);
+		return ShiftLeft(p[0], -p[1], result);
 	}
-	case opCode::not: {   // Perform binary NOT 
-		//result = -1 - firstArg;  // assumes 2s complement binary numbers
-		mpz_com(ZT(result), ZT(firstArg));
+	case opCode::not: /* Perform binary NOT */ {   
+		//result = -1 - p[0];  // assumes 2s complement binary numbers
+		mpz_com(ZT(result), ZT(p[0]));
 		return retCode::EXPR_OK;
 	}
-	case opCode::and: {  // Perform binary AND.
-		mpz_and(ZT(result), ZT(firstArg), ZT(secondArg));
+	case opCode::and: /* Perform binary AND. */ {  
+		mpz_and(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
-	case opCode:: or : {   // Perform binary OR.
-		mpz_ior(ZT(result), ZT(firstArg), ZT(secondArg));
+	case opCode::or:  /* Perform binary OR. */ {   
+		mpz_ior(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
-	case opCode::xor: {   // Perform binary XOR.
-		mpz_xor(ZT(result), ZT(firstArg), ZT(secondArg));
+	case opCode::xor: /*  Perform binary XOR. */ {   
+		mpz_xor(ZT(result), ZT(p[0]), ZT(p[1]));
 		return retCode::EXPR_OK;
 	}
 	case opCode::fact: {
 		/* hard-coded limits allow size limit check before calculating the factorial */
 		int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
 			 38536, 42873, 47172 };
-		if (firstArg < 0)
-			return retCode::EXPR_INVALID_PARAM;
-		if (firstArg > LLONG_MAX)
-			return retCode::EXPR_NUMBER_TOO_HIGH;
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;
+		if (p[0] > LLONG_MAX)
+			return retCode::NUMBER_TOO_HIGH;
 
-		long long temp = llabs(MulPrToLong(firstArg));
-		long long t2 = MulPrToLong(secondArg);
+		long long temp = llabs(MulPrToLong(p[0]));
+		long long t2 = MulPrToLong(p[1]);
 		if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
 			/* more than 20,000 digits in base 10 */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 
 		mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
 		if (ZT(result)->_mp_size > 1039)
 			/* more than 20,000 digits in base 10 */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 
 		return retCode::EXPR_OK;
 	}
 	case opCode::prim: {
-		if (firstArg > 46340)
-			return retCode::EXPR_INTERM_TOO_HIGH;
-		if (firstArg < 0)
-			return retCode::EXPR_INVALID_PARAM;
-		long long temp = llabs(MulPrToLong(firstArg));
+		if (p[0] > 46340)
+			return retCode::INTERM_TOO_HIGH;
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;
+
+		long long temp = llabs(MulPrToLong(p[0]));
 		mpz_primorial_ui(ZT(result), temp);  // get primorial
 		return retCode::EXPR_OK;
 	}
 
-	default:
-		abort();	// should never get here
-	}
-}
-
-/* Do any further checks needed on the parameter values, then evaluate the function.
-Only ModPow uses all 3 parameters. Some functions can generate error codes. */
-static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
-	const Znum &p3, Znum &result) {
-	int rv;
-	Znum temp;
-	retCode retcode = retCode::EXPR_OK;
-
-	/* evaluate function value using parameter values  */
-	switch (fcode) {
-	case fn_Code::fn_gcd: {			// GCD	
-		//mpz_gcd(ZT(result), ZT(p1), ZT(p2));
-		result = gcd(p1, p2);
-		break;
-	}
-	case fn_Code::fn_modpow: {						// MODPOW
-		if (p3 == 0)
-			return retCode::EXPR_DIVIDE_BY_ZERO;
-		if (p2 < 0) {
-			if (gcd(p1, p3) != 1)
-				return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;  // p1 and p3 not mutually prime
+	case opCode::fn_gcd: /* GCD */ {
+		//mpz_gcd(ZT(result), ZT(p[0]), ZT(p[1]));
+		result = p[0];
+		/* gcd has 1 or mor parameters */
+		for (int ix = 1; ix < p.size(); ix++) {
+			result = gcd(result, p[ix]);
 		}
-		/* note: negative exponent is only allowed if p1 & p3 are mutually prime,
-		i.e modular inverse of p1 wrt p3 exists. */
-		mpz_powm(ZT(result), ZT(p1), ZT(p2), ZT(p3));
 		break;
 	}
-	case fn_Code::fn_modinv: {						// MODINV
+	case opCode::fn_lcm: /* Least Common Multiple */ {
+		result = p[0];
+		/* lcm has 1 or more parameters */
+		for (int ix = 1; ix < p.size(); ix++) {
+			result = lcm(result, p[ix]);
+		}
+		break;
+	}
+	case opCode::fn_modpow: {						// MODPOW
+		if (p[2] == 0)
+			return retCode::DIVIDE_BY_ZERO;
+		if (p[1] < 0) {
+			if (gcd(p[0], p[2]) != 1)
+				return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
+		}
+		/* note: negative exponent is only allowed if p[0] & p[2] are mutually prime,
+		i.e modular inverse of p[0] wrt p[2] exists. */
+		mpz_powm(ZT(result), ZT(p[0]), ZT(p[1]), ZT(p[2]));
+		break;
+	}
+	case opCode::fn_modinv: /* modular inverse */ {
 		/* if an inverse doesn’t exist the return value is zero and rop is undefined*/
-		rv = mpz_invert(ZT(result), ZT(p1), ZT(p2));
+		rv = mpz_invert(ZT(result), ZT(p[0]), ZT(p[1]));
 		if (rv == 0) {
-			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
+			return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;
 		}
 		break;
 	}
 
-	case fn_Code::fn_totient: {			// totient
-		if (p1 < 1) return retCode::EXPR_INVALID_PARAM;
-		result = ComputeTotient(p1);
+	case opCode::fn_totient: {			// totient
+		if (p[0] < 1) 
+			return retCode::NUMBER_TOO_LOW;;
+		result = ComputeTotient(p[0]);
 		break;
 	}
-	case fn_Code::fn_numdivs: {		// NUMDIVS
-		if (p1 < 1) {
-			return retCode::EXPR_INVALID_PARAM;
+	case opCode::fn_numdivs: {		// NUMDIVS
+		if (p[0] < 1) {
+			return retCode::NUMBER_TOO_LOW;
 		}
-		result = ComputeNumDivs(p1);
+		result = ComputeNumDivs(p[0]);
 		break;
 	}
-	case fn_Code::fn_sumdivs: {		// SUMDIVS
-		result = ComputeSumDivs(p1);
-		break;
-	}
-
-	case fn_Code::fn_sumdigits: {		// SumDigits(n, r) : Sum of digits of n in base r.
-		result = ComputeSumDigits(p1, p2);
-		break;
-	}
-	case fn_Code::fn_numdigits: {		// numdigits
-		result = ComputeNumDigits(p1, p2);
-		break;
-	}
-	case fn_Code::fn_revdigits: {	// revdigits
-		result = ComputeRevDigits(p1, p2);
+	case opCode::fn_sumdivs: {		// SUMDIVS
+		result = ComputeSumDivs(p[0]);
 		break;
 	}
 
-	case fn_Code::fn_isprime: {  // isprime
-						/* -1 indicates probably prime, 0 = composite */
-		result = PrimalityTest(abs(p1));
+	case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+		result = ComputeSumDigits(p[0], p[1]);
 		break;
 	}
-	case fn_Code::fn_fib: {		// fibonacci
-		if (p1 > 95700 || p1 < -95700)
+	case opCode::fn_numdigits: /* number of digits of p[0] in base p[1] */ {
+		result = ComputeNumDigits(p[0], p[1]);
+		break;
+	}
+	case opCode::fn_revdigits: {	// revdigits
+		result = ComputeRevDigits(p[0], p[1]);
+		break;
+	}
+
+	case opCode::fn_isprime: {  // isprime
+		/* -1 indicates probably prime, 0 = composite */
+		result = PrimalityTest(abs(p[0]));
+		break;
+	}
+	case opCode::fn_fib: /* fibonacci */ {	
+		if (p[0] > 95700 || p[0] < -95700)
 		{  /* result would exceed 20,000 digits */
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		}
-		long long temp = MulPrToLong(ZT(p1));
+		long long temp = MulPrToLong(ZT(p[0]));
 		bool neg = false;
 		if (temp < 0) {
 			/* is it a "negafibonacci" number? */
@@ -857,121 +944,128 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		if (neg) { result = -result; } /* flip sign for even -ve number */
 		break;
 	}
-	case fn_Code::fn_luc: {		// lucas number
-		if (p1 < 0) {
-			return retCode::EXPR_INVALID_PARAM;
+	case opCode::fn_luc: /* lucas number */ {
+		if (p[0] < 0) {
+			return retCode::NUMBER_TOO_LOW;
 		}
-		if (p1 > 95700)
+		if (p[0] > 95700)
 		{
-			return retCode::EXPR_INTERM_TOO_HIGH;
+			return retCode::INTERM_TOO_HIGH;
 		}
-		long long temp = MulPrToLong(p1);
+		long long temp = MulPrToLong(p[0]);
 		mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
 		break;
 	}
 
-	case fn_Code::fn_part: {              // number of partitions
-		if (p1 < 0 || p1 > 1000000) {
-			return retCode::EXPR_INVALID_PARAM;
+	case opCode::fn_part: /* number of partitions */ {
+		if (p[0] > 1000000) {
+			return retCode::NUMBER_TOO_HIGH;
 			// note: biperm is limited to values <= 1,000,000
 		}
-		int temp = (int)MulPrToLong(p1);
+		if (p[0] < 0) {
+			return retCode::NUMBER_TOO_LOW;
+			// note: biperm is limited to values <= 1,000,000
+		}
+		int temp = (int)MulPrToLong(p[0]);
 		biperm(temp, result);   // calculate number of partitions
 		break;
 	}
-	case fn_Code::fn_np: {  // next prime;
-		mpz_nextprime(ZT(result), ZT(p1));  // get next prime
+	case opCode::fn_np: /* next prime */ {
+		mpz_nextprime(ZT(result), ZT(p[0]));  // get next prime
 		break;
 	}
-	case fn_Code::fn_pp: {			// previous prime
-		retcode = ComputeBack(p1, result);  // get previous prime
+	case opCode::fn_pp: /* previous prime */ {
+		retcode = ComputeBack(p[0], result);  // get previous prime
 		if (retcode != retCode::EXPR_OK) {
 			return retcode;   // error: number < 3
 		}
 		break;
 	}
 
-	case fn_Code::fn_primePi: {  // count primes <= n
-		if (p1 > max_prime) {
-			return retCode::EXPR_INVALID_PARAM;
+	case opCode::fn_primePi: /* count primes <= n */ {
+		if (p[0] > max_prime) {
+			return retCode::NUMBER_TOO_HIGH;
 		}
-		result = primePi(p1);
+		result = primePi(p[0]);
 		break;
 	}
-	case fn_Code::fn_concatfact: { /*Concatenates the prime factors of n according to
-						  the mode in m */
-		if (p1 < 0 || p1 > 3) {
-			return retCode::EXPR_INVALID_PARAM;  // mode value invalid
+	case opCode::fn_concatfact:  /*Concatenates the prime factors of n according to
+						  the mode in m */ {
+		if (p[0] < 0 || p[0] > 3) {
+			return retCode::INVALID_PARAM;  // mode value invalid
 		}
-		result = FactConcat(p1, p2);
+		result = FactConcat(p[0], p[1]);
 		break;
 	}
-	case fn_Code::fn_r2: {
-		result = R2(p1);
+	case opCode::fn_r2: {
+		result = R2(p[0]);
 		break;
 	}
-	case fn_Code::fn_r3: {
-		result = R3(p1);
+	case opCode::fn_r3: {
+		result = R3(p[0]);
 		break;
 	}
 
-	/* legendre & kronecker are in fact implemented as aliases of jacobi in MPIR */
-	case fn_Code::fn_legendre:
-	case fn_Code::fn_jacobi:
-	case fn_Code::fn_kronecker: {
-		result = mpz_jacobi(ZT(p1), ZT(p2));
+	/* legendre & kronecker are in fact implemented in MPIR as aliases of jacobi */
+	case opCode::fn_legendre:
+	case opCode::fn_jacobi:
+	case opCode::fn_kronecker: {
+		result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
 		break;
 	}
 
-	case fn_Code::fn_llt: {
+	case opCode::fn_llt: /* lucas-lehmer primality test */ {
 		/* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
-		if (p1 >= 0 && p1 <= INT_MAX) {
-			result = llt(p1);
-			if (verbose > 0 || p1 >= 216091) {
-				if (result == 1)
-					std::cout << "*** 2^" << p1 << " -1 is prime! ***\n";
-				else
-					std::cout << "2^" << p1 << " -1 is not prime \n";
-			}
+		if (p[0] > INT_MAX)
+			return retCode::NUMBER_TOO_HIGH;
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;
+
+		result = llt(p[0]);
+		if (verbose > 0 || p[0] >= 216091) {
+			if (result == 1)
+				std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
+			else
+				std::cout << "2^" << p[0] << " -1 is not prime \n";
 		}
-		else /* for large numbers LLT takes a very long time!! */
-			return retCode::EXPR_NUMBER_TOO_HIGH;
 		break;
 	}
-	case fn_Code::fn_sqrt: {
-		if (p1 < 0) return retCode::EXPR_INVALID_PARAM;
-		mpz_sqrt(ZT(result), ZT(p1));  /* result = square root of p1*/
+	case opCode::fn_sqrt: {
+		if (p[0] < 0) return retCode::INVALID_PARAM;
+		mpz_sqrt(ZT(result), ZT(p[0]));  /* result = square root of p[0]*/
 		break;
 	}
-	case fn_Code::fn_nroot: {
+	case opCode::fn_nroot: {
 		/* for real numbers nroot (x, n)  = x^(1/n) has a discontinuity at n=0,
 		so the function is considered to be undefined for n=0 */
-		if (p2 == 0) return retCode::EXPR_INVALID_PARAM;
+		if (p[1] == 0) return retCode::INVALID_PARAM;
 
 		/* odd root of a -ve number is -ve so allow it. Even root would be a complex
 		number so don't allow it */
-		if (p1 < 0 && mpz_even_p(ZT(p2)))
-			return retCode::EXPR_INVALID_PARAM;
+		if (p[0] < 0 && mpz_even_p(ZT(p[1])))
+			return retCode::INVALID_PARAM;
 
-		if (p2 < 0) {
+		if (p[1] < 0) {
 			result = 0; /* for real numbers nroot(x, n) with n -ve = 1/(x^(-1/n))
 						   If x > 1 the floor of this value is 0 */
 			break;
 		}
-		if (p2 > INT_MAX) {
-			/* if p2 is very large the nth root would be close to 1  for +ve p1
-			or -1 for -ve p1 and odd p2 */
-			return retCode::EXPR_NUMBER_TOO_HIGH;
+		if (p[1] > INT_MAX) {
+			/* if p[1] is very large the nth root would be close to 1  for +ve p[0]
+			or -1 for -ve p[0] and odd p[1] */
+			return retCode::NUMBER_TOO_HIGH;
 		}
 
-		long long temp = MulPrToLong(ZT(p2));
-		mpz_root(ZT(result), ZT(p1), temp);  /* result = nth root of p1*/
+		long long temp = MulPrToLong(ZT(p[1]));
+		mpz_root(ZT(result), ZT(p[0]), temp);  /* result = nth root of p[0]*/
 		break;
 	}
-	case fn_Code::fn_bpsw: {
-		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
-		/* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test */
-		result = mpz_bpsw_prp(ZT(p1));
+	case opCode::fn_bpsw: /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
+		primality test */ {
+		if (p[0] <= 1) 
+			return retCode::NUMBER_TOO_LOW;
+
+		result = mpz_bpsw_prp(ZT(p[0]));
 		if (result == 0)
 			std::cout << "composite \n";
 		else if (result == 1)
@@ -980,9 +1074,19 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 			std::cout << "prime \n";
 		break;
 	}
-	case fn_Code::fn_aprcl: {
-		if (p1 <= 1) return retCode::EXPR_INVALID_PARAM;
-		result = mpz_aprtcle(ZT(p1), verbose);
+	case opCode::fn_aprcl: /* Adleman–Pomerance–Rumely primality test  */ {
+
+		/*  the Adleman–Pomerance–Rumely primality test is an algorithm for 
+		determining whether a number is prime. Unlike other, more efficient 
+		algorithms for this purpose, it avoids the use of random numbers, so it 
+		is a deterministic primality test. It is named after its inventors, 
+		Leonard Adleman, Carl Pomerance, and Robert Rumely. 
+		It was later improved by Henri Cohen and Hendrik Willem Lenstra, commonly 
+		referred to as APR-CL*/
+
+		if (p[0] <= 1) 
+			return retCode::NUMBER_TOO_LOW;
+		result = mpz_aprtcle(ZT(p[0]), verbose);
 		if (result == 0)
 			printf_s("composite \n");
 		else if (result == 1)
@@ -991,28 +1095,28 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 			printf_s("prime \n");
 		break;
 	}
-	case fn_Code::fn_numfact: {
-		result = ComputeNumFact(p1);
+	case opCode::fn_numfact: /* number of factors */ {
+		result = ComputeNumFact(p[0]);
 		break;
 	}
-	case fn_Code::fn_minfact: {
-		result = ComputeMinFact(p1);
+	case opCode::fn_minfact: /* smallest factor*/ {
+		result = ComputeMinFact(p[0]);
 		break;
 	}
-	case fn_Code::fn_maxfact: {
-		result = ComputeMaxFact(p1);
+	case opCode::fn_maxfact: /* largest factor */ {
+		result = ComputeMaxFact(p[0]);
 		break;
 	}
-	case fn_Code::fn_ispow: {
-		/* return -1 if p1 is a perfect power, otherwise 0 */
+	case opCode::fn_ispow: /* check whether or not p[0] is a perfect power */ {
+		/* return -1 if p[0] is a perfect power, otherwise 0 */
 		long long MaxP = 393'203;  // use 1st  33333 primes
 		if ((long long)primeListMax < MaxP) {  // get primes
 			generatePrimes(MaxP);  // takes a while, but only needed on 1st call
 		}
 		Znum base;
-		long long exp = PowerCheck(p1, base, 2);
+		long long exp = PowerCheck(p[0], base, 2);
 		if (exp > 1) {
-			std::cout << p1 << " = " << base << "^" << exp << '\n';
+			std::cout << p[0] << " = " << base << "^" << exp << '\n';
 			result = -1;
 		}
 		else {
@@ -1020,40 +1124,78 @@ static retCode ComputeFunc(fn_Code fcode, const Znum &p1, const Znum &p2,
 		}
 		break;
 	}
-	case fn_Code::fn_modsqrt: {
-		std::vector <Znum> roots;
-
-		/* this is a necessary condition, but not sufficient to guarantee 
-		a solution */
-		if (p1%p2 != 0 && gcd(p1, p2) != 1)
-			return retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME;
-
-		/* Solve the equation given p1 and p2.  x^2 ≡ p1 (mod p2) */
-		roots = ModSqrt(p1, p2);
+	case opCode::fn_modsqrt: /* modular square root */ {
+		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
+		if (p[1] <= 0)
+			return retCode::NUMBER_TOO_LOW;  /* modulus must be +ve */
+		roots = ModSqrt(p[0], p[1]);
 		if (verbose > 0) {
 			if (roots.empty())
-				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p1, p2);
+				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
 			else {
-				gmp_printf("modsqrt(%Zd, %Zd) = ", p1, p2);
+				gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
 				for (Znum r : roots)
 					gmp_printf("%Zd, ", r);
 				putchar('\n');
 			}
 		}
 		/* the result can be: no solution: roots is empty
-		                      or one  or more solutions */
+							  or one  or more solutions */
 		if (roots.empty())
-			return retCode::EXPR_INVALID_PARAM;  /* no solution exists */
+			return retCode::INVALID_PARAM;  /* no solution exists */
+
 		result = roots[0];     /* ignore 2nd solution, if any */
+		multiValue = true;     /* indicate multiple return values */
 
 		break;
 	}
+	case opCode::fn_invtot: /* inverse totient */ {
+		std::vector<unsigned long long> *resultsP;
+
+		/* have to limit p[0] to small values, otherwise risk running out of memory.
+		   this also eliminates any possibility of integer overflow. */
+		if (p[0] > 1'000'000'000'000'000)
+			return retCode::NUMBER_TOO_HIGH;
+		if (p[0] <= 0)
+			return retCode::NUMBER_TOO_LOW;
+		/* get list of numbers x1, x2, ... such that totient(x) = p[0].
+		if p[0] is zero InverseTotient just clears its cache. */
+		auto size = inverseTotient(MulPrToLong(p[0]), &resultsP, false, 0, false);
+		if (size == 0) {
+			if (verbose > 0)
+				std::cout << "Inverse Totient has no solutions \n";
+			return retCode::INVALID_PARAM;
+		}
+		roots.clear();
+		for (size_t i = 0; i < size; i++) {
+			roots.push_back((*resultsP)[i]); /* copy results */
+		}
+		result = roots[0];
+		multiValue = true;     /* indicate multiple return values */
+		break;
+	}
+	case opCode::fn_divisors: /* list of divisors */ {
+		if (p[0] < 1) {
+			return retCode::NUMBER_TOO_LOW;
+		}
+		result = DivisorList(p[0], roots);
+		multiValue = true;     /* indicate multiple return values */
+		break;
+	}
+	case opCode::fn_primroot: /* lowest primitive root */ {
+		result = primRoot(p[0]);
+		if (result <= 0)
+			return retCode::INVALID_PARAM;
+		else break;
+	}
 
 	default:
-		abort();		// if we ever get here we have a problem
+		abort();	// should never get here
 	}
+
 	return retcode;
 }
+
 
 /* find next , or ) but anything enclosed in nested brackets () is ignored */
 static void nextsep(token expr[], int &ix) {
@@ -1077,16 +1219,16 @@ static void nextsep(token expr[], int &ix) {
 }
 
 /* print tokens in readable form */
-static void printTokens(const token expr[], const int exprLen) {
-	if (exprLen == 0)
+static void printTokens(const std::vector <token> expr) {
+	if (expr.size() == 0)
 		return;   /* if no tokens to print do nothing but exit*/
-	for (int ix = 0; ix < exprLen; ix++) {
+	for (int ix = 0; ix < expr.size(); ix++) {
 		switch (expr[ix].typecode) {
 		case types::number:
 			std::cout << expr[ix].value << ' ';
 			break;
 		case types::func:
-			std::cout << functionList[(int)expr[ix].function].fname << ' ';
+			std::cout << functionList[expr[ix].function].fname << ' ';
 			break;
 		case types::comma:
 			std::cout << ',';
@@ -1106,15 +1248,10 @@ static void printTokens(const token expr[], const int exprLen) {
 					std::cout << '!';
 				std::cout << ' ';
 			}
-			else if (expr[ix].oper == opCode::unary_minus)
-				std::cout << " Unary - ";
 			else {
+				int ixx = expr[ix].function; 
 				/* search for oper code in list of operators */
-				for (int ixx = 0; ixx < sizeof(operators) / sizeof(operators[0]); ixx++)
-					if (operators[ixx].operCode == expr[ix].oper) {
-						std::cout << operators[ixx].oper << ' ';
-						break;
-					}
+				std::cout << operators[ixx].oper << ' ';
 			}
 			break;
 		}
@@ -1249,7 +1386,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			/* process function. 1st get number of parameters */
 			if (leftNumber)
 				return EXIT_FAILURE; /* syntax error */
-			int numparams = functionList[expr[exprIndex].function].NoOfParams;
+			int numparams = expr[exprIndex].numops;
 
 			if (expr[exprIndex + 1].typecode != types::Operator ||
 				expr[exprIndex + 1].oper != opCode::leftb) {
@@ -1257,20 +1394,30 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			}
 			int paramLen = 0;
 			int ix3 = 0;
-			for (int pcount = 1; pcount <= numparams; pcount++) {
+			int pcount = 1;
+			for (; ; pcount++) {
 
 				/* find delimiter marking end of parameter*/
 				nextsep(expr + exprIndex + 2 + ix3, paramLen); // get next , or )
 				if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
 					return EXIT_FAILURE; /* parameter sep. not found */
+				if (paramLen == 0)
+					return EXIT_FAILURE;  /* syntax error */
 				int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
 				if (rv != EXIT_SUCCESS)
 					return rv;  /* syntax error? */
 				ix3 += (paramLen + 1); // move ix3 past , or )
+
+				if (expr[exprIndex + 1 + ix3].typecode == types::Operator &&
+					expr[exprIndex + 1 + ix3].oper == opCode::rightb)
+					break; /* ) found */
 			}
-			if (expr[exprIndex + 1 + ix3].typecode != types::Operator ||
-				expr[exprIndex + 1 + ix3].oper != opCode::rightb)
-				return EXIT_FAILURE; /* no ) when required */
+			if (numparams == SHORT_MAX) {
+				/* variable number of parameters; use actual number */
+				expr[exprIndex].numops = pcount;  
+			}
+			else if (pcount != numparams)
+				return EXIT_FAILURE;  /* wrong number of parameters */
 
 			rPolish.push_back(expr[exprIndex]); /* copy function token to output */
 			exprIndex += (ix3 + 1); /* move past ) after function name */
@@ -1282,14 +1429,20 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 			if (expr[exprIndex].oper != opCode::leftb
 				&& expr[exprIndex].oper != opCode::rightb) {
 
-				if (expr[exprIndex].oper == opCode::minus && !leftNumber)
+				if (expr[exprIndex].oper == opCode::minus && !leftNumber) {
 					expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
+					expr[exprIndex].numops = 1;            /* adjust number of operands */
+					/* unary - is last operator in list, change index in token from - to unary - */
+					expr[exprIndex].function = sizeof(operators) / sizeof(operators[0]) - 1; 
+				}
 
-				bool left = opr[(int)expr[exprIndex].oper].left; /* assocativity*/
-				bool pre = opr[(int)expr[exprIndex].oper].pre; /* unary operator precedes expr*/
-				bool unary = (opr[(int)expr[exprIndex].oper].numOps == 1);
+				bool left = operators[expr[exprIndex].function].left; /* assocativity*/
+				bool pre = operators[expr[exprIndex].function].pre;  /* true when unary operator precedes expr*/
+				bool unary = operators[expr[exprIndex].function].numOps == 1; /* true for unary operator */
+
 				/* get priority of current operator */
-				int expOpPri = opr[(int)expr[exprIndex].oper].pri;
+				int expOpPri = operators[expr[exprIndex].function].pri;
+
 				/* check for unary operator - or + or NOT */
 				if (!leftNumber) {  /* if operator is not preceded by an expression */
 					if (expr[exprIndex].oper == opCode::plus) {
@@ -1311,7 +1464,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 					&& operStack.back().typecode == types::Operator
 					&& operStack.back().oper != opCode::leftb) {
 					/* get priority of top operator on stack */
-					int stkOpPri = opr[(int)operStack.back().oper].pri;
+					int stkOpPri = operators[operStack.back().function].pri;
 					/* N.B. lower priority value; higher priority operator */
 					if ((stkOpPri < expOpPri)
 						|| (stkOpPri == expOpPri && left)) {
@@ -1380,11 +1533,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 /* evaluate an expression in reverse polish form. Returns EXPR_OK or error code.
 If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
-(this would indicate a syntax error not detected earlier) */
-static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
+(this would indicate a syntax error not detected earlier) 
+If the final operation is a function call that returns multiple values,
+multiValue is set to true, otherwise it is false*/
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
 	std::stack <token> nums;   /* this stack holds both numbers and user variables */
 	Znum val;
-	Znum args[4];
+	std::vector <Znum> args;
 	int index = 0;
 	int rPlen = (int)rPolish.size();
 	retCode retcode;
@@ -1393,94 +1548,80 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 	temp.typecode = types::number;
 
 	for (index = 0; index < rPlen; index++) {
-		/* push numbers onto stack */
-		if (rPolish[index].typecode == types::number) {
-			nums.push(rPolish[index]);
-		}
-		else if (rPolish[index].typecode == types::uservar) {
-			nums.push(rPolish[index]);
-		}
+		multiValue = false;     /* changed to true if function returns multiple values */
 
+		switch (rPolish[index].typecode) {
+		case types::number:
+		case types::uservar:
+			{  	/* push number onto stack */
+				nums.push(rPolish[index]);
+				break;
+			}
+	
 		/* operators and functions are processed by taking the operand values
-		   from the stack, executing the operation or function and putting
-		   the returned value onto the stack. If there are insuffficient values
-		   on the stack or if the operator or function returns an error code
-		   exit immediately. */
-		else if (rPolish[index].typecode == types::func) {
-			fn_Code fnCode = functionList[rPolish[index].function].fCode;
-			int NoOfArgs = functionList[rPolish[index].function].NoOfParams;
+			from the stack, executing the operation or function and putting
+			the returned value onto the stack. If there are insuffficient values
+			on the stack or if the operator or function returns an error code
+			exit immediately. */
+		case types::func: 
+		case types::Operator:
+			{
+				opCode oper = rPolish[index].oper;
 
-			if (NoOfArgs > nums.size())
-				return retCode::EXPR_SYNTAX_ERROR;
+				int NoOfArgs = rPolish[index].numops;
+				if (NoOfArgs > nums.size())
+					return retCode::SYNTAX_ERROR;  /* not enough operands on stack*/
 
-			for (; NoOfArgs > 0; NoOfArgs--) {
-				/* copy function parameters from number stack to args */
-				if (nums.top().typecode == types::number)
-					args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
+				if (oper == opCode::assign) {
+					/* assignment operator is fully processed here */
+					temp = nums.top();  /* remove top token from stack */
+					nums.pop();
+
+					if (nums.top().typecode != types::uservar)
+						return retCode::SYNTAX_ERROR;
+					size_t Userix = nums.top().userIx;
+
+					/* store new value in user variable */
+					if (temp.typecode == types::number)
+						uvars.vars[Userix].data = temp.value;
+					else if (temp.typecode == types::uservar)
+						uvars.vars[Userix].data = uvars.vars[temp.userIx].data;
+					else
+						return retCode::SYNTAX_ERROR;  /* wrong type of token on stack */
+
+					nums.pop();  /* remove variable from stack */
+					nums.push(temp);  /* put value back on stack */
+				}
 				else {
-					size_t userIx = nums.top().userIx;
-					args[NoOfArgs - 1] = uvars.vars[userIx].data;
-				}
-				nums.pop();  /* remove top value from stack */
-			}
-			retcode = ComputeFunc(fnCode, args[0], args[1], args[2], val);
-			if (retcode != retCode::EXPR_OK)
-				return retcode;
-			temp.typecode = types::number;
-			temp.value = val;
-			nums.push(temp);  /* put value returned by function onto stack */
-		}
-
-		else if (rPolish[index].typecode == types::Operator) {
-			opCode oper = rPolish[index].oper;
-
-			int NoOfArgs = opr[(int)oper].numOps;
-			if (NoOfArgs > nums.size())
-				return retCode::EXPR_SYNTAX_ERROR;  /* not enough operands on stack*/
-			if (oper == opCode::assign) {
-				temp = nums.top();
-				nums.pop();
-				if (nums.top().typecode != types::uservar)
-					return retCode::EXPR_SYNTAX_ERROR;
-				size_t Userix = nums.top().userIx;
-
-				if (temp.typecode == types::number)
-					uvars.vars[Userix].data = temp.value;
-				else if (temp.typecode == types::uservar)
-					uvars.vars[Userix].data =
-					uvars.vars[temp.userIx].data;
-				else
-					return retCode::EXPR_SYNTAX_ERROR;
-				nums.pop();  /* remove variable from stack */
-				nums.push(temp);  /* put value back on stack */
-			} 
-			else {
-				for (; NoOfArgs > 0; NoOfArgs--) {
-					/* copy operand(s) from number stack to args */
-					if (nums.top().typecode == types::number)
-						args[NoOfArgs - 1] = nums.top().value; /* use top value from stack*/
-					else {
-						size_t Userix = nums.top().userIx;
-						args[NoOfArgs - 1] = uvars.vars[Userix].data;
+					args.clear();
+					for (; NoOfArgs > 0; NoOfArgs--) {
+						/* copy operand(s) from number stack to args */
+						if (nums.top().typecode == types::number)
+							args.insert(args.begin(), nums.top().value); /* use top value from stack*/
+						else {
+							size_t Userix = nums.top().userIx;      /* use top variable from stack's value */
+							args.insert (args.begin(), uvars.vars[Userix].data);
+						}
+						nums.pop();  /* remove top value from stack */
 					}
-					nums.pop();  /* remove top value from stack */
-				}
 
-				if (oper == opCode::fact) {
-					/* get 2nd operand for multifactorial. In this special case
-					 the 2nd operand is in the operator token, not a number token */
-					args[1] = rPolish[index].value;
+					if (oper == opCode::fact) {
+						/* get 2nd operand for multifactorial. In this special case
+						 the 2nd operand is in the operator token, not a number token */
+						args.push_back(rPolish[index].value);
+					}
+					retcode = ComputeSubExpr(oper, args, val);
+					if (retcode != retCode::EXPR_OK)
+						return retcode;
+					temp.typecode = types::number;
+					temp.value = val;  /* put value returned by function or operator */
+					nums.push(temp);  /*  onto stack */
 				}
-				retCode rc = ComputeSubExpr(oper, args[0], args[1], val);
-				if (rc != retCode::EXPR_OK)
-					return rc;
-				temp.typecode = types::number;
-				temp.value = val;
-				nums.push(temp);  /* put generated value onto stack */
+				break;
 			}
-		}
-		else
+		default:
 			abort(); /* unrecognised token */
+		}
 	}
 
 
@@ -1491,10 +1632,12 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result) {
 			size_t Userix = nums.top().userIx;  /* get value from user variable */
 			result = uvars.vars[Userix].data;
 		}
+		if (multiV != nullptr)
+			*multiV = multiValue;
 		return retCode::EXPR_OK;
 	}
 	else
-		return retCode::EXPR_SYNTAX_ERROR;  /* too many operands on stack*/
+		return retCode::SYNTAX_ERROR;  /* too many operands on stack*/
 }
 
 /*
@@ -1516,7 +1659,7 @@ Added 5/6/2021
 		one number on the stack at the end, or at any time there are not enough
 		numbers on the stack to perform an operation an error is reported.
 		(this would indicate a syntax error not detected earlier)*/
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;
@@ -1527,30 +1670,31 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 		int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish);
 		/* convert expression to reverse polish */
 		if (ircode == EXIT_SUCCESS) {
-			rv = evalExpr(rPolish, Result);
+			rv = evalExpr(rPolish, Result, multiV);
 			if (rv != retCode::EXPR_OK && verbose > 0) {
 				std::cout << "Expression could not be evaluated \n";
-				printTokens(rPolish.data(), (int)rPolish.size());
+				printTokens(rPolish);
 			}
 		}
 		else {
 			if (verbose > 0) {
 				std::cout << "** error: could not convert to reverse polish \n";
-				printTokens(rPolish.data(), (int)rPolish.size());
+				printTokens(rPolish);
 			}
-			return retCode::EXPR_SYNTAX_ERROR;
+			return retCode::SYNTAX_ERROR;
 		}
 	}
 	else {
 		if (verbose > 0) {
 			std::cout << "** error: could not tokenise expression «"
 				<< expr << "»\n";
-			printTokens(tokens.data(), (int)tokens.size());
-			printf_s("expr contains: ");
-			for (auto c : expr) {
-				printf_s("%2x", c);
-			}
-			putchar('\n');
+			printTokens(tokens);
+			std::cout << "expr contains \"" << expr << "\" \n";
+			//printf_s("expr contains: \"%s\" \n", expr.c_str());
+			//for (auto c : expr) {
+			//	printf_s("%2x", c);
+			//}
+			//putchar('\n');
 		}
 	}
 
@@ -1560,8 +1704,8 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt) {
 /* convert expression to ´tokens´. A token is basically either a number, operator,
 function name or comma. Brackets are classed as operators.
 Syntax is not checked properly at this stage but if there is anything that cannot
-be tokenised EXPR_SYNTAX_ERROR is returned. If left & right brackets don't match up
-EXPR_PAREN_MISMATCH is returned.
+be tokenised SYNTAX_ERROR is returned. If left & right brackets don't match up
+PAREN_MISMATCH is returned.
 The normal return value is EXPR_OK.
 */
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt) {
@@ -1590,8 +1734,11 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 		operSearch(expr.substr(exprIndex), opIndex);
 		if (opIndex != -1) {
 			/* found operator e.g. + - etc. */
+			nxtToken.function = opIndex;
 			nxtToken.typecode = types::Operator;
 			nxtToken.oper = operators[opIndex].operCode;
+			//nxtToken.numops = opr[(int)nxtToken.oper].numOps;
+			nxtToken.numops = operators[opIndex].numOps;
 			nxtToken.value = 0;
 			exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
 			if (operators[opIndex].operCode == opCode::fact) {
@@ -1666,16 +1813,18 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
 		else {
 			/* try to match function name. Names are not case-sensitive */
-			for (ptrdiff_t ix = 0; ix < (ptrdiff_t)functionList.size(); ix++) {
+			for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
-					/* we have a match */
+					/* we have a match to a function name */
 					nxtToken.typecode = types::func;
-					nxtToken.function = ix;
-					nxtToken.value = 0;                  /* not used */
-					nxtToken.oper = opCode::power;  /* not used */
-					exprIndex += (int)strlen(functionList[ix].fname); // move exprIndex past function name
-					break;
+					nxtToken.function = int(ix);        /* save index into functionList*/
+					nxtToken.numops = functionList[ix].NoOfParams;     
+					nxtToken.oper = functionList[ix].fCode;  
+					exprIndex += (int)strlen(functionList[ix].fname); 
+					            /* move exprIndex past function name */
+					goto next;  /* go to finish processing this token, then 
+								process rest of expr */
 				}
 			}
 
@@ -1691,9 +1840,12 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 				}
 
 				int length = exprIndex - exprIndexAux;
-				assert(length < 40);
-				char uid[40];
+				char uid[40];  /* buffer contains name of user-defined identifier */
 				Znum temp;
+
+				if (length >= sizeof(uid))  /* user id cannot exceed 39 characters */
+					return retCode::SYNTAX_ERROR;  /* unable to tokenise expression*/
+
 				strcpy_s(uid, sizeof(uid), expr.substr(exprIndexAux, length).data());
 				int rv = get_uvar(uid, temp); /* does variable exist already? */
 				if (rv < 0) {
@@ -1704,9 +1856,9 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 			}
 		}
 	
-
+next:
 		if (nxtToken.typecode == types::error)
-			return retCode::EXPR_SYNTAX_ERROR;  /* unable to tokenise expression*/
+			return retCode::SYNTAX_ERROR;  /* unable to tokenise expression*/
 		else
 			tokens.push_back(nxtToken);
 	}
@@ -1718,11 +1870,11 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 		if (t.typecode == types::Operator && t.oper == opCode::rightb) {
 			brackets--;
 			if (brackets < 0)
-				return retCode::EXPR_PAREN_MISMATCH;
+				return retCode::PAREN_MISMATCH;
 		}
 	}
 	if (brackets > 0)
-		return retCode::EXPR_PAREN_MISMATCH;
+		return retCode::PAREN_MISMATCH;
 
 	nxtToken.typecode = types::end;
 	tokens.push_back(nxtToken);
@@ -1731,7 +1883,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
 /* create a new user variable with name 'name', initialise it
 and return its location in the global uvars structure */
-int new_uvar(const char *name) {
+static int new_uvar(const char *name) {
 	if (uvars.num == uvars.alloc) {
 		//need more room for variables
 		if (uvars.num == 0) 
@@ -1741,7 +1893,7 @@ int new_uvar(const char *name) {
 
 		uvars.vars.resize(uvars.alloc);
 	}
-	/* copy variable name, then setvariable's value to 0 */
+	/* copy variable name, then set variable's value to 0 */
 	strcpy_s(uvars.vars[uvars.num].name, sizeof(uvars.vars[uvars.num].name),
 		name);
 	uvars.vars[uvars.num].data = 0;
@@ -1751,7 +1903,7 @@ int new_uvar(const char *name) {
 
 //look for 'name' in the global uvars structure
 //if found, copy in data and return 0 else return 1
-int set_uvar(const char *name, const Znum &data) {
+static int set_uvar(const char *name, const Znum &data) {
 	int i;
 
 	for (i = 0; i < uvars.num; i++) {
@@ -1766,7 +1918,7 @@ int set_uvar(const char *name, const Znum &data) {
 
 /* look for 'name' in the global uvars structure
    if found, copy out data and return index else return -1 if not found */
-int get_uvar(const char *name, Znum data)
+static int get_uvar(const char *name, Znum data)
 {
 	int i;
 
@@ -1781,7 +1933,8 @@ int get_uvar(const char *name, Znum data)
 }
 
 static void free_uvars() {
-	uvars.vars.clear();
+	uvars.vars.clear();           /* reset size to 0 */
+	uvars.vars.shrink_to_fit();   /* try to release memory */
 	uvars.num = 0;  
 	uvars.alloc = 0;
 }

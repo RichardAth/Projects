@@ -410,6 +410,8 @@ void SigabrtHandler(int sig) {
 	Sleep(2000);   /* wait 2 seconds*/
 	std::cout << "Press ENTER to continue...";
 	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
 	exit(EXIT_FAILURE);
 }
 
@@ -422,6 +424,8 @@ void SigillHandler(int sig) {
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	std::cout << "Press ENTER to continue...";
 	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
 	exit(EXIT_FAILURE);
 }
 
@@ -434,6 +438,8 @@ void SigsegvHandler(int sig) {
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	std::cout << "Press ENTER to continue...";
 	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
 	exit(EXIT_FAILURE);
 }
 
@@ -451,6 +457,8 @@ void SigintHandler(int sig) {
 		"Interrupt", MB_YESNO);
 	switch (r){
 	case IDYES: {  /* YES selected */
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
 		exit (EXIT_FAILURE);
 	}
 	case IDNO: { /* NO selected */
@@ -474,6 +482,8 @@ void SigtermHandler(int sig) {
 	Beep(1200, 1000);   // beep at 1200 Hz for 1 second
 	std::cout << "Press ENTER to continue...";
 	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
 	exit(EXIT_FAILURE);
 }
 
@@ -808,6 +818,9 @@ int filter(unsigned int code, const struct _EXCEPTION_POINTERS *ep)
 	const char *msg;
 	unsigned long flags;
 
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
+
 	flags = ep->ExceptionRecord->ExceptionFlags;
 
 	/* convert code to a text message in msg */
@@ -857,6 +870,10 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void) {
+
+	// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+	SetThreadExecutionState(ES_CONTINUOUS);
+
 	printf_s("Choose an exception type:\a\n");
 	printf_s("0 - SEH exception (access violation)\n");
 	printf_s("1 - terminate\n");

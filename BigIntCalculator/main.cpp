@@ -32,10 +32,11 @@ extern Znum zR, zR2, zNI, zN;
 /* external function declaration */
 void msieveParam(const std::string &expupper);   /*process Msieve commands */
 void yafuParam(const std::string &command);      /*process YAFU commands */
-// declaration for external function
+
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
 char * getFileName(const char *filter, HWND owner);
 void printvars(std::string name);
+void doTests9(void);  /* modular square root test */
 
 
 int lang = 0;             // 0 English, 1 = Spanish
@@ -70,7 +71,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt);
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr);
 
 /* function declarations, only for functions that have forward references */
 long long MulPrToLong(const Znum &x);
@@ -400,7 +401,7 @@ Znum llt(const Znum &p) {
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
 	double root = sqrt((double)n);
-	unsigned long long  iroot = llround(n);
+	unsigned long long  iroot = llround(root);
 	while (iroot*iroot > n)
 		iroot--;
 	return iroot;
@@ -473,7 +474,7 @@ void generatePrimes(unsigned long long int max_val) {
 		num += 2;	// advance to next possible prime
 	}
 
-	// after completing the for loop we have found all the primes < max_val
+	// after completing the while loop we have found all the primes < max_val
 	if (verbose > 0)
 		printf_s("  prime %9lld is %11lld\n", count, numsave);
 	primeList[count] = ULLONG_MAX;		// set end marker
@@ -488,38 +489,39 @@ void generatePrimes(unsigned long long int max_val) {
 static void textError(retCode rc) {
 	/*
 	error codes currently used:
-	EXPR_NUMBER_TOO_HIGH
-	EXPR_INTERM_TOO_HIGH,		
-	EXPR_DIVIDE_BY_ZERO,        
-	EXPR_PAREN_MISMATCH,		
-	EXPR_SYNTAX_ERROR,			
-	EXPR_TOO_MANY_PAREN,		
-	EXPR_INVALID_PARAM,	
-	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME
-	EXPR_EXPONENT_TOO_LARGE,
-	EXPR_EXPONENT_NEGATIVE,				
+	NUMBER_TOO_LOW,
+	NUMBER_TOO_HIGH,
+	INTERM_TOO_HIGH,		
+	DIVIDE_BY_ZERO,        
+	PAREN_MISMATCH,		
+	SYNTAX_ERROR,			
+	TOO_MANY_PAREN,		
+	INVALID_PARAM,	
+	ARGUMENTS_NOT_RELATIVELY_PRIME
+	EXPONENT_TOO_LARGE,
+	EXPONENT_NEGATIVE,				
 	EXPR_OK = 0
 	*/
 	switch (rc)
 	{
-	//case EXPR_NUMBER_TOO_LOW:
-	//	std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
-	//	break;
-	case retCode::EXPR_NUMBER_TOO_HIGH:
+	case retCode::NUMBER_TOO_LOW:
+		std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
+		break;
+	case retCode::NUMBER_TOO_HIGH:
 		std::cout << (lang ? "Número muy grande \n" :
 			"Number too high \n");
 		break;
-	case retCode::EXPR_INTERM_TOO_HIGH:
+	case retCode::INTERM_TOO_HIGH:
 		std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
 			"Intermediate number too high (more than 20000 digits)\n");
 		break;
-	case retCode::EXPR_DIVIDE_BY_ZERO:
+	case retCode::DIVIDE_BY_ZERO:
 		std::cout << (lang ? "División por cero\n" : "Division by zero\n");
 		break;
-	case retCode::EXPR_PAREN_MISMATCH:
+	case retCode::PAREN_MISMATCH:
 		std::cout << (lang ? "Error de paréntesis\n" : "Parenthesis mismatch\n");
 		break;
-	case retCode::EXPR_SYNTAX_ERROR:
+	case retCode::SYNTAX_ERROR:
 		if (lang) 	{
 			std::cout << ( "Error de sintaxis\n");
 		}
@@ -527,27 +529,27 @@ static void textError(retCode rc) {
 			std::cout << ("Syntax error\n");
 		}
 		break;
-	case retCode::EXPR_TOO_MANY_PAREN:
+	case retCode::TOO_MANY_PAREN:
 		std::cout << (lang ? "Demasiados paréntesis\n" : "Too many parenthesis\n");
 		break;
-	case retCode::EXPR_INVALID_PARAM:
+	case retCode::INVALID_PARAM:
 		std::cout << (lang ? "Parámetro inválido\n" : "Invalid parameter\n");
 		break;
-	case retCode::EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME:
+	case retCode::ARGUMENTS_NOT_RELATIVELY_PRIME:
 		std::cout << (lang ? "MCD de los argumentos no es 1\n" : "GCD of arguments is not 1\n");
 		break;
 	/*case EXPR_BREAK:
 		std::cout << (lang ? "Detenido por el usuario\n" : "Stopped by use\nr");
 		break;*/
-	case retCode::EXPR_EXPONENT_NEGATIVE: {
+	case retCode::EXPONENT_NEGATIVE: {
 		std::cout << "Exponent is negative\n";
 		break;
 	}
-	case retCode::EXPR_EXPONENT_TOO_LARGE: {
+	case retCode::EXPONENT_TOO_LARGE: {
 		std::cout << "Exponent exceeds 2^31-1\n";
 		break;
 	}
-	/*case EXPR_VAR_OR_COUNTER_REQUIRED:
+	/*case retCode::EXPR_VAR_OR_COUNTER_REQUIRED:
 		if (lang)
 		{
 			std::cout <<  "La expresión \n";
@@ -557,18 +559,18 @@ static void textError(retCode rc) {
 			std::cout << "Expression #\n";
 		}
 		break;*/
-	//case EXPR_BASE_MUST_BE_POSITIVE:
+	//case retCode::EXPR_BASE_MUST_BE_POSITIVE:
 	//	std::cout << (lang ? "La base debe ser mayor que cero\n" :
 	//		"Base must be greater than zero\n");
 	//	break;
-	//case EXPR_POWER_MUST_BE_POSITIVE:
+	//case retCode::EXPR_POWER_MUST_BE_POSITIVE:
 	//	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
 	//		"Power must be greater than zero\n");
 	//	break;
-	//case EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
+	//case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
 	//	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
 	//	break;
-	//case EXPR_MODULUS_MUST_BE_NONNEGATIVE:
+	//case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
 	//	std::cout << (lang ? "El módulo no debe ser negativo\n" :
 	//		"Modulus must not be negative\n");
 	//	break;
@@ -689,15 +691,11 @@ static void doFactors(const Znum &Result, bool test) {
 		factorlist.print(Result < 0);   /* print factors */
 		std::cout << '\n';
 		if (factorFlag > 1) {
-			if (abs(Result) != 1) {
-				auto divisors = factorlist.NoOfDivs();
-				std::cout << "Number of Divisors = ";
-				ShowLargeNumber(divisors, 6, false, false);
-			}
-			else
-				std::cout << "Number of Divisors = 1";   // treat n=1 as special case
+			auto divisors = factorlist.NoOfDivs();
+			std::cout << "Number of Divisors = ";
+			ShowLargeNumber(divisors, 6, false, false);
 
-			auto divisors = factorlist.DivisorSum();
+			divisors = factorlist.DivisorSum();
 			std::cout << "\nSum of Divisors    = ";
 			ShowLargeNumber(divisors, 6, false, false);
 			divisors = factorlist.totient();
@@ -766,7 +764,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int method=0) {
+static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 	fList factorlist;
 	Znum Quad[4], result;
 	long long totalFactors = 0;
@@ -777,7 +775,7 @@ static bool factortest(const Znum &x3, const int method=0) {
 
 	sum.numsize = (int)ComputeNumDigits(x3, 10);
 
-	std::cout << "\nTest: factorise ";
+	std::cout << "\nTest " << testnum << ": factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
 	if (method == 0) {
@@ -797,6 +795,7 @@ static bool factortest(const Znum &x3, const int method=0) {
 	
 	/* get number of digits in 2nd largest factor */
 	sum.sndFac = factorlist.sndFac();
+
 	if (method == 0) {
 		/* check that sum of squares is correct */
 		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
@@ -815,19 +814,24 @@ static bool factortest(const Znum &x3, const int method=0) {
 		if (method == 0)
 			factorlist.prCounts();   // print counts
 
+		std::cout << "test " << testnum << " completed at ";
+
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
+		sum.testNum = testnum;
 		results.push_back(sum);
 		return false;   // not prime
 	}
 	else {
 		std::cout << "is prime \n";
+		std::cout << "test " << testnum << " completed at ";
 		sum.NumFacs = 1;
 		sum.totalFacs = 1;
 		sum.sndFac = 0;
+		sum.testNum = testnum;
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
 		PrintTimeUsed(elapsed, "time used = ");
@@ -890,6 +894,7 @@ static void doTests(void) {
 		"sumdigits(123456789, 6)",         19,
 		"revdigits(1234567890, 10)",  987654321, 
 		"factconcat(2, 11!)", 22222222333355711,
+		"le(22, 7)",                        1,
 		"17c7",                         19448,    // binomial coefficient
 		"(17!) / ((17-7)!*7!)",         19448,
 		"4 ^ 3 ^ 2",                   262144,    // NB expoentiation is right to left evaluation
@@ -923,14 +928,18 @@ static void doTests(void) {
 		"modsqrt(2191, 23^3)",         1115,
 		"modsqrt(4142, 29^3)",         2333,
 		"modsqrt(3, 143)",               17,
+		"minfact(99)",                    3,
+		"maxfact(99)",                    11,
+		"numfact(99)",                     2,
+		"lcm(12,20)",                     60,
+		"pi(500)",                        95,
+		"primroot(761)",                   6,   /* primitive root */
 	};
 
 	results.clear();
 
 	auto start = clock();	// used to measure execution time
 	for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
-		//removeBlanks(testvalues[i].text);  // it is necessary to remove spaces
-		/* but it is not necessary to convert to upper case */
 
 		auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
 		if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
@@ -949,67 +958,67 @@ static void doTests(void) {
 		i *= 10;
 		mpz_nextprime(ZT(x2), ZT(i));  // get next prime
 		x3 = x1*x2;
-		factortest(x3);
-		results.back().testNum = ++testcnt;
-		x3++;
-		factortest(x3);
-		results.back().testNum = ++testcnt;
+		testcnt++;
+		factortest(x3, testcnt);
 
+		x3++;
+		testcnt++;
+		factortest(x3, testcnt);
 	}
 
 	/* tests below have shown a problem with pollard-rho for certain numbers */
-	factortest(99999999973789); // = 6478429 * 15435841
-	results.back().testNum = ++testcnt;
-	factortest(183038861417);   // =  408229 *   448373
-	results.back().testNum = ++testcnt;
-	factortest(183475587821);   // =  409477 *   448073
-	results.back().testNum = ++testcnt;
-	factortest(181919916457);   // =  400307 *   454451
-	results.back().testNum = ++testcnt;
-	factortest(199996999457);   // =  441361 *   453137
-	results.back().testNum = ++testcnt;
-	factortest(204493418837);   // =  401209 *   509693
-	results.back().testNum = ++testcnt;
+	long long int PollRho[] = {99999999973789, 183038861417, 183475587821,
+		181919916457, 199996999457, 204493418837 };
+	for (int i = 0; i < sizeof(PollRho) / sizeof(PollRho[0]); i++) {
+		testcnt++;
+		factortest(PollRho[i], testcnt);
+	}
+
 
 	/* exercise code specifically for power +/-1 */
 	mpz_ui_pow_ui(ZT(x3), 10, 20);  // x3 = 10^20
 	x3 -= 1;                        // x3 = 10^20-1
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x3, testcnt);
+
 	x3 += 2;
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(10^10)^2-1", x3, asgCt);  // test power of large number-1
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
 	ComputeExpr("120#-1", x3, asgCt);
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^15)^2", x3, asgCt);  // test power of large number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^6+20)^1667", x3, asgCt);  // test power of large prime number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	ComputeExpr("n(10^7)^3*n(10^8)^2", x3, asgCt);  // test powers of two large prime number
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
+	ComputeExpr("n(10^15)^2", x3, asgCt);  // test power of large number
+	factortest(x3, testcnt);
+
+	testcnt++;
+	ComputeExpr("n(10^6+20)^1667", x3, asgCt);  // test power of large prime number
+	factortest(x3, testcnt);
+
+	testcnt++;
+	ComputeExpr("n(10^7)^3*n(10^8)^2", x3, asgCt);  // test powers of two large prime number
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(3*10^9+50)*n(3*10^10+500)", x3, asgCt);  // test Lehman factorisation
-	factortest(x3);
-	results.back().testNum = ++testcnt;
-	x3 = 0;
+	factortest(x3, testcnt);
+
+	testcnt++;
 	ComputeExpr("n(10^15)^3*n(10^14)", x3, asgCt);  // test Lehman factorisation
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
 	/* test using carmichael numbers. note that 1st example has no small factors  */
 	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
 		60977817398996785 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
-		factortest(carmichael[i]);
-		results.back().testNum = ++testcnt;
+		testcnt++;
+		factortest(carmichael[i], testcnt);
 	}
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
@@ -1018,17 +1027,17 @@ static void doTests(void) {
 	x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
 	/* in general numbers > about 110 digits cannot be factorised in a reasonable time 
 	but this one can, because a special algorithm just for Carmichael numbers is used. */
-	factortest(x4);   // 397-digit Carmichael number
-	results.back().testNum = ++testcnt;
+	testcnt++;
+	factortest(x4, testcnt);   // 397-digit Carmichael number
 	std::cout << "factorised 397-digit Carmichael number \n";
 
+	testcnt++;
 	ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
+	testcnt++;
 	ComputeExpr("n(2^97)*n(2^105)", x3, asgCt);
-	factortest(x3);
-	results.back().testNum = ++testcnt;
+	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
@@ -1496,9 +1505,8 @@ static void doTests4(void) {
 		std::cout << "\ntest " << px + 1 << " of " << pmax+1 ;
 		mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
 		m--;                // get 2^p -1
-		if (factortest(m)) /* factorise m, calculate number of divisors etc */
+		if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
 			std::cout << "2^" << primeList[px] << " - 1 is prime \n";
-		results.back().testNum = px + 1;
 	}
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
@@ -1509,14 +1517,12 @@ static void doTests4(void) {
 /* tests using only YAFU for factorisation */
 static void doTests5(void) {
 	results.clear();
-	int testcnt = 0, asgCt;
+	int testcnt = 1, asgCt;
 
 	Znum num = 49728103; // 7001 * 7103
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 1
+	factortest(num, testcnt, 1);  // test 1
 
-	// factorise 127 digit number
+	// factorise 127 digit number   test 2
 	/*  =                               280673 
 	*                              2756 163353 
 	*                            598990 818061 
@@ -1525,56 +1531,50 @@ static void doTests5(void) {
 	* 33637 310674 071348 724927 955857 253537  
 	*117445 937227 520353 139789 517076 610399  
 	(7 factors)   */
+	testcnt++;
 	ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", 
 		num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 2
+	factortest(num, testcnt, 1);
 
-	//factorise 57 digit number
+	//factorise 57 digit number      test 3
 	/* P6 = 280673
 	  P12 = 598990818061
 	  P10 = 2756163353
 	  P13 = 4527716228491
 	  P18 = 248158049830971629
 	*/
+	testcnt++;
 	ComputeExpr("520634955263678254286743265052100815100679789130966891851", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 3
+	factortest(num, testcnt, 1);
 
-	//factorise 80 digit number (about 3 minutes)
+	//factorise 80 digit number (about 3 minutes)   test 4
 	/* P49 = 2412329883909990626764837681505523221799246895133
        P32 = 18138544144503826077310252140817
     */
+	testcnt++;
 	ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";   // test 4
+	factortest(num, testcnt, 1);
 
-	//factorise 85 digit number (about 7 mins)
+	//factorise 85 digit number (about 7 mins)   // test 5
 	/* factors are 1485325304578290487744454354798448608807999 and 
                    1263789702211268559063981919736415575710439 */
+	testcnt++;
 	ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 5
+	factortest(num, testcnt, 1);
 
-	// factorise 94 digit number (about 60 mins)
+	// factorise 94 digit number (about 60 mins)    test 6
 	/* factors are 10910042366770069935194172108679294830357131379375349 and 
                    859735020008609871428759089831769060699941 */
+	testcnt++;
 	ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 6
+	factortest(num, testcnt, 1);
 
-	//factorise 100 digit number - takes many hours
+	//factorise 100 digit number - takes many hours    test 7
 	/* factor are 618162834186865969389336374155487198277265679 and
 	              4660648728983566373964395375209529291596595400646068307 */
+	testcnt++;
 	ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num, asgCt);
-	factortest(num, 1);
-	results.back().testNum = ++testcnt;
-	std::cout << "test " << testcnt << " completed \n";  // test 7
+	factortest(num, testcnt, 1);
 
 	printSummary();    // print summary - 1 line per test
 
@@ -1588,49 +1588,48 @@ static void doTests6(void) {
 	Znum m;
 	msieve = true;
 	yafu = false;
-	int testcnt = 0;
+	int testcnt = 1;
 
 	results.clear();
 
 	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 84 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 84 digits
 	/* p7  factor: 1121297
 	   p38 factor: 31133636305610209482201109050392404721
 	   p40 factor: 6955979459776540052280934851589652278783
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 89 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 89 digits
 	/* p26 factor: 40122362455616221971122353
        p63 factor: 396645227028138890415611220710757921643910743103031701971222447 */
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 94 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 94 digits
 	/* p7  factor: 5344847
 	   p31 factor: 2647649373910205158468946067671
 	   p57 factor: 294803681348959296477194164064643062187559537539328375831
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 95 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 95 digits
 	/* p8  factor: 10960009
 	   p17 factor: 14787970697180273
 	   p25 factor: 3857194764289141165278097
 	   p47 factor: 26693012026551688286164949958620483258358551879
 	*/
 
+	testcnt++;
 	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m);      // 107 digits
-	results.back().testNum = ++testcnt;
+	factortest(m, testcnt);      // 107 digits
 	/* p34 factor: 2927455476800301964116805545194017
 	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
     */
@@ -1690,91 +1689,6 @@ static void doTests7(const std::string &params) {
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
-}
-
-/* find modular square roots by brute force */
-static std::vector<long long> ModSqrtBF(long long a, long long m) {
-	std::vector <long long> roots;
-	a = a % m;
-	if (a < 0)
-		a += m;  /* normalise a so it's in range 0 to m-1 */
-	for (long long r = 0; r < m; r++) {
-		if (r*r%m == a)
-			roots.push_back(r);
-	}
-	return roots;
-}
-
-
-static bool test9once(long long a, long long m) {
-	std::vector <long long> r2;
-	std::vector <Znum> r3;
-	Znum az = a;
-	Znum mz = m;
-	bool error = false;
-
-	r2 = ModSqrtBF(a, m);
-	r3 = ModSqrt(az, mz);
-	if (r3.size() != r2.size())
-		error = true;
-	else{
-		for (int i = 0; i < r2.size(); i++) {
-			if (r2[i] != r3[i])
-				error = true;
-		}
-	}
-
-	if (error) {
-		printf_s("a = %lld, m = %lld, Znum results don't match! \nGot: ", a, m);
-		for (auto r : r3) {
-			gmp_printf("%Zd, ", r);
-		}
-		if (r2.empty())
-			printf_s("\nActually no solutions\n");
-		else {
-			printf_s("\n should be: ");
-			for (auto r : r2) {
-				printf_s("%lld, ", r);
-			}
-			putchar('\n');
-		}
-		return false;
-	}
-	
-	if (verbose > 0) {
-			if (r2.empty())
-				printf_s("modsqrt(%lld, %lld) has no roots \n", a, m);
-			else {
-				printf_s("modsqrt(%lld, %lld) = ", a, m);
-				for (long long r : r2)
-					printf_s("%lld, ", r);
-				putchar('\n');
-			}
-		}
-	return true;
-}
-
-/* test modular square root */
-static void doTests9(void) {
-
-	test9once(99, 107);      // roots are 45 and 62
-	test9once(3, 22);        // roots are 5 & 17
-	test9once(99, 100);      // no roots
-	test9once(2191, 12167);  // roots are 1115, 11052
-	test9once(4142, 24389);  // roots are 2333, 22056
-	test9once(3, 143);       // roots are 17, 61, 82, 126
-	test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	test9once(9, 44);        // roots are 3, 19, 25, 41
-	test9once(0, 44);        // roots are zero, 22
-	test9once(0, 4);         // roots are 0, 2
-	test9once(0, 9);         // roots are 0, 3, 6
-	test9once(0, 8);         // roots are 0, 4
-	test9once(0, 27);        // roots are 0, 9, 18
-	test9once(0, 16);        // roots are 0, 4, 8, 12
-	test9once(0, 32);        // roots are 0, 8, 16, 24
-	test9once(0, 176);       // roots are zero, 44, 88, 132
-	test9once(1, 121550625);
-	test9once(0, 121550625);  // 11025 different roots!
 }
 
 
@@ -1920,7 +1834,7 @@ retry:
 			if (std::toupper(expr[0]) == 'N')
 				return;
 		}
-		newpathC = getFileName("Text\0*.TXT\0\0", NULL);
+		newpathC = getFileName("Text\0*.TXT\0\0", handConsole);
 		if (newpathC ==NULL) {
 			std::cout << "command cancelled \n";
 			return;
@@ -2003,7 +1917,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
 				break;
 		}
 		if (bc != 0)
-			return retCode::EXPR_PAREN_MISMATCH;
+			return retCode::PAREN_MISMATCH;
 		subExpr = expr.substr(subStart, subEnd - subStart);
 		removeInitTrail(subExpr);  /* remove initial & trailing blanks */
 		rv = ComputeExpr(subExpr, result, asgCt);
@@ -2395,83 +2309,132 @@ static int processCmd(const std::string &command) {
 	}
 }
 
+/* initialisation code, executed once at start of program execution */
+static void initialise(int argc, char *argv[]) {
+	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
+	unsigned int control_word; /* save current state of fp control word here */
+	errno_t err;  /* error occurred if value not 0 */
+	int version[4]; /* version info from .exe file (taken from .rc resource file) */
+	std::string modified;  /* date & time program last modified */
+
+	f.UnEx = 1;        /* set unhandled exception 'filter' */
+	f.abort = 1;       /* trap abort (as a signal) */
+	f.sigterm = 1;     /* trap terminate signal */
+	f.sigill = 1;      /* trap 'illegal' signal */
+	f.interrupt = 1;   /* trap interrupt signal */
+	//f.sigsegv = 1;     /* trap segment violation signal */
+#ifdef _DEBUG
+	/* only seems to work properly if compiled in debug mode */
+	f.InvParam = 1;    /* trap invalid parameters on library calls */
+#endif
+	//f.sigfpe = 1;      /* trap floating point error signal */
+	SetProcessExceptionHandlers(f);
+
+	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
+        functions that actually work OK */
+	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
+	/* trap hardware FP exceptions except inexact and underflow which are
+	considered to be normal, not errors. */
+	if (err) {
+		printf_s("could not set FP control word\n");
+		exit (-1);
+	}
+
+	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
+	handConsole = GetConsoleWindow();            // get handle for console window
+	if (hConsole == INVALID_HANDLE_VALUE)
+	{
+		fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
+		Beep(750, 1000);
+		exit (EXIT_FAILURE);
+	}
+
+	VersionInfo(argv[0], version, modified); /* get version info from .exe file */
+	printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(),
+		version[0], version[1], version[2], version[3]);
+	std::cout << "last modified on " << modified << '\n';
+
+#ifdef __GNUC__
+	printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+	setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
+#endif
+
+#ifdef _MSC_FULL_VER
+/* For example, if the version number of the Visual C++ compiler is 15.00.20706.01,
+the _MSC_FULL_VER macro evaluates to 150020706 */
+	long long ver = _MSC_FULL_VER;
+	std::cout << "MSVC version: " << ver / 10000000 << '.';  // 1st 2 digits
+	ver %= 10000000;                      // remove 1st 2 digits
+	std::cout << ver / 100000 << '.';    // next 2 digits
+	ver %= 100000;                        // remove next 2 digits
+	std::cout << ver << '\n';             // last 5 digits
+
+	auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
+#endif
+
+	printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
+	std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
+		<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
+
+#ifdef __MPIR_VERSION
+	std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
+		<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
+#endif
+
+	processIni(argv[0]); // read .ini file if it exists
+
+	return;
+}
+
+/* get input from stdin. Any continuation lines are appended to 1st line.
+Initial & trailing spaces are removed. Letters are converted to upper case. 
+ctrl-c or ctrl-break will force the function to return, with or without input, 
+but only after a 10 sec delay.*/
+static void myGetline(std::string &expr) {
+retry:
+	getline(std::cin, expr);    // expression may include spaces
+	if (breakSignal) {
+		Sleep(10000);   /* wait 10 seconds */
+		return;     /* Program interrupted: ctrl-c or ctrl-break */
+	}
+	strToUpper(expr, expr);		// convert to UPPER CASE 
+	removeInitTrail(expr);       // remove initial & trailing spaces
+
+	if (expr.empty()) {
+		Beep(3000, 250);     /* audible alarm instead of error msg */
+		goto retry;          /* input is zero-length; go back*/
+	}
+
+	/* check for continuation character. If found get continuation line(s) */
+	while (expr.back() == '\\') {   /* ends with continuation character? */
+		std::string cont;
+		std::cout << "continue: ";
+		getline(std::cin, cont);   /* get continuation line */
+		strToUpper(cont, cont);   // convert to UPPER CASE 
+		while (!cont.empty() && isspace(cont.back())) {
+			cont.resize(cont.size() - 1);   /* remove trailing space */
+		}
+		expr.resize(expr.size() - 1); /* remove trailing \ char */
+		expr += cont;    /* append continuation line to previous input */
+	}
+
+	if (breakSignal) {
+		Sleep(10000);   /* wait 10 seconds */
+		return;     /* Program interrupted: ctrl-c or ctrl-break */
+	}
+
+}
+
 int main(int argc, char *argv[]) {
 	std::string expr;
 	Znum Result;
 	retCode rv;
-	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0};
-	unsigned int control_word; /* save current state of fp control word here */
-	errno_t err;  /* error occurred if value not 0 */
 	int asgCt;  /* number of assignment operators */
-	int version[4]; /* version info from .exe file (taken from .rc resource file) */
-	std::string modified;  /* date & time program last modified */
+	bool multiV = false;
 
 	try {
-		f.UnEx = 1;        /* set unhandled exception 'filter' */
-		f.abort = 1;       /* trap abort (as a signal) */
-		f.sigterm = 1;     /* trap terminate signal */
-		f.sigill = 1;      /* trap 'illegal' signal */
-		f.interrupt = 1;   /* trap interrupt signal */
-		//f.sigsegv = 1;     /* trap segment violation signal */
-	#ifdef _DEBUG
-		/* only seems to work properly if compiled in debug mode */
-		f.InvParam = 1;    /* trap invalid parameters on library calls */
-	#endif
-		//f.sigfpe = 1;      /* trap floating point error signal */
-		SetProcessExceptionHandlers(f);
 
-		/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
-		functions that actually work OK */
-		err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
-		/* trap hardware FP exceptions except inexact and underflow which are
-		considered to be normal, not errors. */
-		if (err) {
-			printf_s("could not set FP control word\n");
-			return -1;
-		}
-
-		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
-		handConsole = GetConsoleWindow();            // get handle for console window
-		if (hConsole == INVALID_HANDLE_VALUE)
-		{
-			fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
-			Beep(750, 1000);
-			return EXIT_FAILURE;
-		}
-
-		VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-		printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(), 
-			version[0], version[1], version[2], version[3]);
-		std::cout << "last modified on " << modified << '\n';
-
-
-#ifdef __GNUC__
-		printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-		setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
-#endif
-
-#ifdef _MSC_FULL_VER
-/* For example, if the version number of the Visual C++ compiler is 15.00.20706.01, 
-the _MSC_FULL_VER macro evaluates to 150020706 */
-		long long ver = _MSC_FULL_VER;
-		std::cout << "MSVC version: " << ver / 10000000 << '.';  // 1st 2 digits
-		ver %= 10000000;                      // remove 1st 2 digits
-		std::cout << ver / 100000 << '.' ;    // next 2 digits
-		ver %= 100000;                        // remove next 2 digits
-		std::cout << ver << '\n';             // last 5 digits
-		auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
-#endif
-
-		printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
-		std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
-			<< '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
-
-#ifdef __MPIR_VERSION
-		std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
-			<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
-#endif
-
-		processIni(argv[0]); // read .ini file if it exists
+		initialise(argc, argv);  /* initialisation code only executed once */
 
 		/* start of main loop. Normal exit is via EXIT command */
 		while (true) {
@@ -2483,31 +2446,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 			PlaySoundA(attsound.c_str(), NULL,
 				SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-		retry:
-			getline(std::cin, expr);    // expression may include spaces
-			if (breakSignal) {
-				Sleep(10000);   /* wait 10 seconds */
-				break;     /* Program interrupted: ctrl-c or ctrl-break */
-			}
-			strToUpper(expr, expr);		// convert to UPPER CASE 
-			removeInitTrail(expr);       // remove initial & trailing spaces
 
-			if (expr.empty()) {
-				Beep(3000, 250);     /* audible alarm instead of error msg */
-				goto retry;          /* input is zero-length; go back*/
-			}
-
-			while (expr.back() == '\\') {   /* ends with continuation character? */
-				std::string cont;  
-				std::cout << "continue: ";
-				getline(std::cin, cont);   /* get continuation line */
-				strToUpper(cont, cont);   // convert to UPPER CASE 
-				while (!cont.empty() && isspace(cont.back())) {
-					cont.resize(cont.size() - 1);   /* remove trailing space */
-				}
-				expr.resize(expr.size() - 1); /* remove trailing \ char */
-				expr += cont;    /* append continuation line to previous input */
-			}
+			myGetline(expr);  /* get input from stdin */
+			if (breakSignal)
+				break;    /* Program interrupted: ctrl-c or ctrl-break */
 
 			// prevent the sleep idle time-out.
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -2518,9 +2460,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			if (cmdCode == 2) 
 				break;    // EXIT command
 			if (cmdCode == 1) {
+				// command has been fully processed; go back to start of loop
 				// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 				SetThreadExecutionState(ES_CONTINUOUS);
-				continue; // command has been fully processed; go back to start of loop
+				continue;
 			}
 			if (cmdCode != 0) {
 				fprintf_s(stderr, "Invalid return code %x from processCmd \n", cmdCode);
@@ -2531,24 +2474,44 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			/* input is not a valid command; assume it is an expression */
 			auto start = clock();	// used to measure execution time
 
-			rv = ComputeExpr(expr, Result, asgCt); /* analyse expression, compute value*/
+			rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 
 			if (rv != retCode::EXPR_OK) {
 				textError(rv);   // invalid expression; print error message
 			}
 			else {
 				exprList.push_back(expr);  /* save text of expression */
-				if (asgCt == 0) {
+				if (asgCt == 0 && !multiV) {
 					std::cout << " = ";
 					ShowLargeNumber(Result, 6, true, hex);   // print value of expression
 					std::cout << '\n';
-					if (factorFlag > 0 && asgCt == 0) {
-						/* don't factorise result of an assignment statement */
+					if (factorFlag > 0) {
 						doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
 						results.clear();  // get rid of unwanted results
 					}
 				}
 				else {
+					if (multiV) {
+						/* expression returned multiple values */
+						std::cout << " = ";
+						if (roots.size() <= 31 ) 
+							/* print all results if <= 31 values */
+							for (auto r : roots) {
+								std::cout << r << ", ";
+							}
+						else { /* print 1st 20 and last 10 results */
+							for (int i = 0; i < 20; i++) {
+								std::cout << roots[i] << ", " ;
+							}
+							std::cout << "\n ... \n";
+							for (size_t i = roots.size()-10; i < roots.size(); i++) {
+								std::cout << roots[i] << ", ";
+							}
+						}
+						putchar('\n');
+						std::cout << "found " << roots.size() << " results \n";
+					}
+					if (asgCt != 0)
 					printvars(""); /* print variables names & values */
 				}
 			}
@@ -2558,11 +2521,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 			PrintTimeUsed(elapsed, "time used = ");
 			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 			SetThreadExecutionState(ES_CONTINUOUS);
-			/* now go back to start of loop */
+
 			if (breakSignal)
 				break;     /* Program interrupted */
 
+			/* now go back to start of loop */
 		} /* end of while loop */
+
+		/* get to here when we break out of main loop, usually by EXIT command */
 
 		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 		SetThreadExecutionState(ES_CONTINUOUS);
@@ -2574,6 +2540,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
 	/* code below catches C++ 'throw' type exceptions */
 	catch (const std::exception& e) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** standard exception caught, message '%s'\n", e.what());
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2582,6 +2552,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	}
 
 	catch (const char *str) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** Caught exception: <%s> \n", str);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2590,6 +2564,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	}
 
 	catch (int e) {
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** Caught exception: <%d> \n", e);
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";
@@ -2602,6 +2580,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 		// this executes if f() throws any other unrelated type
 		// This catch block probably only would be executed under /EHa compiler option 
 		/* most likely to be a SEH-type exception */
+
+		// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+		SetThreadExecutionState(ES_CONTINUOUS);
+
 		printf_s("\n*** unknown exception ocurred\n");
 		Beep(1200, 1000);              // sound at 1200 Hz for 1 second
 		std::cout << "Press ENTER to continue...";

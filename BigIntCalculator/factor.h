@@ -75,10 +75,14 @@ public:
 
 	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
+	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
+	friend Znum primRoot(const Znum &num);
 
 	/* methods that are in the class */
 
-// Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent.
+/* Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent. 
+  Euler's totient function counts the positive integers up to a given integer n that 
+  are relatively prime to n */
 	Znum totient() const {
     // this only works if factorisation is complete!
 		Znum result = 1, term;
@@ -196,13 +200,15 @@ also http://oeis.org/A004018 */
 		return b * 4;
 	}
 
-/* calculate number of divisors of n, given its list of prime factors.
-NB for n=1 function returns 2, but correct value would be 1.
-From just the exponents we can't distinguish n=1 from n=prime */
+/* calculate number of divisors of n (including 1 and n itself), given its list 
+   of prime factors. */
 	Znum NoOfDivs() const {
 		Znum result = 1;
 		if (this->f.empty())
 			return 0;
+		/* n=1 is a special case */
+		if (this->f.size() == 1 && this->f[0].Factor == 1)
+			return 1;
 		for (auto i : this->f) {
 			result *= i.exponent + 1;
 		}
@@ -322,6 +328,28 @@ Repeated factors: No or Yes
 		else return -1;  /* error - factor list is empty */
 	}
 
+	/* if n is 2, 4, an odd prime power, or twice an odd prime power it has
+       primitive roots, otherwise it does not. An odd prime is any prime
+       other than 2. Returns true or false, requires list of prime factors */
+	bool hasPrimitiveRoot() const {
+		if (this->f.size() == 1) {
+			/* only 1 factor */
+			if (this->f[0].Factor > 2)
+				return true;  /* n is an odd prime power */
+			else if (this->f[0].exponent <= 2)
+					return true;  /* n = 2 or 4 */
+				else return false;  /* n is higher power of 2 */
+		}
+		else if (this->f.size() == 2) {
+			if (this->f[0].Factor == 2 && this->f[0].exponent == 1)
+				return true;  /* n is twice an odd prime */
+			else
+				return false;  /* not twice an odd prime power */
+		}
+		else
+			return false;  /* n is not in any category that has primitive roots */
+	}
+
 };
 
 
@@ -331,7 +359,7 @@ extern std::string yafuprog;
 extern std::string MsievePath;
 extern std::string MsieveProg;
 extern bool breakSignal;
-
+extern std::vector <Znum> roots;   /* used by functions that return multiple values */
 /* access underlying mpz_t inside an bigint */
 #define ZT(a) a.backend().data()
 
@@ -360,7 +388,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
 
 // returns 2^exp. exp must be less than 64
 constexpr unsigned __int64 pow2(unsigned int exp) {
-	//assert(exp < 64);
+	assert(exp < 64);
 	return 1ULL << exp;  // exp must be less than 64
 }
 unsigned __int64 R3(__int64 n);
@@ -381,21 +409,21 @@ int jacobi(const Znum &k, const Znum &n);
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
 enum class retCode
 {
-	//EXPR_NUMBER_TOO_LOW,
-	EXPR_NUMBER_TOO_HIGH = -100,
-	EXPR_INTERM_TOO_HIGH,
-	EXPR_DIVIDE_BY_ZERO,
-	EXPR_PAREN_MISMATCH,
-	EXPR_SYNTAX_ERROR,
-	EXPR_TOO_MANY_PAREN,
-	EXPR_INVALID_PARAM,
-	EXPR_ARGUMENTS_NOT_RELATIVELY_PRIME,
+	NUMBER_TOO_LOW = -100,
+	NUMBER_TOO_HIGH,
+	INTERM_TOO_HIGH,
+	DIVIDE_BY_ZERO,
+	PAREN_MISMATCH,
+	SYNTAX_ERROR,
+	TOO_MANY_PAREN,
+	INVALID_PARAM,
+	ARGUMENTS_NOT_RELATIVELY_PRIME,
 	//EXPR_BREAK,
 	//EXPR_OUT_OF_MEMORY,
 	//EXPR_CANNOT_USE_X_IN_EXPONENT,
 	//EXPR_DEGREE_TOO_HIGH,
-	EXPR_EXPONENT_TOO_LARGE,
-	EXPR_EXPONENT_NEGATIVE,
+	EXPONENT_TOO_LARGE,
+	EXPONENT_NEGATIVE,
 	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
 	//EXPR_CANNOT_LIFT,
 	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
@@ -431,5 +459,13 @@ the text string a, function name, line number and source file name */
 	mesg += " in file "; mesg += __FILE__;       \
 	throw std::range_error(mesg);                \
 }
+/* similar to throwExc but is compatible with constexpr functions */
+#define ThrowExs(a)                              \
+{												 \
+	char mesg[180] = { 0 };					     \
+	sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
+	throw std::range_error(mesg);                \
+}
 
 unsigned long long llSqrt(const unsigned long long n);
+bool isPerfectSquare(const Znum &num);
