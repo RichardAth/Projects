@@ -284,19 +284,29 @@ Use default 48 for number size in bits
  <******** output from indivdial tests omitted *****************>
 
 10:48:34 All tests completed. Time used = 0.172 seconds
-Test Num Size   time      Unique Factors Total Factors     2nd Fac
-   1       14  0:00:00.01             4          4            4
-   2       15  0:00:00.04             4          4            3
-   3       15  0:00:00.03             3          3            5
-   4       15  0:00:00.03             2          2            5
-   5       14  0:00:00.02             5          6            4
+Test Num Size   time      Unique Factors Total Factors     2nd Fac tdv prh leh crm pm1 ecm siq pwr yaf msv
+   1       14  0:00:00.02             4          4            4      3   0   0   0   0   0   0   0   0   0
+   2       15  0:00:00.05             4          4            3      3   0   0   0   0   0   0   0   0   0
+   3       15  0:00:00.03             3          3            5      2   0   0   0   0   0   0   0   0   0
+   4       15  0:00:00.03             2          2            5      1   0   0   0   0   0   0   0   0   0
+   5       14  0:00:00.03             5          6            4      4   0   0   0   0   0   0   0   0   0
 
 
    note: The 'Size' column gives the size in decimal digits of the number to be
-   factored. The '2nd Fac' column gives the size of the 2nd largest factor, 
-   which correlates much more closely with time required than the 'Size' does.
-   The 'time' column gives the time required for each factorisation to one-
-   hundredth of a second.
+   factored. The 'time' column gives the time required for each factorisation to 
+   one-hundredth of a second.
+   The '2nd Fac' column gives the size of the 2nd largest factor, which correlates 
+   much more closely with time required than the 'Size' does.
+   tdv: the number of factors found by trial division
+   prh: the number of factors found using Pollard-Rho algorithm
+   leh: the number of factors found using Lehman's algorithm
+   crm: the number of factors found using an algorith designed to factor Carmichael numbers
+   pm1: the number of factors found for a number which is a perfect power + or - 1
+   ecm: the number of factors found using the elliptic curve method
+   siq: the number of factors found using the SIQS method
+   pwr: the number of facors found because the number was recognised to be a perfect power
+   yaf: the number of factors found using YAFU
+   msv: the number of factors found using msieve
 
 [AYUDA]
 Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:
