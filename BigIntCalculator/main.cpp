@@ -929,8 +929,9 @@ static void doTests(void) {
 		"SQRT(1234320)",               1110,
 		"NROOT(2861381721051424,5)",   1234,
 		"LLT(3217)",                      1,  // 2^3217-1 is prime
-		"BPSW(2^99-1)",                   0,  //not a prime number
-		"BPSW(2^127-1)",                  1,  //a prime number
+		"BPSW(2^99-1)",                   0,  // not a prime number
+		"BPSW(2^127-1)",                  1,  // a prime number
+		"ISPRIME(2^127-1)",               1,  // a prime number
 		"-not1",                          2,  // operators are processed from right to left
 		"not-1",                          0,  // operators are processed from right to left
 		"not5#",                        -31,  // # operator evaluated before not

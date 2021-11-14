@@ -925,7 +925,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::fn_isprime: {  // isprime
 		/* -1 indicates probably prime, 0 = composite */
-		result = PrimalityTest(abs(p[0]));
+		int rv = PrimalityTest(abs(p[0]), 0);
+		/* rv: 0 = probable prime.
+               1 = composite: not 2-Fermat pseudoprime.
+               2 = composite: does not pass 2-SPRP test.
+               3 = composite: does not pass BPSW test, but passes other tests.*/
+		if (verbose > 0) {
+			if (rv == 2)
+				std::cout << "pseudo-prime; passes 2-fermat test but not 2-SPRP test \n";
+			if (rv == 3)
+				std::cout << "pseudo-prime; passes 2-SPRP test but not BPSW test \n";
+		}
+		if (rv == 0)
+			result = -1;   /* prime */
+		else
+			result = 0;    /* composite */
 		break;
 	}
 	case opCode::fn_fib: /* fibonacci */ {	
