@@ -931,7 +931,10 @@ static void doTests(void) {
 		"LLT(3217)",                      1,  // 2^3217-1 is prime
 		"BPSW(2^99-1)",                   0,  // not a prime number
 		"BPSW(2^127-1)",                  1,  // a prime number
-		"ISPRIME(2^127-1)",               1,  // a prime number
+		"ISPRIME(2^127-1)",              -1,  // a prime number
+		"aprcl(2^127-1)",                 2,  // a prime number
+		"ispow(2^127-1)",                 0,  /* not a perfect power */
+		"ispow(2^127)",                  -1,  /* a perfect power */
 		"-not1",                          2,  // operators are processed from right to left
 		"not-1",                          0,  // operators are processed from right to left
 		"not5#",                        -31,  // # operator evaluated before not
@@ -2411,6 +2414,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
 		<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
 #endif
+	std::cout << "Boost version: " << BOOST_VERSION << '\n';
 
 	processIni(argv[0]); // read .ini file if it exists
 

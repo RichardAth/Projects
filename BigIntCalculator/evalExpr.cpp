@@ -44,15 +44,15 @@ typedef struct        // used for user variables
 	Znum data;        // and value
 } uvar_t;
 
-typedef struct
+struct
 {
 	std::vector <uvar_t> vars;
 	int num = 0;              /* number of user variables*/
 	int alloc = 0;            /* space allocated for user variables */
-} uvars_t;
+} uvars;
 
 //user variables
-uvars_t uvars ;
+//uvars_t uvars ;
 
 /* list of operators, arranged in order of priority, order is not exactly the
 same as C or Python. Followed by list of function codes*/

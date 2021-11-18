@@ -242,19 +242,20 @@ static void InsertAurifFactors(fList &Factors, const Znum &Base,
 	return;
 }
 
-
+/* Original number to be factored = Base^Expon - increment 
+increment = 1 or -1 */
 static void Cunningham(fList &Factors, const Znum &Base, int Expon,
 	const int increment, const Znum &Original) {
 	int Expon2, k;
-	Znum Nbr1, Nbr2; // Temp1;
+	Znum Nbr1, Nbr2; 
 
 	Expon2 = Expon;
 
 	while (Expon2 % 2 == 0 && increment == -1) {
 		Expon2 /= 2;
 		BigIntPowerIntExp(Base, Expon2, Nbr1);  /* Nbr1 = Base^Expon2*/
-		Nbr1 += increment; 
-		insertBigFactor(Factors, Nbr1);
+		Nbr1 += increment;    /* Nbr1 = Base^Expon2 - 1 */
+		insertBigFactor(Factors, Nbr1);     /* if Nbr1 is a factor, insert it*/
 		InsertAurifFactors(Factors, Base, Expon2, 1);
 	}
 
@@ -266,7 +267,7 @@ static void Cunningham(fList &Factors, const Znum &Base, int Expon,
 				Nbr1 += increment;      
 				Nbr2 = gcd(Nbr1, Original);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
 				insertBigFactor(Factors, Nbr2);
-				//Temp1 = Original; 
+
 				Nbr1 = Original / Nbr2; 
 				insertBigFactor(Factors, Nbr1);
 				InsertAurifFactors(Factors, Base, Expon / k, increment);
