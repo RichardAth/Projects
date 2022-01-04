@@ -540,7 +540,7 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	Znum sqrRoot, nextroot;
 	Znum a, c, sqr, val;
 
-	if (ZisEven(nbr))
+	if (isEven(nbr))
 	{ // nbr is Even (this would be strange, because small factors such as 2 are removed during trial division)
 		r = 0;
 		m = 1;

@@ -16,9 +16,14 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "boost/multiprecision/gmp.hpp" 
-#define ZT(a) a.backend().data()
-#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 typedef boost::multiprecision::mpz_int Znum;
+#define ZT(a) a.backend().data()
+
+bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
+//#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  
+
+/*  get approximate size (1 limb = 64 bits) */
+#define numLimbs(a) abs(ZT(a)->_mp_size)
 
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum &n, const Znum &radix);
@@ -414,6 +419,9 @@ bool callMsieve(const Znum &num, fList&Factors);
 bool callYafu(const Znum &num, fList&Factors);
 void generatePrimes(unsigned long long int max_val);
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
+
+/* return a factor of N, using Shanks's square forms factorization method. */
+uint64_t SQUFOF(const uint64_t N);
 
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */

@@ -385,6 +385,8 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 				it must have exactly two prime factors. We can use the Pollard Rho algorithm
 				to get these factors.*/
 				long long factor;
+
+				//factor = SQUFOF(tnum);  /* use SHANKS's algorithm*/
 				factor = PollardRho(tnum);
 				assert(tnum%factor == 0);
 
@@ -493,7 +495,28 @@ R3(n) = 3*T(n) if n == 1,2,5,6 mod 8,
        = 2*T(n) if n == 3 mod 8, 
 	   = 0 if n == 7 mod 8 and 
 	   = R(n/4) if n == 0 mod 4, 
-	   where T(n) = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+	   where T(n) = Moreno and Wagstaff's arithmetical function
+	            see https://oeis.org/A117726
+	   = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+
+Using PARI/GP we have
+r3(n)=if(n==0,1, if(n%4==0, r3(n/4), if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), if(n%8==3, 24*qfbhclassno(n),if(n%8==7, 0)))))
+
+where qfbhclassno is Hurwitz-Kronecker class number 
+see https://oeis.org/A014599
+and https://oeis.org/A259825
+See Henri Cohen: A course in computational algebraic number theory
+chapters 5.3 & 5.4 
+Given an efficient implementation of qfbhclassno(n) this is much faster than the 
+method below.
+
+there is also a useful & more practical formula:
+R3(n)= if(n%4==1, 24*sum(r=1,n\4,kronecker(r,n)),
+	   if(n%4==3, 8*sum(r=1,n\2,kronecker(r,n))))
+BUT only applicable if, after making n squarefree, n is odd, n!= 7 (mod 8) and n > 1
+This avoids calculating R2 many times, which involves factorisation each time
+but it's still much SLOWER than calculating the sums of R2s.
+
 */
 unsigned __int64 R3(__int64 n) {
 	unsigned __int64 sum = 0;
@@ -523,8 +546,8 @@ unsigned __int64 R3(__int64 n) {
 			sum += 2;  // note: n is a perfect square
 		else
 			sum += 2 * R2(n - k * k);
-		if ((k & 0xfff) == 0) {
-			printf_s("%s R3: %g%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+		if ((k & 0x3fff) == 0) {
+			printf_s("%s R3: %.2f%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
 		}
 	}
 	sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2

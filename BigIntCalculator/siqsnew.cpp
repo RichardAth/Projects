@@ -2206,7 +2206,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	zModulus = zTestNbr2 * multiplier; 
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
-	rowPrimeSieveData->modsqrt = (ZisEven(zN)) ? 0 : 1;
+	rowPrimeSieveData->modsqrt = (isEven(zN)) ? 0 : 1;
 
 	switch (mpz_get_si(ZT(zModulus)) & 0x07) {  // switch on last 3 bits
 	case 1:
@@ -2715,7 +2715,7 @@ static bool InsertNewRelation(
 	}
 
 	/* Convert negative numbers to the range 0 <= n < biModulus */
-	if (ZisEven(zModulus)) { // Even modulus.
+	if (isEven(zModulus)) { // Even modulus.
 		zTestNbr2 = zModulus / 2;
 		//DivBigNbrByInt(zModulus, 2, zTestNbr2);  // divide modulus by 2
 

@@ -16,11 +16,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "boost/multiprecision/gmp.hpp"
-#define ZT(a) a.backend().data()
-#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
-/*  get approximate size (1 limb = 64 bits) */
-#define numLimbs(a) abs(ZT(a)->_mp_size)
 typedef boost::multiprecision::mpz_int Znum;
+#define ZT(a) a.backend().data()
+
+//#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 
 long long MulPrToLong(const Znum &x);
 

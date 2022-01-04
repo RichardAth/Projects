@@ -1039,12 +1039,10 @@ static void doTests(void) {
 		factortest(carmichael[i], testcnt);
 	}
 
-	testcnt++;
 	ComputeExpr("16344221851913485532689", x3, asgCt);
 	testcnt++;
 	factortest(x3, testcnt);  /* 23 digit carmichael number */
 
-	testcnt++;
 	ComputeExpr("56897193526942024370326972321", x3, asgCt);
 	testcnt++;
 	factortest(x3, testcnt);  /* 29 digit pseudo-prime number */

@@ -24,7 +24,6 @@ static limb adjustedArgument[MAX_LEN];
 static limb arrAux[MAX_LEN];
 static int bitLengthCycle[20];
 
-
 /*return addend1 + addend2 (used to overload + operator) */
 BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 	int ctr, nbrLimbs;

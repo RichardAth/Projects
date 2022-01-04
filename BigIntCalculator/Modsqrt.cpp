@@ -164,7 +164,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 	// Tonelli-Shanks step 1: Factor p - 1 of the form q * 2 ^ s(with Q odd)
 	q = p - 1;
 	s = 0;
-	while (ZisEven(q)) {
+	while (isEven(q)) {
 		s += 1;
 		q /= 2;
 	}

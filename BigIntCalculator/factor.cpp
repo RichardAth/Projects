@@ -28,6 +28,10 @@ static Znum Zfactor;
 double originalTenthSecond;
 int oldTimeElapsed;
 
+bool isEven(const Znum &a) {
+	return (mpz_odd_p(ZT(a)) == 0);  /* true iff a is even (works for -ve a as well) */
+}
+
 static int Cos(int N) {
 	switch (N % 8) 	{
 	case 0:
@@ -452,16 +456,14 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 	for (countdown = 20; countdown > 0; countdown--) {
 		int i;
 		randomBase = ((uint64_t)randomBase * 89547121 + 1762281733) & 0x7fffffff;
-		 // Aux2 = base^Aux1 (mod p)
+		 // Aux2 = randomBase^Aux1 (mod p)
 		mpz_powm(ZT(Aux2), ZT(randomBase), ZT(Aux1), ZT(pValue));
-		// If Mult1 = 1 or Mult1 = p-1, then try next base.
+		// If Aux2 = 1 or Aux2 = p-1, then try next base.
 		if (Aux2 ==1 || Aux2 == pValue-1) {
 			continue;    // This base cannot find a factor. Try another one.
 		}
-		for (i = 0; i < ctr; i++)
-		{              // Loop that squares number.
-			// Aux3 = Aux2^2 (mod p)
-			mpz_powm_ui(ZT(Aux3), ZT(Aux2), 2, ZT(pValue));
+		for (i = 0; i < ctr; i++) {              // Loop that squares number.
+			mpz_powm_ui(ZT(Aux3), ZT(Aux2), 2, ZT(pValue));   // Aux3 = Aux2^2 (mod p)
 			if (Aux3 == 1)
 			{            // Non-trivial square root of 1 found.
 				if (!sqrtOneFound)
@@ -480,6 +482,7 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 						factorsFound = true;
 					}
 				}
+
 				// Try to find non-trivial factor by doing GCD.
 				Aux4 = Aux2 + 1;
 				Aux4 %= pValue;             // Aux4 = Aux2+1 (mod p)
@@ -489,15 +492,17 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 					insertBigFactor(Factors, Temp4);
 					factorsFound = true;
 				}
-				i = ctr;
+
+				i = ctr;   // break out of inner for loop
 				continue;  // Find more factors.
 			}
-			if (Aux3 == pValue-1)
-			{            // Square root of 1 found.
+
+			if (Aux3 == pValue-1)     // Aux3 = Aux2^2 (mod p)
+			{            // Square root of -1 found.
 				if (!sqrtMinusOneFound)
 				{          // Save it to perform GCD later.
 					Xaux = Aux2;
-					sqrtOneFound = true;
+					sqrtMinusOneFound = true;
 				}
 				else
 				{          // Try to find non-trivial factor by doing GCD.
@@ -510,10 +515,11 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 						factorsFound = true;
 					}
 				}
-				i = ctr;
+
+				i = ctr;   // break out of inner for loop
 				continue;  // Find more factors.
 			}
-			Aux2 = Aux3;
+			Aux2 = Aux3;    // Aux2 = Aux2^2 (mod p)
 		}
 	}
 	return factorsFound;
@@ -688,9 +694,10 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 						Factors.Xprint();
 					}
 					f = PollardRho(MulPrToLong(Factors.f[i].Factor));
+					//f = SQUFOF(MulPrToLong(Factors.f[i].Factor));
 					/* there is a small possibility that PollardFactor won't work,
 					even when factor is not prime*/
-					if (f != 1) {
+					if (f > 1) {
 						insertIntFactor(Factors, -1, f, i);
 						Factors.prho++;
 					}
@@ -947,10 +954,10 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				}
 
 
-				if (ZisEven(K)) { // If K is even ...
-					if (ZisEven(Mult1) != ZisEven(Mult2))
+				if (isEven(K)) { // If K is even ...
+					if (isEven(Mult1) != isEven(Mult2))
 					{  // If Mult1 + Mult2 is odd...
-						if (ZisEven(Mult1) == ZisEven(Mult3))
+						if (isEven(Mult1) == isEven(Mult3))
 						{   // If Mult1 + Mult3 is even...
 							Tmp = Mult2;  // swap mult2 and mult3
 							Mult2 = Mult3;
@@ -1043,7 +1050,7 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;
-		for (s3 = s2, m = 0; ZisEven(s3); m++) {
+		for (s3 = s2, m = 0; isEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
 		/* we know s3 is odd, need to check whether s3 mod 4 = 1 */
@@ -1294,4 +1301,81 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 
 		return false;
 	}
+}
+
+#define nelems(x) (sizeof(x) / sizeof((x)[0]))
+
+/* return a factor of N, using Shanks's square forms factorization method. Based on 
+Wikipedia, as modified in 
+https://stackoverflow.com/questions/52746812/shankss-square-form-factorization-implementation 
+assume that N is not prime. 
+An alternative to Pollard-Rho that seems to take about the same amount of time */
+uint64_t SQUFOF(const uint64_t N) {
+	uint64_t D, Po, P, Pprev, Q, Qprev, q, b, r;
+	uint32_t L, B, i;
+    /* all combinations of primes 3, 5, 7, 11*/
+	static const int multiplier[] = { 1, 3, 5, 7, 11, 3*5, 3*7, 3*11, 5*7, 
+		5*11, 7*11, 3*5*7, 3*5*11, 3*7*11, 5*7*11, 3*5*7*11 };
+	/* smallest factor of each multiplier */
+	static const uint64_t results[] = {
+		1, 3, 5, 7, 11, 3, 3, 3, 5, 
+		5, 7, 3, 3, 3, 5, 3	};
+	const uint64_t s = (uint64_t)(sqrtl((double)N) + 0.5);
+
+	if (s * s == N) 
+		return s;  /* N is a perfect square */
+
+	/* note that there is a check to prevent overflow; exit the loop if overflow 
+	would occur */
+	for (int k = 0; k < nelems(multiplier) && N <= UINT64_MAX / multiplier[k]; k++) {
+		if (multiplier[k] == N)
+			return results[k];
+		D = multiplier[k] * N;  /* overflow may occur if N > 15971206990224720  */
+
+		Po = Pprev = P = (uint64_t)sqrtl((double)D);
+		Qprev = 1;
+		Q = D - Po * Po;
+		if (Q == 0)
+			/* only happens if D is a perfect square, which implies that N is a
+			 multiple of multiplier[k] i.e. N has at least one small factor. */
+			return results[k];
+
+		L = 2 * (uint32_t)sqrtl(2.0 * s);
+		B = 3 * L;
+		for (i = 2; i < B; i++) {
+			b = (uint64_t)((Po + P) / Q);
+			P = b * Q - P;
+			q = Q;
+			Q = Qprev + b * (Pprev - P);
+			r = (uint64_t)(sqrtl((double)Q) + 0.5);
+			if (!(i & 1) && r * r == Q) 
+				break;
+			Qprev = q;
+			Pprev = P;
+		};
+		if (i >= B) 
+			continue;
+		b = (uint64_t)((Po - P) / r);
+		Pprev = P = b * r + P;
+		Qprev = r;
+		Q = (D - Pprev * Pprev) / Qprev;
+		i = 0;
+		do {
+			b = (uint64_t)((Po + P) / Q);
+			Pprev = P;
+			P = b * Q - P;
+			q = Q;
+			Q = Qprev + b * (Pprev - P);
+			Qprev = q;
+			i++;
+		} while (P != Pprev);
+		r = gcd(N, Qprev);
+		if (r != 1 && r != N) {
+			if (verbose > 0)
+				std::cout << "SQUFOF n = " << N << " factor = " << r << '\n';
+			return r;
+		}
+	}
+
+	return 1;  /* failed to find factor*/
 }

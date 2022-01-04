@@ -466,7 +466,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 	if (Value <= 2) {
 		return 0;    // Indicate prime.
 	}
-	if (ZisEven(Value)) {
+	if (isEven(Value)) {
 		return 1;    // Number is even and different from 2. Indicate composite.
 	}
 
