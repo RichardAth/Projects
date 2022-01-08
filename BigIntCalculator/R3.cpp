@@ -95,7 +95,7 @@ int jacobi(__int64 k, unsigned __int64 n) {
 		if (k == 0) return 0;  /* wikipedia puts this in step 3, but it's
 							   needed here to avoid an infinite loop in step 2 */
 
-							   /* step 2*/
+		/* step 2*/
 		if (n % 8 == 1 || n % 8 == 7)
 			while ((k & 1) == 0) {
 				k /= 2;
@@ -494,7 +494,7 @@ be +ve, 0 or -ve See https://oeis.org/A005875
 R3(n) = 3*T(n) if n == 1,2,5,6 mod 8, 
        = 2*T(n) if n == 3 mod 8, 
 	   = 0 if n == 7 mod 8 and 
-	   = R(n/4) if n == 0 mod 4, 
+	   = R3(n/4) if n == 0 mod 4, 
 	   where T(n) = Moreno and Wagstaff's arithmetical function
 	            see https://oeis.org/A117726
 	   = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
@@ -503,8 +503,8 @@ Using PARI/GP we have
 r3(n)=if(n==0,1, if(n%4==0, r3(n/4), if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), if(n%8==3, 24*qfbhclassno(n),if(n%8==7, 0)))))
 
 where qfbhclassno is Hurwitz-Kronecker class number 
-see https://oeis.org/A014599
-and https://oeis.org/A259825
+see https://oeis.org/A259825
+and https://oeis.org/A014599
 See Henri Cohen: A course in computational algebraic number theory
 chapters 5.3 & 5.4 
 Given an efficient implementation of qfbhclassno(n) this is much faster than the 

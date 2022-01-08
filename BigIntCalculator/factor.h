@@ -221,6 +221,44 @@ also http://oeis.org/A004018 */
 		return b * 4;
 	}
 
+/* The number of representations of n as the sum of two squares ignoring order 
+and signs. see http://oeis.org/A000161 
+e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
+	  25 = 5²+0  = 3²+4² so R2P(25) = 2 */
+	Znum R2p() const {
+		// this only works if factorisation is complete!
+		Znum b = 1;
+		int a0 = 0;  /* exponent of prime factor 2 */
+		for (auto i : this->f) {
+			if (i.Factor < 2)
+				continue; // ignore factor 1
+			if (i.Factor == 2) {
+				a0 = i.exponent;  /* exponent of prime factor 2 */
+				continue;
+			}
+			if (i.Factor % 4 == 3) { /* p = 4k+3? */
+				if (i.exponent % 2 == 1) /* exponent is odd?*/
+					return 0;
+			}
+			else { 		/* p = 4k + 1 */
+				b *= i.exponent + 1;
+			}
+		}
+		if (isEven(b))
+			return (b / 2);
+		//else return (b + 1) / 2;
+		else {
+		/* if b is odd the the exponents of ALL (4k+3) prime factors of n are even,
+		therefore n is a perfect square, or 2*perfect square */
+			if ((a0 & 1) == 0)
+				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
+				zero would be disallowed as 1 of the squares. */
+				return (b + 1) / 2;  /* a0 is even i.e. n is a perfect square */
+			else
+				return (b + 1) / 2;
+		}
+	}
+
 /* calculate number of divisors of n (including 1 and n itself), given its list 
    of prime factors. */
 	Znum NoOfDivs() const {

@@ -106,6 +106,10 @@ FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the
                   3       Descending          Yes
 R2(n)           : Number of ways n can be expressed as the sum of x² + y².  
                   (order and sign of x and y are significant)
+R2P(n)          : Number of ways n can be expressed as the sum of x² + y².  
+                  (ignoring order and signs) 
+                  e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
+                  25 = 5²+0 = 3²+4² so R2P(25) = 2
 R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
                   (order and sign of x and y are significant)
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.

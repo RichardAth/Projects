@@ -102,6 +102,7 @@ enum class opCode {
 	fn_np,                /* next prime*/
 	fn_pp,                /* previous prime */
 	fn_r2,
+	fn_r2p,
 	fn_r3,
 	fn_legendre,
 	fn_jacobi,
@@ -164,6 +165,7 @@ const static struct functions functionList[]{
 	"N",         1,  opCode::fn_np,			// next prime
 	"BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
 	"B",         1,  opCode::fn_pp,			// previous prime
+	"R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
 	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
 	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  opCode::fn_jacobi,
@@ -561,6 +563,23 @@ static Znum R2(const Znum &num) {
 	/* get factors of num */
 	auto rv = factorise(num, factorlist, nullptr);
 	return factorlist.R2();
+}
+
+/* The number of representations of n as the sum of two squares ignoring order and signs*/
+static Znum R2p(const Znum& num) {
+	if (num < 0)
+		return 0;
+	if (num == 0)
+		return 1;
+	if (num % 4 == 3)
+		return 0;   // at least 1 4k+3 factor has an odd exponent
+
+	fList factorlist;
+	Znum b = 1;
+
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, nullptr);
+	return factorlist.R2p();
 }
 
 /* return x^n */
@@ -1013,6 +1032,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_r2: {
 		result = R2(p[0]);
+		break;
+	}
+	case opCode::fn_r2p: {
+		result = R2p(p[0]);
 		break;
 	}
 	case opCode::fn_r3: {
