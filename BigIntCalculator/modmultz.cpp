@@ -3,9 +3,9 @@
 #include "bignbr.h"
 
 // Compute Nbr <- Nbr mod Modulus.
-void AdjustModN(Znum &Nbr, const Znum &Modulus) {
-	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
-}
+//void AdjustModN(Znum &Nbr, const Znum &Modulus) {
+//	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
+//}
 
 Znum zR, zR2, zNI, zN;
 long long zRexp;

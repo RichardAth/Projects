@@ -338,7 +338,7 @@ void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 }
 
 /* estimate natural log of BigInt. */
-double logBigNbr (const BigInteger &pBigInt) {
+double logBigInt (const BigInteger &pBigInt) {
 	int nbrLimbs;
 	double logar;
 	nbrLimbs = pBigInt.nbrLimbs;

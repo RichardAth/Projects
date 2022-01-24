@@ -1839,7 +1839,7 @@ static bool PartialRelationFound(
 			
 			biT = abs(biT); // If number is negative make it positive.
 			// biU = Product of old Ax+B times new Ax+B
-			MultBigNbrModN(biV, biT, biU, zModulus);
+			MultZnumModN(biV, biT, biU, zModulus);
 			// Add all elements of aindex array to the rowMatrixB array discarding
 			// duplicates.
 			mergeArrays(aindex, nbrFactorsA, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
@@ -1896,7 +1896,7 @@ static bool PartialRelationFound(
 			for (index = 1; index < nbrSquares; index++)
 			{
 				D = rowSquares[index];
-				MultBigNbrByIntModN(biR, D, biR, zModulus);
+				MultZnumByIntModN(biR, D, biR, zModulus);
 				if (D == multiplier)	{
 					biU /= D;
 				}
@@ -2108,7 +2108,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
 	//  threadArray = new Thread[numberThreads];
-	Temp = logBigNbr(zN);
+	Temp = logZnum(zN);
 	/* increased number of primes on 17/6/2019 in line with DA's calculator */
 	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.363 - 1);
 	if (nbrFactorBasePrimes > MAX_PRIMES)
@@ -2166,7 +2166,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		int halfCurrentPrime;
 
 		/* NbrMod = Modulus % currentPrime */
-		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
+		NbrMod = (int)RemDivZnumByInt(zModulus, currentPrime);
 		halfCurrentPrime = (currentPrime - 1) / 2;
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
 		int jacobi = (int)modPower(NbrMod, halfCurrentPrime, currentPrime);
@@ -2247,7 +2247,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	currentPrime = 3;
 	while (j < nbrFactorBasePrimes) { /* select small primes */
-		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
+		NbrMod = (int)RemDivZnumByInt(zModulus, currentPrime);
 
 		if (currentPrime != multiplier &&
 			modPower(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
@@ -2361,7 +2361,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
 
-	dlogNumberToFactor = logBigNbr(zN); 	// find logarithm of number to factor.
+	dlogNumberToFactor = logZnum(zN); 	// find logarithm of number to factor.
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 
 #ifdef __EMSCRIPTEN__
@@ -2613,7 +2613,7 @@ static bool LinearAlgebraPhase(
 
 		for (row = matrixBlen - 1; row >= 0; row--) {
 			if ((ag->matrixV[row] & mask) != 0) {
-				MultBigNbrModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
+				MultZnumModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
 				biR = biU; 
 				rowMatrixB = &matrixB[row][0];
 				for (j = rowMatrixB[LENGTH_OFFSET] - 1; j >= 1; j--) {
@@ -2624,7 +2624,7 @@ static bool LinearAlgebraPhase(
 							biT = zModulus - biT; //SubtractBigNbr(zModulus, biT, biT); // Multiply biT by -1.
 						}
 						else {
-							MultBigNbrByIntModN(biT, ag->primeTrialDivisionData[primeIndex].value,
+							MultZnumByIntModN(biT, ag->primeTrialDivisionData[primeIndex].value,
 								biT, zModulus);
 						}
 					}
@@ -2632,7 +2632,7 @@ static bool LinearAlgebraPhase(
 			}
 		}
 
-		SubtractBigNbrModN(biR, biT, biR, zModulus);
+		SubtractZnumModN(biR, biT, biR, zModulus);
 		biT = gcd(biR, zTestNbr2);
 #if DEBUG_SIQS
 		std::cout << "col = " << col
@@ -2721,22 +2721,23 @@ static bool InsertNewRelation(
 
 		// If biR >= biModulus perform biR = biR - biModulus.
 		biT = 0;
-		AddBigNbrModN(biR, biT, biR, zTestNbr2);
+		AddZnumModN(biR, biT, biR, zTestNbr2);
 
-		ModInvBigNbr(biR, biT, zTestNbr2);   // biT = Mod Inv of biR
+		ModInvZnum(biR, biT, zTestNbr2);   // biT = Mod Inv of biR
 	}
 
 	else {             // Odd modulus
-		ModInvBigNbr(biR, biT, zModulus);  // biT = Mod Inv 
+		ModInvZnum(biR, biT, zModulus);  // biT = Mod Inv 
 	}
 
 	if (biU < 0) {
 		biU += zModulus; //AddBigNbr(biU, zModulus, biU);  
 	}
 
-	AdjustModN(biU, zModulus);
+	//AdjustModN(biU, zModulus);  /* biU %= zModulus */
+	mpz_mod(ZT(biU), ZT(biU), ZT(zModulus));   /* biU %= zModulus */
 	// Compute biU / biR  (mod biModulus)
-	MultBigNbrModN(biU, biT, biR, zModulus);  // biR = biU * biT
+	MultZnumModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
 											   // Add relation to matrix B.
 	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
@@ -3542,12 +3543,12 @@ static void sieveThread(Znum &result) {
 				for (index = 0; index < nbrFactorsA; index++) {
 					currentPrime = afact[index];
 					// D = (biQuadrCoeff%(currentPrime*currentPrime))/currentPrime
-					D = (int)RemDivBigNbrByInt(biQuadrCoeff,
+					D = (int)RemDivZnumByInt(biQuadrCoeff,
 						currentPrime*currentPrime) / currentPrime;
 					Q = primeSieveData[aindex[index]].modsqrt *
 						intModInv(D, currentPrime) % currentPrime;
 					amodq[index] = D << 1;
-					tmodqq[index] = (int)RemDivBigNbrByInt(zModulus,
+					tmodqq[index] = (int)RemDivZnumByInt(zModulus,
 						currentPrime*currentPrime);
 					if (Q + Q > currentPrime) {
 						Q = currentPrime - Q;

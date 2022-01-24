@@ -56,7 +56,7 @@ int BigNbrLen(const long long Nbr[], int nbrLen) {
 }
 
 /* Sum = Nbr1+Nbr2 (mod Mod) */
-void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
+void AddZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
 	//Diff = (Nbr1 + Nbr2) % Mod;
 	mpz_add(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 + Nbr2
 	while (Diff < 0)
@@ -65,7 +65,7 @@ void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &M
 }
 
 /* Diff = Nbr1-Nbr2 (mod Mod)*/
-void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
+void SubtractZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
 	//Diff = (Nbr1 - Nbr2) % Mod;
 	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 - Nbr2
 	while (Diff < 0)
@@ -101,7 +101,7 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 
 /* calculate dividend%divisor. remainder has same type as divisor 
 eror occurs if divisor is zero!! */
-mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
+mpir_ui RemDivZnumByInt(const Znum &Dividend, mpir_ui divisor) {
 	return mpz_fdiv_ui(ZT(Dividend), divisor);
 	/* Note that using % operator with Znums returns a Znum, even though the 
 	divisor is an integer. This way is much more efficient */
@@ -109,14 +109,14 @@ mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
 
 
 /* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod) {
+void MultZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod) {
 	//Prod = Nbr1*Nbr2;
 	mpz_mul(ZT(Prod), ZT(Nbr1), ZT(Nbr2));
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
 }
 
 /* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
+void MultZnumByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
 	//Prod = Nbr1*Nbr2;
 	mpz_mul_si(ZT(Prod), ZT(Nbr1), Nbr2);
 	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
@@ -141,7 +141,7 @@ int modPower (int NbrMod, int Expon, int currentPrime) {
 }
 
 /* get modular inverse of num wrt mod*/
-void ModInvBigNbr(const Znum &num, Znum &inv, const Znum &mod) {
+void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod) {
 	auto rv = mpz_invert(ZT(inv), ZT(num), ZT(mod));
 	assert(rv != 0);
 }
@@ -255,8 +255,8 @@ void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
 }
 
 
-/* get log of BigInt in base e */
-double logBigNbr(const Znum &BigInt) {
+/* get log of Znum in base e */
+double logZnum(const Znum &BigInt) {
 	double BigId;
 #ifdef __MPIR_VERSION
 	long BiExp;   // changed for MPIR version 3.0.0
@@ -267,9 +267,9 @@ double logBigNbr(const Znum &BigInt) {
 	double logval = log(BigId) + BiExp * log(2);
 	return logval;
 }
-/* get log of BigInt in base b */
-double logBigNbr(const Znum &BigInt, unsigned long long b) {
-	double ln = logBigNbr(BigInt);   // get log in base e
+/* get log of Znum in base b */
+double logZnum(const Znum &BigInt, unsigned long long b) {
+	double ln = logZnum(BigInt);   // get log in base e
 	double logb = ln / std::log(b);  // get log in base b
 	return logb;
 }
@@ -305,7 +305,7 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		upperBound = 2;
 
 	/* upperBound^maxExpon ≈ factor */
-	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
+	unsigned long long maxExpon = (unsigned long long) (ceil(logZnum(factor) / log(upperBound)));
 
 	int h;
 	long long modulus, Exponent;

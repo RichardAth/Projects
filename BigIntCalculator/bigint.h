@@ -78,7 +78,7 @@ public:
 		return rv;
 	}
 	double log() const {
-		return logBigNbr(*this);
+		return logBigInt(*this);
 	}
 
 	/* overload assignment operator here. There are 5 overloads,
@@ -168,7 +168,7 @@ public:
 	//friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
 	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
-	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
+	friend double logBigInt(const BigInteger &BigInt); /* natural log of BigInt */
 	//friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
