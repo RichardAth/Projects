@@ -435,8 +435,6 @@ extern std::string MsievePath;
 extern std::string MsieveProg;
 extern bool breakSignal;
 extern std::vector <Znum> roots;   /* used by functions that return multiple values */
-/* access underlying mpz_t inside an bigint */
-#define ZT(a) a.backend().data()
 
 extern int ElipCurvNo;            // Elliptic Curve Number
 extern unsigned long long *primeList;

@@ -55,23 +55,7 @@ int BigNbrLen(const long long Nbr[], int nbrLen) {
 	return ix;
 }
 
-/* Sum = Nbr1+Nbr2 (mod Mod) */
-void AddZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
-	//Diff = (Nbr1 + Nbr2) % Mod;
-	mpz_add(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 + Nbr2
-	while (Diff < 0)
-		Diff += Mod;
-	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
-}
 
-/* Diff = Nbr1-Nbr2 (mod Mod)*/
-void SubtractZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
-	//Diff = (Nbr1 - Nbr2) % Mod;
-	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 - Nbr2
-	while (Diff < 0)
-		Diff += Mod;
-	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
-}
 
 
 /* Quotient = Dividend/divisor */
@@ -99,28 +83,6 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 	}
 }
 
-/* calculate dividend%divisor. remainder has same type as divisor 
-eror occurs if divisor is zero!! */
-mpir_ui RemDivZnumByInt(const Znum &Dividend, mpir_ui divisor) {
-	return mpz_fdiv_ui(ZT(Dividend), divisor);
-	/* Note that using % operator with Znums returns a Znum, even though the 
-	divisor is an integer. This way is much more efficient */
-}
-
-
-/* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod) {
-	//Prod = Nbr1*Nbr2;
-	mpz_mul(ZT(Prod), ZT(Nbr1), ZT(Nbr2));
-	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
-}
-
-/* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultZnumByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
-	//Prod = Nbr1*Nbr2;
-	mpz_mul_si(ZT(Prod), ZT(Nbr1), Nbr2);
-	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
-}
 
 /* calculate NbrMod^Expon%currentPrime.
 calculation uses doubles to avoid risk of overflow. */

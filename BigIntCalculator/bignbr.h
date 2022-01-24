@@ -83,12 +83,7 @@ void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
 void ChSignBigNbr(int nbr[], int length);
 //void ChSignBigNbrB(int nbr[], int length);
 //int BigNbrLen(const long long Nbr[], int nbrLen);
-void AddZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
-void SubtractZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
-mpir_ui RemDivZnumByInt(const Znum &Dividend, mpir_ui divisor);
-void MultZnumModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod);
-void MultZnumByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod);
 //int modPower(int NbrMod, int Expon, int currentPrime);
 // calculate a^n%mod using 'bigints'   
 //unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
