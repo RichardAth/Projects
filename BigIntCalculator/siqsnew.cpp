@@ -2292,7 +2292,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		NbrMod = (int)RemDivZnumByInt(zModulus, currentPrime);
 
 		if (currentPrime != multiplier &&
-			modPower(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
+			modPowerLL(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
 		{
 			double dBase, dPower, dCurrentPrime, dRem;
 			/* use only if Jacobi symbol = 0 or 1 */
@@ -2321,11 +2321,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^BITS_PER_INT_GROUP)^6 mod currentPrime
 
 			if ((currentPrime & 3) == 3) {
-				SqrRootMod = (int)modPower(NbrMod, (currentPrime + 1) / 4, currentPrime);
+				SqrRootMod = (int)modPowerLL(NbrMod, (currentPrime + 1) / 4, currentPrime);
 			}
 			else if ((currentPrime & 7) == 5) {   // currentPrime = 5 (mod 8)
 				SqrRootMod =
-					(int)modPower(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
+					(int)modPowerLL(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
 				dRem = (double)2 * NbrMod * (double)SqrRootMod;
 				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod - 1;
@@ -2352,11 +2352,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 				do {
 					X++;
-					Z = (int)modPower(X, Q, currentPrime);
-				} while (modPower(Z, Power2, currentPrime) == 1);
+					Z = (int)modPowerLL(X, Q, currentPrime);
+				} while (modPowerLL(Z, Power2, currentPrime) == 1);
 
 				Y = Z;
-				X = (int)modPower(NbrMod, (Q - 1) / 2, currentPrime);
+				X = (int)modPowerLL(NbrMod, (Q - 1) / 2, currentPrime);
 				dBase = (double)NbrMod * (double)X;
 				V = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 				dBase = (double)V * (double)X;
@@ -2370,7 +2370,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 						D = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 						T1++;
 					}
-					D = (int)modPower(Y, 1LL << (E - T1 - 1), currentPrime);
+					D = (int)modPowerLL(Y, 1LL << (E - T1 - 1), currentPrime);
 					dBase = (double)D * (double)D;
 					Y1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 					E = T1;

@@ -629,11 +629,11 @@ long long int PollardRho(long long int n, int depth)
 	while (d == 1)
 	{
 		/* Tortoise Move: x(i+1) = f(x(i)) */
-		x = (modPower(x, 2, n) + c + n) % n;
+		x = (modPowerLL(x, 2, n) + c + n) % n;
 
 		/* Hare Move: y(i+1) = f(f(y(i))) */
-		y = (modPower(y, 2, n) + c + n) % n;
-		y = (modPower(y, 2, n) + c + n) % n;
+		y = (modPowerLL(y, 2, n) + c + n) % n;
+		y = (modPowerLL(y, 2, n) + c + n) % n;
 
 		/* check gcd of |x-y| and n */
 		d = gcd(abs(x - y), n);

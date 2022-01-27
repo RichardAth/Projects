@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "factor.h"
 
+static std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+
 // calculate x^n. Returns a Big Integer so should be no overflow problem.
 Znum powerBi(const __int64 x, unsigned __int64 n) {
 	Znum result;
@@ -117,7 +119,7 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
-std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
+static std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
 	Znum c, t, R, b;

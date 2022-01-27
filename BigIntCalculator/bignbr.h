@@ -21,12 +21,6 @@ typedef boost::multiprecision::mpz_int Znum;
 
 //#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 
-long long MulPrToLong(const Znum &x);
-
-extern bool *primeFlags;
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-extern unsigned long long int primeListMax;
 bool isPrime2(unsigned __int64 num);
 
 #define MAX_LEN 2500        // approximately 20000 digits
@@ -60,7 +54,7 @@ extern limb *const MontgomeryMultR1;
 //extern int groupLen;
 
 void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod);
-void FactoringSIQS(const Znum &NbrToFactor, Znum &Factor);
+
 void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
 void int2dec(char **pOutput, long long nbr);
 void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
@@ -84,10 +78,8 @@ void ChSignBigNbr(int nbr[], int length);
 //void ChSignBigNbrB(int nbr[], int length);
 //int BigNbrLen(const long long Nbr[], int nbrLen);
 void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
-//int modPower(int NbrMod, int Expon, int currentPrime);
-// calculate a^n%mod using 'bigints'   
-//unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
-//	unsigned __int64 mod);
+int modPower(int NbrMod, int Expon, int currentPrime);
+
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);

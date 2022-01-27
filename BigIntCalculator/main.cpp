@@ -30,14 +30,9 @@ extern Znum zR, zR2, zNI, zN;
 #endif
 
 /* external function declaration */
-void msieveParam(const std::string &expupper);   /*process Msieve commands */
-void yafuParam(const std::string &command);      /*process YAFU commands */
-
-void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
-char * getFileName(const char *filter, HWND owner);
-void printvars(std::string name);
-void doTests9(void);  /* modular square root test */
-
+void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
+char* getFileName(const char* filter, HWND owner);
+retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
 int lang = 0;             // 0 English, 1 = Spanish
 
@@ -70,13 +65,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 /* name of sound file played when prompt for input is displayed */
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
-/* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr);
-
 /* function declarations, only for functions that have forward references */
-long long MulPrToLong(const Znum &x);
-bool getBit(const unsigned long long int x, const bool array[]);
-void generatePrimes(unsigned long long int max_val);
 static void textError(retCode rc);
 
 

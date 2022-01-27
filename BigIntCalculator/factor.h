@@ -15,19 +15,13 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "boost/multiprecision/gmp.hpp" 
-typedef boost::multiprecision::mpz_int Znum;
-#define ZT(a) a.backend().data()
+#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
 //#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  
 
 /*  get approximate size (1 limb = 64 bits) */
 #define numLimbs(a) abs(ZT(a)->_mp_size)
-
-/* ComputeNumDigits(n,r): Number of digits of n in base r. */
-long long ComputeNumDigits(const Znum &n, const Znum &radix);
-void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex);
 
 /* counters showing how the factors were found */
 struct counters {
@@ -428,32 +422,16 @@ Repeated factors: No or Yes
 };
 
 
-extern int lang;    // 0 English, 1 = Spanish
-extern std::string YafuPath;
-extern std::string yafuprog;
-extern std::string MsievePath;
-extern std::string MsieveProg;
-extern bool breakSignal;
-extern std::vector <Znum> roots;   /* used by functions that return multiple values */
-
 extern int ElipCurvNo;            // Elliptic Curve Number
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-extern unsigned long long int primeListMax;
-extern bool msieve;
-extern bool yafu;
-extern int verbose;
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n, int depth = 0);
-long long MulPrToLong(const Znum &x);
+
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-void delfile(const std::string &path, const char * FileName);
-void writeIni(void);
-bool callMsieve(const Znum &num, fList&Factors);
-bool callYafu(const Znum &num, fList&Factors);
-void generatePrimes(unsigned long long int max_val);
+bool callMsieve(const Znum& num, fList& Factors);
+bool callYafu(const Znum& num, fList& Factors);
+
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
 
 /* return a factor of N, using Shanks's square forms factorization method. */
@@ -467,19 +445,6 @@ constexpr unsigned __int64 pow2(unsigned int exp) {
 	assert(exp < 64);
 	return 1ULL << exp;  // exp must be less than 64
 }
-unsigned __int64 R3(__int64 n);
-std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p);
-unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
-Znum             modMult(const Znum &a, const Znum &b, Znum mod);
-// calculate a^n%mod using 'bigints'   
-unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
-	unsigned __int64 mod);
-Znum             modPower(const Znum &a, const Znum &n, const Znum &mod);
-unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod);
-constexpr __int64 power(const __int64 x, unsigned int n);
-Znum              power(const Znum &x, unsigned long long n);
-int jacobi(__int64 k, unsigned __int64 n);
-int jacobi(const Znum &k, const Znum &n);
 
 
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
@@ -512,12 +477,6 @@ enum class retCode
 	EXPR_FAIL = 1
 };
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
-
-unsigned int primeFactors(unsigned __int64 tnum, factorsS &f);
 
 /* throw exception. For a list of exception classes derived from std:: exception
 see https://en.cppreference.com/w/cpp/error/exception
@@ -543,5 +502,3 @@ the text string a, function name, line number and source file name */
 	throw std::range_error(mesg);                \
 }
 
-unsigned long long llSqrt(const unsigned long long n);
-bool isPerfectSquare(const Znum &num);

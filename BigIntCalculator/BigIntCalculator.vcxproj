@@ -278,6 +278,7 @@
     <ClInclude Include="bignbr.h" />
     <ClInclude Include="diagnostic.h" />
     <ClInclude Include="factor.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="showtime.h" />
     <ClInclude Include="pch.h" />

@@ -238,7 +238,7 @@ double logZnum(const Znum &BigInt, unsigned long long b) {
 
 /* returns nbrMod^Expon%currentPrime.
 overflow could occur if currentPrime > 2^31
-the alternative is to use modPower */
+the alternative is to use modPowerLL */
 static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
 {
 	unsigned long long power = 1;

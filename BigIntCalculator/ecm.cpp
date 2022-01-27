@@ -30,6 +30,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 extern HANDLE hConsole;
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
+extern void FactoringSIQS(const Znum& NbrToFactor, Znum& Factor);
 
 
 static bool first = true;

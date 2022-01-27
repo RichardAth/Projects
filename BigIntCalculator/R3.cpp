@@ -16,13 +16,10 @@ extern int verbose;
 #include <intsafe.h>
 #include <intrin.h>
 
-
-extern bool *primeFlags;
-extern unsigned long long int primeListMax;
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-void generatePrimes(unsigned long long int max_val);
-constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+struct factorsS {
+	int factorcount;           // number of unique prime factors
+	__int64 factorlist[19][2]; // prime factor, exponent
+};
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -203,8 +200,8 @@ static __int64 mPowerInt(const unsigned int x, unsigned int n, const unsigned in
 	return(r);
 }
 
-// calculate a^n%mod using 'bigints'   
-unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
+// calculate a^n%mod   
+unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod) {
 	static mpz_t al, ml, res;
 	unsigned __int64 rl;
@@ -213,7 +210,7 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	if (a < INT_MAX && mod < INT_MAX && n < INT_MAX)
 		return mPowerInt((unsigned int)a, (unsigned int)n, (unsigned int)mod);
 
-	if (firsttime) {		// is this the 1st time modPower was called?
+	if (firsttime) {		// is this the 1st time modPowerLL was called?
 		mpz_inits(al, res, ml, NULL);	// if so, allocate storage for bigints
 		firsttime = false;
 	}
@@ -227,7 +224,7 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	return rl;
 }
 
-// calculate a^n%mod
+// calculate a^n%mod using 'bigints' 
 unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod) {
 	Znum res;
 	Znum modz = mod;
@@ -247,7 +244,7 @@ Znum modPower(const Znum &a, const Znum &n, const Znum &mod) {
 static bool witness(unsigned __int64 n, unsigned int s, unsigned __int64 d,
 	unsigned __int64 a)
 {
-	unsigned __int64 x = modPower(a, d, n);   // calculate a^d%n
+	unsigned __int64 x = modPowerLL(a, d, n);   // calculate a^d%n
 	unsigned __int64 y;
 
 	while (s) {

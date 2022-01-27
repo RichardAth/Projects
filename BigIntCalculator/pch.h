@@ -23,6 +23,7 @@
 #else
 #include "mpir.h"
 #endif
+#include "main.h"
 
 #define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
 #include <intsafe.h>

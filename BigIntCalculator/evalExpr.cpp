@@ -22,7 +22,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 
 
 // declarations for external function
-bool getBit(const unsigned long long int x, const bool array[]);
+
 void biperm(int n, Znum &result);  
 Znum llt(const Znum &p);
 size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
