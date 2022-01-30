@@ -386,7 +386,7 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 1 if gcd is 1 , 2 if gcd > 1.
 The value of the gcd is returned in BiGD
 Uses global variables BiGD, NumberLength */
-static int gcdIsOne(const limb *value, const Znum &zN, int line) {
+static int gcdIsOne(const limb value[], const Znum& zN, int line) {
 	static Znum Temp1;
 
 	LimbstoZ(value, Temp1, NumberLength);    // Temp1 = value

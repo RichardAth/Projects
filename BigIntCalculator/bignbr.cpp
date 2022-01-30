@@ -109,7 +109,7 @@ void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod) {
 }
 
 /* returns true iff value is zero*/
-bool BigNbrIsZero(const limb *value, int NumLen) {
+bool BigNbrIsZero(const limb value[], int NumLen) {
 	int ctr;
 	for (ctr = 0; ctr < NumLen; ctr++) {
 		if (value[ctr].x != 0) {
@@ -134,7 +134,7 @@ double getMantissa(const limb *ptrLimb, int nbrLimbs) {
 	return dN;
 }
 
-void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
+void LimbstoZ(const limb number[], Znum& numberZ, int NumLen) {
 	numberZ = 0;
 	for (int i = NumLen - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left

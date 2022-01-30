@@ -22,9 +22,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "bigint.h"
 
 /* the functions below are now used only by the built-in ECM function. */
-/* values below are set up by calling GetMontgomeryParms*/
 
-BigInteger TestNbrBI;
+BigInteger TestNbrBI;   /* value set up by ecm */
+
+/* values below are set up by calling GetMontgomeryParms*/
 limb * const TestNbr = TestNbrBI.limbs;
 BigInteger MontgomeryMultNBI;
 limb * const MontgomeryMultN = MontgomeryMultNBI.limbs;   // used by  modmult, ComputeInversePower2, etc
@@ -989,7 +990,7 @@ static void MontgomeryMult11(const limb *pNbr1, const limb *pNbr2, limb *pProd)
 
 /* product = factor1*factor2 (mod TestNbr) - values in Montgomery format
 uses global variables powerOf2Exponent, NumberLength, TestNbr */
-void modmult(const limb *factor1, const limb *factor2, limb *product)
+void modmult(const limb factor1[], const limb factor2[], limb product[])
 {
 	limb carry;
 	int count;
@@ -1263,7 +1264,7 @@ static void modmultIntExtended(const limb factorBig[], int factorInt, limb resul
 
 /* result = FactorBig* factorInt (mod TestNbr) 
 note: result & factorBig may be the same variable */
-void modmultInt(const limb *factorBig, int factorInt, limb *result) {
+void modmultInt(const limb factorBig[], int factorInt, limb result[]) {
 	modmultIntExtended(factorBig, factorInt, result, TestNbr, NumberLength);
 }
 
@@ -1448,7 +1449,7 @@ static int modInv(int NbrMod, int currentPrime)
 /* U' <- aU - bV, V' <- -cU + dV                                       */
 /***********************************************************************/
 // note: both num and mod are modified (but the value is not changed)
-void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int nbrLen)
+void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int nbrLen)
 {
 
 	int len;

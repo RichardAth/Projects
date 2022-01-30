@@ -2776,12 +2776,11 @@ static bool InsertNewRelation(
 		biU += zModulus; //AddBigNbr(biU, zModulus, biU);  
 	}
 
-	//AdjustModN(biU, zModulus);  /* biU %= zModulus */
 	mpz_mod(ZT(biU), ZT(biU), ZT(zModulus));   /* biU %= zModulus */
 	// Compute biU / biR  (mod biModulus)
 	MultZnumModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
-											   // Add relation to matrix B.
+	// Add relation to matrix B.
 	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
 
 	vectLeftHandSide[congruencesFound] = biR;

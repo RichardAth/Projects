@@ -15,9 +15,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "boost/multiprecision/gmp.hpp"
-typedef boost::multiprecision::mpz_int Znum;
-#define ZT(a) a.backend().data()
+//#include "boost/multiprecision/gmp.hpp"
+//typedef boost::multiprecision::mpz_int Znum;
+//#define ZT(a) a.backend().data()
 
 //#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
 
@@ -39,7 +39,7 @@ struct limb
 #define MAX_VALUE_LIMB (LIMB_RANGE-1)
 
 extern long long lModularMult;  // count of number of modular multiplications used to control status display
-bool BigNbrIsZero(const limb *value, int nbrLength);
+bool BigNbrIsZero(const limb value[], int nbrLength);
 //void squareRoot(const limb *argument, limb *sqRoot, int len, int *pLenSqRoot);
 void squareRoot(const Znum &arg, Znum & sqRoot);
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
@@ -55,22 +55,22 @@ extern limb *const MontgomeryMultR1;
 
 void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod);
 
-void multiply(const limb *factor1, const limb *factor2, limb *result, int len, int *ResultLen);
+void multiply(const limb factor1[], const limb factor2[], limb result[], int len, int* ResultLen);
 void int2dec(char **pOutput, long long nbr);
-void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength);
+void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength);
 void GetMontgomeryParms(int len);
 void GetMontgomeryParms(const Znum &Nval);
 void AddBigNbrModNB (const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 void SubtBigNbrModN(const limb Nbr1[], const limb Nbr2[], limb Sum[], const limb TestNbr[], int NumLen);
 
-void modmult(const limb *factor1, const limb *factor2, limb *product);
+void modmult(const limb factor1[], const limb factor2[], limb product[]);
 
 void modmult(const Znum &a, const Znum &b, Znum &result);
 void REDC(Znum &t, const Znum &T);
-void modmultInt(const limb *factorBig, int factorInt, limb *result);
+void modmultInt(const limb factorBig[], int factorInt, limb result[]);
 
 //void AdjustModN(Znum &Nbr, const Znum &Modulus);
-void ModInvBigNbr(const limb *num, limb *inv, const limb *mod, int NumLen);
+void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int NumLen);
 
 //void ValuestoZ(Znum &numberZ, const int number[], int NumLen);
 
@@ -82,7 +82,7 @@ int modPower(int NbrMod, int Expon, int currentPrime);
 
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
-void LimbstoZ(const limb *number, Znum &numberZ, int NumLen);
+void LimbstoZ(const limb number[], Znum& numberZ, int NumLen);
 
 void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
 int PrimalityTest(const Znum &Value, long long upperBound);

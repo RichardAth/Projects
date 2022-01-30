@@ -63,7 +63,7 @@ static void Karatsuba(int idxFactor1, const int length, int diffIndex);
 
 /* this the entry point for external calls 
 result = factor1 * factor2 */
-void multiply(const limb *factor1, const limb *factor2, limb *result, const int len, int *pResultLen)
+void multiply(const limb factor1[], const limb factor2[], limb result[], const int len, int* pResultLen)
 {
 	int length = len;
 	// Compute length of numbers for each recursion.
@@ -711,7 +711,7 @@ static void Karatsuba(int idxFactor1, const int nbrLen, int diffIndex)
 	int halfLength;
 	
 	// Check if one of the factors is equal to zero.
-	if (BigNbrIsZero (&arr[idxFactor1], nbrLen) || BigNbrIsZero(&arr[idxFactor1], nbrLen))
+	if (BigNbrIsZero (&arr[idxFactor1], nbrLen) || BigNbrIsZero(&arr[idxFactor2], nbrLen))
 	{    // One of the factors is equal to zero.
 		for (i = nbrLen - 1; i >= 0; i--) 	{
 			arr[idxFactor1 + i].x = arr[idxFactor2 + i].x = 0;

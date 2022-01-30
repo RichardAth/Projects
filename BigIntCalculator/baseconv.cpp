@@ -60,7 +60,7 @@ void int2dec(char **pOutput, long long nbr)
 // Convert little-endian number to a string with space every groupLen digits.
 // In order to perform a faster conversion, use groups of DIGITS_PER_LIMB digits.
 // output to char array decimal
-void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
+void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength)
 {
 	int len, index, index2, count;
 	const limb *ptrSrc = binary + nbrLimbs - 1;
