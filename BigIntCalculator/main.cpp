@@ -1210,7 +1210,7 @@ static void doTests3(void) {
 	auto start = clock();	// used to measure execution time
 
 	memset(one, 0, MAX_LEN * sizeof(limb));
-	one[0].x = 1;                   /* set value of one to 1 */
+	one[0] = 1;                   /* set value of one to 1 */
 
 	srand(421040034);               // seed random number generator 
 	
@@ -1386,7 +1386,7 @@ static void doTests3(void) {
 		/*if (pdb > 708)
 			break;*/
 		expBigInt(amBI, pdb);   // convert back from log
-		BigtoZ(am, amBI);       // convert back tp Znum
+		BigtoZ(am, amBI);       // convert back to Znum
 		error = p - am;         // get error
 		if (error != 0) {
 			double e1, e2, relErrf;
@@ -1446,7 +1446,7 @@ static void doTests3(void) {
 	mod |= 1;                       // set lowest bit (make sure mod is odd)
 	GetMontgomeryParms(mod);
 	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-	while (modL[numLen - 1].x == 0)
+	while (modL[numLen - 1] == 0)
 		numLen--;                    // adjust length i.e. remove leading zeros
 	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
 	NumberLength = numLen;
@@ -2353,6 +2353,7 @@ static void initialise(int argc, char *argv[]) {
 
 	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
         functions that actually work OK */
+#ifndef BIGNBR
 	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
 	/* trap hardware FP exceptions except inexact and underflow which are
 	considered to be normal, not errors. */
@@ -2360,6 +2361,7 @@ static void initialise(int argc, char *argv[]) {
 		printf_s("could not set FP control word\n");
 		exit (-1);
 	}
+#endif
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
 	handConsole = GetConsoleWindow();            // get handle for console window

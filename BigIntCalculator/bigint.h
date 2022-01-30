@@ -35,7 +35,7 @@ public:
 	int bitLength() const {
 		const int lastLimb = nbrLimbs - 1;
 		int bitLen = lastLimb * BITS_PER_GROUP;
-		unsigned int limb = (unsigned int)(limbs[lastLimb].x);
+		unsigned int limb = (unsigned int)(limbs[lastLimb]);
 		if (limb != 0) {
 			/* use _BitScanReverse instead of loop because it's faster */
 			unsigned long bitCount;
@@ -45,7 +45,7 @@ public:
 		return bitLen;
 	}
 	bool isEven() const {
-		return ((limbs[0].x & 1) == 0);
+		return ((limbs[0] & 1) == 0);
 	}
 	/*BigInteger sqRoot() const {
 		BigInteger sqrRoot;
@@ -58,7 +58,7 @@ public:
 		long long rv = 0;
 		for (noOfLimbs = nbrLimbs - 1; noOfLimbs >= 0; noOfLimbs--) {
 			rv *= LIMB_RANGE;
-			rv += limbs[noOfLimbs].x;
+			rv += limbs[noOfLimbs];
 		}
 		if (sign == SIGN_NEGATIVE)
 			rv = -rv;
@@ -95,18 +95,18 @@ public:
 		nbrLimbs = other.nbrLimbs;
 		sign = other.sign;
 		memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
-		while (nbrLimbs > 1 && limbs[nbrLimbs - 1].x == 0) {
+		while (nbrLimbs > 1 && limbs[nbrLimbs - 1] == 0) {
 			nbrLimbs--;  // remove any leading zeros
 		}
 		return *this;
 	}
 	BigInteger & operator = (const int value) {
 		if (value >= 0) {
-			limbs[0].x = value;
+			limbs[0] = value;
 			sign = SIGN_POSITIVE;
 		}
 		else {
-			limbs[0].x = -value;
+			limbs[0] = -value;
 			sign = SIGN_NEGATIVE;
 		}
 		nbrLimbs = 1;
@@ -121,7 +121,7 @@ public:
 		}
 
 		do {
-			limbs[noOfLimbs++].x = (int)value & MAX_VALUE_LIMB;
+			limbs[noOfLimbs++] = (int)value & MAX_VALUE_LIMB;
 			value >>= BITS_PER_GROUP;
 		} while (value != 0);
 
@@ -179,7 +179,7 @@ public:
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 		/*@out@*/BigInteger &bigint, int NumLen);
-	friend void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
+	friend void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
 		/*@in@*/const BigInteger &bigint, int NumLen);
 	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);

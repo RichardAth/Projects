@@ -32,11 +32,13 @@ bool isPrime2(unsigned __int64 num);
 #define SMALL_NUMBER_BOUND 32768
 #define _USING64BITS_ 1
 
-struct limb
-{
-	int x=0;      // maximum value in each limb is MAX_VALUE_LIMB
-};
+//struct limb
+//{
+//	int x=0;      // maximum value in each limb is MAX_VALUE_LIMB
+//};
 #define MAX_VALUE_LIMB (LIMB_RANGE-1)
+
+typedef int limb;
 
 extern long long lModularMult;  // count of number of modular multiplications used to control status display
 bool BigNbrIsZero(const limb value[], int nbrLength);
@@ -77,7 +79,7 @@ void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int NumLen);
 void ChSignBigNbr(int nbr[], int length);
 //void ChSignBigNbrB(int nbr[], int length);
 //int BigNbrLen(const long long Nbr[], int nbrLen);
-void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen);
+void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen);
 int modPower(int NbrMod, int Expon, int currentPrime);
 
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);

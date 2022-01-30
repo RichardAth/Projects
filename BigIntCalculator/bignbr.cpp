@@ -59,7 +59,7 @@ int BigNbrLen(const long long Nbr[], int nbrLen) {
 
 
 /* Quotient = Dividend/divisor */
-void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen)
+void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen)
 {
 	int ctr;
 	int remainder = 0;
@@ -112,7 +112,7 @@ void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod) {
 bool BigNbrIsZero(const limb value[], int NumLen) {
 	int ctr;
 	for (ctr = 0; ctr < NumLen; ctr++) {
-		if (value[ctr].x != 0) {
+		if (value[ctr] != 0) {
 			return false;  // Number is not zero.
 		}
 	}
@@ -123,13 +123,13 @@ bool BigNbrIsZero(const limb value[], int NumLen) {
 note that ptrLimb points AFTER last valid value in limbs.
 up to 3 most significant limbs are used. */
 double getMantissa(const limb *ptrLimb, int nbrLimbs) {
-	double dN = (double)(ptrLimb - 1)->x;
+	double dN = (double)*(ptrLimb - 1);
 	double dInvLimb = 1 / (double)LIMB_RANGE;
 	if (nbrLimbs > 1) {
-		dN += (double)(ptrLimb - 2)->x * dInvLimb;
+		dN += (double)*(ptrLimb - 2) * dInvLimb;
 	}
 	if (nbrLimbs > 2) {
-		dN += (double)(ptrLimb - 3)->x * dInvLimb * dInvLimb;
+		dN += (double)*(ptrLimb - 3) * dInvLimb * dInvLimb;
 	}
 	return dN;
 }
@@ -138,7 +138,7 @@ void LimbstoZ(const limb number[], Znum& numberZ, int NumLen) {
 	numberZ = 0;
 	for (int i = NumLen - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-		numberZ += number[i].x;      // add next limb
+		numberZ += number[i];      // add next limb
 	}
 }
 
@@ -166,7 +166,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
 		/* calculating quotient and remainder separately turns
 		out to be faster */
 		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-		number[i].x = (int)MulPrToLong(remainder);
+		number[i] = (int)MulPrToLong(remainder);
 		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
 
 		i++;
