@@ -1193,6 +1193,14 @@ static void largeRand(Znum &a) {
 	a += ((long long)rand() << 32) + rand();
 }
 
+/* generate extra large number, about size*32 bits */
+static void XlargeRand(Znum& a, int size) {
+	a = 1;
+	for (int c = 1; c <= size; c++) {
+		a *= rand();
+	}
+}
+
 /*  1. check basic arithmetic operators for BigIntegers
 	2. test BigInteger multiplication with larger numbers
 	3. BigInteger division with larger numbers
@@ -1395,7 +1403,7 @@ static void doTests3(void) {
 			e2 = mpz_get_d_2exp(&e2l, ZT(am));
 			assert(e1l == e2l);   // check power of 2 exponent is correct
 			relErrf = abs(e1 - e2) / e1;   /* should be less than 10E-14 */
-			relerror = (10000000000000000LL * error) / p;
+			relerror = (10'000'000'000'000'000LL * error) / p;  /* error ratio * 10^15 */
 			/* print log base 10 of p, then error ratio */
 			std::cout << " pdb = " << pdb / std::log(10)
 				<< " error = " << relErrf <<  " relerror = " << relerror << '\n';
@@ -1441,42 +1449,65 @@ static void doTests3(void) {
 	division operations. The conclusion is that GMP takes about twice as long
 	as DA's code. */
 
-	/* set up modulus and Mongomery parameters */
-	largeRand(mod);					// get large random number
-	mod |= 1;                       // set lowest bit (make sure mod is odd)
-	GetMontgomeryParms(mod);
-	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-	while (modL[numLen - 1] == 0)
-		numLen--;                    // adjust length i.e. remove leading zeros
-	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-	NumberLength = numLen;
-	GetMontgomeryParms(numLen);
-	modmultCallback = nullptr;      // turn off status messages from modmult
+	for (int c = 1; c <= 100; c++) {
+		/* set up modulus and Mongomery parameters */
+		XlargeRand(mod, c);					// get large random number (up to 32 * c bits)
+		mod |= 1;                       // set lowest bit (make sure mod is odd)
+		GetMontgomeryParms(mod);
+		numLen = MAX_LEN - 2;
+		ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+		while (modL[numLen - 1] == 0)
+			numLen--;                    // adjust length i.e. remove leading zeros
+		memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+		NumberLength = numLen;
+		GetMontgomeryParms(numLen);
+		modmultCallback = nullptr;      // turn off status messages from modmult
 
-	largeRand(a);				     // get large random number a
-	a %= mod;						 // ensure a < mod
-	modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
-	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
-	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
-	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
-	LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
-	assert(a == a1);                 // check that all thes conversions work properly
+	
+		XlargeRand(a, c);				     // get large random number a
+		a %= mod;						 // ensure a < mod
+		modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
+		numLen = MAX_LEN - 2;
+		ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
+		while (aL[numLen - 1] == 0)
+			numLen--;                    // adjust length i.e. remove leading zeros
+		NumberLength = numLen;
+		modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
+		modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
+		LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
+		assert(a == a1);                 // check that all thes conversions work properly
+	}
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
 	largeRand(b);				     // get large random number  b
-	modmult(b%mod, zR2, bm);         // convert b to Montgomery (Znum)
+	b |= 1;                         /* make sure b is odd */
+	GetMontgomeryParms(b);
+	modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
+	
 	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+	numLen = MAX_LEN - 2;
+	while (bL[numLen - 1] == 0)
+		numLen--;                    // adjust length i.e. remove leading zeros
+	NumberLength = numLen;
+	memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	GetMontgomeryParms(numLen);
 	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
 	for (int i = 1; i < 200000000; i++) {
-		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
+		modmult(alM, blM, plm);                   // p = a*b mod m (limbs)
 		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-		modmult(am, bm, pm);             // p = a*b mod m (Znum)
-		am = pm;						 //a = p (Znum)
+		modmult(am, bm, pm);                      // p = a*b mod m (Znum)
+		am = pm;						          //a = p (Znum)
+		if (i % 20000000 == 0) {
+			std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
+		}
 	}
 
 	REDC(p, pm);					 // convert p from montgomery (Znum)
 	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
+	LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
 	assert(p2 == p);
 
 	end = clock();              // measure amount of time used

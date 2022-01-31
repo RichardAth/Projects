@@ -1064,10 +1064,10 @@ void modmult(const limb factor1[], const limb factor2[], limb product[])
 			Pr = (Nbr = *(factor1 + i)) * (int64_t)*factor2 + (uint32_t)Prod[0];
 			MontDig = ((int32_t)Pr * MontgomeryMultN[0]) & MAX_VALUE_LIMB;
 			Prod[0] = (Pr = (((int64_t)MontDig * TestNbr[0] + Pr) >> BITS_PER_GROUP) +
-				(int64_t)MontDig * TestNbr[1] + (int64_t)Nbr * *(factor2 + 1) + (uint32_t)Prod[1]) & MAX_VALUE_LIMB;
+				(int64_t)MontDig * TestNbr[1] + (int64_t)Nbr * factor2[1] + (uint32_t)Prod[1])& MAX_VALUE_LIMB;
 			for (j = 2; j < NumberLength; j++) {
 				Prod[j - 1] = ((Pr = (Pr >> BITS_PER_GROUP) +
-					(int64_t)MontDig * TestNbr[j] + (int64_t)Nbr * *(factor2 + j) + (uint32_t)Prod[j]) & MAX_VALUE_LIMB);
+					(int64_t)MontDig * TestNbr[j] + (int64_t)Nbr * factor2[j] + (uint32_t)Prod[j]) & MAX_VALUE_LIMB);
 			}
 			Prod[j - 1] = (int32_t)(Pr >> BITS_PER_GROUP);
 		}
