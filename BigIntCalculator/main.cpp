@@ -22,7 +22,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "diagnostic.h"
 
-//#define BIGNBR       // define to include bignbr tests 
+#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 #include "bignbr.h"
 #include "bigint.h"
@@ -1204,7 +1204,7 @@ static void XlargeRand(Znum& a, int size) {
 /*  1. check basic arithmetic operators for BigIntegers
 	2. test BigInteger multiplication with larger numbers
 	3. BigInteger division with larger numbers
-	4. Modular Multiplication using Mongomery Encoding (REDC)
+	4 & 5. Modular Multiplication using Mongomery Encoding (REDC)
 */
 static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
@@ -1448,7 +1448,8 @@ static void doTests3(void) {
 	BigIntegers. Both use Mongomery notation for the integers to avoid slow
 	division operations. The conclusion is that GMP takes about twice as long
 	as DA's code. */
-
+	
+	modmultCallback = nullptr;      // turn off status messages from modmult
 	for (int c = 1; c <= 100; c++) {
 		/* set up modulus and Mongomery parameters */
 		XlargeRand(mod, c);					// get large random number (up to 32 * c bits)
@@ -1461,21 +1462,18 @@ static void doTests3(void) {
 		memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
 		NumberLength = numLen;
 		GetMontgomeryParms(numLen);
-		modmultCallback = nullptr;      // turn off status messages from modmult
-
-	
 		XlargeRand(a, c);				     // get large random number a
 		a %= mod;						 // ensure a < mod
 		modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
 		numLen = MAX_LEN - 2;
 		ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
-		while (aL[numLen - 1] == 0)
-			numLen--;                    // adjust length i.e. remove leading zeros
-		NumberLength = numLen;
+		//while (aL[numLen - 1] == 0)
+		//	numLen--;                    // adjust length i.e. remove leading zeros
+		//NumberLength = numLen;
 		modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
 		modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
 		LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
-		assert(a == a1);                 // check that all thes conversions work properly
+		assert(a == a1);                 // check that all these conversions work properly
 	}
 	end = clock();              // measure amount of time used
 	elapsed = (double)end - start;

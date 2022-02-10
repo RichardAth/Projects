@@ -87,20 +87,16 @@ void multiply(const limb factor1[], const limb factor2[], limb result[], const i
 	}
 
 	karatLength = length;
-	memset(arr, 0, 2 * length * sizeof(limb));
+	memset(arr, 0, 2 * length * sizeof(limb));      /* copy both operands to arr */
 	memcpy(&arr[0], factor1, len * sizeof(limb));
 	memcpy(&arr[length], factor2, len * sizeof(limb));
-	Karatsuba(0, length, 2 * length);
+	Karatsuba(0, length, 2 * length);           /* do the actual multiplication */
 	memcpy(result, &arr[2 * (karatLength - length)], 2 * length * sizeof(limb));
-	if (pResultLen != NULL)
-	{
-		memcpy(result, &arr[2 * (karatLength - length)], 2 * length * sizeof(limb));
-		if (karatLength > length && arr[2 * (karatLength - length) - 1] == 0)
-		{
+	if (pResultLen != NULL) {
+		if (karatLength > length && arr[2 * (karatLength - length) - 1] == 0) {
 			*pResultLen = length * 2 - 1;
 		}
-		else
-		{
+		else {
 			*pResultLen = length * 2;
 		}
 	}
@@ -585,6 +581,7 @@ static void ClassicalMult16Limbs(int idxFactor1, int idxFactor2)
 }
 
 #endif
+
 static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
 #ifdef _USING64BITS_
 	uint64_t product;
@@ -599,49 +596,49 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
 		arr[idxFactor2] = (int32_t)(product >> BITS_PER_GROUP) & MAX_INT_NBR;
 		return;
 	case 2:
-		ClassicalMult2Limbs(idxFactor1, idxFactor2);
+		ClassicalMult2Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 3:
-		ClassicalMult3Limbs(idxFactor1, idxFactor2);
+		ClassicalMult3Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 4:
-		ClassicalMult4Limbs(idxFactor1, idxFactor2);
+		ClassicalMult4Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 5:
-		ClassicalMult5Limbs(idxFactor1, idxFactor2);
+		ClassicalMult5Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 6:
-		ClassicalMult6Limbs(idxFactor1, idxFactor2);
+		ClassicalMult6Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 7:
-		ClassicalMult7Limbs(idxFactor1, idxFactor2);
+		ClassicalMult7Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 8:
-		ClassicalMult8Limbs(idxFactor1, idxFactor2);
+		ClassicalMult8Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 9:
-		ClassicalMult9Limbs(idxFactor1, idxFactor2);
+		ClassicalMult9Limbs(idxFactor1, idxFactor2);   /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 10:
-		ClassicalMult10Limbs(idxFactor1, idxFactor2);
+		ClassicalMult10Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 11:
-		ClassicalMult11Limbs(idxFactor1, idxFactor2);
+		ClassicalMult11Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 12:
-		ClassicalMult12Limbs(idxFactor1, idxFactor2);
+		ClassicalMult12Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 13:
-		ClassicalMult13Limbs(idxFactor1, idxFactor2);
+		ClassicalMult13Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 14:
-		ClassicalMult14Limbs(idxFactor1, idxFactor2);
+		ClassicalMult14Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 15:
-		ClassicalMult15Limbs(idxFactor1, idxFactor2);
+		ClassicalMult15Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 	case 16:
-		ClassicalMult16Limbs(idxFactor1, idxFactor2);
+		ClassicalMult16Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
 		break;
 
 	default: abort();   // should never get here
@@ -691,6 +688,7 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
 	}
 	arrayAux[prodCol] = low;
 #endif
+	/* copy product back into factor1 and Factor2 */
 	memcpy(&arr[idxFactor1], &arrayAux[0], 2 * nbrLen * sizeof(limb));
 	return;
 }
