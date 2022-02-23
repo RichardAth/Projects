@@ -13,6 +13,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/* Biginteger has been made into a class, with operator overload so that normal
+operators do what you would expect. However, these Bigintegers are now only used
+by modmult functions which in turn are only used by the built-in ECM function. */
+
 enum eSign
 {
 	SIGN_POSITIVE = 0,
@@ -30,7 +35,7 @@ public:
 	int bitLength() const {
 		const int lastLimb = nbrLimbs - 1;
 		int bitLen = lastLimb * BITS_PER_GROUP;
-		unsigned int limb = (unsigned int)(limbs[lastLimb].x);
+		unsigned int limb = (unsigned int)(limbs[lastLimb]);
 		if (limb != 0) {
 			/* use _BitScanReverse instead of loop because it's faster */
 			unsigned long bitCount;
@@ -40,7 +45,7 @@ public:
 		return bitLen;
 	}
 	bool isEven() const {
-		return ((limbs[0].x & 1) == 0);
+		return ((limbs[0] & 1) == 0);
 	}
 	/*BigInteger sqRoot() const {
 		BigInteger sqrRoot;
@@ -53,7 +58,7 @@ public:
 		long long rv = 0;
 		for (noOfLimbs = nbrLimbs - 1; noOfLimbs >= 0; noOfLimbs--) {
 			rv *= LIMB_RANGE;
-			rv += limbs[noOfLimbs].x;
+			rv += limbs[noOfLimbs];
 		}
 		if (sign == SIGN_NEGATIVE)
 			rv = -rv;
@@ -78,7 +83,7 @@ public:
 		return rv;
 	}
 	double log() const {
-		return logBigNbr(*this);
+		return logBigInt(*this);
 	}
 
 	/* overload assignment operator here. There are 5 overloads,
@@ -90,18 +95,18 @@ public:
 		nbrLimbs = other.nbrLimbs;
 		sign = other.sign;
 		memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
-		while (nbrLimbs > 1 && limbs[nbrLimbs - 1].x == 0) {
+		while (nbrLimbs > 1 && limbs[nbrLimbs - 1] == 0) {
 			nbrLimbs--;  // remove any leading zeros
 		}
 		return *this;
 	}
 	BigInteger & operator = (const int value) {
 		if (value >= 0) {
-			limbs[0].x = value;
+			limbs[0] = value;
 			sign = SIGN_POSITIVE;
 		}
 		else {
-			limbs[0].x = -value;
+			limbs[0] = -value;
 			sign = SIGN_NEGATIVE;
 		}
 		nbrLimbs = 1;
@@ -116,7 +121,7 @@ public:
 		}
 
 		do {
-			limbs[noOfLimbs++].x = (int)value & MAX_VALUE_LIMB;
+			limbs[noOfLimbs++] = (int)value & MAX_VALUE_LIMB;
 			value >>= BITS_PER_GROUP;
 		} while (value != 0);
 
@@ -168,13 +173,13 @@ public:
 	//friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
 	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
-	friend double logBigNbr(const BigInteger &BigInt); /* natural log of BigInt */
+	friend double logBigInt(const BigInteger &BigInt); /* natural log of BigInt */
 	//friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 		/*@out@*/BigInteger &bigint, int NumLen);
-	friend void BigIntegerToLimbs(/*@out@*/limb *ptrValues,
+	friend void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
 		/*@in@*/const BigInteger &bigint, int NumLen);
 	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);

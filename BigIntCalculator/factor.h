@@ -15,14 +15,29 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "boost/multiprecision/gmp.hpp" 
-#define ZT(a) a.backend().data()
-#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
-typedef boost::multiprecision::mpz_int Znum;
+#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
-/* ComputeNumDigits(n,r): Number of digits of n in base r. */
-long long ComputeNumDigits(const Znum &n, const Znum &radix);
-void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex);
+bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
+//#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  
+
+/*  get approximate size (1 limb = 64 bits) */
+#define numLimbs(a) abs(ZT(a)->_mp_size)
+
+/* counters showing how the factors were found */
+struct counters {
+	int pm1 = 0;           // power + / -1
+	int tdiv = 0;          // trial division
+	int prho = 0;          // Pollard-rho
+	int ecm = 0;           // elliptic curve
+	int siqs = 0;          // SIQS
+	int msieve = 0;        // Msieve
+	int yafu = 0;          // YAFU
+	int carm = 0;          // Carmichael
+	int leh = 0;           // Lehman:
+	int power = 0;		   // perfect power
+
+};
+
 class zFactors {
 public:
 	Znum Factor;
@@ -200,6 +215,44 @@ also http://oeis.org/A004018 */
 		return b * 4;
 	}
 
+/* The number of representations of n as the sum of two squares ignoring order 
+and signs. see http://oeis.org/A000161 
+e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
+	  25 = 5²+0  = 3²+4² so R2P(25) = 2 */
+	Znum R2p() const {
+		// this only works if factorisation is complete!
+		Znum b = 1;
+		int a0 = 0;  /* exponent of prime factor 2 */
+		for (auto i : this->f) {
+			if (i.Factor < 2)
+				continue; // ignore factor 1
+			if (i.Factor == 2) {
+				a0 = i.exponent;  /* exponent of prime factor 2 */
+				continue;
+			}
+			if (i.Factor % 4 == 3) { /* p = 4k+3? */
+				if (i.exponent % 2 == 1) /* exponent is odd?*/
+					return 0;
+			}
+			else { 		/* p = 4k + 1 */
+				b *= i.exponent + 1;
+			}
+		}
+		if (isEven(b))
+			return (b / 2);
+		//else return (b + 1) / 2;
+		else {
+		/* if b is odd the the exponents of ALL (4k+3) prime factors of n are even,
+		therefore n is a perfect square, or 2*perfect square */
+			if ((a0 & 1) == 0)
+				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
+				zero would be disallowed as 1 of the squares. */
+				return (b + 1) / 2;  /* a0 is even i.e. n is a perfect square */
+			else
+				return (b + 1) / 2;
+		}
+	}
+
 /* calculate number of divisors of n (including 1 and n itself), given its list 
    of prime factors. */
 	Znum NoOfDivs() const {
@@ -350,38 +403,39 @@ Repeated factors: No or Yes
 			return false;  /* n is not in any category that has primitive roots */
 	}
 
+	/* copy counters */
+	struct counters getCtrs() const {
+		struct counters temp;
+		temp.carm   = this->carm;    // Carmichael
+		temp.ecm    = this->ecm;     // elliptic curve
+		temp.leh    = this->leh;     // Lehman
+		temp.msieve = this->msieve;  // Msieve
+		temp.pm1    = this->pm1;     // power + / -1
+		temp.power  = this->power;   // perfect power
+		temp.prho   = this->prho;    // Pollard-rho
+		temp.siqs   = this->siqs;    // SIQS
+		temp.tdiv   = this->tdiv;    // trial division
+		temp.yafu   = this->yafu;    // YAFU
+		return temp;
+	}
+
 };
 
 
-extern int lang;    // 0 English, 1 = Spanish
-extern std::string YafuPath;
-extern std::string yafuprog;
-extern std::string MsievePath;
-extern std::string MsieveProg;
-extern bool breakSignal;
-extern std::vector <Znum> roots;   /* used by functions that return multiple values */
-/* access underlying mpz_t inside an bigint */
-#define ZT(a) a.backend().data()
-
 extern int ElipCurvNo;            // Elliptic Curve Number
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-extern unsigned long long int primeListMax;
-extern bool msieve;
-extern bool yafu;
-extern int verbose;
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n, int depth = 0);
-long long MulPrToLong(const Znum &x);
+
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-void delfile(const std::string &path, const char * FileName);
-void writeIni(void);
-bool callMsieve(const Znum &num, fList&Factors);
-bool callYafu(const Znum &num, fList&Factors);
-void generatePrimes(unsigned long long int max_val);
+bool callMsieve(const Znum& num, fList& Factors);
+bool callYafu(const Znum& num, fList& Factors);
+
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
+
+/* return a factor of N, using Shanks's square forms factorization method. */
+uint64_t SQUFOF(const uint64_t N);
 
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
@@ -391,19 +445,6 @@ constexpr unsigned __int64 pow2(unsigned int exp) {
 	assert(exp < 64);
 	return 1ULL << exp;  // exp must be less than 64
 }
-unsigned __int64 R3(__int64 n);
-std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p);
-unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
-Znum             modMult(const Znum &a, const Znum &b, Znum mod);
-// calculate a^n%mod using 'bigints'   
-unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
-	unsigned __int64 mod);
-Znum             modPower(const Znum &a, const Znum &n, const Znum &mod);
-unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod);
-constexpr __int64 power(const __int64 x, unsigned int n);
-Znum              power(const Znum &x, unsigned long long n);
-int jacobi(__int64 k, unsigned __int64 n);
-int jacobi(const Znum &k, const Znum &n);
 
 
 /* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
@@ -436,12 +477,6 @@ enum class retCode
 	EXPR_FAIL = 1
 };
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
-
-unsigned int primeFactors(unsigned __int64 tnum, factorsS &f);
 
 /* throw exception. For a list of exception classes derived from std:: exception
 see https://en.cppreference.com/w/cpp/error/exception
@@ -467,5 +502,3 @@ the text string a, function name, line number and source file name */
 	throw std::range_error(mesg);                \
 }
 
-unsigned long long llSqrt(const unsigned long long n);
-bool isPerfectSquare(const Znum &num);

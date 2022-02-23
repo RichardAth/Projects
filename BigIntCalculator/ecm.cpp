@@ -30,6 +30,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 extern HANDLE hConsole;
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
+extern void FactoringSIQS(const Znum& NbrToFactor, Znum& Factor);
 
 
 static bool first = true;
@@ -385,7 +386,7 @@ static void duplicate(limb *x2, limb *z2, const limb *x1, const limb *z1)
 1 if gcd is 1 , 2 if gcd > 1.
 The value of the gcd is returned in BiGD
 Uses global variables BiGD, NumberLength */
-static int gcdIsOne(const limb *value, const Znum &zN, int line) {
+static int gcdIsOne(const limb value[], const Znum& zN, int line) {
 	static Znum Temp1;
 
 	LimbstoZ(value, Temp1, NumberLength);    // Temp1 = value
@@ -540,7 +541,7 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 	Znum sqrRoot, nextroot;
 	Znum a, c, sqr, val;
 
-	if (ZisEven(nbr))
+	if (isEven(nbr))
 	{ // nbr is Even (this would be strange, because small factors such as 2 are removed during trial division)
 		r = 0;
 		m = 1;

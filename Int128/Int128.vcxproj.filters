@@ -34,13 +34,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="In128x64.asm">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="ReadMe.txt">
       <Filter>Source Files</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="In128x64.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
   </ItemGroup>
 </Project>

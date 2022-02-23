@@ -14,7 +14,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "bignbr.h"
+#include "bignbr.h"   /* access PrimalityTest function*/
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"
@@ -22,7 +22,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 
 
 // declarations for external function
-bool getBit(const unsigned long long int x, const bool array[]);
+
 void biperm(int n, Znum &result);  
 Znum llt(const Znum &p);
 size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
@@ -44,15 +44,15 @@ typedef struct        // used for user variables
 	Znum data;        // and value
 } uvar_t;
 
-typedef struct
+struct
 {
 	std::vector <uvar_t> vars;
 	int num = 0;              /* number of user variables*/
 	int alloc = 0;            /* space allocated for user variables */
-} uvars_t;
+} uvars;
 
 //user variables
-uvars_t uvars ;
+//uvars_t uvars ;
 
 /* list of operators, arranged in order of priority, order is not exactly the
 same as C or Python. Followed by list of function codes*/
@@ -102,6 +102,7 @@ enum class opCode {
 	fn_np,                /* next prime*/
 	fn_pp,                /* previous prime */
 	fn_r2,
+	fn_r2p,
 	fn_r3,
 	fn_legendre,
 	fn_jacobi,
@@ -164,6 +165,7 @@ const static struct functions functionList[]{
 	"N",         1,  opCode::fn_np,			// next prime
 	"BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
 	"B",         1,  opCode::fn_pp,			// previous prime
+	"R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
 	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
 	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  opCode::fn_jacobi,
@@ -563,6 +565,23 @@ static Znum R2(const Znum &num) {
 	return factorlist.R2();
 }
 
+/* The number of representations of n as the sum of two squares ignoring order and signs*/
+static Znum R2p(const Znum& num) {
+	if (num < 0)
+		return 0;
+	if (num == 0)
+		return 1;
+	if (num % 4 == 3)
+		return 0;   // at least 1 4k+3 factor has an odd exponent
+
+	fList factorlist;
+	Znum b = 1;
+
+	/* get factors of num */
+	auto rv = factorise(num, factorlist, nullptr);
+	return factorlist.R2p();
+}
+
 /* return x^n */
 static Znum powerBi(const __int64 x, unsigned __int64 n) {
 	Znum result;
@@ -661,7 +680,7 @@ static Znum primRoot(const Znum &num) {
 	assert(rv);
 	for (int x = 0; x < totF.fsize(); x++)
 		powers.push_back(tot / totF.f[x].Factor);
-	/* powers contains 1 value for each prime factor of the totient. */
+	/* powers contains 1 value for each unique prime factor of the totient. */
 
 	/* test numbers 2 to num-1 */
 	for (Znum a = 2; a < num; a++) {
@@ -671,7 +690,7 @@ static Znum primRoot(const Znum &num) {
 		/* note that we only need to test certain values of p. We don't need to
 		 test all values from 1 to num. */
 		for (auto p : powers) {
-			mp = modPower(a, p, num);
+			mp = modPower(a, p, num);   /* mp = a^p mod num*/
 			if (mp == 1) {
 				/* a is not a primitive root */
 				skip = true;
@@ -925,7 +944,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
 	case opCode::fn_isprime: {  // isprime
 		/* -1 indicates probably prime, 0 = composite */
-		result = PrimalityTest(abs(p[0]));
+		int rv = PrimalityTest(abs(p[0]), 0);
+		/* rv: 0 = probable prime.
+               1 = composite: not 2-Fermat pseudoprime.
+               2 = composite: does not pass 2-SPRP test.
+               3 = composite: does not pass BPSW test, but passes other tests.*/
+		if (verbose > 0) {
+			if (rv == 2)
+				std::cout << "pseudo-prime; passes 2-fermat test but not 2-SPRP test \n";
+			if (rv == 3)
+				std::cout << "pseudo-prime; passes 2-SPRP test but not BPSW test \n";
+		}
+		if (rv == 0)
+			result = -1;   /* prime */
+		else
+			result = 0;    /* composite */
 		break;
 	}
 	case opCode::fn_fib: /* fibonacci */ {	
@@ -999,6 +1032,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_r2: {
 		result = R2(p[0]);
+		break;
+	}
+	case opCode::fn_r2p: {
+		result = R2p(p[0]);
 		break;
 	}
 	case opCode::fn_r3: {

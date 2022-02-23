@@ -22,7 +22,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "diagnostic.h"
 
-//#define BIGNBR       // define to include bignbr tests 
+#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 #include "bignbr.h"
 #include "bigint.h"
@@ -30,14 +30,9 @@ extern Znum zR, zR2, zNI, zN;
 #endif
 
 /* external function declaration */
-void msieveParam(const std::string &expupper);   /*process Msieve commands */
-void yafuParam(const std::string &command);      /*process YAFU commands */
-
-void VersionInfo(const LPCSTR path, int ver[4], std::string &modified);
-char * getFileName(const char *filter, HWND owner);
-void printvars(std::string name);
-void doTests9(void);  /* modular square root test */
-
+void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
+char* getFileName(const char* filter, HWND owner);
+retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
 int lang = 0;             // 0 English, 1 = Spanish
 
@@ -70,13 +65,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 /* name of sound file played when prompt for input is displayed */
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
-/* external functions */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr);
-
 /* function declarations, only for functions that have forward references */
-long long MulPrToLong(const Znum &x);
-bool getBit(const unsigned long long int x, const bool array[]);
-void generatePrimes(unsigned long long int max_val);
 static void textError(retCode rc);
 
 
@@ -644,6 +633,7 @@ struct summary {
 	int totalFacs;		// total number of factors (=1 for a prime number)
 	int testNum;		// test number (if applicable)
 	int sndFac;		    // number of decimal digits in 2nd largest factor
+	struct counters ctrs;
 };
 
 std::vector <summary> results;
@@ -652,9 +642,11 @@ std::vector <summary> results;
 static void printSummary(void) {
 	long long sec, min, hour;
 	double elSec;
-	printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac\n");
+	/* print column headings */
+	printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
+	printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv \n");
 	for (auto res : results) {
-		/* round to nearest second */
+		/* truncate elapsed time to nearest second */
 		sec = (long long)std::floor(res.time); // convert to an integer
 		min = sec / 60;  // min may be 0
 		elSec = res.time - min * 60;         // get seconds including fractional part
@@ -667,7 +659,13 @@ static void printSummary(void) {
 		else
 			printf_s("%.2f ", elSec);
 
-		printf_s("     %8d   %8d     %8d\n", res.NumFacs, res.totalFacs, res.sndFac);
+		/* print counters showing how factors were found */
+		printf_s("     %8d   %8d     %8d", res.NumFacs, res.totalFacs, res.sndFac);
+		printf_s("    %3d %3d %3d %3d %3d %3d ",
+			res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
+			res.ctrs.pm1, res.ctrs.ecm);
+		printf_s("%3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+			res.ctrs.msieve);
 	}
 }
 
@@ -755,6 +753,7 @@ static void doFactors(const Znum &Result, bool test) {
 			sum.NumFacs = (int)factorlist.fsize();
 			/* get number of digits in 2nd largest factor */
 			sum.sndFac = factorlist.sndFac();
+			sum.ctrs = factorlist.getCtrs();
 			results.push_back(sum);
 		}
 	}
@@ -813,6 +812,8 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 		if (method == 0)
 			factorlist.prCounts();   // print counts
+		else
+			sum.ctrs.yafu = sum.totalFacs;
 
 		std::cout << "test " << testnum << " completed at ";
 
@@ -822,6 +823,8 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
 		sum.testNum = testnum;
+		if (method == 0)
+			sum.ctrs = factorlist.getCtrs();
 		results.push_back(sum);
 		return false;   // not prime
 	}
@@ -915,8 +918,12 @@ static void doTests(void) {
 		"SQRT(1234320)",               1110,
 		"NROOT(2861381721051424,5)",   1234,
 		"LLT(3217)",                      1,  // 2^3217-1 is prime
-		"BPSW(2^99-1)",                   0,  //not a prime number
-		"BPSW(2^127-1)",                  1,  //a prime number
+		"BPSW(2^99-1)",                   0,  // not a prime number
+		"BPSW(2^127-1)",                  1,  // a prime number
+		"ISPRIME(2^127-1)",              -1,  // a prime number
+		"aprcl(2^127-1)",                 2,  // a prime number
+		"ispow(2^127-1)",                 0,  /* not a perfect power */
+		"ispow(2^127)",                  -1,  /* a perfect power */
 		"-not1",                          2,  // operators are processed from right to left
 		"not-1",                          0,  // operators are processed from right to left
 		"not5#",                        -31,  // # operator evaluated before not
@@ -1013,13 +1020,21 @@ static void doTests(void) {
 	ComputeExpr("n(10^15)^3*n(10^14)", x3, asgCt);  // test Lehman factorisation
 	factortest(x3, testcnt);
 
-	/* test using carmichael numbers. note that 1st example has no small factors  */
-	long long int carmichael[] = { 90256390764228001, 7156857700403137441,  1436697831295441,
-		60977817398996785 };
+	/* test using carmichael numbers.  */
+	unsigned long long int carmichael[] = { 90256390764228001, 18118463305678126129, 
+		18265521244069461529,  18349357898532971521, 18308657203978189969 };
 	for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
 		testcnt++;
 		factortest(carmichael[i], testcnt);
 	}
+
+	ComputeExpr("16344221851913485532689", x3, asgCt);
+	testcnt++;
+	factortest(x3, testcnt);  /* 23 digit carmichael number */
+
+	ComputeExpr("56897193526942024370326972321", x3, asgCt);
+	testcnt++;
+	factortest(x3, testcnt);  /* 29 digit pseudo-prime number */
 
 	/* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
 	ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
@@ -1178,10 +1193,18 @@ static void largeRand(Znum &a) {
 	a += ((long long)rand() << 32) + rand();
 }
 
+/* generate extra large number, about size*32 bits */
+static void XlargeRand(Znum& a, int size) {
+	a = 1;
+	for (int c = 1; c <= size; c++) {
+		a *= rand();
+	}
+}
+
 /*  1. check basic arithmetic operators for BigIntegers
 	2. test BigInteger multiplication with larger numbers
 	3. BigInteger division with larger numbers
-	4. Modular Multiplication using Mongomery Encoding (REDC)
+	4 & 5. Modular Multiplication using Mongomery Encoding (REDC)
 */
 static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
@@ -1195,7 +1218,7 @@ static void doTests3(void) {
 	auto start = clock();	// used to measure execution time
 
 	memset(one, 0, MAX_LEN * sizeof(limb));
-	one[0].x = 1;                   /* set value of one to 1 */
+	one[0] = 1;                   /* set value of one to 1 */
 
 	srand(421040034);               // seed random number generator 
 	
@@ -1371,7 +1394,7 @@ static void doTests3(void) {
 		/*if (pdb > 708)
 			break;*/
 		expBigInt(amBI, pdb);   // convert back from log
-		BigtoZ(am, amBI);       // convert back tp Znum
+		BigtoZ(am, amBI);       // convert back to Znum
 		error = p - am;         // get error
 		if (error != 0) {
 			double e1, e2, relErrf;
@@ -1380,7 +1403,7 @@ static void doTests3(void) {
 			e2 = mpz_get_d_2exp(&e2l, ZT(am));
 			assert(e1l == e2l);   // check power of 2 exponent is correct
 			relErrf = abs(e1 - e2) / e1;   /* should be less than 10E-14 */
-			relerror = (10000000000000000LL * error) / p;
+			relerror = (10'000'000'000'000'000LL * error) / p;  /* error ratio * 10^15 */
 			/* print log base 10 of p, then error ratio */
 			std::cout << " pdb = " << pdb / std::log(10)
 				<< " error = " << relErrf <<  " relerror = " << relerror << '\n';
@@ -1425,43 +1448,64 @@ static void doTests3(void) {
 	BigIntegers. Both use Mongomery notation for the integers to avoid slow
 	division operations. The conclusion is that GMP takes about twice as long
 	as DA's code. */
-
-	/* set up modulus and Mongomery parameters */
-	largeRand(mod);					// get large random number
-	mod |= 1;                       // set lowest bit (make sure mod is odd)
-	GetMontgomeryParms(mod);
-	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-	while (modL[numLen - 1].x == 0)
-		numLen--;                    // adjust length i.e. remove leading zeros
-	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-	NumberLength = numLen;
-	GetMontgomeryParms(numLen);
+	
 	modmultCallback = nullptr;      // turn off status messages from modmult
-
-	largeRand(a);				     // get large random number a
-	a %= mod;						 // ensure a < mod
-	modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
-	ZtoLimbs(aL, a,numLen);		     // copy value of a to aL (limbs)
-	modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
-	modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
-	LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
-	assert(a == a1);                 // check that all thes conversions work properly
+	for (int c = 1; c <= 100; c++) {
+		/* set up modulus and Mongomery parameters */
+		XlargeRand(mod, c);					// get large random number (up to 32 * c bits)
+		mod |= 1;                       // set lowest bit (make sure mod is odd)
+		GetMontgomeryParms(mod);
+		numLen = MAX_LEN - 2;
+		ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+		while (modL[numLen - 1] == 0)
+			numLen--;                    // adjust length i.e. remove leading zeros
+		memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+		NumberLength = numLen;
+		GetMontgomeryParms(numLen);
+		XlargeRand(a, c);				     // get large random number a
+		a %= mod;						 // ensure a < mod
+		modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
+		numLen = MAX_LEN - 2;
+		ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
+		//while (aL[numLen - 1] == 0)
+		//	numLen--;                    // adjust length i.e. remove leading zeros
+		//NumberLength = numLen;
+		modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
+		modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
+		LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
+		assert(a == a1);                 // check that all these conversions work properly
+	}
+	end = clock();              // measure amount of time used
+	elapsed = (double)end - start;
+	std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
 	largeRand(b);				     // get large random number  b
-	modmult(b%mod, zR2, bm);         // convert b to Montgomery (Znum)
+	b |= 1;                         /* make sure b is odd */
+	GetMontgomeryParms(b);
+	modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
+	
 	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+	numLen = MAX_LEN - 2;
+	while (bL[numLen - 1] == 0)
+		numLen--;                    // adjust length i.e. remove leading zeros
+	NumberLength = numLen;
+	memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	GetMontgomeryParms(numLen);
 	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
 	for (int i = 1; i < 200000000; i++) {
-		modmult(alM, blM, plm);          // p = a*b mod m (limbs)
+		modmult(alM, blM, plm);                   // p = a*b mod m (limbs)
 		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-		modmult(am, bm, pm);             // p = a*b mod m (Znum)
-		am = pm;						 //a = p (Znum)
+		modmult(am, bm, pm);                      // p = a*b mod m (Znum)
+		am = pm;						          //a = p (Znum)
+		if (i % 20000000 == 0) {
+			std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
+		}
 	}
 
 	REDC(p, pm);					 // convert p from montgomery (Znum)
 	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-	LimbstoZ(pl, p2, numLen);        // copy value to p2 (Znum)
+	LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
 	assert(p2 == p);
 
 	end = clock();              // measure amount of time used
@@ -1581,16 +1625,18 @@ static void doTests5(void) {
 	return;
 }
 
-/* tests using only Msieve for factorisation. Factorise selected Mersenne numbers */
-static void doTests6(void) {
+/* tests using Msieve for factorisation. Factorise selected Mersenne numbers 
+if useMsieve = false use only YAFU. Normal yafu & msieve flags are ignored. */
+static void doTests6(bool useMsieve = true) {
 	bool yafusave = yafu;
 	bool msievesave = msieve;
 	Znum m;
-	msieve = true;
-	yafu = false;
+	msieve = useMsieve;
+	yafu = !useMsieve;
 	int testcnt = 1;
 
 	results.clear();
+	auto start = clock();	// used to measure execution time
 
 	mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
 	m--;                // get 2^p -1
@@ -1627,15 +1673,19 @@ static void doTests6(void) {
 	*/
 
 	testcnt++;
-	mpz_ui_pow_ui(ZT(m), 2, 353);  // get  m= 2^p
+	mpz_ui_pow_ui(ZT(m), 2, 349);  // get  m= 2^p
 	m--;                // get 2^p -1
-	factortest(m, testcnt);      // 107 digits
+	factortest(m, testcnt);      // 106 digits
 	/* p34 factor: 2927455476800301964116805545194017
 	   p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
     */
 	
 	yafu = yafusave;
 	msieve = msievesave;
+
+	auto end = clock();              // measure amount of time used
+	auto elapsed = (double)end - start;
+	PrintTimeUsed(elapsed, "tests completed time used = ");
 	printSummary();           // print 1 line per test
 }
 
@@ -2165,18 +2215,18 @@ static int processCmd(const std::string &command) {
 					return 1;
 				}
 	#else
-				return 0;
+				return 0;  /* Bignbr tests omitted */
 	#endif
 			case '4': {
 					doTests4();         // factorise Mersenne numbers 
 					return 1;
 				}
 			case '5': {
-					doTests5();         // do YAFU tests 
+					doTests6(false);         // do YAFU tests 
 					return 1;
 				}
 			case '6': {
-					doTests6();         // do Msieve tests 
+					doTests6(true);         // do Msieve tests 
 					return 1;
 				}
 			case '7': {
@@ -2332,6 +2382,7 @@ static void initialise(int argc, char *argv[]) {
 
 	/* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
         functions that actually work OK */
+#ifndef BIGNBR
 	err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
 	/* trap hardware FP exceptions except inexact and underflow which are
 	considered to be normal, not errors. */
@@ -2339,6 +2390,7 @@ static void initialise(int argc, char *argv[]) {
 		printf_s("could not set FP control word\n");
 		exit (-1);
 	}
+#endif
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
 	handConsole = GetConsoleWindow();            // get handle for console window
@@ -2380,6 +2432,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	std::cout << "MPIR version: " << __MPIR_VERSION << '.' << __MPIR_VERSION_MINOR
 		<< '.' << __MPIR_VERSION_PATCHLEVEL << '\n';
 #endif
+	std::cout << "Boost version: " << BOOST_VERSION << '\n';
 
 	processIni(argv[0]); // read .ini file if it exists
 

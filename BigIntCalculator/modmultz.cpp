@@ -1,11 +1,12 @@
 ﻿#include "pch.h"
 
 #include "bignbr.h"
+#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 // Compute Nbr <- Nbr mod Modulus.
-void AdjustModN(Znum &Nbr, const Znum &Modulus) {
-	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
-}
+//void AdjustModN(Znum &Nbr, const Znum &Modulus) {
+//	mpz_mod(ZT(Nbr), ZT(Nbr), ZT(Modulus));
+//}
 
 Znum zR, zR2, zNI, zN;
 long long zRexp;

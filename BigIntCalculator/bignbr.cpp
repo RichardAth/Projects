@@ -12,9 +12,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-//#include <string>
-//#include <vector>
-//#include <cmath>
+
 #include "pch.h"
 #include "bignbr.h"
 #include "factor.h"
@@ -47,6 +45,7 @@ void ChSignBigNbrB(int nbr[], int length)
 	nbr[ctr] = carry - nbr[ctr];  /* last word does not have most significant bit masked off */
 }
 
+/* get number of limbs in Nbr */
 int BigNbrLen(const long long Nbr[], int nbrLen) {
 	int ix;
 	for (ix = nbrLen; ix > 0; ix--) {
@@ -56,27 +55,11 @@ int BigNbrLen(const long long Nbr[], int nbrLen) {
 	return ix;
 }
 
-/* Sum = Nbr1+Nbr2 (mod Mod) */
-void AddBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
-	//Diff = (Nbr1 + Nbr2) % Mod;
-	mpz_add(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 + Nbr2
-	while (Diff < 0)
-		Diff += Mod;
-	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
-}
 
-/* Diff = Nbr1-Nbr2 (mod Mod)*/
-void SubtractBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Diff, const Znum &Mod) {
-	//Diff = (Nbr1 - Nbr2) % Mod;
-	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 - Nbr2
-	while (Diff < 0)
-		Diff += Mod;
-	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
-}
 
 
 /* Quotient = Dividend/divisor */
-void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLen)
+void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen)
 {
 	int ctr;
 	int remainder = 0;
@@ -100,28 +83,6 @@ void DivBigNbrByInt(const int Dividend[], int divisor, int Quotient[], int nbrLe
 	}
 }
 
-/* calculate dividend%divisor. remainder has same type as divisor 
-eror occurs if divisor is zero!! */
-mpir_ui RemDivBigNbrByInt(const Znum &Dividend, mpir_ui divisor) {
-	return mpz_fdiv_ui(ZT(Dividend), divisor);
-	/* Note that using % operator with Znums returns a Znum, even though the 
-	divisor is an integer. This way is much more efficient */
-}
-
-
-/* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrModN(const Znum &Nbr1, const Znum &Nbr2, Znum &Prod, const Znum &Mod) {
-	//Prod = Nbr1*Nbr2;
-	mpz_mul(ZT(Prod), ZT(Nbr1), ZT(Nbr2));
-	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
-}
-
-/* Prod = Nbr1*Nbr2 (mod Mod) */
-void MultBigNbrByIntModN(const Znum &Nbr1, int Nbr2, Znum &Prod, const Znum &Mod) {
-	//Prod = Nbr1*Nbr2;
-	mpz_mul_si(ZT(Prod), ZT(Nbr1), Nbr2);
-	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
-}
 
 /* calculate NbrMod^Expon%currentPrime.
 calculation uses doubles to avoid risk of overflow. */
@@ -142,16 +103,16 @@ int modPower (int NbrMod, int Expon, int currentPrime) {
 }
 
 /* get modular inverse of num wrt mod*/
-void ModInvBigNbr(const Znum &num, Znum &inv, const Znum &mod) {
+void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod) {
 	auto rv = mpz_invert(ZT(inv), ZT(num), ZT(mod));
 	assert(rv != 0);
 }
 
 /* returns true iff value is zero*/
-bool BigNbrIsZero(const limb *value, int NumLen) {
+bool BigNbrIsZero(const limb value[], int NumLen) {
 	int ctr;
 	for (ctr = 0; ctr < NumLen; ctr++) {
-		if (value[ctr].x != 0) {
+		if (value[ctr] != 0) {
 			return false;  // Number is not zero.
 		}
 	}
@@ -162,22 +123,22 @@ bool BigNbrIsZero(const limb *value, int NumLen) {
 note that ptrLimb points AFTER last valid value in limbs.
 up to 3 most significant limbs are used. */
 double getMantissa(const limb *ptrLimb, int nbrLimbs) {
-	double dN = (double)(ptrLimb - 1)->x;
+	double dN = (double)*(ptrLimb - 1);
 	double dInvLimb = 1 / (double)LIMB_RANGE;
 	if (nbrLimbs > 1) {
-		dN += (double)(ptrLimb - 2)->x * dInvLimb;
+		dN += (double)*(ptrLimb - 2) * dInvLimb;
 	}
 	if (nbrLimbs > 2) {
-		dN += (double)(ptrLimb - 3)->x * dInvLimb * dInvLimb;
+		dN += (double)*(ptrLimb - 3) * dInvLimb * dInvLimb;
 	}
 	return dN;
 }
 
-void LimbstoZ(const limb *number, Znum &numberZ, int NumLen) {
+void LimbstoZ(const limb number[], Znum& numberZ, int NumLen) {
 	numberZ = 0;
 	for (int i = NumLen - 1; i >= 0; i--) {
 		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-		numberZ += number[i].x;      // add next limb
+		numberZ += number[i];      // add next limb
 	}
 }
 
@@ -205,7 +166,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
 		/* calculating quotient and remainder separately turns
 		out to be faster */
 		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-		number[i].x = (int)MulPrToLong(remainder);
+		number[i] = (int)MulPrToLong(remainder);
 		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
 
 		i++;
@@ -256,8 +217,8 @@ void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
 }
 
 
-/* get log of BigInt in base e */
-double logBigNbr(const Znum &BigInt) {
+/* get log of Znum in base e */
+double logZnum(const Znum &BigInt) {
 	double BigId;
 #ifdef __MPIR_VERSION
 	long BiExp;   // changed for MPIR version 3.0.0
@@ -268,16 +229,16 @@ double logBigNbr(const Znum &BigInt) {
 	double logval = log(BigId) + BiExp * log(2);
 	return logval;
 }
-/* get log of BigInt in base b */
-double logBigNbr(const Znum &BigInt, unsigned long long b) {
-	double ln = logBigNbr(BigInt);   // get log in base e
+/* get log of Znum in base b */
+double logZnum(const Znum &BigInt, unsigned long long b) {
+	double ln = logZnum(BigInt);   // get log in base e
 	double logb = ln / std::log(b);  // get log in base b
 	return logb;
 }
 
 /* returns nbrMod^Expon%currentPrime.
 overflow could occur if currentPrime > 2^31
-the alternative is to use modPower */
+the alternative is to use modPowerLL */
 static long long intModPow(long long NbrMod, long long Expon, long long currentPrime)
 {
 	unsigned long long power = 1;
@@ -306,7 +267,7 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 		upperBound = 2;
 
 	/* upperBound^maxExpon ≈ factor */
-	unsigned long long maxExpon = (unsigned long long) (ceil(logBigNbr(factor) / log(upperBound)));
+	unsigned long long maxExpon = (unsigned long long) (ceil(logZnum(factor) / log(upperBound)));
 
 	int h;
 	long long modulus, Exponent;
@@ -456,7 +417,8 @@ void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
 Output: 0 = probable prime.
         1 = composite: not 2-Fermat pseudoprime.
         2 = composite: does not pass 2-SPRP test.
-        3 = composite: does not pass BPSW test.
+        3 = composite: does not pass BPSW test, but passes other tests.
+return value 2 or 3 indicates a pseudoprime e.g. carmichael number
 ***********************************************************************/
 int PrimalityTest(const Znum &Value, long long upperBound) {
 	int i, ctr;
@@ -466,7 +428,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 	if (Value <= 2) {
 		return 0;    // Indicate prime.
 	}
-	if (ZisEven(Value)) {
+	if (isEven(Value)) {
 		return 1;    // Number is even and different from 2. Indicate composite.
 	}
 
@@ -486,7 +448,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 				return 2;       // Composite. Not 2-strong probable prime.
 			}
 			if (Mult4 == Value - 1) {
-				i = -1;         // Number is strong pseudoprime.
+				i = -1;         // Number is 2-strong pseudoprime.
 				break;
 			}
 			Mult1 = Mult4;
@@ -499,14 +461,16 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 		}
 	}
 
-	/* consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
+	/* Number passes 2-SPRP test. Now perform a further test to see whether it is
+	really prime or not.
+	consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
 	than Miller-Rabin because;
-	1.	There are no known BPSW pseudoprimes
+	1. There are no known BPSW pseudoprimes
 	2. It's faster than Miller-Rabin */
 
 	int rv2 = mpz_bpsw_prp(ZT(Value));
 	if (rv2 >= 1)
-		return 0;  // probably prime;
+		return 0;  // 'almost' certainly prime;
 	else if(rv2 == 0)
 		return 3;  // composite - fails BPSW test
 

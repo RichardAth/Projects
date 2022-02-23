@@ -16,13 +16,10 @@ extern int verbose;
 #include <intsafe.h>
 #include <intrin.h>
 
-
-extern bool *primeFlags;
-extern unsigned long long int primeListMax;
-extern unsigned long long *primeList;
-extern unsigned int prime_list_count;
-void generatePrimes(unsigned long long int max_val);
-constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
+struct factorsS {
+	int factorcount;           // number of unique prime factors
+	__int64 factorlist[19][2]; // prime factor, exponent
+};
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -95,7 +92,7 @@ int jacobi(__int64 k, unsigned __int64 n) {
 		if (k == 0) return 0;  /* wikipedia puts this in step 3, but it's
 							   needed here to avoid an infinite loop in step 2 */
 
-							   /* step 2*/
+		/* step 2*/
 		if (n % 8 == 1 || n % 8 == 7)
 			while ((k & 1) == 0) {
 				k /= 2;
@@ -203,8 +200,8 @@ static __int64 mPowerInt(const unsigned int x, unsigned int n, const unsigned in
 	return(r);
 }
 
-// calculate a^n%mod using 'bigints'   
-unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
+// calculate a^n%mod   
+unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod) {
 	static mpz_t al, ml, res;
 	unsigned __int64 rl;
@@ -213,7 +210,7 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	if (a < INT_MAX && mod < INT_MAX && n < INT_MAX)
 		return mPowerInt((unsigned int)a, (unsigned int)n, (unsigned int)mod);
 
-	if (firsttime) {		// is this the 1st time modPower was called?
+	if (firsttime) {		// is this the 1st time modPowerLL was called?
 		mpz_inits(al, res, ml, NULL);	// if so, allocate storage for bigints
 		firsttime = false;
 	}
@@ -227,7 +224,7 @@ unsigned __int64 modPower(unsigned __int64 a, unsigned __int64 n,
 	return rl;
 }
 
-// calculate a^n%mod
+// calculate a^n%mod using 'bigints' 
 unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod) {
 	Znum res;
 	Znum modz = mod;
@@ -247,7 +244,7 @@ Znum modPower(const Znum &a, const Znum &n, const Znum &mod) {
 static bool witness(unsigned __int64 n, unsigned int s, unsigned __int64 d,
 	unsigned __int64 a)
 {
-	unsigned __int64 x = modPower(a, d, n);   // calculate a^d%n
+	unsigned __int64 x = modPowerLL(a, d, n);   // calculate a^d%n
 	unsigned __int64 y;
 
 	while (s) {
@@ -385,6 +382,8 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 				it must have exactly two prime factors. We can use the Pollard Rho algorithm
 				to get these factors.*/
 				long long factor;
+
+				//factor = SQUFOF(tnum);  /* use SHANKS's algorithm*/
 				factor = PollardRho(tnum);
 				assert(tnum%factor == 0);
 
@@ -492,8 +491,29 @@ be +ve, 0 or -ve See https://oeis.org/A005875
 R3(n) = 3*T(n) if n == 1,2,5,6 mod 8, 
        = 2*T(n) if n == 3 mod 8, 
 	   = 0 if n == 7 mod 8 and 
-	   = R(n/4) if n == 0 mod 4, 
-	   where T(n) = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+	   = R3(n/4) if n == 0 mod 4, 
+	   where T(n) = Moreno and Wagstaff's arithmetical function
+	            see https://oeis.org/A117726
+	   = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
+
+Using PARI/GP we have
+r3(n)=if(n==0,1, if(n%4==0, r3(n/4), if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), if(n%8==3, 24*qfbhclassno(n),if(n%8==7, 0)))))
+
+where qfbhclassno is Hurwitz-Kronecker class number 
+see https://oeis.org/A259825
+and https://oeis.org/A014599
+See Henri Cohen: A course in computational algebraic number theory
+chapters 5.3 & 5.4 
+Given an efficient implementation of qfbhclassno(n) this is much faster than the 
+method below.
+
+there is also a useful & more practical formula:
+R3(n)= if(n%4==1, 24*sum(r=1,n\4,kronecker(r,n)),
+	   if(n%4==3, 8*sum(r=1,n\2,kronecker(r,n))))
+BUT only applicable if, after making n squarefree, n is odd, n!= 7 (mod 8) and n > 1
+This avoids calculating R2 many times, which involves factorisation each time
+but it's still much SLOWER than calculating the sums of R2s.
+
 */
 unsigned __int64 R3(__int64 n) {
 	unsigned __int64 sum = 0;
@@ -523,8 +543,8 @@ unsigned __int64 R3(__int64 n) {
 			sum += 2;  // note: n is a perfect square
 		else
 			sum += 2 * R2(n - k * k);
-		if ((k & 0xfff) == 0) {
-			printf_s("%s R3: %g%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+		if ((k & 0x3fff) == 0) {
+			printf_s("%s R3: %.2f%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
 		}
 	}
 	sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2

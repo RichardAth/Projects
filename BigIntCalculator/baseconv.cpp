@@ -60,7 +60,7 @@ void int2dec(char **pOutput, long long nbr)
 // Convert little-endian number to a string with space every groupLen digits.
 // In order to perform a faster conversion, use groups of DIGITS_PER_LIMB digits.
 // output to char array decimal
-void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
+void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength)
 {
 	int len, index, index2, count;
 	const limb *ptrSrc = binary + nbrLimbs - 1;
@@ -76,9 +76,9 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
 		groupLength = -groupLength;
 		showDigitsText = false;
 	}
-	power10000[0].x = ptrSrc->x % MAX_LIMB_CONVERSION;
-	power10000[1].x = ptrSrc->x / MAX_LIMB_CONVERSION;
-	len = (power10000[1].x == 0 ? 1 : 2); // Initialize array length.
+	power10000[0] = *ptrSrc % MAX_LIMB_CONVERSION;
+	power10000[1] = *ptrSrc / MAX_LIMB_CONVERSION;
+	len = (power10000[1] == 0 ? 1 : 2); // Initialize array length.
 	for (index = nbrLimbs - 2; index >= 0; index--)
 	{
 		double dCarry, dQuotient;
@@ -91,26 +91,26 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
 		dQuotient = 0;
 		for (index2 = 0; index2 < len; index2++)
 		{
-			dCarry = dQuotient + (double)ptrPower->x * FIRST_MULT;
+			dCarry = dQuotient + (double)*ptrPower * FIRST_MULT;
 			dQuotient = floor(dCarry / MAX_LIMB_CONVERSION);
-			(ptrPower++)->x = (int)(dCarry - dQuotient * MAX_LIMB_CONVERSION);
+			*(ptrPower++) = (int)(dCarry - dQuotient * MAX_LIMB_CONVERSION);
 		}
 		if (dQuotient != 0)
 		{
-			(ptrPower++)->x = (int)dQuotient;
+			*(ptrPower++) = (int)dQuotient;
 			len++;
 		}
 		ptrPower = power10000;
-		dQuotient = (double)(--ptrSrc)->x;
+		dQuotient = (double)*(--ptrSrc);
 		for (index2 = 0; index2 < len; index2++)
 		{
-			dCarry = dQuotient + (double)ptrPower->x * SECOND_MULT;
+			dCarry = dQuotient + (double)*ptrPower * SECOND_MULT;
 			dQuotient = floor(dCarry / MAX_LIMB_CONVERSION);
-			(ptrPower++)->x = (int)(dCarry - dQuotient * MAX_LIMB_CONVERSION);
+			*(ptrPower++) = (int)(dCarry - dQuotient * MAX_LIMB_CONVERSION);
 		}
 		if (dQuotient != 0)
 		{
-			(ptrPower++)->x = (int)dQuotient;
+			*(ptrPower++) = (int)dQuotient;
 			len++;
 		}
 	}
@@ -130,7 +130,7 @@ void Bin2Dec(const limb *binary, char *decimal, int nbrLimbs, int groupLength)
 	}
 	for (index = len; index > 0; index--)
 	{
-		int value = (int)(ptrSrc--)->x;
+		int value = (int)*(ptrSrc--);
 		for (count = 0; count < DIGITS_PER_LIMB; count++)
 		{
 			digit[count] = value % 10;

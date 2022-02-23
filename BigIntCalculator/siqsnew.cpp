@@ -180,6 +180,48 @@ static void ShowSIQSStatus(int *rowMatrixB);
 static unsigned int getFactorsOfA(unsigned int seed, int *indexA);
 static void sieveThread(Znum &result);
 
+/* Sum = Nbr1+Nbr2 (mod Mod) */
+static void AddZnumModN(const Znum& Nbr1, const Znum& Nbr2, Znum& Diff, const Znum& Mod) {
+	//Diff = (Nbr1 + Nbr2) % Mod;
+	mpz_add(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 + Nbr2
+	while (Diff < 0)
+		Diff += Mod;
+	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
+}
+
+/* Diff = Nbr1-Nbr2 (mod Mod)*/
+static void SubtractZnumModN(const Znum& Nbr1, const Znum& Nbr2, Znum& Diff, const Znum& Mod) {
+	//Diff = (Nbr1 - Nbr2) % Mod;
+	mpz_sub(ZT(Diff), ZT(Nbr1), ZT(Nbr2));    // Diff = Nbr1 - Nbr2
+	while (Diff < 0)
+		Diff += Mod;
+	mpz_mod(ZT(Diff), ZT(Diff), ZT(Mod));  // Diff %= Mod
+}
+
+/* calculate dividend%divisor. remainder has same type as divisor
+eror occurs if divisor is zero!! */
+static mpir_ui RemDivZnumByInt(const Znum& Dividend, mpir_ui divisor) {
+	return mpz_fdiv_ui(ZT(Dividend), divisor);
+	/* Note that using % operator with Znums returns a Znum, even though the
+	divisor is an integer. This way is much more efficient */
+}
+
+
+/* Prod = Nbr1*Nbr2 (mod Mod) */
+static void MultZnumModN(const Znum& Nbr1, const Znum& Nbr2, Znum& Prod, const Znum& Mod) {
+	//Prod = Nbr1*Nbr2;
+	mpz_mul(ZT(Prod), ZT(Nbr1), ZT(Nbr2));
+	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
+}
+
+/* Prod = Nbr1*Nbr2 (mod Mod) */
+static void MultZnumByIntModN(const Znum& Nbr1, int Nbr2, Znum& Prod, const Znum& Mod) {
+	//Prod = Nbr1*Nbr2;
+	mpz_mul_si(ZT(Prod), ZT(Nbr1), Nbr2);
+	mpz_mod(ZT(Prod), ZT(Prod), ZT(Mod));
+}
+
+
 #ifdef __EMSCRIPTEN__
 static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 {
@@ -1839,7 +1881,7 @@ static bool PartialRelationFound(
 			
 			biT = abs(biT); // If number is negative make it positive.
 			// biU = Product of old Ax+B times new Ax+B
-			MultBigNbrModN(biV, biT, biU, zModulus);
+			MultZnumModN(biV, biT, biU, zModulus);
 			// Add all elements of aindex array to the rowMatrixB array discarding
 			// duplicates.
 			mergeArrays(aindex, nbrFactorsA, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
@@ -1896,7 +1938,7 @@ static bool PartialRelationFound(
 			for (index = 1; index < nbrSquares; index++)
 			{
 				D = rowSquares[index];
-				MultBigNbrByIntModN(biR, D, biR, zModulus);
+				MultZnumByIntModN(biR, D, biR, zModulus);
 				if (D == multiplier)	{
 					biU /= D;
 				}
@@ -2108,7 +2150,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
 	//  threadArray = new Thread[numberThreads];
-	Temp = logBigNbr(zN);
+	Temp = logZnum(zN);
 	/* increased number of primes on 17/6/2019 in line with DA's calculator */
 	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.363 - 1);
 	if (nbrFactorBasePrimes > MAX_PRIMES)
@@ -2166,7 +2208,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		int halfCurrentPrime;
 
 		/* NbrMod = Modulus % currentPrime */
-		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
+		NbrMod = (int)RemDivZnumByInt(zModulus, currentPrime);
 		halfCurrentPrime = (currentPrime - 1) / 2;
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
 		int jacobi = (int)modPower(NbrMod, halfCurrentPrime, currentPrime);
@@ -2206,7 +2248,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	zModulus = zTestNbr2 * multiplier; 
 	FactorBase = currentPrime;
 	matrixBLength = nbrFactorBasePrimes + 50;
-	rowPrimeSieveData->modsqrt = (ZisEven(zN)) ? 0 : 1;
+	rowPrimeSieveData->modsqrt = (isEven(zN)) ? 0 : 1;
 
 	switch (mpz_get_si(ZT(zModulus)) & 0x07) {  // switch on last 3 bits
 	case 1:
@@ -2247,10 +2289,10 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	currentPrime = 3;
 	while (j < nbrFactorBasePrimes) { /* select small primes */
-		NbrMod = (int)RemDivBigNbrByInt(zModulus, currentPrime);
+		NbrMod = (int)RemDivZnumByInt(zModulus, currentPrime);
 
 		if (currentPrime != multiplier &&
-			modPower(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
+			modPowerLL(NbrMod, (currentPrime - 1) / 2, currentPrime) == 1)
 		{
 			double dBase, dPower, dCurrentPrime, dRem;
 			/* use only if Jacobi symbol = 0 or 1 */
@@ -2279,11 +2321,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^BITS_PER_INT_GROUP)^6 mod currentPrime
 
 			if ((currentPrime & 3) == 3) {
-				SqrRootMod = (int)modPower(NbrMod, (currentPrime + 1) / 4, currentPrime);
+				SqrRootMod = (int)modPowerLL(NbrMod, (currentPrime + 1) / 4, currentPrime);
 			}
 			else if ((currentPrime & 7) == 5) {   // currentPrime = 5 (mod 8)
 				SqrRootMod =
-					(int)modPower(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
+					(int)modPowerLL(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
 				dRem = (double)2 * NbrMod * (double)SqrRootMod;
 				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod - 1;
@@ -2310,11 +2352,11 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 				do {
 					X++;
-					Z = (int)modPower(X, Q, currentPrime);
-				} while (modPower(Z, Power2, currentPrime) == 1);
+					Z = (int)modPowerLL(X, Q, currentPrime);
+				} while (modPowerLL(Z, Power2, currentPrime) == 1);
 
 				Y = Z;
-				X = (int)modPower(NbrMod, (Q - 1) / 2, currentPrime);
+				X = (int)modPowerLL(NbrMod, (Q - 1) / 2, currentPrime);
 				dBase = (double)NbrMod * (double)X;
 				V = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 				dBase = (double)V * (double)X;
@@ -2328,7 +2370,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 						D = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 						T1++;
 					}
-					D = (int)modPower(Y, 1LL << (E - T1 - 1), currentPrime);
+					D = (int)modPowerLL(Y, 1LL << (E - T1 - 1), currentPrime);
 					dBase = (double)D * (double)D;
 					Y1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
 					E = T1;
@@ -2361,7 +2403,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	FactorBase = currentPrime;
 	largePrimeUpperBound = 100 * FactorBase;
 
-	dlogNumberToFactor = logBigNbr(zN); 	// find logarithm of number to factor.
+	dlogNumberToFactor = logZnum(zN); 	// find logarithm of number to factor.
 	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 
 #ifdef __EMSCRIPTEN__
@@ -2613,7 +2655,7 @@ static bool LinearAlgebraPhase(
 
 		for (row = matrixBlen - 1; row >= 0; row--) {
 			if ((ag->matrixV[row] & mask) != 0) {
-				MultBigNbrModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
+				MultZnumModN(vectLeftHandSide[row], biR, biU, zModulus);  // U = LHS * R (mod Modulus)
 				biR = biU; 
 				rowMatrixB = &matrixB[row][0];
 				for (j = rowMatrixB[LENGTH_OFFSET] - 1; j >= 1; j--) {
@@ -2624,7 +2666,7 @@ static bool LinearAlgebraPhase(
 							biT = zModulus - biT; //SubtractBigNbr(zModulus, biT, biT); // Multiply biT by -1.
 						}
 						else {
-							MultBigNbrByIntModN(biT, ag->primeTrialDivisionData[primeIndex].value,
+							MultZnumByIntModN(biT, ag->primeTrialDivisionData[primeIndex].value,
 								biT, zModulus);
 						}
 					}
@@ -2632,7 +2674,7 @@ static bool LinearAlgebraPhase(
 			}
 		}
 
-		SubtractBigNbrModN(biR, biT, biR, zModulus);
+		SubtractZnumModN(biR, biT, biR, zModulus);
 		biT = gcd(biR, zTestNbr2);
 #if DEBUG_SIQS
 		std::cout << "col = " << col
@@ -2715,30 +2757,30 @@ static bool InsertNewRelation(
 	}
 
 	/* Convert negative numbers to the range 0 <= n < biModulus */
-	if (ZisEven(zModulus)) { // Even modulus.
+	if (isEven(zModulus)) { // Even modulus.
 		zTestNbr2 = zModulus / 2;
 		//DivBigNbrByInt(zModulus, 2, zTestNbr2);  // divide modulus by 2
 
 		// If biR >= biModulus perform biR = biR - biModulus.
 		biT = 0;
-		AddBigNbrModN(biR, biT, biR, zTestNbr2);
+		AddZnumModN(biR, biT, biR, zTestNbr2);
 
-		ModInvBigNbr(biR, biT, zTestNbr2);   // biT = Mod Inv of biR
+		ModInvZnum(biR, biT, zTestNbr2);   // biT = Mod Inv of biR
 	}
 
 	else {             // Odd modulus
-		ModInvBigNbr(biR, biT, zModulus);  // biT = Mod Inv 
+		ModInvZnum(biR, biT, zModulus);  // biT = Mod Inv 
 	}
 
 	if (biU < 0) {
 		biU += zModulus; //AddBigNbr(biU, zModulus, biU);  
 	}
 
-	AdjustModN(biU, zModulus);
+	mpz_mod(ZT(biU), ZT(biU), ZT(zModulus));   /* biU %= zModulus */
 	// Compute biU / biR  (mod biModulus)
-	MultBigNbrModN(biU, biT, biR, zModulus);  // biR = biU * biT
+	MultZnumModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
-											   // Add relation to matrix B.
+	// Add relation to matrix B.
 	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
 
 	vectLeftHandSide[congruencesFound] = biR;
@@ -3542,12 +3584,12 @@ static void sieveThread(Znum &result) {
 				for (index = 0; index < nbrFactorsA; index++) {
 					currentPrime = afact[index];
 					// D = (biQuadrCoeff%(currentPrime*currentPrime))/currentPrime
-					D = (int)RemDivBigNbrByInt(biQuadrCoeff,
+					D = (int)RemDivZnumByInt(biQuadrCoeff,
 						currentPrime*currentPrime) / currentPrime;
 					Q = primeSieveData[aindex[index]].modsqrt *
 						intModInv(D, currentPrime) % currentPrime;
 					amodq[index] = D << 1;
-					tmodqq[index] = (int)RemDivBigNbrByInt(zModulus,
+					tmodqq[index] = (int)RemDivZnumByInt(zModulus,
 						currentPrime*currentPrime);
 					if (Q + Q > currentPrime) {
 						Q = currentPrime - Q;
