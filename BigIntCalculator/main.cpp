@@ -1951,12 +1951,7 @@ retry:
 
 // machine info
 double MEAS_CPU_FREQUENCY;
-#ifdef _DEBUG
-int VERBOSE_PROC_INFO = 1;
-#else 
-int VERBOSE_PROC_INFO = 0;
-#endif
-char CPU_ID_STR[80];
+char CPU_ID_STR[80] = {'\0'};
 
 int CLSIZE;
 char HAS_SSE41;
@@ -2069,23 +2064,6 @@ uint64 measure_processor_speed(void)
 
 #endif
 
-double get_tsc_time(void)
-{
-	if (cycles_per_second == 0.0)
-		measure_processor_speed();
-	return __rdtsc() / cycles_per_second;
-}
-
-double get_pfc_time(void)
-{
-	LARGE_INTEGER ll;
-
-	if (ticks_per_second == 0.0)
-		measure_processor_speed();
-	QueryPerformanceCounter(&ll);
-	return ll.QuadPart / ticks_per_second;
-}
-
 #if defined(GCC_ASM32X)
 #define HAS_CPUID
 #define CPUID(code, a, b, c, d) 			\
@@ -2195,7 +2173,7 @@ const char* szFeatures[] =
 int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, int do_print)
 {
 	char CPUString[0x20];
-	char CPUBrandString[0x40];
+	char CPUBrandString[0x40] = { 0 };
 	int CPUInfo[4] = { -1 };
 	int nSteppingID = 0;
 	int nModel = 0;
@@ -2213,7 +2191,7 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 	int nCacheSizeK = 0;
 	int nPhysicalAddress = 0;
 	int nVirtualAddress = 0;
-	int nRet = 0;
+	int nRet = 0;    /* return value */
 
 	int nCores = 0;
 	int nCacheType = 0;
@@ -2405,7 +2383,10 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 			bMOVOptimization = (CPUInfo[0] & 0x2) || 0;
 		}
 	}
-	strcpy_s(CPUidstr, 64, CPUBrandString);
+	ptrdiff_t ix = 0;
+	while (ix < 64 && isblank(CPUBrandString[ix]))
+		ix++;        /* find 1st non-blank character */
+	strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
 	// Display all the information in user-friendly format.
 	if (do_print > 0)
 		printf("\n\nCPU String: %s\n", CPUString);
@@ -2560,10 +2541,10 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 	{
 		CPUID2(0x4, i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
 		//__cpuidex(CPUInfo, 0x4, i);
-		if (!(CPUInfo[0] & 0xf0)) break;
+		if (!(CPUInfo[0] & 0xf0)) 
+			break;
 
-		if (i == 0)
-		{
+		if (i == 0) {
 			nCores = CPUInfo[0] >> 26;
 			if (do_print > 0)
 				printf("\n\nNumber of Cores = %d\n", nCores + 1);
@@ -2579,8 +2560,7 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 		nWaysAssociativity = (CPUInfo[1]) >> 22;
 		nNumberSets = CPUInfo[2];
 
-		if (do_print > 0)
-		{
+		if (do_print > 0) {
 			printf("\n");
 
 			printf("ECX Index %d\n", i);
@@ -2603,32 +2583,23 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 			}
 
 			printf("   Level = %d\n", nCacheLevel + 1);
-			if (bSelfInit)
-			{
+			if (bSelfInit) 	{
 				printf("   Self Initializing\n");
 			}
-			else
-			{
+			else {
 				printf("   Not Self Initializing\n");
 			}
-			if (bFullyAssociative)
-			{
+			if (bFullyAssociative) {
 				printf("   Is Fully Associatve\n");
 			}
-			else
-			{
+			else {
 				printf("   Is Not Fully Associatve\n");
 			}
-			printf("   Max Threads = %d\n",
-				nMaxThread + 1);
-			printf("   System Line Size = %d\n",
-				nSysLineSize + 1);
-			printf("   Physical Line Partions = %d\n",
-				nPhysicalLinePartitions + 1);
-			printf("   Ways of Associativity = %d\n",
-				nWaysAssociativity + 1);
-			printf("   Number of Sets = %d\n",
-				nNumberSets + 1);
+			printf("   Max Threads = %d\n", nMaxThread + 1);
+			printf("   System Line Size = %d\n", nSysLineSize + 1);
+			printf("   Physical Line Partions = %d\n", nPhysicalLinePartitions + 1);
+			printf("   Ways of Associativity = %d\n", nWaysAssociativity + 1);
+			printf("   Number of Sets = %d\n", nNumberSets + 1);
 		}
 	}
 
@@ -2636,7 +2607,7 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 }
 
 // function containing system commands to get the computer name, CPU speed, etc
-static void get_computer_info(char* idstr)
+static void get_computer_info(char* CPUidstr)
 {
 	//int ret;
 
@@ -2658,7 +2629,8 @@ static void get_computer_info(char* idstr)
 	// run an extended cpuid command to get the cache line size, and
 	// optionally print a bunch of info to the screen
 
-	extended_cpuid(idstr, &CLSIZE, &HAS_SSE41, VERBOSE_PROC_INFO);
+	extended_cpuid(CPUidstr, &CLSIZE, &HAS_SSE41, verbose);
+#endif
 
 #if defined(WIN32)
 
@@ -2678,7 +2650,6 @@ static void get_computer_info(char* idstr)
 
 #endif
 
-#endif
 	return;
 }
 

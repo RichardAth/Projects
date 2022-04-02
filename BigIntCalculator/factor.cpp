@@ -873,11 +873,12 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 		Mult4 = 0;
 	}
 	else {       /* Prime factor p is not 2 */
-		if ((p & 3) == 1) { /* if p = 1 (mod 4) */
+		if ((p & 3) == 1)  /* if p = 1 (mod 4) */ {
+			/* in this case p can be expressed as the sum of 2 squares */
 			q = (p-1)/4; // q = (prime-1)/4
 	  
 			a = 1;
-			do {    // Loop that finds mult1^2 = (-1) mod p
+			do {    // Loop that finds Mult1^2 = (-1) mod p
 				a++; 
 				assert(a < p);
 				/* Mult1 = a^q(mod p) */
@@ -921,7 +922,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 			} /* end while */
 		} /* end p = 1 (mod 4) */
 
-		else { /* if p = 3 (mod 4) */
+		else  /* if p = 3 (mod 4) */ 	{
 			q = (p-1)/2; //  q = (prime-1)/2
 			Mult1 = 0;
 			do {
@@ -933,7 +934,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				       // At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
 			} while (Tmp1 != 1);  // Continue loop if it is not 1.
 
-			// After the loop finishes, Tmp1 = (-1 - Mult1^2) is a quadratic residue mod p.
+			// After the loop finishes, Tmp = (-1 - Mult1^2) is a quadratic residue mod p.
 			q = (p+1)/4;
 
 			// Find Mult2 <- square root of Tmp1 = Tmp^q (mod p) 
@@ -957,16 +958,12 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				if (isEven(K)) { // If K is even ...
 					if (isEven(Mult1) != isEven(Mult2))
 					{  // If Mult1 + Mult2 is odd...
-						if (isEven(Mult1) == isEven(Mult3))
-						{   // If Mult1 + Mult3 is even...
-							Tmp = Mult2;  // swap mult2 and mult3
-							Mult2 = Mult3;
-							Mult3 = Tmp;
+						if (isEven(Mult1) == isEven(Mult3)) {  
+							// If Mult1 + Mult3 is even...
+							Mult2.swap(Mult3);  // swap mult2 and mult3
 						}
 						else {
-							Tmp = Mult2; // swap mult2 and mult4
-							Mult2 = Mult4;
-							Mult4 = Tmp;
+							Mult2.swap(Mult4); // swap mult2 and mult4
 						}
 					} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
 					Tmp1 = (Mult1 + Mult2)/2;   
@@ -1079,9 +1076,7 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 			quads[0] = abs(quads[0]);  // ensure results are +ve
 			quads[1] = abs(quads[1]);
 			if (quads[0] < quads[1]) {		
-				Tmp1 = quads[0];           // quads[0] < quads[1], so exchange them.
-				quads[0] = quads[1];
-				quads[1] = Tmp1;
+				quads[0].swap(quads[1]);  // quads[0] < quads[1], so exchange them.
 			}
 			assert(quads[2] == 0);
 			assert(quads[3] == 0);
@@ -1104,22 +1099,17 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 			for (int ix = 0; ix <= 2; ix++)
 				mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
 
+			/* sort into ascending order */
 			if (quads[0] < quads[1]) {
-				Tmp1 = quads[0];		// quads[0] < quads[1], so exchange them.
-				quads[0] = quads[1];
-				quads[1] = Tmp1;
+				quads[0].swap(quads[1]);  // quads[0] < quads[1], so exchange them.
 			}
 
 			if (quads[0] < quads[2]) {
-				Tmp1 = quads[0];	// quads[0] < quads[2], so exchange them.
-				quads[0] = quads[2];
-				quads[2] = Tmp1;
+				quads[0].swap(quads[2]);  // quads[0] < quads[2], so exchange them.
 			}
 
 			if (quads[1] < quads[2]) {
-				Tmp1 = quads[1];	// quads[1] < quads[2], so exchange them.
-				quads[1] = quads[2];
-				quads[2] = Tmp1;
+				quads[1].swap(quads[2]);  // quads[1] < quads[2], so exchange them.
 			}
 
 			return;
@@ -1136,16 +1126,17 @@ This allows us to find the sum of squares for each factor separately then combin
 static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
 	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
 	Znum pr;
-	bool twoSq = true;
+	bool twoSq = true;       /* value changed to false if num cannot be expressed 
+							 as the sum of 2 squares */
 
-	quads[0] = 1;      // 1 = 1^2 + 0^2 + 0^2 + 0^2
+	quads[0] = 1;      /* initialise quads N.B. 1 = 1^2 + 0^2 + 0^2 + 0^2 */
 	quads[1] = 0;
 	quads[2] = 0;
 	quads[3] = 0;
 
-	if (factorlist.f.size() == 1) {/* only 1 factor? */
+	if (factorlist.f.size() == 1) { /* only 1 factor? */
 		if (factorlist.f[0].Factor == 1) {   // Number to factor is 1.
-			return;
+			return;   // 1 = 1^2 + 0^2 + 0^2 + 0^2
 		}
 		if (factorlist.f[0].Factor == 0) {    // Number to factor is 0.
 			quads[0] = 0;      // 0 = 0^2 + 0^2 + 0^2 + 0^2
@@ -1168,9 +1159,9 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 			r++;
 		}
 		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
-		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem*/
-		if ((numLimbs(num) < 4) && (num & 7) < 7) {
-			/* use compute3squares if number is small (<= 57 digits) and can be 
+		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem */
+		if ( !factorlist.isPrime() && (numLimbs(num) < 4) && (num & 7) < 7) {
+			/* use compute3squares if number is composite, small (<= 57 digits) and can be 
 			formed from 3 squares. (Each limb is up to 64 bits) */
 			compute3squares(r, num, quads);  
 			return;
@@ -1188,7 +1179,14 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		/* compute 4 or less values the squares of which add up to prime pr,
 		return values in Mult1, Mult2, Mult3 and Mult4 */
 		ComputeFourSquares(pr, Mult1, Mult2, Mult3, Mult4);
-		//assert(pr == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
+		if (verbose > 1) {
+			assert(pr == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
+			std::cout <<   "pr    = " << pr 
+				      << "\nMult1 = " << Mult1
+					  << "\nMult2 = " << Mult2
+				      << "\nMult3 = " << Mult3
+				      << "\nMult4 = " << Mult4 << '\n' ;
+		}
 
 		/* use the identity:
 		(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
@@ -1229,39 +1227,27 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	only 6 comparisons & exchanges for 4 items. */
 
 	if (quads[0] < quads[1]) {		// quads[0] < quads[1], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[1];
-		quads[1] = Tmp1;
+		quads[0].swap(quads[1]);
 	}
 
 	if (quads[0] < quads[2]) {	// quads[0] < quads[2], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[2];
-		quads[2] = Tmp1;
+		quads[0].swap(quads[2]);
 	}
 
 	if (quads[0] < quads[3]) {	// quads[0] < quads[3], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[3];
-		quads[3] = Tmp1;
+		quads[0].swap(quads[3]);
 	}
 
 	if (quads[1] < quads[2]) {	// quads[1] < quads[2], so exchange them.
-		Tmp1 = quads[1];
-		quads[1] = quads[2];
-		quads[2] = Tmp1;
+		quads[1].swap(quads[2]);
 	}
 
 	if (quads[1] < quads[3]) {	// quads[1] < quads[3], so exchange them.
-		Tmp1 = quads[1];
-		quads[1] = quads[3];
-		quads[3] = Tmp1;
+		quads[1].swap(quads[3]);
 	}
 
 	if (quads[2] < quads[3]) {	// quads[2] < quads[3], so exchange them.
-		Tmp1 = quads[2];
-		quads[2] = quads[3];
-		quads[3] = Tmp1;
+		quads[2].swap(quads[3]);
 	}
 	return;
 }
