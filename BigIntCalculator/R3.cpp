@@ -16,10 +16,7 @@ extern int verbose;
 #include <intsafe.h>
 #include <intrin.h>
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
+
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -429,7 +426,7 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 
 /* Calculate maximum square divisor of n and divide n by this.
 return adjusted n, square divisor, and factor list of divisor.*/
-static void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
+void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
 	factorsS factorlist;
 
 	primeFactors(n, factorlist);

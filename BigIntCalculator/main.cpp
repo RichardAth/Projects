@@ -1520,6 +1520,7 @@ static void doTests3(void) {
 /* see http://oeis.org/A002102 */
 
 extern unsigned __int64 R2(const unsigned __int64 n);
+extern void squareFree(__int64& n, __int64& sq, factorsS& sqf);
 //static void doTests4(void) {
 //	generatePrimes(2000);
 //	for (int i = 0; i <= 9992; i++) {
@@ -1741,6 +1742,174 @@ static void doTests7(const std::string &params) {
 	auto end = clock();              // measure amount of time used
 	auto elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
+}
+
+/* find next prime after p */
+static long long nextprime(const long long p) {
+	mpz_t pBi, next;
+
+	mpz_init_set_ui(pBi, p);  /* pBi = p */
+	mpz_init(next);
+	mpz_nextprime(next, pBi);
+	return mpz_get_ui(next);
+}
+
+/* return 0 if number is a power of 2 (no odd prime factors),
+          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
+		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
+		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
+		    exponent  
+		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
+		    odd prime factors of form 8i+5 or 8i+7 have an even exponent  */
+int classify(fList factors, const Znum &n) {
+	Znum r, p, sq, ncopy;
+	fList ncopyf;
+	bool type1 = false;  /* set true if there is any odd prime factors of form 8i+1 or 8i+3 */
+
+	if (factors.fsize() == 1 && factors.fmin() == 2)
+		return 0;
+
+	for (int i = 0; i < factors.fsize(); i++) {
+		p = factors.f[i].Factor;
+		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);
+		switch (mod) {
+		case 2:     /* p is 2 */
+			continue;
+
+		case 1:
+		case 3:
+			type1 = true;
+			continue;
+
+		case 5:
+		case 7:
+			if ((factors.f[i].exponent & 1) == 0)  /* if exponent is even*/
+				continue;
+			else 
+				return 2;
+
+		default: 
+			abort();   /* should never happen  ! */
+		}
+	}
+
+	if (type1)
+		return 1;
+	else
+		return 3;
+}
+
+/* establish by brute force if a number can be expressed as p1^2 + 2*(p2^2)
+return true if it can, otherwise false */
+static bool sqcheck(const long long x, long long &p1, long long &p2) {
+	long long isq2;
+	if (x % 8 == 7)
+		return false;  /* x can only be expressed as the sum of 4 (or more) squares */
+
+	for (p2 = 1; ; p2++) {
+		isq2 = 2 * p2 * p2;
+		if (isq2 >= x)
+			break;
+
+		if (isPerfectSquare(x - isq2)) {
+			p1 = llSqrt(x - isq2);
+#ifdef _DEBUG
+			//if (verbose > 0)
+				std::cout << "x = " << x << "= 2*" << p2 << "^2 + " << p1 << "^2\n";
+#endif
+			return true;
+		}
+	}
+	return false;
+}
+
+/* hypothesis: if a number has 1 or more prime factors of the form 8i+1 or 8i+3, 
+and all odd prime factors of the form 8i+5 or 8i+7 have even exponents it is 
+possible to express it as p1^2 + 2*(p2^2), otherwise it is impossible*/
+bool checkAssert(const long long i) {
+	Znum iZ = i;
+	long long isq, isq2;
+	int type; /* 0 if number is a power of 2 (no odd prime factors),
+          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
+		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
+		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
+		    exponent 
+		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
+		    odd prime factors of form 8i+5 or 8i+7 have an even exponent */
+	fList ifactors;
+
+	factorise(iZ, ifactors, nullptr);
+	type = classify(ifactors, iZ);
+	if (type == 0 || type == 2 || type == 3)
+		if (sqcheck(i, isq, isq2)) {
+			/* assertion fails */
+			std::cout << "i = " << i << " = 2*" << isq2 << "^2 + " << isq << "^2\n";
+			return false;
+		}
+		else return true;
+	
+	assert(type == 1);
+	if (!sqcheck(i, isq, isq2)) {
+		/* assertion fails */
+		std::cout << "i = " << i << '\n';
+		return false;
+	}
+	else return true;
+}
+
+/* investigate which numbers can be expressed as p1^2 + 2*(p2^2) 
+where p1 and p2 are primes 
+
+hypothesis: if a number has one or more prime factors of the form 8i+1 or 8i+3, 
+(i being an integer >= 0)
+and all odd prime factors of the form 8i+5 or 8i+7 have even exponents, it is 
+possible to express it as p1^2 + 2*(p2^2), otherwise it is impossible.*/
+static void doTestsA(const std::string& params) {
+	long long p1 = 1000, p2;
+	int count = 0;
+	fList ifactors;
+	Znum iz, quads[4];
+	auto numParams = sscanf_s(params.data(), "%lld,%lld", &p1, &p2);
+
+	if (numParams == 2 && p2 == 1) {
+		for (long long p = 2; p <= p1; p = nextprime(p)) {
+			iz = p;
+			factorise(iz, ifactors, quads);
+			if (p % 4 == 1) {
+				/* p can be expressed as the sum of 2 squares */
+				if (quads[2] != 0 || quads[3] != 0)
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
+			}
+			else if (p % 8 != 7) {
+				/* p can be expressed as the sum of 3 squares */
+				if (quads[3] != 0)
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
+				if (quads[0] != quads[1] && quads[1] != quads[2]) {
+					/* all 3 values are different (we expected 2 the same) */
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+					<< quads[1] << ", " << quads[2] << " ****\n";
+				}
+			}
+			/* if p = 7 (mod 8) 4 squares are needed */
+			count++;
+			if ((count & 0xfff) == 0) {
+				std::cout << count << " primes tested p = " << p << '\n';
+			}
+		}
+		std::cout << count << " primes tested \n";
+		return;
+	}
+	else {
+		for (long long i = 2; i <= p1; i++) {
+			if (!checkAssert(i))
+				system("PAUSE");
+			if ((i & 0xffff) == 1)
+				std::cout << myTime() << ' ' << i - 1 << " tests completed \n";
+		}
+	}
+	std::cout << "test a completed \n";
 }
 
 
@@ -2845,7 +3014,7 @@ static int ifCommand(const std::string &command) {
 	return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
-/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command */
 static int processCmd(const std::string &command) {
 
 	/* list of commands (static for efficiency) */
@@ -2906,7 +3075,7 @@ static int processCmd(const std::string &command) {
 				return 1;
 			}
 
-			int ttype = command.data()[4] ;  /* for TEST2 ttype = 2, etc*/
+			char ttype = toupper(command.data()[4]) ;  /* for TEST2 ttype = 2, etc*/
 			switch (ttype) {
 			case '2': {
 				if (command.size() > 5)
@@ -2950,6 +3119,13 @@ static int processCmd(const std::string &command) {
 			}
 			case '9': {
 				doTests9();
+				return 1;
+			}
+			case 'A': {
+				if (command.size() > 5)
+					doTestsA(command.substr(6));         // do basic tests 
+				else
+					doTestsA("");
 				return 1;
 			}
 			default:

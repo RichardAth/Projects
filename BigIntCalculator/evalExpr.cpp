@@ -596,7 +596,7 @@ static Znum powerBi(const Znum &x, unsigned __int64 n) {
 
 /* Calculate maximum square divisor of num and divide num by this.
 return adjusted num, square divisor, and factor list of divisor.*/
-static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
+void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
 	fList factorlist;
 	zFactors temp;
 	auto rv = factorise(num, factorlist, nullptr);

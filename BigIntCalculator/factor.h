@@ -15,6 +15,11 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+struct factorsS {
+	int factorcount;           // number of unique prime factors
+	__int64 factorlist[19][2]; // prime factor, exponent
+};
+
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
@@ -92,6 +97,7 @@ public:
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
+	friend int classify(fList factors, const Znum &n);
 
 	/* methods that are in the class */
 
@@ -421,6 +427,7 @@ Repeated factors: No or Yes
 
 };
 
+void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
 
 extern int ElipCurvNo;            // Elliptic Curve Number
 

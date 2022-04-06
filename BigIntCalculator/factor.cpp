@@ -860,7 +860,10 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 }
 
 /* compute 4 or less values the squares of which add up to prime p,  
-return values in Mult1, Mult2, Mult3 and Mult4 */
+return values in Mult1, Mult2, Mult3 and Mult4 
+if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
+If p = 7 (mod 8) it cannot be expressed as the sum of 3 squares, otherwise it can.
+In this case, at least two of the 3 squares will be equal. */
 static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 	Znum &Mult3, Znum &Mult4) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
@@ -1160,14 +1163,18 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		}
 		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
 		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem */
-		if ( !factorlist.isPrime() && (numLimbs(num) < 4) && (num & 7) < 7) {
-			/* use compute3squares if number is composite, small (<= 57 digits) and can be 
-			formed from 3 squares. (Each limb is up to 64 bits) */
+		if ( factorlist.f.size() > 1 && (numLimbs(num) < 4) && (num & 7) < 7) {
+			/* use compute3squares if number has more than 1 unique prime factor, 
+			is small (<= 57 digits), and can be formed from 3 squares. 
+			(Each limb is up to 64 bits). Large numbers would take too long.  */
 			compute3squares(r, num, quads);  
 			return;
 		}
 	}
 
+	/* the method below will find 4 squares the sum of which is the required number.
+	In many cases it would be possible to use just 3 squares, but the method for
+	that would be too slow. */
 	for (auto Factorx : factorlist.f) {
 		if (Factorx.exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
