@@ -744,6 +744,26 @@ static void doFactors(const Znum &Result, bool test) {
 					std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
 					Beep(750, 1000);
 				}
+				else {
+					if (factorlist.twosq()) {
+						if (Quad[2] != 0 || Quad[3] != 0)
+							std::cout << "expected c = d= 0; got: \n"
+							<< "number = " << Result << '\n'
+							<< "a= " << Quad[0] << '\n'
+							<< "b= " << Quad[1] << '\n'
+							<< "c= " << Quad[2] << '\n'
+							<< "d= " << Quad[3] << '\n';
+					}
+					//else if (factorlist.sqplustwosq()) {
+					//	if (Quad[1] != Quad[2] || Quad[3] != 0)
+					//		std::cout << "expected b = c and d= 0; got: \n"
+					//		<< "number = " << Result << '\n'
+					//		<< "a= " << Quad[0] << '\n'
+					//		<< "b= " << Quad[1] << '\n'
+					//		<< "c= " << Quad[2] << '\n'
+					//		<< "d= " << Quad[3] << '\n';
+					//}
+				}
 			}
 			auto end = clock(); 
 			double elapsed = (double)end - start;
@@ -801,8 +821,32 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		/* check that sum of squares is correct */
 		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
 		if (result != x3) {
-			std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
+			std::cout << "Quad expected value " << x3 << " actual value " << result << '\n'
+				<< "a= " << Quad[0] << '\n'
+				<< "b= " << Quad[1] << '\n'
+				<< "c= " << Quad[2] << '\n'
+				<< "d= " << Quad[3] << '\n';
 			Beep(750, 1000);
+		}
+		else {
+			if (factorlist.twosq()) {
+				if (Quad[2] != 0 || Quad[3] != 0)
+					std::cout << "expected c = d= 0; got: \n"
+					<< "number = " << x3 << '\n'
+					<< "a= " << Quad[0] << '\n'
+					<< "b= " << Quad[1] << '\n'
+					<< "c= " << Quad[2] << '\n'
+					<< "d= " << Quad[3] << '\n';
+			}
+			else if (factorlist.sqplustwosq()) {
+				if ((Quad[0] != Quad[1] && Quad[1] != Quad[2]) || Quad[3] != 0)
+					std::cout << "expected a= b or b = c and d= 0; got: \n"
+					<< "number = " << x3 << '\n'
+					<< "a= " << Quad[0] << '\n'
+					<< "b= " << Quad[1] << '\n'
+					<< "c= " << Quad[2] << '\n'
+					<< "d= " << Quad[3] << '\n';
+			}
 		}
 	}
 
@@ -1054,6 +1098,10 @@ static void doTests(void) {
 
 	testcnt++;
 	ComputeExpr("n(2^97)*n(2^105)", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	ComputeExpr("n(10^7)^2 + 2*n(3*10^6)^2", x3, asgCt);
 	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used
@@ -1756,25 +1804,32 @@ static long long nextprime(const long long p) {
 
 /* return 0 if number is a power of 2 (no odd prime factors),
           1 if there is at least one odd prime factors of form 8i+1 or 8i+3
-		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
+		    and any odd prime factors  of form 8i+5 or 8i+7 have even exponents.
 		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
 		    exponent  
 		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
 		    odd prime factors of form 8i+5 or 8i+7 have an even exponent  */
-int classify(fList factors, const Znum &n) {
+static int classify(Znum n) {
 	Znum r, p;
-
+	fList factors;
 	bool type1 = false;  /* set true if there is any odd prime factors of form 8i+1 or 8i+3 */
 
-	if (factors.fsize() == 1 && factors.fmin() == 2)
+	while (isEven(n))
+		n /= 2;
+	if (n == 1)
 		return 0;
+	
+	long long mod = mpz_tdiv_r_ui(ZT(r), ZT(n), 8); /* mod = n (mod 8)*/
+	if (mod == 5 || mod == 7) 
+		return 2;
 
+	factorise(n, factors, nullptr);
+	
 	for (int i = 0; i < factors.fsize(); i++) {
+		/* step through prime factors */
 		p = factors.f[i].Factor;
-		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);
+		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);  /* mod = p (mod 8) */
 		switch (mod) {
-		case 2:     /* p is 2 */
-			continue;
 
 		case 1:
 		case 3:
@@ -1837,10 +1892,8 @@ static bool checkAssert(const long long i) {
 		    exponent 
 		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
 		    odd prime factors of form 8i+5 or 8i+7 have an even exponent */
-	fList ifactors;
-
-	factorise(iZ, ifactors, nullptr);
-	type = classify(ifactors, iZ);
+	
+	type = classify(iZ);
 	if (type == 0 || type == 2 || type == 3)
 		if (sqcheck(i, isq, isq2)) {
 			/* assertion fails */
@@ -1863,9 +1916,14 @@ static bool checkAssert(const long long i) {
 /* investigate which numbers can be expressed as a^2 + 2*(b^2)
 
 hypothesis: if a number has one or more prime factors of the form 8i+1 or 8i+3, 
-(i being an integer >= 0)
-and all odd prime factors of the form 8i+5 or 8i+7 have even exponents, it is 
-possible to express it as a^2 + 2*(b^2), otherwise it is impossible.
+(i being an integer >= 0), and all odd prime factors of the form 8i+5 or 8i+7 
+have even exponents, it is possible to express it as a^2 + 2*(b^2), 
+otherwise it is impossible.
+This implies that if the number is divided by 2 until the quotioent is odd,
+the number must be 1 or 3 modulo 8
+
+See https://oeis.org/A002479. (this list includes cases where a or b is zero,
+which allows all perfect squares and 2 * perfect square as well.)
 
 command format is testa x[,y[,z]] 
 where x = 1 for test of all primes from 2 to y. 

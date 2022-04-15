@@ -863,9 +863,9 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 return values in Mult1, Mult2, Mult3 and Mult4 
 if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
 If p = 7 (mod 8) it cannot be expressed as the sum of 3 squares, otherwise it can.
-In this case, at least two of the 3 squares will be equal. */
+If it can, at least two of the 3 squares will be equal (ignoring sign). */
 static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
-	Znum &Mult3, Znum &Mult4) {
+	Znum &Mult3, Znum &Mult4, const bool sqplustwosq) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
 	Znum TestNbr;
 
@@ -874,6 +874,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 		Mult2 = 1;
 		Mult3 = 0;
 		Mult4 = 0;
+		return;
 	}
 	else {       /* Prime factor p is not 2 */
 		if ((p & 3) == 1)  /* if p = 1 (mod 4) */ {
@@ -886,6 +887,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				assert(a < p);
 				/* Mult1 = a^q(mod p) */
 				mpz_powm(ZT(Mult1), ZT(a), ZT(q), ZT(p));
+				/* Testnbr = Mult1^2 (mod p) */
 				mpz_powm_ui(ZT(TestNbr), ZT(Mult1), 2, ZT(p));
 			} while (TestNbr != p-1 && TestNbr != -1);
 
@@ -908,8 +910,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				if (M2 < 0) {
 					M2 += K;
 				}
-				Tmp = (K+1)/2; // Tmp <- (K+1) / 2
-				//subtractdivide(Tmp, -1, 2);       
+				Tmp = (K+1)/2;   //subtractdivide(K, -1, 2);      
 				if (M1 >= Tmp) // If M1 >= K / 2 ... 
 				{
 					M1 -= K;
@@ -922,7 +923,7 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Tmp = Mult1*M2 - Mult2*M1;
 				Mult2 = Tmp / K;    // Mult2 <- (mult1*m2 - mult2*m1) /K
 				Mult1 = Tmp2;       // Mult1 <- (mult1*m1 + mult2*m2) / K
-			} /* end while */
+			} /* end for */
 		} /* end p = 1 (mod 4) */
 
 		else  /* if p = 3 (mod 4) */ 	{
@@ -1031,10 +1032,28 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 			} /* end while */
 		} /* end if p = 3 (mod 4) */
 	} /* end prime not 2 */
+
+	Mult1 = abs(Mult1);   // ensure results are +ve
+	Mult2 = abs(Mult2);
+	Mult3 = abs(Mult3);
+	Mult4 = abs(Mult4);
+
+	/* ensure that Mult4 is smallest */
+	if (Mult4 > Mult3)
+		Mult4.swap(Mult3);
+	if (Mult4 > Mult2)
+		Mult4.swap(Mult2);
+	if (Mult4 > Mult1)
+		Mult4.swap(Mult1);
+
+	/* if 2 values are equal, ensure that they are 2nd and 3rd */
+	if (Mult1 == Mult2)
+		Mult1.swap(Mult3);
+
 }
 
-/* compute 3 values the squares of which add up to s *2^2r, return values in quads */
-static void compute3squares(int r, const Znum &s, Znum quads[4]) {
+/* compute 3 values the squares of which add up to s * 2^2r, return values in quads */
+static void compute3squares(int r, const Znum &s, Znum quads[4], bool sqplustwosq) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
 	int m = 0;
 
@@ -1046,10 +1065,34 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		return;
 	}
 
+	if (s > 100'000'000'000'000)
+		sqplustwosq = false;  /* for large numbers this search would take too long */
+
 	/* loop till we find a suitable value of s3. */
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;
+		if (sqplustwosq)
+			if (isEven(s2)) {
+				s3 = s2 >> 1;    /* s3 = s2 / 2 */
+				if (isPerfectSquare(s3, r2)) {
+					quads[0] = x;
+					quads[1] = quads[2] = r2;
+					quads[3] = 0;
+					for (int ix = 0; ix <= 2; ix++)
+						mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
+					if (verbose > 1) {
+						std::cout << "s = " << s;
+						if (r > 0)
+							std::cout << " r = " << r;
+						std::cout << " a = " << quads[0] << ", b = " << quads[1] << ", c = " << quads[2] << '\n';
+					}
+					return;
+				}
+				else continue;
+			}
+			else continue;
+
 		for (s3 = s2, m = 0; isEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
@@ -1075,7 +1118,7 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		//auto rv = mpz_bpsw_prp(ZT(s3)); /* rv = 0 for composite, 1 = probable prime, 2 = definite prime*/
 		if (rv != 0) {
 			/* s3 is prime of form 4k+1 */
-			ComputeFourSquares(s3, quads[0], quads[1], quads[2], quads[3]);
+			ComputeFourSquares(s3, quads[0], quads[1], quads[2], quads[3], false);
 			quads[0] = abs(quads[0]);  // ensure results are +ve
 			quads[1] = abs(quads[1]);
 			if (quads[0] < quads[1]) {		
@@ -1123,14 +1166,24 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 /* show that the number is the sum of 4 or fewer squares. See
 https://www.alpertron.com.ar/4SQUARES.HTM */
 /* uses the identity:
-(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
-                                    + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
-This allows us to find the sum of squares for each factor separately then combine them */
+(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
+								  + (aC-bD-cA+dB)² + (aD-dA+bC-cB)²
+This allows us to find the sum of squares for each factor separately then combine them 
+If the number is a perfect square just return 1 value.
+If the number can be expressed as the sum of 2 squares return 2 values.
+If the number can be expressed as a square + twice a square, try to find 
+appropriate values. If the number has any very large prime factors this may not
+be practical. 
+If the number can be expressed as the sum of 3 squares try to find appropriate values.
+For large numbers this may not be practical. 
+The fallback is to find 4 squares, if none of the above are feasible- */
 static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
-	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
+	Znum Mult[4], Tmp1, Tmp2, Tmp3;
 	Znum pr;
-	bool twoSq = true;       /* value changed to false if num cannot be expressed 
-							 as the sum of 2 squares */
+	bool twoSq;       /* value changed to true if num can be expressed as the sum 
+						of 2 squares */
+	bool sqplustwosq; /* value changed to true if num can be expressed as the sum 
+						of a square + twice a square */
 
 	quads[0] = 1;      /* initialise quads N.B. 1 = 1^2 + 0^2 + 0^2 + 0^2 */
 	quads[1] = 0;
@@ -1148,13 +1201,12 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	}
 
 	/* check whether number can be formed as sum of 1 or 2 squares */
-	for (auto f: factorlist.f) {
-		if ((f.Factor & 3) == 3) {  // is factor of form 4k+3?
-			if ((f.exponent & 1) == 1)   // and is the exponent of that factor odd?
-			twoSq = false;    // if yes, number cannot be expressed as sum of 1 or 2 squares
-			break;       
-		}
-	}
+	twoSq = factorlist.twosq();
+	if (!twoSq)
+		sqplustwosq = factorlist.sqplustwosq();  /* true iff num = x^2 + 2*y^2 */
+	else
+		sqplustwosq = false;
+
 	if (!twoSq) {  /* check whether number can be expressed as sum of 3 squares */
 		int r = 0;
 		while ((num & 3) == 0) {
@@ -1163,19 +1215,21 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		}
 		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
 		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem */
-		if ( factorlist.f.size() > 1 && (numLimbs(num) < 4) && (num & 7) < 7) {
+		if ( factorlist.f.size() > 1 && (numLimbs(num) < 4) && (num & 7) < 7 ) {
 			/* use compute3squares if number has more than 1 unique prime factor, 
 			is small (<= 57 digits), and can be formed from 3 squares. 
 			(Each limb is up to 64 bits). Large numbers would take too long.  */
-			compute3squares(r, num, quads);  
-			return;
+			if (num < 100'000'000'000'000 || !sqplustwosq) {
+				compute3squares(r, num, quads, sqplustwosq);
+				return;
+			}
 		}
 	}
 
 	/* the method below will find 4 squares the sum of which is the required number.
 	In many cases it would be possible to use just 3 squares, but the method for
 	that would be too slow. */
-	for (auto Factorx : factorlist.f) {
+	for (auto &Factorx : factorlist.f) {
 		if (Factorx.exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
 					  process it in this for loop */
@@ -1184,28 +1238,56 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		pr = Factorx.Factor;
 
 		/* compute 4 or less values the squares of which add up to prime pr,
-		return values in Mult1, Mult2, Mult3 and Mult4 */
-		ComputeFourSquares(pr, Mult1, Mult2, Mult3, Mult4);
+		return values in Mult[0], Mult[1], Mult[2] and Mult[3] */
+		if (sqplustwosq && pr < 100'000'000'000'000 && (pr % 8 == 1))
+			/* if possible, get 3 values 2 of which are equal. 
+			if pr = 1 (mod 8) 4squares would give 2 unequal values + two zeros, 
+			 but 3squares is too slow for very large factors */
+			compute3squares(0, pr, Mult, sqplustwosq); 
+		else
+			ComputeFourSquares(pr, Mult[0], Mult[1], Mult[2], Mult[3], sqplustwosq);
+		if (sqplustwosq) {
+			assert(Mult[3] == 0);
+			if (Mult[0] == Mult[1])
+				Mult[0].swap(Mult[2]);
+			else if (Mult[0] == Mult[2])
+				Mult[0].swap(Mult[1]);
+			else if (Mult[1] != Mult[2]) {
+				std::cout << "** expected 2 of 3 values to be equal \n";
+				std::cout << "pr    = " << pr
+					<< "\nMult[0] = " << Mult[0]
+					<< "\nMult[1] = " << Mult[1]
+					<< "\nMult[2] = " << Mult[2]
+					<< "\nMult[3] = " << Mult[3] << '\n';
+			}
+		}
 		if (verbose > 1) {
-			assert(pr == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
+			assert(pr == Mult[0]*Mult[0] + Mult[1]*Mult[1] + Mult[2]*Mult[2] + Mult[3]*Mult[3]);
 			std::cout <<   "pr    = " << pr 
-				      << "\nMult1 = " << Mult1
-					  << "\nMult2 = " << Mult2
-				      << "\nMult3 = " << Mult3
-				      << "\nMult4 = " << Mult4 << '\n' ;
+				      << "\nMult[0] = " << Mult[0]
+					  << "\nMult[1] = " << Mult[1]
+				      << "\nMult[2] = " << Mult[2]
+				      << "\nMult[3] = " << Mult[3] << '\n' ;
 		}
 
 		/* use the identity:
-		(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
-		                                    + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
+		(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
+		                                    + (aC-bD-cA+dB)² + (aD-dA+bC-cB)² 
 		note: if twoSq is true, c, d, C, & D are zero. The expression then 
 		simplifies 	automatically to:  	
-		       (a^2+b^2)*(A^2+B^2) = (aA+bB)^2 + (aB-bA)^2 */
+		       (a²+b²)*(A²+B²) = (aA+bB)² + (aB-bA)² 
+			   
+		Also, if d =0, D = 0, b = c, and B = C we effectively get
+		(a²+ 2.b²)*(A²+ 2B²) = (aA+2bB)² + (aB-bA)²  + (aB-bA)² + (bB-bB)²
+                                  = (aA+2bB)² + 2(aB-bA)²  
+		This occurs when all odd prime factors of the form 8i+5 or 8i+7 
+		have even exponents,
+*/
 
-		Tmp1 = Mult1*quads[0] + Mult2*quads[1] + Mult3*quads[2] + Mult4*quads[3];
-		Tmp2 = Mult1*quads[1] - Mult2*quads[0] + Mult3*quads[3] - Mult4*quads[2];
-		Tmp3 = Mult1*quads[2] - Mult3*quads[0] - Mult2*quads[3] + Mult4*quads[1];
-		quads[3] = Mult1*quads[3] - Mult4*quads[0] + Mult2*quads[2] - Mult3*quads[1];
+		Tmp1 = Mult[0]*quads[0] + Mult[1]*quads[1] + Mult[2]*quads[2] + Mult[3]*quads[3];
+		Tmp2 = Mult[0]*quads[1] - Mult[1]*quads[0] + Mult[2]*quads[3] - Mult[3]*quads[2];
+		Tmp3 = Mult[0]*quads[2] - Mult[2]*quads[0] - Mult[1]*quads[3] + Mult[3]*quads[1];
+		quads[3] = Mult[0]*quads[3] - Mult[3]*quads[0] + Mult[1]*quads[2] - Mult[2]*quads[1];
 
 		quads[2] = Tmp3;
 		quads[1] = Tmp2;
@@ -1214,7 +1296,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 
 	 /* for factors that are perfect squares, multiply quads[0]-3 by sqrt(factor) */
 	for (auto Factorx : factorlist.f) {
-		if (Factorx.Factor >= 2) {
+		if (Factorx.exponent >= 2) {
 			mpz_pow_ui(ZT(Tmp1), ZT(Factorx.Factor), 
 				Factorx.exponent / 2);
 			quads[0] *= Tmp1;
@@ -1233,6 +1315,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	is equivalent to a 'bubble sort' with the loops unrolled. There are
 	only 6 comparisons & exchanges for 4 items. */
 
+	/* firstly, put largest value in quads[0] */
 	if (quads[0] < quads[1]) {		// quads[0] < quads[1], so exchange them.
 		quads[0].swap(quads[1]);
 	}
@@ -1245,6 +1328,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		quads[0].swap(quads[3]);
 	}
 
+	/* put 2nd largest value in quads[1] */
 	if (quads[1] < quads[2]) {	// quads[1] < quads[2], so exchange them.
 		quads[1].swap(quads[2]);
 	}
@@ -1253,6 +1337,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		quads[1].swap(quads[3]);
 	}
 
+	/* put 3nd largest value in quads[2] and smallest in quads[4] */
 	if (quads[2] < quads[3]) {	// quads[2] < quads[3], so exchange them.
 		quads[2].swap(quads[3]);
 	}

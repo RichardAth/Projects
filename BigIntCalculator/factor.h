@@ -97,7 +97,7 @@ public:
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
-	friend int classify(fList factors, const Znum &n);
+	friend int classify(Znum n);
 
 	/* methods that are in the class */
 
@@ -200,6 +200,40 @@ for factors found by YAFU or Msieve */
 		std::cout << '\n';
 	}
 
+
+/* return true if the number can be expressed as the sum of 2 squares. 
+Either square can be zero. */
+	bool twosq() const {
+		// this only works if factorisation is complete!
+		for (auto& i : this->f) {
+			if (i.Factor % 4 == 3) { /* p = 4k+3? */
+				if (i.exponent % 2 == 1) /* exponent is odd?*/
+					return false;
+			}
+			else { 		/* p = 4k + 1, or p=2 */
+				continue;
+			}
+		}
+		return true;
+	}
+
+/* return true if the number can be expressed as the sum of a square plus 
+twice a square. Either square can be zero. 
+This occurs when all odd prime factors of the form 8i+5 or 8i+7
+have even exponents*/
+	bool sqplustwosq() const {
+		// this only works if factorisation is complete!
+		for (auto& i : this->f) {
+			if (i.Factor % 8 == 5 || i.Factor % 8 == 7) { 
+				if (i.exponent % 2 == 1) /* exponent is odd?*/
+					return false;
+				else continue; /* exponent is even */
+			}
+		}
+
+		return true;
+	}
+
 /* calculate the number of ways an integer n can be expressed as the sum of 2
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
 see http://mathworld.wolfram.com/SumofSquaresFunction.html,
@@ -207,7 +241,7 @@ also http://oeis.org/A004018 */
 	Znum R2() const {
 		// this only works if factorisation is complete!
 		Znum b = 1;
-		for (auto i : this->f) {
+		for (auto &i : this->f) {
 			if (i.Factor <= 2)
 				continue; // ignore factor 1 or 2
 			if (i.Factor % 4 == 3) { /* p = 4k+3? */
@@ -224,12 +258,13 @@ also http://oeis.org/A004018 */
 /* The number of representations of n as the sum of two squares ignoring order 
 and signs. see http://oeis.org/A000161 
 e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
-	  25 = 5²+0  = 3²+4² so R2P(25) = 2 */
+	  25 = 5²+0  = 3²+4² so R2P(25) = 2 
+	  8 = 2² + 2² so R2P(8) =1 */
 	Znum R2p() const {
 		// this only works if factorisation is complete!
 		Znum b = 1;
 		int a0 = 0;  /* exponent of prime factor 2 */
-		for (auto i : this->f) {
+		for (auto &i : this->f) {
 			if (i.Factor < 2)
 				continue; // ignore factor 1
 			if (i.Factor == 2) {
@@ -248,14 +283,14 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			return (b / 2);
 		//else return (b + 1) / 2;
 		else {
-		/* if b is odd the the exponents of ALL (4k+3) prime factors of n are even,
+		/* if b is odd the the exponents of ALL (4k+1) prime factors of n are even,
 		therefore n is a perfect square, or 2*perfect square */
 			if ((a0 & 1) == 0)
 				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
 				zero would be disallowed as 1 of the squares. */
 				return (b + 1) / 2;  /* a0 is even i.e. n is a perfect square */
 			else
-				return (b + 1) / 2;
+				return (b + 1) / 2;  /* a0 is odd i.e. n is a 2*perfect square */
 		}
 	}
 
