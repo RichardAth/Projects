@@ -46,6 +46,7 @@ bool BigNbrIsZero(const limb value[], int nbrLength);
 void squareRoot(const Znum &arg, Znum & sqRoot);
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot);
 bool isPerfectSquare(__int64 x);
+bool isPerfectSquare(__int64 x, __int64& s);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 
 

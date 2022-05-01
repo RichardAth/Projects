@@ -494,7 +494,11 @@ R3(n) = 3*T(n) if n == 1,2,5,6 mod 8,
 	   = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
 
 Using PARI/GP we have
-r3(n)=if(n==0,1, if(n%4==0, r3(n/4), if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), if(n%8==3, 24*qfbhclassno(n),if(n%8==7, 0)))))
+r3(n)=if(n==0,1, 
+      if(n%4==0, r3(n/4), 
+	  if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), 
+	  if(n%8==3, 24*qfbhclassno(n),
+	  if(n%8==7, 0)))))
 
 where qfbhclassno is Hurwitz-Kronecker class number 
 see https://oeis.org/A259825

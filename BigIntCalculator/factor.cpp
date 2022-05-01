@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -859,6 +859,150 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	return true;
 }
 
+/* compute 3 values the squares of which add up to prime p 
+This function is intended for 8k+1 primes if we want p = x^2 + 2*y^2 
+rather than p = x^2 + y^2. */
+static void compute3squares(const Znum& p, Znum& Mult1, Znum& Mult2, Znum& Mult3) {
+	Znum q, Tmp, Tmp1, Tmp2, Tmp3, Mult4, K, M1, M2, M3, M4;
+	std::vector <Znum> roots;
+
+	q = (p - 1) / 2; //  q = (prime-1)/2
+	Mult1 = 0;
+	do {
+		Mult1++;
+		Tmp = Mult1 * Mult1 + 1;
+		Tmp = -Tmp;
+		while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult2^2 (mod p) */
+		mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
+		// At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
+	} while (Tmp1 != 1);  // Continue loop if it is not 1.
+
+	// After the loop finishes, Tmp = (-1 - Mult1^2) is a quadratic residue mod p.
+	Tmp1 = -1 - Mult1 * Mult1;
+	roots = ModSqrt(Tmp1, p);
+	assert(!roots.empty());
+	Mult2 = roots[0];
+	/* at this point Mult1^2 + Mult2^2 + 1 â‰¡ 0 (mod p)*/
+
+	if (verbose > 1) {
+		std::cout << "3 squares: prime = " << p << " initial Mult1 = " << Mult1
+			<< " Mult2 = " << Mult2 << '\n';
+	}
+
+	Mult3 = 1;
+	Mult4 = 0;
+	for (;;) {
+		// Compute K <- (Mult1^2 + Mult2^2 + Mult3^2 + Mult4^2) / p
+		Tmp = Mult1 * Mult1 + Mult2 * Mult2;
+		Tmp = Tmp + Mult3 * Mult3 + Mult4 * Mult4;
+		assert(Tmp % p == 0);
+
+		K = Tmp / p;    // in this loop K is smaller each time round
+		assert(K > 0);
+		if (K == 1) {
+			break;  // we are done when K equals 1
+		}
+		if (isEven(K)) { // If K is even ...
+			if (isEven(Mult1) != isEven(Mult2))
+			{  // If Mult1 + Mult2 is odd...
+				if (isEven(Mult1) == isEven(Mult3)) {
+					// If Mult1 + Mult3 is even...
+					Mult2.swap(Mult3);  // swap mult2 and mult3
+				}
+				else {
+					Mult2.swap(Mult4); // swap mult2 and mult4
+				}
+			} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
+			Tmp1 = (Mult1 + Mult2) / 2;
+			Tmp2 = (Mult1 - Mult2) / 2;
+			Tmp3 = (Mult3 + Mult4) / 2;
+			Mult4 = (Mult3 - Mult4) / 2;
+			Mult3 = Tmp3;
+			Mult2 = Tmp2;
+			Mult1 = Tmp1;
+			if (verbose > 1) {
+				std::cout << "K = " << K;
+				std::cout << " Mult1-4 = " << Mult1 << ", " << Mult2 << ", " << Mult3
+					<< ", " << Mult4 << '\n';
+			}
+			continue;
+		} /* end if K is even */
+
+		M1 = Mult1 % K;
+		if (M1 < 0) {
+			M1 += K;
+		}
+		M2 = Mult2 % K;
+		if (M2 < 0) {
+			M2 = M2 + K;
+		}
+		M3 = Mult3 % K;
+		if (M3 < 0) {
+			M3 += K;
+		}
+		M4 = Mult4 % K;
+		if (M4 < 0) {
+			M4 += K;
+		}
+		Tmp = (K + 1) / 2;  // Tmp <- (K+1) / 2
+		if (M1 >= Tmp) { // If M1 >= K / 2 ... 
+			M1 -= K;     // M1 = M1 - K;    
+		}
+		if (M2 >= Tmp) { // If M2 >= K / 2 ... 
+			M2 -= K;     // M2 = M2 - K;         
+		}
+
+		if (M3 >= Tmp) {  // If M3 >= K / 2 ... 
+			M3 -= K;      // M3 = M3 - K;        
+		}
+		if (M4 >= Tmp) { // If M4 >= K / 2 ... 
+			M4 -= K;     //M4 = M4 - K;        
+		}
+		// Compute Tmp1 <- (Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4) / K
+		Tmp = Mult1 * M1 + Mult2 * M2 + Mult3 * M3 + Mult4 * M4;
+		Tmp1 = Tmp / K; // BigIntDivide(Tmp, K, Tmp1);
+
+		// Compute Tmp2 <- (Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3) / K
+		Tmp = Mult1 * M2 - Mult2 * M1 + Mult3 * M4 - Mult4 * M3;
+		Tmp2 = Tmp / K;
+
+		// Compute Tmp3 <- (Mult1*M3 - Mult3*M1 - Mult2*M4 + Mult4*M2) / K
+		Tmp = Mult1 * M3 - Mult3 * M1 - Mult2 * M4 + Mult4 * M2;
+		Tmp3 = Tmp / K;
+
+		// Compute Mult4 <- (Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2) / K
+		Tmp = Mult1 * M4 - Mult4 * M1 + Mult2 * M3 - Mult3 * M2; // BigIntSubt(Tmp, Tmp4, Tmp);
+		Mult4 = Tmp / K;
+
+		Mult3 = Tmp3;
+		Mult2 = Tmp2;
+		Mult1 = Tmp1;
+		if (verbose > 1) {
+			std::cout << "K = " << K;
+			std::cout << " Mult1-4 = " << Mult1 << ", " << Mult2 << ", " << Mult3
+				<< ", " << Mult4 << '\n';
+		}
+	}
+	Mult1 = abs(Mult1);   // ensure results are +ve
+	Mult2 = abs(Mult2);
+	Mult3 = abs(Mult3);
+	Mult4 = abs(Mult4);
+
+	/* ensure that Mult4 is smallest */
+	if (Mult4 > Mult3)
+		Mult4.swap(Mult3);
+	if (Mult4 > Mult2)
+		Mult4.swap(Mult2);
+	if (Mult4 > Mult1)
+		Mult4.swap(Mult1);
+
+	/* if 2 values are equal, ensure that they are 2nd and 3rd */
+	if (Mult1 == Mult2)
+		Mult1.swap(Mult3);
+
+	assert(Mult4 == 0);
+}
+
 /* compute 4 or less values the squares of which add up to prime p,  
 return values in Mult1, Mult2, Mult3 and Mult4 
 if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
@@ -878,6 +1022,12 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 	}
 	else {       /* Prime factor p is not 2 */
 		if ((p & 3) == 1)  /* if p = 1 (mod 4) */ {
+			if (sqplustwosq && ((p & 7) == 1)) {
+				/* get p as the sum of 3 squares rather than 2 */
+				compute3squares(p, Mult1, Mult2, Mult3);
+				Mult4 = 0;
+				return;
+			}
 			/* in this case p can be expressed as the sum of 2 squares */
 			q = (p-1)/4; // q = (prime-1)/4
 	  
@@ -892,11 +1042,17 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 			} while (TestNbr != p-1 && TestNbr != -1);
 
 			Mult1 = abs(Mult1);
+			if (verbose > 1) {
+				std::cout << "4 squares: prime = " << p << " initial Mult1 = " << Mult1 << '\n';
+			}
 			Mult2 = 1;
 
 			for (;;) {  
 				Tmp = Mult1 * Mult1 + Mult2 * Mult2; // K <- (mult1^2 + mult2^2) / p
 				K = Tmp / p;    // in this loop K is smaller each time round   
+				if (verbose > 1) {
+					std::cout << "K = " << K << '\n';
+				}
 				if (K == 1) {  // are we there yet?
 					Mult3 = 0;
 					Mult4 = 0;
@@ -923,6 +1079,9 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Tmp = Mult1*M2 - Mult2*M1;
 				Mult2 = Tmp / K;    // Mult2 <- (mult1*m2 - mult2*m1) /K
 				Mult1 = Tmp2;       // Mult1 <- (mult1*m1 + mult2*m2) / K
+				if (verbose > 1) {
+					std::cout << "Mult1 = " << Mult1 << " Mult2 = " << Mult2 << '\n';
+				}
 			} /* end for */
 		} /* end p = 1 (mod 4) */
 
@@ -933,16 +1092,23 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Mult1++;
 				Tmp = Mult1*Mult1 + 1;
 				Tmp = -Tmp;
-				while (Tmp < 0) Tmp += p;
+				while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult2^2 (mod p) */
 				mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
 				       // At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
 			} while (Tmp1 != 1);  // Continue loop if it is not 1.
 
 			// After the loop finishes, Tmp = (-1 - Mult1^2) is a quadratic residue mod p.
+
 			q = (p+1)/4;
 
 			// Find Mult2 <- square root of Tmp1 = Tmp^q (mod p) 
 			mpz_powm(ZT(Mult2), ZT(Tmp), ZT(q), ZT(p));
+
+			/* at this point Mult1^2 + Mult2^2 + 1 â‰¡ 0 (mod p)*/
+			if (verbose > 1) {
+				std::cout << "4 squares: prime = " << p << " initial Mult1 = " << Mult1 
+					<< " Mult2 = " << Mult2 << '\n';
+			}
 
 			Mult3 = 1;
 			Mult4 = 0;
@@ -977,6 +1143,11 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 					Mult3 = Tmp3;
 					Mult2 = Tmp2;
 					Mult1 = Tmp1;
+					if (verbose > 1) {
+						std::cout << "K = " << K;
+						std::cout << " Mult1-4 = " << Mult1 << ", " << Mult2 << ", " << Mult3
+							<< ", " << Mult4 << '\n';
+					}
 					continue;
 				} /* end if K is even */
 
@@ -1029,7 +1200,12 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				Mult3 = Tmp3;
 				Mult2 = Tmp2;
 				Mult1 = Tmp1;
-			} /* end while */
+				if (verbose > 1) {
+					std::cout << "K = " << K;
+					std::cout << " Mult1-4 = " << Mult1 << ", " << Mult2 << ", " << Mult3 
+						<< ", " << Mult4 << '\n';
+				}
+			} /* end for */
 		} /* end if p = 3 (mod 4) */
 	} /* end prime not 2 */
 
@@ -1052,6 +1228,28 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 
 }
 
+/* find x, y such that x^2 + 2y^2 = s * 2^2r 
+Only call this if all prime factors of s of form 8i+5 or 8i+7 have even exponents!*/
+static void compute3squares(long long s, Znum quads[4]) {
+	long long s2, s3, r;
+	for (long long x = 0; ; x++) {
+		s2 = s - x * x;
+		if (s2 < 0)
+			break;
+		if ((s2 & 1) == 0)  /* if s2 is even */ {
+			s3 = s2 >> 1;    /* s3 = s2 / 2 */
+			if (isPerfectSquare(s3, r)) {
+				quads[0] = x;
+				quads[1] = quads[2] = r;
+				quads[3] = 0;
+				return;
+			}
+		}
+	}
+
+	abort();   /* should never get here!!! */
+}
+
 /* compute 3 values the squares of which add up to s * 2^2r, return values in quads */
 static void compute3squares(int r, const Znum &s, Znum quads[4], bool sqplustwosq) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
@@ -1065,34 +1263,20 @@ static void compute3squares(int r, const Znum &s, Znum quads[4], bool sqplustwos
 		return;
 	}
 
-	if (s > 100'000'000'000'000)
-		sqplustwosq = false;  /* for large numbers this search would take too long */
+	if (sqplustwosq && s <= LLONG_MAX) {
+		compute3squares(MulPrToLong(s), quads);
+		assert(s == quads[0] * quads[0] + quads[1] * quads[1] + quads[2] * quads[2]);
+		for (int ix = 0; ix <= 2; ix++)
+			mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
+		return;
+	}
+
 
 	/* loop till we find a suitable value of s3. */
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;
-		if (sqplustwosq)
-			if (isEven(s2)) {
-				s3 = s2 >> 1;    /* s3 = s2 / 2 */
-				if (isPerfectSquare(s3, r2)) {
-					quads[0] = x;
-					quads[1] = quads[2] = r2;
-					quads[3] = 0;
-					for (int ix = 0; ix <= 2; ix++)
-						mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
-					if (verbose > 1) {
-						std::cout << "s = " << s;
-						if (r > 0)
-							std::cout << " r = " << r;
-						std::cout << " a = " << quads[0] << ", b = " << quads[1] << ", c = " << quads[2] << '\n';
-					}
-					return;
-				}
-				else continue;
-			}
-			else continue;
-
+	
 		for (s3 = s2, m = 0; isEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
@@ -1166,14 +1350,13 @@ static void compute3squares(int r, const Znum &s, Znum quads[4], bool sqplustwos
 /* show that the number is the sum of 4 or fewer squares. See
 https://www.alpertron.com.ar/4SQUARES.HTM */
 /* uses the identity:
-(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
-								  + (aC-bD-cA+dB)² + (aD-dA+bC-cB)²
+(aÂ²+ bÂ²+ cÂ²+ dÂ²)*(AÂ²+ BÂ²+ CÂ²+ DÂ²) = (aA+bB+cC+dD)Â² + (aB-bA+cD-dC)Â²
+								  + (aC-bD-cA+dB)Â² + (aD-dA+bC-cB)Â²
 This allows us to find the sum of squares for each factor separately then combine them 
 If the number is a perfect square just return 1 value.
 If the number can be expressed as the sum of 2 squares return 2 values.
 If the number can be expressed as a square + twice a square, try to find 
-appropriate values. If the number has any very large prime factors this may not
-be practical. 
+appropriate values.  
 If the number can be expressed as the sum of 3 squares try to find appropriate values.
 For large numbers this may not be practical. 
 The fallback is to find 4 squares, if none of the above are feasible- */
@@ -1239,30 +1422,27 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 
 		/* compute 4 or less values the squares of which add up to prime pr,
 		return values in Mult[0], Mult[1], Mult[2] and Mult[3] */
-		if (sqplustwosq && pr < 100'000'000'000'000 && (pr % 8 == 1))
-			/* if possible, get 3 values 2 of which are equal. 
-			if pr = 1 (mod 8) 4squares would give 2 unequal values + two zeros, 
-			 but 3squares is too slow for very large factors */
-			compute3squares(0, pr, Mult, sqplustwosq); 
-		else
-			ComputeFourSquares(pr, Mult[0], Mult[1], Mult[2], Mult[3], sqplustwosq);
+		ComputeFourSquares(pr, Mult[0], Mult[1], Mult[2], Mult[3], sqplustwosq);
 		if (sqplustwosq) {
 			assert(Mult[3] == 0);
+			/* swap so that Mult[1] = Mult[2]. This ensures that when Mult is combined
+			 into quads we preserve the feature that quads[1] = quads[2] and quads[3] is zero */
 			if (Mult[0] == Mult[1])
 				Mult[0].swap(Mult[2]);
 			else if (Mult[0] == Mult[2])
 				Mult[0].swap(Mult[1]);
 			else if (Mult[1] != Mult[2]) {
 				std::cout << "** expected 2 of 3 values to be equal \n";
-				std::cout << "pr    = " << pr
-					<< "\nMult[0] = " << Mult[0]
-					<< "\nMult[1] = " << Mult[1]
-					<< "\nMult[2] = " << Mult[2]
-					<< "\nMult[3] = " << Mult[3] << '\n';
+				if (verbose <= 1)
+					std::cout << "pr    = " << pr
+						<< "\nMult[0] = " << Mult[0]
+						<< "\nMult[1] = " << Mult[1]
+						<< "\nMult[2] = " << Mult[2]
+						<< "\nMult[3] = " << Mult[3] << '\n';
 			}
 		}
+		assert(pr == Mult[0] * Mult[0] + Mult[1] * Mult[1] + Mult[2] * Mult[2] + Mult[3] * Mult[3]);
 		if (verbose > 1) {
-			assert(pr == Mult[0]*Mult[0] + Mult[1]*Mult[1] + Mult[2]*Mult[2] + Mult[3]*Mult[3]);
 			std::cout <<   "pr    = " << pr 
 				      << "\nMult[0] = " << Mult[0]
 					  << "\nMult[1] = " << Mult[1]
@@ -1271,15 +1451,15 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		}
 
 		/* use the identity:
-		(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
-		                                    + (aC-bD-cA+dB)² + (aD-dA+bC-cB)² 
+		(aÂ²+ bÂ²+ cÂ²+ dÂ²)*(AÂ²+ BÂ²+ CÂ²+ DÂ²) = (aA+bB+cC+dD)Â² + (aB-bA+cD-dC)Â²
+		                                    + (aC-bD-cA+dB)Â² + (aD-dA+bC-cB)Â² 
 		note: if twoSq is true, c, d, C, & D are zero. The expression then 
 		simplifies 	automatically to:  	
-		       (a²+b²)*(A²+B²) = (aA+bB)² + (aB-bA)² 
+		       (aÂ²+bÂ²)*(AÂ²+BÂ²) = (aA+bB)Â² + (aB-bA)Â² 
 			   
 		Also, if d =0, D = 0, b = c, and B = C we effectively get
-		(a²+ 2.b²)*(A²+ 2B²) = (aA+2bB)² + (aB-bA)²  + (aB-bA)² + (bB-bB)²
-                                  = (aA+2bB)² + 2(aB-bA)²  
+		(aÂ²+ 2.bÂ²)*(AÂ²+ 2BÂ²) = (aA+2bB)Â² + (aB-bA)Â²  + (aB-bA)Â² + (bB-bB)Â²
+                                  = (aA+2bB)Â² + 2(aB-bA)Â²  
 		This occurs when all odd prime factors of the form 8i+5 or 8i+7 
 		have even exponents,
 */
@@ -1294,7 +1474,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		quads[0] = Tmp1;
 	} 
 
-	 /* for factors that are perfect squares, multiply quads[0]-3 by sqrt(factor) */
+	 /* for factors that are perfect squares, multiply quads[0]-[3] by sqrt(factor) */
 	for (auto Factorx : factorlist.f) {
 		if (Factorx.exponent >= 2) {
 			mpz_pow_ui(ZT(Tmp1), ZT(Factorx.Factor), 

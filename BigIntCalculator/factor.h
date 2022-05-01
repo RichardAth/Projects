@@ -464,6 +464,8 @@ Repeated factors: No or Yes
 
 void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
 
+std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+
 extern int ElipCurvNo;            // Elliptic Curve Number
 
 void showECMStatus(void);

@@ -1101,7 +1101,13 @@ static void doTests(void) {
 	factortest(x3, testcnt);
 
 	testcnt++;
+	/* test reduction of number x3 to squares a^2 + 2*b^2 */
 	ComputeExpr("n(10^7)^2 + 2*n(3*10^6)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^64) to squares a^2 + 2*b^2 */
+	ComputeExpr("n(2^34)^2 + 2*n(2^34+200)^2", x3, asgCt);
 	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used

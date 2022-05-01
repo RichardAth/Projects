@@ -119,7 +119,7 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
-static std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
+std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &p) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
 	Znum c, t, R, b;
