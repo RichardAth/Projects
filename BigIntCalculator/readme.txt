@@ -490,10 +490,10 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
 
-   Added 5/6/2021
+ Added 5/6/2021
 
-   The 'engine'at the heart of the calculator was largely rewritten; 
-   It was divided into 3 parts:
+ The 'engine'at the heart of the calculator was largely rewritten; 
+ It was divided into 3 parts:
    1.   'Tokenise' all terms in the expression i.e. each number, operator, 
         Function name, bracket & comma is turned into a token. Also check that
         the opening and closing brackets pair up correctly.
@@ -507,3 +507,16 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
     3.  Calculate the value of the reverse polish sequence. If there is more than
         one number on the stack at the end, or at any time there are not enough
         numbers on the stack to perform an operation an error is reported.
+
+ Added July 2022
+
+ An interface to library part of PARI-GP was developed. I failed to get a working
+ version of the PARI library compiled using Visual Studio, so instead used the 
+ precompiled dll file. However this dll file was compiled using MSYS2 and GCC, 
+ so is not compatible with the Visual Studio linker. However, dynamic linking 
+ does work  but a separate function pointer for each libpari function used has 
+ to be set up.
+ So far this has been used to calculate the Hurwitz-Kronecker class number.
+ The PARI function is very fast, although the algorithm used is a bit mind-blowing.
+ A fast method to calculate R3 based on this has also been developed. (The original
+ method is desparately slow for numbers of any significant size)

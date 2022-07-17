@@ -104,6 +104,8 @@ enum class opCode {
 	fn_r2,
 	fn_r2p,
 	fn_r3,
+	fn_r3h,
+	fn_hurwitz,
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
@@ -167,11 +169,14 @@ const static struct functions functionList[]{
 	"B",         1,  opCode::fn_pp,			// previous prime
 	"R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
 	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+	"R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
+											// calculated using hurwitz class number
 	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  opCode::fn_jacobi,
 	"KR",		 2,  opCode::fn_kronecker,
 	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
 	"ISPOW",     1,  opCode::fn_ispow,
+	"HCLASS",    1,  opCode::fn_hurwitz,
 };
 
 /* list of operators.  */
@@ -1040,6 +1045,17 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 	case opCode::fn_r3: {
 		result = R3(p[0]);
+		break;
+	}
+	case opCode::fn_r3h: {
+		if (p[0] < 0 || p[0] > LONGLONG_MAX) {
+			return retCode::INVALID_PARAM;  // parameter out of range
+		}
+		result = R3h(MulPrToLong(p[0]));
+		break;
+	}
+	case opCode::fn_hurwitz: {
+		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
 		break;
 	}
 

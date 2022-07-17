@@ -847,6 +847,19 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 					<< "c= " << Quad[2] << '\n'
 					<< "d= " << Quad[3] << '\n';
 			}
+			else {
+				result = x3;
+				while (isEven(result)) result >>= 1;
+				if ((numLimbs(result) < 4) && ((result & 7) < 7)) {
+					if (Quad[3] != 0)
+						std::cout << "expected d= 0; got: \n"
+						<< "number = " << x3 << '\n'
+						<< "a= " << Quad[0] << '\n'
+						<< "b= " << Quad[1] << '\n'
+						<< "c= " << Quad[2] << '\n'
+						<< "d= " << Quad[3] << '\n';
+				}
+			}
 		}
 	}
 
@@ -1108,6 +1121,16 @@ static void doTests(void) {
 	testcnt++;
 	/* test reduction of mumber x3 (> 2^64) to squares a^2 + 2*b^2 */
 	ComputeExpr("n(2^34)^2 + 2*n(2^34+200)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^64) to squares a^2 + 2*b^2 */
+	ComputeExpr("n(10^27)^2 + 2*n(10^32)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^192) to squares  */
+	ComputeExpr("n(10^20+477)*n(10^24)*n(10^22)", x3, asgCt);
 	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used

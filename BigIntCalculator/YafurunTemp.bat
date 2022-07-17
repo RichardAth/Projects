@@ -1,3 +1,3 @@
 pushd C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
-yafu-x64.exe factor(6427752177035961102167848373630136223531775382492390539399167) -p -of C:/users/admin99/factors.txt
+yafu-x64.exe factor(1000000000000000005470907000000000000004961296300000000000000034461) -p -v -v -of C:/users/admin99/factors.txt
 popd 

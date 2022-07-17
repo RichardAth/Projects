@@ -112,6 +112,11 @@ R2P(n)          : Number of ways n can be expressed as the sum of x² + y².
                   25 = 5²+0 = 3²+4² so R2P(25) = 2
 R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
                   (order and sign of x and y are significant)
+R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
+                  (much faster)
+HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
+                  n < 2^64. The true HCLASS is not always an integer, but multiplying
+                  by 12 always yields an integer.
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
 JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
                   of p, otherwise it is one if there is a solution of x² = a (mod p) 
