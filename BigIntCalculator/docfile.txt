@@ -1,4 +1,4 @@
-[HELP]
+ï»¿[HELP]
 This a big integer calculator and a factorisation program. Start by entering
 an expression which will be evaluated and the resulting value will normally 
 be factorised. e.g
@@ -8,7 +8,7 @@ be factorised. e.g
      = 2722 258935 367507 707706 996859 454145 691647 (40 digits)  <<< result
      = 263 * 10 350794 431055 162386 718619 237468 234569          <<< factors  
 
-The sum of divisors, number of divisors, möbius  & totient are also displayed; 
+The sum of divisors, number of divisors, mÃ¶bius  & totient are also displayed; 
 they are easy to calculate once the factors are known.
 Any number can be expressed as the sum of 4 or fewer squares. Usually there are
 many ways of doing this. One way is displayed.
@@ -76,10 +76,10 @@ Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
-BPSW(n)         : Baillie–PSW primality test. It returns zero if n is composite, 
+BPSW(n)         : Baillieâ€“PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
                   considered to be 100% reliable for numbers up to 10000 digits
-APRCL(n)        : Adleman–Pomerance–Rumely primality test. returns zero if n is 
+APRCL(n)        : Adlemanâ€“Pomeranceâ€“Rumely primality test. returns zero if n is 
                   composite, 1 for probable prime (only if BPSW used), 2 for 
                   definite prime. WARNING: very slow for large numbers 
                   e.g. 20s for 400 digits
@@ -104,28 +104,30 @@ FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the
                   1       Descending          No
                   2       Ascending           Yes
                   3       Descending          Yes
-R2(n)           : Number of ways n can be expressed as the sum of x² + y².  
+R2(n)           : Number of ways n can be expressed as the sum of xÂ² + yÂ².  
                   (order and sign of x and y are significant)
-R2P(n)          : Number of ways n can be expressed as the sum of x² + y².  
+R2P(n)          : Number of ways n can be expressed as the sum of xÂ² + yÂ².  
                   (ignoring order and signs) 
-                  e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
-                  25 = 5²+0 = 3²+4² so R2P(25) = 2
-R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
+                  e.g. 325 = 18Â²+1 = 17Â²+6Â² = 10Â²+15Â² so R2P(325) = 3
+                  25 = 5Â²+0 = 3Â²+4Â² so R2P(25) = 2
+R3(n)           : Number of ways n can be expressed as the sum of xÂ² + yÂ² + zÂ². 
                   (order and sign of x and y are significant)
 R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
                   (much faster)
 HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
-                  n < 2^64. The true HCLASS is not always an integer, but multiplying
-                  by 12 always yields an integer.
+                  n < 10^24. The true HCLASS is not always an integer, but 
+                  multiplying by 12 always yields an integer.
+QCLASSNO(n)     : class number. This is only defined if n â‰¡ 0 or 1 mod 4 and n is
+                  not a perfect square.
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
 JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
-                  of p, otherwise it is one if there is a solution of x² = a (mod p) 
+                  of p, otherwise it is one if there is a solution of xÂ² = a (mod p) 
                   and it is -1 when the congruence has no solution. 
                   Extension of Legendre to all odd values of p.
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
-MODSQRT(a, p)   : returns r such that r² = a (mod p). If no solution exists an error
+MODSQRT(a, p)   : returns r such that rÂ² â‰¡ a (mod p). If no solution exists an error
                   is reported. Generally there is more than 1 solution in the range 0 
                   to p-1, but only the smallest positive solution is returned.
 PRIMROOT(a)     : returns smallest primitive root of a if there is one. Primitive 
@@ -144,7 +146,7 @@ F n  : control factorisation,
        n = 1 : evaluate expression, factorise resulting value, but don't do no. of
                divisors, etc.
        n = 2 : evaluate expression, factorise resulting value, then get no. of 
-               divisors, sum of divisors, totient, möbius, sum of squares.
+               divisors, sum of divisors, totient, mÃ¶bius, sum of squares.
        initial setting is n = 2.
 S    : switch to Spanish, 
 E    : switch to English
@@ -318,47 +320,47 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac tdv prh leh c
    msv: the number of factors found using msieve
 
 [AYUDA]
-Puedes ingresar expresiones que usen los siguientes operadores y paréntesis:
-^ o ** para exponenciación(el exponente debe ser mayor o igual que cero).
-* para multiplicación
-/ para división entera
-% para el resto de la división entera
+Puedes ingresar expresiones que usen los siguientes operadores y parÃ©ntesis:
+^ o ** para exponenciaciÃ³n(el exponente debe ser mayor o igual que cero).
+* para multiplicaciÃ³n
+/ para divisiÃ³n entera
+% para el resto de la divisiÃ³n entera
 + para suma
 - para resta
 SHL o <<: Desplazar a la izquierda la cantidad de bits indicada en el operando derecho.
 SHR o >>: Desplazar a la derecha la cantidad de bits indicada en el operando derecho.
 <, ==, >, <=, >=, != para comparaciones.Los operadores devuelven cero si es falso 
         y - 1 si es verdadero.
-AND, OR, XOR, NOT para lógica binaria.
+AND, OR, XOR, NOT para lÃ³gica binaria.
 n!   : factorial(n debe ser mayor o igual que cero).
 p#   : primorial(producto de todos los primos menores o iguales a p).
-B(n) : Número probablemente primo anterior a n
-F(n) : Número de Fibonacci Fn
-L(n) : Número de Lucas Ln = F(n-1) + F(n+1)
-N(n) : Número probablemente primo posterior a n
-P(n) : particiones irrestrictas(cantidad de descomposiciones de n en sumas de números 
+B(n) : NÃºmero probablemente primo anterior a n
+F(n) : NÃºmero de Fibonacci Fn
+L(n) : NÃºmero de Lucas Ln = F(n-1) + F(n+1)
+N(n) : NÃºmero probablemente primo posterior a n
+P(n) : particiones irrestrictas(cantidad de descomposiciones de n en sumas de nÃºmeros 
        enteros sin tener en cuenta e orden).
-Gcd(m, n)       : Máximo común divisor de estos dos números enteros.
-Modinv(m, n)    : inverso de m modulo n, sólo válido cuando gcd(m, n) = 1.
-Modpow(m, n, r) : halla m^n módulo r.
+Gcd(m, n)       : MÃ¡ximo comÃºn divisor de estos dos nÃºmeros enteros.
+Modinv(m, n)    : inverso de m modulo n, sÃ³lo vÃ¡lido cuando gcd(m, n) = 1.
+Modpow(m, n, r) : halla m^n mÃ³dulo r.
 Totient(n)      : cantidad de enteros positivos menores que n coprimos con n.
-Ja(m,n)         : obtiene el símbolo de Jacobi de m y n. Cuando el segundo argumento
-                  es primo, el resultado es cero si m es múltiplo de n, es uno si hay
-                  una solución a x² = m (mód n) y es igual a -1 cuando la congruencia
+Ja(m,n)         : obtiene el sÃ­mbolo de Jacobi de m y n. Cuando el segundo argumento
+                  es primo, el resultado es cero si m es mÃºltiplo de n, es uno si hay
+                  una soluciÃ³n a xÂ² = m (mÃ³d n) y es igual a -1 cuando la congruencia
                   mencionada no tiene soluciones.
 IsPrime(n)      : returna cero si n no es un primo probable y - 1 si lo es.
 NumDivs(n)      : cantidad de divisores positivos de n primos o compuestos.
 SumDivs(n)      : suma de divisores positivos de n primos o compuestos.
-NumDigits(n, r) : cantidad de dígitos de n en base r.
-SumDigits(n, r) : suma de dígitos de n en base r.
-RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrás los dígitos 
+NumDigits(n, r) : cantidad de dÃ­gitos de n en base r.
+SumDigits(n, r) : suma de dÃ­gitos de n en base r.
+RevDigits(n, r) : halla el valor que se obtiene escribiendo para atrÃ¡s los dÃ­gitos 
                   de n en base r.
-Sqrt(n)         : parte entera de la raíz cuadrada del argumento
+Sqrt(n)         : parte entera de la raÃ­z cuadrada del argumento
 NumFact(n)      : cantidad de factores primos distintos de n. Ejemplo: NumFact(28) = 2 
                   porque los factores primos son 2 y 7
-MinFact(n)      : mínimo factor primo de n. Ejemplo: MinFact(28) = 2 porque los 
+MinFact(n)      : mÃ­nimo factor primo de n. Ejemplo: MinFact(28) = 2 porque los 
                   factores primos son 2 y 7.
-MaxFact(n)      : máximo factor primo de n. Ejemplo: MaxFact(28) = 7 porque los 
+MaxFact(n)      : mÃ¡ximo factor primo de n. Ejemplo: MaxFact(28) = 7 porque los 
                   factores primos son 2 y 7.
 
 [BACKGROUND]

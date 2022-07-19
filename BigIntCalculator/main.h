@@ -53,5 +53,6 @@ int jacobi(const Znum& k, const Znum& n);
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
 Znum             modMult(const Znum& a, const Znum& b, Znum mod);
 
-unsigned __int64 R3h(__int64 n);
+unsigned __int64 R3h(Znum n);
 Znum Hclassno12(const Znum& n);
+Znum classno(const Znum& n, int flag);

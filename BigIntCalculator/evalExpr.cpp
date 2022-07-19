@@ -106,6 +106,7 @@ enum class opCode {
 	fn_r3,
 	fn_r3h,
 	fn_hurwitz,
+	fn_classno,
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
@@ -176,7 +177,8 @@ const static struct functions functionList[]{
 	"KR",		 2,  opCode::fn_kronecker,
 	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
 	"ISPOW",     1,  opCode::fn_ispow,
-	"HCLASS",    1,  opCode::fn_hurwitz,
+	"HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
+	"QCLASSNO",   1,  opCode::fn_classno,    // class number
 };
 
 /* list of operators.  */
@@ -1048,14 +1050,25 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		break;
 	}
 	case opCode::fn_r3h: {
-		if (p[0] < 0 || p[0] > LONGLONG_MAX) {
+		if (p[0] < 0) {
 			return retCode::INVALID_PARAM;  // parameter out of range
 		}
-		result = R3h(MulPrToLong(p[0]));
+		result = R3h((p[0]));
 		break;
 	}
 	case opCode::fn_hurwitz: {
 		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
+		break;
+	}
+	case opCode::fn_classno: {
+		int mod = MulPrToLong(p[0] % 4);
+		if (mod < 0)
+			mod += 4;
+		if (mod > 1)
+			return retCode::INVALID_PARAM;
+		if (isPerfectSquare(p[0]))
+			return retCode::INVALID_PARAM;
+		result = classno(p[0], 0);  /* returns class number */
 		break;
 	}
 

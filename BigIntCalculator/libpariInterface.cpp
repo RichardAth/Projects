@@ -39,6 +39,10 @@ typedef GEN(__cdecl* logX)(GEN x, int64_t prec);  /* GEN glog(GEN x, int64_t pre
 typedef char* (__cdecl* GENtostrX)(GEN x);        /* char*   GENtostr(GEN x);*/
 typedef GEN(__cdecl* utoiposX)(ulong x);     /* GEN utoipos(ulong x)*/
 typedef GEN(__cdecl* utoinegX)(ulong x);
+typedef GEN(__cdecl* floorrX)(GEN x);    /* GEN floorr(GEN x)*/
+typedef GEN(__cdecl* cgetiposX)(int64_t x); /* GEN    cgetipos(int64_t x);*/
+typedef GEN(__cdecl* cgetinegX)(int64_t x);
+typedef GEN(__cdecl* qfbclassnox)(GEN x, int64_t flag);  /* GEN     qfbclassno0(GEN x,int64_t flag);*/
 
 HINSTANCE hinstLib;
 
@@ -70,6 +74,11 @@ static logX              log_ref;
 static GENtostrX         GENtostr_ref;
 static utoiposX          utoipos_ref;
 static utoinegX          utoineg_ref;
+static floorrX           floorr_ref;
+static cgetiposX         cgetipos_ref;
+static cgetinegX         cgetineg_ref;
+static qfbclassnox       qfbclassno_ref;
+
 
 /* pari library functions are accessed in this way because linking statically to
 libpari.dll doesn't work, presumably because it was compiled with Msys2/gcc and
@@ -117,6 +126,10 @@ static void specinit()
         utoipos_ref = (utoiposX)GetProcAddress(hinstLib, "utoipos");
         utoineg_ref = (utoinegX)GetProcAddress(hinstLib, "utoineg");
         GENtostr_ref = (GENtostrX)GetProcAddress(hinstLib, "GENtostr");
+        floorr_ref = (floorrX)GetProcAddress(hinstLib, "floorr");
+        cgetipos_ref = (cgetiposX)GetProcAddress(hinstLib, "cgetipos");
+        cgetineg_ref = (cgetinegX)GetProcAddress(hinstLib, "cgetineg");
+        qfbclassno_ref =(qfbclassnox)GetProcAddress(hinstLib, "qfbclassno0");
 
         /* check that all function pointers were set up successfully */
         if (nullptr == pari_init_ref ||
@@ -143,7 +156,11 @@ static void specinit()
             nullptr == utoipos_ref ||
             nullptr == utoineg_ref ||
             nullptr == GENtostr_ref ||
-            nullptr == hclassno6u_ref) {
+            nullptr == floorr_ref ||
+            nullptr == cgetipos_ref ||
+            nullptr == cgetineg_ref ||
+            nullptr == hclassno6u_ref ||
+            nullptr == qfbclassno_ref) {
             fRunTimeLinkSuccess = false;
             std::cerr << "dynamic linking failed \n";
             system("PAUSE");
@@ -234,9 +251,28 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
         return;
     }
     case t_REAL: {
-        val_d = (rtodbl_ref)(x);
-        mpz_set_d(value, val_d); /* integer part of val_d copied to value */
+        GEN xi = (floorr_ref)(x);   /* xi = integer part of x*/
+        int64_t s = signe(xi);
+        int64_t i, lx = lgefint(xi);
         mpz_set_ui(denom, 1);
+
+        /* convert (GEN)xi to (mpz_t)value */
+        if (s == 0) {
+            mpz_set_ui(value, 0);
+        }
+        else {
+            mpz_set_ui(value, 0);   /* value = 0 */
+            int64_t* y = xi + lx - 1;  /* y points to most significant word of xi */
+            for (i = 2; i < lx; i++, y--) {
+                mpz_mul_2exp(value, value, 64); /* move more significant bits left 64 bits*/
+                mpz_add_ui(value, value, *y);   /* add next 64-bit limb */
+            }
+            if (s < 0)
+                mpz_neg(value, value);  /* if xi  is -ve, flip sign */
+        }
+
+        val_d = (rtodbl_ref)(x);  /* also convert x to normal floating point */
+
         return;
     }
     default:
@@ -244,15 +280,31 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
     }
 }
 
-/* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting.
-a version that handles n > 64 bits could be developed but could be slow even
-using libpari.*/
-ulong R3h(int64_t n) {
+/* convert mpz_t to GEN */
+GEN MPtoGEN(const mpz_t num) {
+    ptrdiff_t numlimbs = (mpz_size(num));
+    GEN rv;
+    if (numlimbs == 0) {
+        rv = (utoipos_ref)(0);  /* num = 0 */
+        return rv;
+    }
+    if (mpz_sgn(num) < 0)
+        rv = (cgetineg_ref)(numlimbs + 2);
+    else
+        rv = (cgetipos_ref)(numlimbs + 2);
+    for (int i = 0; i < numlimbs; i++)
+        rv[i + 2] = num->_mp_d[i];  /* copy limbs from num to rv */
+    return rv;
+}
+
+/* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting. 
+assume that R3(n) < 2^64 */
+uint64_t R3h(Znum n) {
     mpz_t num, denom, result;
     mpz_inits(num, denom, result, nullptr);
     double hxd;
     GEN x, hx;
-    int64_t r;
+    uint64_t r;
 
     if (fRunTimeLinkSuccess == false)
         specinit();
@@ -263,15 +315,18 @@ ulong R3h(int64_t n) {
     while ((n & 3) == 0)
         n >>= 2;  /* if n is a multiple of 4, divide n by 4*/
 
+    int mod = (int)MulPrToLong(n & 7);
+
     /* note that in general h(n) may not be an integer. hclassno returns num and
     denom and the ratio is the class number */
-    switch (n & 7) {
+    switch (mod) {
     case 1:  /* n%4 = 1 or 2 */
     case 2:
     case 5:
     case 6: {
         /* get 12 * h(4n) */
-        x = (utoipos_ref)(4 * n);
+        Znum n4 = n * 4;
+        x = MPtoGEN(ZT(n4));
         hx = (hclassno_ref)(x);
         GENtoMP(hx, num, denom, hxd);    /* convert hx from GEN to mpz_t */
         mpz_mul_ui(result, num, 12);
@@ -283,7 +338,7 @@ ulong R3h(int64_t n) {
 
     case 3:  /* n%8 = 3 */
         /* get 24 * h(n) */
-        x = (utoipos_ref)(n);
+        x = MPtoGEN(ZT(n));
         hx = (hclassno_ref)(x);
         GENtoMP(hx, num, denom, hxd);
         mpz_mul_ui(result, num, 24);     /* result = num * 24 */
@@ -302,17 +357,30 @@ ulong R3h(int64_t n) {
 
 /* get Hurwitz class number * 12 */
 Znum Hclassno12(const Znum &n) {
-    int64_t in = MulPrToLong(n);
+
     double rvd;
     Znum num, denom;
 
     if (fRunTimeLinkSuccess == false)
         specinit();
 
-
-    GEN ig = (utoipos_ref)(in);
-    GEN retval = (hclassno_ref)(ig);
+    GEN ng = MPtoGEN(ZT(n));
+    GEN retval = (hclassno_ref)(ng);
     GENtoMP(retval, ZT(num), ZT(denom), rvd);
     return (num * 12) / denom;
+}
 
+/* get class number flag = 0 for Shanks method, 1 to use Euler products */
+Znum classno(const Znum& n, int flag) {
+    double rvd;
+    Znum num, denom;
+
+    if (fRunTimeLinkSuccess == false)
+        specinit();
+
+    GEN ng = MPtoGEN(ZT(n));
+    /* flag = 0 for Shanks method, 1 to use Euler products */
+    GEN retval = (qfbclassno_ref)(ng, flag);
+    GENtoMP(retval, ZT(num), ZT(denom), rvd);
+    return num / denom;
 }
