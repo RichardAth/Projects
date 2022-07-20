@@ -43,6 +43,8 @@ typedef GEN(__cdecl* floorrX)(GEN x);    /* GEN floorr(GEN x)*/
 typedef GEN(__cdecl* cgetiposX)(int64_t x); /* GEN    cgetipos(int64_t x);*/
 typedef GEN(__cdecl* cgetinegX)(int64_t x);
 typedef GEN(__cdecl* qfbclassnox)(GEN x, int64_t flag);  /* GEN     qfbclassno0(GEN x,int64_t flag);*/
+typedef ulong** avmaX;
+typedef void(__cdecl* set_avmaX)(ulong av);  /* void   set_avma(ulong av);*/
 
 HINSTANCE hinstLib;
 
@@ -78,7 +80,8 @@ static floorrX           floorr_ref;
 static cgetiposX         cgetipos_ref;
 static cgetinegX         cgetineg_ref;
 static qfbclassnox       qfbclassno_ref;
-
+static avmaX             avma_ref;
+static set_avmaX         set_avma_ref;
 
 /* pari library functions are accessed in this way because linking statically to
 libpari.dll doesn't work, presumably because it was compiled with Msys2/gcc and
@@ -130,6 +133,9 @@ static void specinit()
         cgetipos_ref = (cgetiposX)GetProcAddress(hinstLib, "cgetipos");
         cgetineg_ref = (cgetinegX)GetProcAddress(hinstLib, "cgetineg");
         qfbclassno_ref =(qfbclassnox)GetProcAddress(hinstLib, "qfbclassno0");
+        avma_ref = (avmaX)GetProcAddress(hinstLib, "avma");
+        set_avma_ref = (set_avmaX)GetProcAddress(hinstLib, "set_avma");
+
 
         /* check that all function pointers were set up successfully */
         if (nullptr == pari_init_ref ||
@@ -160,7 +166,9 @@ static void specinit()
             nullptr == cgetipos_ref ||
             nullptr == cgetineg_ref ||
             nullptr == hclassno6u_ref ||
-            nullptr == qfbclassno_ref) {
+            nullptr == qfbclassno_ref ||
+            nullptr == avma_ref ||
+            nullptr == set_avma_ref) {
             fRunTimeLinkSuccess = false;
             std::cerr << "dynamic linking failed \n";
             system("PAUSE");
@@ -171,8 +179,10 @@ static void specinit()
 
         (pari_init_ref)(8000000, 500000);  /* stack size, maxprime */
 
-         if (verbose >0)
+        if (verbose > 0) {
             (pari_print_version_ref)();  /* print some info from libpari dll */
+            printf("avma = %p\n", *avma_ref);
+        }
     }
 }
 
@@ -308,6 +318,7 @@ uint64_t R3h(Znum n) {
 
     if (fRunTimeLinkSuccess == false)
         specinit();
+    ulong* av = *avma_ref;
 
     if (n == 0)
         return 1;   /* easiest to make n = 0 a special case*/
@@ -332,8 +343,8 @@ uint64_t R3h(Znum n) {
         mpz_mul_ui(result, num, 12);
         mpz_div(result, result, denom);  /* get 12*h(n) */
         r = mpz_get_ui(result);
-        mpz_clears(num, denom, result, nullptr);
-        return r;            /* return result */
+        break;
+ 
     }
 
     case 3:  /* n%8 = 3 */
@@ -344,8 +355,7 @@ uint64_t R3h(Znum n) {
         mpz_mul_ui(result, num, 24);     /* result = num * 24 */
         mpz_div(result, result, denom);  /* result =(num * 24)/denom  = 24*h(n)  */
         r = mpz_get_ui(result);
-        mpz_clears(num, denom, result, nullptr);
-        return r;
+        break;
 
     case 7:  /* n%8 = 7 */
         return 0;
@@ -353,9 +363,17 @@ uint64_t R3h(Znum n) {
     default:   /* n%8 = 0 or 4 */
         abort();   /* should never happen */
     }
+
+    mpz_clears(num, denom, result, nullptr);
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
+    return r;            /* return result */
 }
 
-/* get Hurwitz class number * 12 */
+/* get Hurwitz class number * 12. The Hurwitz class number is not always an integer
+but h(n) * 12 always is. */
 Znum Hclassno12(const Znum &n) {
 
     double rvd;
@@ -363,11 +381,18 @@ Znum Hclassno12(const Znum &n) {
 
     if (fRunTimeLinkSuccess == false)
         specinit();
+    ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     GEN retval = (hclassno_ref)(ng);
     GENtoMP(retval, ZT(num), ZT(denom), rvd);
-    return (num * 12) / denom;
+
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
+
+    return (num * 12) / denom;  /* division is always exact; remainder = 0 */
 }
 
 /* get class number flag = 0 for Shanks method, 1 to use Euler products */
@@ -377,10 +402,15 @@ Znum classno(const Znum& n, int flag) {
 
     if (fRunTimeLinkSuccess == false)
         specinit();
+    ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     /* flag = 0 for Shanks method, 1 to use Euler products */
     GEN retval = (qfbclassno_ref)(ng, flag);
     GENtoMP(retval, ZT(num), ZT(denom), rvd);
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
     return num / denom;
 }

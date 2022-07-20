@@ -956,7 +956,7 @@ static void doTests(void) {
 		"sumdigits(123456789, 6)",         19,
 		"revdigits(1234567890, 10)",  987654321, 
 		"factconcat(2, 11!)", 22222222333355711,
-		"le(22, 7)",                        1,
+		"le(22, 7)",                        1,    /* legendre */
 		"17c7",                         19448,    // binomial coefficient
 		"(17!) / ((17-7)!*7!)",         19448,
 		"4 ^ 3 ^ 2",                   262144,    // NB expoentiation is right to left evaluation
@@ -973,6 +973,7 @@ static void doTests(void) {
 		"5 < 6 != 7 < 8",                 0,   // returns false (!= has lower priority)
 		"5 < (6 != 7) < 8",              -1,   // returns true; expr evaluated from left to right
 		"R3(49)",                        54,
+		"R3H(49)",                       54,
 		"R2(585)",                       16,
 		"SQRT(1234320)",               1110,
 		"NROOT(2861381721051424,5)",   1234,
@@ -1000,6 +1001,8 @@ static void doTests(void) {
 		"lcm(12,20)",                     60,
 		"pi(500)",                        95,
 		"primroot(761)",                   6,   /* primitive root */
+		"hclass(999)",                   384,   /* hurwitz class number*/
+		"classno(1000001)",               94,   /* class number */
 	};
 
 	results.clear();

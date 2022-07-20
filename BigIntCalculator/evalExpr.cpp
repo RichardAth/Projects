@@ -133,7 +133,7 @@ struct  functions {
 	opCode  fCode;        // integer code for function
 };
 
-/* list of function names. No function name can begin with C, SHL, SHR, NOT, 
+/* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operator. 
  Longer names must come before short ones that start with the same letters to 
  avoid mismatches */
@@ -178,7 +178,7 @@ const static struct functions functionList[]{
 	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
 	"ISPOW",     1,  opCode::fn_ispow,
 	"HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
-	"QCLASSNO",   1,  opCode::fn_classno,    // class number
+	"CLASSNO",   1,  opCode::fn_classno,    // class number
 };
 
 /* list of operators.  */
@@ -1057,17 +1057,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		break;
 	}
 	case opCode::fn_hurwitz: {
+		if (mpz_sizeinbase(ZT(p[0]), 10) >28)
+			return retCode::NUMBER_TOO_HIGH;
 		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
 		break;
 	}
 	case opCode::fn_classno: {
-		int mod = MulPrToLong(p[0] % 4);
+		int mod = (int)MulPrToLong(p[0] % 4);
 		if (mod < 0)
 			mod += 4;
 		if (mod > 1)
 			return retCode::INVALID_PARAM;
 		if (isPerfectSquare(p[0]))
 			return retCode::INVALID_PARAM;
+		if  (p[0] > 730000000)
+			return retCode::NUMBER_TOO_HIGH;  /* avoid pari-stack overflow */
 		result = classno(p[0], 0);  /* returns class number */
 		break;
 	}
@@ -1401,7 +1405,10 @@ static void operSearch(const std::string &expr, int &opcode) {
 		/* use case-insensitive compare */
 		if (_strnicmp(expr.data(), operators[ix].oper, strlen(operators[ix].oper)) == 0) {
 			opcode = ix;
-			return;
+			if (operators[ix].operCode == opCode::comb && isalpha(expr[1]))
+				break;  /* if 'C' in expr is followed by another letter it can't be the C operator */
+			else
+				return;
 		}
 	}
 	opcode = -1;  // does not match any operator in list
@@ -1855,7 +1862,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 				exprIndex = exprIndexAux + 1;
 			}
 
-			else {                   // Decimal number.
+			else  /* Decimal number. */ { 
 				std::vector<char> digits;
 				while (exprIndexAux < expr.length()) {
 					// find position of last digit
@@ -1877,8 +1884,8 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 			}
 		}
 
+        /* try to match function name. Names are not case-sensitive */
 		else {
-			/* try to match function name. Names are not case-sensitive */
 			for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
