@@ -56,3 +56,5 @@ Znum             modMult(const Znum& a, const Znum& b, Znum mod);
 unsigned __int64 R3h(Znum n);
 Znum Hclassno12(const Znum& n);
 Znum classno(const Znum& n, int flag);
+Znum tau(const Znum& n);
+Znum stirling(const Znum& n, const Znum& m, const Znum& flag);

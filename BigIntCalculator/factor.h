@@ -47,7 +47,7 @@ class zFactors {
 public:
 	Znum Factor;
 	int exponent;
-	int upperBound;    /* used during trial division to show how far we've got. 
+	int upperBound=0;    /* used during trial division to show how far we've got. 
 						-1 indicats that Factor is prime */
 	/* define all comparison operators */
 	bool operator == (const zFactors &b) const {

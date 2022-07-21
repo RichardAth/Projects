@@ -265,7 +265,7 @@ A typical file looks like:
  Use DA's web page.
  Advantage:     ready to use, no installation, possibility to split calculation over
                 several processors, possible to use any previously known factors.
- Disadvantage:  some bugs in calculator. No way to interface to other programs
+ Disadvantage:  No way to interface to other programs. 
 
  Use Msieve directly
  Advantage:	     It's faster. For a 94 digit Mersenne number 2^311-1 it took
@@ -282,6 +282,14 @@ Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number
                  https://www.mersenneforum.org/attachment.php?attachmentid=22535&d=1591570404
                  https://mersenneforum.org/showthread.php?t=25304
                  or https://download.mersenne.ca/
+
+use PARI-GP     VERY rich set of functions. This is much more than just an integer calculator.
+                To understand PARI-GP fully, you need to be an expert mathematician. Hwever
+                it is quite possible to use the parts you do understand without mastering
+                the other features.
+                Factorisation not as fast as YAFU. 
+                I would recommend downloading a precompiled version rather than attempting to 
+                build it from source.
 
  Use Python interpreter
  Advantages:    very easy to install. 

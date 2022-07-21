@@ -110,6 +110,8 @@ enum class opCode {
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
+	fn_tau,
+	fn_stirling,
 	fn_llt,
 	fn_sqrt,              /* square root */
 	fn_nroot,             /* nth root */
@@ -179,6 +181,8 @@ const static struct functions functionList[]{
 	"ISPOW",     1,  opCode::fn_ispow,
 	"HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
 	"CLASSNO",   1,  opCode::fn_classno,    // class number
+	"TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
+	"STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
 };
 
 /* list of operators.  */
@@ -1081,6 +1085,18 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	case opCode::fn_jacobi:
 	case opCode::fn_kronecker: {
 		result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
+		break;
+	}
+	case opCode::fn_tau: {
+		result = tau(p[0]); /* Ramanujan's tau function */
+		break;
+	}
+	case opCode::fn_stirling: {
+		if (p[0] < 0 || p[1] < 0 || p[2] < 1 || p[2]> 2)
+			return retCode::INVALID_PARAM;
+		if (p[0] > LONGLONG_MAX || p[1] > LONGLONG_MAX)
+			return retCode::NUMBER_TOO_HIGH;
+		result = stirling(p[0], p[1], p[2]);
 		break;
 	}
 

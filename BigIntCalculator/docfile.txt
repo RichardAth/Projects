@@ -120,6 +120,9 @@ HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
 CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
                   not a perfect square. For +ve n, n must be < 730,000,000 to avoid
                   pari stack overflow.
+TAU(x)          : Ramanujan's tau function
+STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
+                  if f = 2, return the Stirling number of the second kind S(n,k).
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
 JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
                   of p, otherwise it is one if there is a solution of x² = a (mod p) 
