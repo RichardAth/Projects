@@ -1,75 +1,105 @@
 #include "pch.h"
 #include <windows.h>
-#include "pari.h"
+//#include "pari.h"
+
+/* stuff below copied from pari headers, to avoid including humungous pari.h etc*/
+typedef long long* GEN;
+typedef unsigned long long ulong;
+
+#define BITS_IN_LONG 64
+#define TYPnumBITS   7
+#define SIGNnumBITS  2
+#define   LGnumBITS (BITS_IN_LONG - 1 - TYPnumBITS)
+#define TYPSHIFT (BITS_IN_LONG - TYPnumBITS)
+#define SIGNSHIFT (BITS_IN_LONG - SIGNnumBITS)
+#define LGBITS      ((1ULL<<LGnumBITS)-1)
+#define typ(x)        ((int64_t)(((ulong)((x)[0])) >> TYPSHIFT))
+#define signe(x)      (((int64_t)((x)[1])) >> SIGNSHIFT)
+#define lgefint(x)      ((int64_t)(((ulong)((x)[1])) & LGBITS))
+#define gmael1(m,x1)             (((GEN*)    (m))[x1])
+#define gel(m,x)     gmael1(m,x)
+
+enum {
+    t_INT = 1,
+    t_REAL = 2,
+    t_INTMOD = 3,
+    t_FRAC = 4,
+    t_FFELT = 5,
+    t_COMPLEX = 6,
+    t_PADIC = 7,
+    t_QUAD = 8,
+    t_POLMOD = 9,
+    t_POL = 10,
+    t_SER = 11,
+    t_RFRAC = 13,
+    t_QFR = 15,
+    t_QFI = 16,
+    t_VEC = 17,
+    t_COL = 18,
+    t_MAT = 19,
+    t_LIST = 20,
+    t_STR = 21,
+    t_VECSMALL = 22,
+    t_CLOSURE = 23,
+    t_ERROR = 24,
+    t_INFINITY = 25
+};
+/* end of stuff from pari headers */
 
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool fRunTimeLinkSuccess = false;
 
 /* typedefs for access to libpari functions */
-typedef    void(__cdecl* pari_initX)(size_t parisize, ulong maxprime);    /*void    pari_init(size_t parisize, ulong maxprime);*/
-typedef    void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
-typedef int64_t(__cdecl* pari_stack_newX)(pari_stack* s);
-typedef    void(__cdecl* pari_init_optsX)(size_t parisize, ulong maxprime, ulong init_opts);
-typedef    void(__cdecl* pari_init_primesX)(ulong maxprime);
-typedef   ulong(__cdecl* hclassno6uX)(ulong D);   /* ulong hclassno6u(ulong D)*/
-typedef     GEN(__cdecl* hclassnoX)(GEN x);        /* GEN     hclassno(GEN x);*/
-
-typedef GEN(__cdecl* addiiX)(GEN x, GEN y);   /* GEN addii(GEN x, GEN y) etc*/
-typedef GEN(__cdecl* subiiX)(GEN x, GEN y);
-typedef GEN(__cdecl* muliiX)(GEN x, GEN y);
-typedef GEN(__cdecl* dvmdiiX)(GEN x, GEN y, GEN* z);
-typedef int(__cdecl* invmodX)(GEN a, GEN b, GEN* res);  /* int  invmod(GEN a, GEN b, GEN *res); */
-/* GEN    itor(GEN x, int64_t prec); */
-typedef GEN(__cdecl* itorX)(GEN x, int64_t prec);
-/* double  rtodbl(GEN x); */
-typedef double(__cdecl* rtodblX)(GEN x);
-/* GEN     dbltor(double x); */
-typedef GEN(__cdecl* dbltorX)(double x);
-/* GEN    addrr(GEN x, GEN y); etc */
-typedef GEN(__cdecl* addrrX) (GEN x, GEN y);
-typedef GEN(__cdecl* subrrX) (GEN x, GEN y);
-typedef GEN(__cdecl* mulrrX) (GEN x, GEN y);
-typedef GEN(__cdecl* divrrX) (GEN x, GEN y);
-typedef GEN(__cdecl* divruX) (GEN x, ulong y);
-typedef void(__cdecl* pari_print_versionX)(void);   /* void pari_print_version(void)*/
-//typedef pari_mainstack* (__cdecl* parimainstackX)();
-typedef GEN(__cdecl* expX)(GEN x, int64_t prec);  /* GEN gexp(GEN x, int64_t prec)*/
-typedef GEN(__cdecl* logX)(GEN x, int64_t prec);  /* GEN glog(GEN x, int64_t prec)*/
-typedef char* (__cdecl* GENtostrX)(GEN x);        /* char*   GENtostr(GEN x);*/
-typedef GEN(__cdecl* utoiposX)(ulong x);     /* GEN utoipos(ulong x)*/
-typedef GEN(__cdecl* utoinegX)(ulong x);
-typedef GEN(__cdecl* floorrX)(GEN x);    /* GEN floorr(GEN x)*/
-typedef GEN(__cdecl* cgetiposX)(int64_t x); /* GEN    cgetipos(int64_t x);*/
-typedef GEN(__cdecl* cgetinegX)(int64_t x);
-typedef GEN(__cdecl* qfbclassnox)(GEN x, int64_t flag);  /* GEN     qfbclassno0(GEN x,int64_t flag);*/
+typedef      GEN(__cdecl* G_GG)     (GEN x, GEN y);  /* used for all funtions of the form GEN f(GEN x, GEN y) */
+typedef      GEN(__cdecl* G_G)      (GEN x);         /* used for all funtions of the form GEN f(GEN x) */
+typedef     void(__cdecl* pari_initX)(size_t parisize, ulong maxprime);    /*void    pari_init(size_t parisize, ulong maxprime);*/
+//typedef     void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
+//typedef  int64_t(__cdecl* pari_stack_newX)(pari_stack* s);
+typedef     void(__cdecl* pari_init_optsX)(size_t parisize, ulong maxprime, ulong init_opts);
+typedef     void(__cdecl* pari_init_primesX)(ulong maxprime);
+typedef    ulong(__cdecl* hclassno6uX)(ulong D);   /* ulong hclassno6u(ulong D)*/
+typedef      GEN(__cdecl* dvmdiiX)  (GEN x, GEN y, GEN* z);
+typedef      int(__cdecl* invmodX)  (GEN a, GEN b, GEN* res);  /* int  invmod(GEN a, GEN b, GEN *res); */
+typedef      GEN(__cdecl* itorX)    (GEN x, int64_t prec);     /* GEN    itor(GEN x, int64_t prec); */
+typedef   double(__cdecl* rtodblX)  (GEN x);      /* double  rtodbl(GEN x); */
+typedef      GEN(__cdecl* dbltorX)  (double x);   /* GEN     dbltor(double x); */
+typedef      GEN(__cdecl* divruX)   (GEN x, ulong y);
+typedef     void(__cdecl* pari_print_versionX)(void);   /* void pari_print_version(void)*/
+typedef      GEN(__cdecl* expX)     (GEN x, int64_t prec);  /* GEN gexp(GEN x, int64_t prec)*/
+typedef      GEN(__cdecl* logX)     (GEN x, int64_t prec);  /* GEN glog(GEN x, int64_t prec)*/
+typedef   char* (__cdecl* GENtostrX)(GEN x);        /* char*   GENtostr(GEN x);*/
+typedef      GEN(__cdecl* utoiposX) (ulong x);     /* GEN utoipos(ulong x)*/
+typedef      GEN(__cdecl* utoinegX) (ulong x);
+typedef      GEN(__cdecl* cgetiposX)(int64_t x); /* GEN    cgetipos(int64_t x);*/
+typedef      GEN(__cdecl* cgetinegX)(int64_t x);
+typedef      GEN(__cdecl* qfbclassnox)(GEN x, int64_t flag);  /* GEN     qfbclassno0(GEN x,int64_t flag);*/
 typedef ulong** avmaX;
-typedef void(__cdecl* set_avmaX)(ulong av);  /* void   set_avma(ulong av);*/
-typedef GEN(__cdecl* tauX)(GEN n);     /* GEN ramanujantau(GEN n)*/
-typedef GEN(__cdecl* stirlingX)(int64_t n, int64_t m, int64_t flag); /* GEN stirling(int64_t n, int64_t m, int64_t flag)*/
+typedef     void(__cdecl* set_avmaX)(ulong av);  /* void   set_avma(ulong av);*/
+typedef      GEN(__cdecl* stirlingX)(int64_t n, int64_t m, int64_t flag); /* GEN stirling(int64_t n, int64_t m, int64_t flag)*/
 
 HINSTANCE hinstLib;
 
 /* function pointers to access libpari functions */
 static pari_initX        pari_init_ref;
-static pari_stack_initX  pari_stack_init_ref;
-static pari_stack_newX   pari_stack_new_ref;
+//static pari_stack_initX  pari_stack_init_ref;
+//static pari_stack_newX   pari_stack_new_ref;
 static pari_init_optsX   pari_init_opts_ref;
 static pari_init_primesX pari_init_primes_ref;
-static addiiX            addii_ref;
-static subiiX            subii_ref;
-static muliiX            mulii_ref;
+static G_GG              addii_ref;
+static G_GG              subii_ref;
+static G_GG              mulii_ref;
 static dvmdiiX           dvmdii_ref;
 static hclassno6uX       hclassno6u_ref;
-static hclassnoX         hclassno_ref;
+static G_G               hclassno_ref;
 static invmodX           invmod_ref;
 static itorX             itor_ref;
 static rtodblX           rtodbl_ref;
 static dbltorX           dbltor_ref;
-static addrrX            addrr_ref;
-static subrrX            subrr_ref;
-static divrrX            divrr_ref;
-static mulrrX            mulrr_ref;
+static G_GG              addrr_ref;
+static G_GG              subrr_ref;
+static G_GG              divrr_ref;
+static G_GG              mulrr_ref;
 static divruX            divru_ref;
 static pari_print_versionX pari_print_version_ref;
 //parimainstackX    parimainstack_ref;
@@ -78,13 +108,13 @@ static logX              log_ref;
 static GENtostrX         GENtostr_ref;
 static utoiposX          utoipos_ref;
 static utoinegX          utoineg_ref;
-static floorrX           floorr_ref;
+static G_G               floorr_ref;
 static cgetiposX         cgetipos_ref;
 static cgetinegX         cgetineg_ref;
 static qfbclassnox       qfbclassno_ref;
 static avmaX             avma_ref;
 static set_avmaX         set_avma_ref;
-static tauX              tau_ref;
+static G_G               tau_ref;
 static stirlingX         stirling_ref;
 
 /* pari library functions are accessed in this way because linking statically to
@@ -108,24 +138,24 @@ static void specinit()
         /* set up function pointers. There over 6000 accessible libpari functions. This is
         a selection of functions that might be useful. */
         pari_init_ref        = (pari_initX)GetProcAddress(hinstLib, "pari_init");
-        pari_stack_init_ref  = (pari_stack_initX)GetProcAddress(hinstLib, "pari_stack_init");
-        pari_stack_new_ref   = (pari_stack_newX)GetProcAddress(hinstLib, "pari_stack_new");
+       /* pari_stack_init_ref  = (pari_stack_initX)GetProcAddress(hinstLib, "pari_stack_init");
+        pari_stack_new_ref   = (pari_stack_newX)GetProcAddress(hinstLib, "pari_stack_new");*/
         pari_init_opts_ref   = (pari_init_optsX)GetProcAddress(hinstLib, "pari_init_opts");
         pari_init_primes_ref = (pari_init_primesX)GetProcAddress(hinstLib, "pari_init_primes");
-        addii_ref            = (addiiX)GetProcAddress(hinstLib, "addii");
-        subii_ref            = (subiiX)GetProcAddress(hinstLib, "subii");
-        mulii_ref            = (muliiX)GetProcAddress(hinstLib, "mulii");
+        addii_ref            = (G_GG)GetProcAddress(hinstLib, "addii");
+        subii_ref            = (G_GG)GetProcAddress(hinstLib, "subii");
+        mulii_ref            = (G_GG)GetProcAddress(hinstLib, "mulii");
         dvmdii_ref           = (dvmdiiX)GetProcAddress(hinstLib, "dvmdii");
         hclassno6u_ref       = (hclassno6uX)GetProcAddress(hinstLib, "hclassno6u");
-        hclassno_ref         = (hclassnoX)GetProcAddress(hinstLib, "hclassno");
+        hclassno_ref         = (G_G)GetProcAddress(hinstLib, "hclassno");
         invmod_ref           = (invmodX)GetProcAddress(hinstLib, "invmod");
         itor_ref             = (itorX)GetProcAddress(hinstLib, "itor");
         rtodbl_ref           = (rtodblX)GetProcAddress(hinstLib, "rtodbl");
         dbltor_ref           = (dbltorX)GetProcAddress(hinstLib, "dbltor");
-        addrr_ref            = (addrrX)GetProcAddress(hinstLib, "addrr");
-        subrr_ref            = (subrrX)GetProcAddress(hinstLib, "subrr");
-        divrr_ref            = (divrrX)GetProcAddress(hinstLib, "divrr");
-        mulrr_ref            = (mulrrX)GetProcAddress(hinstLib, "mulrr");
+        addrr_ref            = (G_GG)GetProcAddress(hinstLib, "addrr");
+        subrr_ref            = (G_GG)GetProcAddress(hinstLib, "subrr");
+        divrr_ref            = (G_GG)GetProcAddress(hinstLib, "divrr");
+        mulrr_ref            = (G_GG)GetProcAddress(hinstLib, "mulrr");
         divru_ref            = (divruX)GetProcAddress(hinstLib, "divru");
         pari_print_version_ref = (pari_print_versionX)GetProcAddress(hinstLib, "pari_print_version");
         exp_ref              = (expX)GetProcAddress(hinstLib, "gexp");
@@ -133,20 +163,20 @@ static void specinit()
         utoipos_ref          = (utoiposX)GetProcAddress(hinstLib, "utoipos");
         utoineg_ref          = (utoinegX)GetProcAddress(hinstLib, "utoineg");
         GENtostr_ref         = (GENtostrX)GetProcAddress(hinstLib, "GENtostr");
-        floorr_ref           = (floorrX)GetProcAddress(hinstLib, "floorr");
+        floorr_ref           = (G_G)GetProcAddress(hinstLib, "floorr");
         cgetipos_ref         = (cgetiposX)GetProcAddress(hinstLib, "cgetipos");
         cgetineg_ref         = (cgetinegX)GetProcAddress(hinstLib, "cgetineg");
         qfbclassno_ref       =(qfbclassnox)GetProcAddress(hinstLib, "qfbclassno0");
         avma_ref             = (avmaX)GetProcAddress(hinstLib, "avma");
         set_avma_ref         = (set_avmaX)GetProcAddress(hinstLib, "set_avma");
-        tau_ref              = (tauX)GetProcAddress(hinstLib, "ramanujantau");
+        tau_ref              = (G_G)GetProcAddress(hinstLib, "ramanujantau");
         stirling_ref         =(stirlingX)GetProcAddress(hinstLib, "stirling");
 
 
         /* check that all function pointers were set up successfully */
         if (nullptr == pari_init_ref ||
-            nullptr == pari_stack_init_ref ||
-            nullptr == pari_stack_new_ref ||
+ /*           nullptr == pari_stack_init_ref ||
+            nullptr == pari_stack_new_ref ||*/
             nullptr == pari_init_opts_ref ||
             nullptr == pari_init_primes_ref ||
             nullptr == addii_ref ||
@@ -205,7 +235,7 @@ for type t_REAL val_d is set to the value as a floating point, value is set to
        2. for any other GEN type abort() is called.
        3. value and denom must be initialised before GENtoMP is called.*/
 static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
-    int64_t typx = typ(x);
+    int64_t typx = typ(x); /* get type of object in x */
 
     switch (typx) {
     case t_INT: {
@@ -214,7 +244,8 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
 
         mpz_set_ui(denom, 1);
         if (s == 0) {
-            mpz_set_ui(value, 0);
+            mpz_set_ui(value, 0);   /* x = 0 */
+            val_d = 0.0;
             return;
         }
 
@@ -236,8 +267,9 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
         int64_t s = signe(num);
         int64_t i, lnum = lgefint(num), lden = lgefint(den);
         if (s == 0) {
-            mpz_set_ui(value, 0);
+            mpz_set_ui(value, 0);  /* x = 0 */
             mpz_set_ui(denom, 1);
+            val_d = 0;
             return;
         }
 
@@ -290,11 +322,11 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
         }
 
         val_d = rtodbl_ref(x);  /* also convert x to normal floating point */
-
         return;
     }
+
     default:
-        abort();
+        abort();  /* unsupported GEN type */
     }
 }
 
