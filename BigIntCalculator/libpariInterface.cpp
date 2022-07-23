@@ -195,7 +195,7 @@ static void specinit()
 }
 
 /* convert GEN to MPIR/GMP multi-precision
-for type t_INT (integer) value is set to the value, denom i set to 1,
+for type t_INT (integer) value is set to the value, denom is set to 1,
     and val_d is set to the value as a double.
 for type t_FRAC (rational number) value is set to the numerator, denom is set to
     the denominator and val_d is value/denom as a floating point.
@@ -445,6 +445,8 @@ Znum tau(const Znum& n) {
     return num / denom;
 }
 
+/* if flag=1 return the Stirling number of the first kind s(n, k), 
+if flag=2, return the Stirling number of the second kind S(n, k). */
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     double rvd;
     Znum num, denom;
@@ -453,11 +455,12 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
         specinit();
     ulong* av = *avma_ref;
 
+    /* convert m, n, and flag to 64-bit integers */
     uint64_t ln = MulPrToLong(n);
     uint64_t lm = MulPrToLong(m);
     long long f = MulPrToLong(flag);
-    GEN retval = stirling_ref(ln, lm, f);
-    GENtoMP(retval, ZT(num), ZT(denom), rvd);
+    GEN retval = stirling_ref(ln, lm, f);  /* get stirling number */
+    GENtoMP(retval, ZT(num), ZT(denom), rvd);  /* convert result to Znums */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf("used %lld bytes on pari stack \n", (long long)diff);

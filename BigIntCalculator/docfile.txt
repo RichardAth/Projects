@@ -140,6 +140,10 @@ PRIMROOT(a)     : returns smallest primitive root of a if there is one. Primitiv
 INVTOT(x)       : finds n such that totient(n) = x. There may be no such value, or 
                   many values. x is limited to 10^15 because large values use too 
                   much memory and could hang the PC.
+POPCNT(x)       : for x >= 0, counts the number of 1-bits, also known as the
+                  Hamming weight.
+HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
+                  y must have the same sign.
 
 [OTHER]
 other commands: 

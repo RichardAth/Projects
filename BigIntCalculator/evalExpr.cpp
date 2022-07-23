@@ -101,18 +101,18 @@ enum class opCode {
 	fn_part,
 	fn_np,                /* next prime*/
 	fn_pp,                /* previous prime */
-	fn_r2,
+	fn_r2,                /* R2(n) */
 	fn_r2p,
-	fn_r3,
-	fn_r3h,
-	fn_hurwitz,
-	fn_classno,
+	fn_r3,                /* R3(n) */
+	fn_r3h,               /* R3(n) calculated using Hurwitz class number */
+	fn_hurwitz,           /* hurwitz class number */
+	fn_classno,           /* class number */
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
-	fn_tau,
-	fn_stirling,
-	fn_llt,
+	fn_tau,               /* ramanujan tau function */
+	fn_stirling,          /* stirling number */
+	fn_llt,               /* lucas lehmer test */
 	fn_sqrt,              /* square root */
 	fn_nroot,             /* nth root */
 	fn_bpsw,              /* primality test */
@@ -125,6 +125,8 @@ enum class opCode {
 	fn_invtot,            /* inverse totient */
 	fn_divisors,          /* list of divisors */
 	fn_primroot,          /* lowest primitive root */
+	fn_popcnt,            /* poulation count AKA Hamming weight */
+	fn_hamdist,           /* hamming distance i.e. number of bits that differ between a and b */
 	fn_invalid = -1,
 };
 
@@ -159,6 +161,8 @@ const static struct functions functionList[]{
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
 	"PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
+	"POPCNT",    1,  opCode::fn_popcnt,     // population count
+	"HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
 	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
 	"LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
 	"F",         1,  opCode::fn_fib,			// fibonacci
@@ -1273,6 +1277,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (result <= 0)
 			return retCode::INVALID_PARAM;
 		else break;
+	}
+	case opCode::fn_popcnt:  /* population count */ {
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;  /* for -ve number, no of 1-bits is infinite */
+		unsigned long long bitcnt = mpz_popcount(ZT(p[0]));
+		result = bitcnt;
+		break;
+	}
+	case opCode::fn_hamdist: /* hamming distance */ {
+		if ((p[0] < 0 && p[1] >= 0) || (p[0] >= 0 && p[1] < 0))
+			return retCode::INVALID_PARAM;  /* p0 and p1 must have same sign, 
+								      otherwise the distance is infinite */
+		unsigned long long bitcnt = mpz_hamdist(ZT(p[0]), ZT(p[1]));
+		result = bitcnt;
+		break;
 	}
 
 	default:
