@@ -384,7 +384,7 @@ uint64_t R3h(Znum n) {
         GENtoMP(hx, num, denom, hxd);    /* convert hx from GEN to mpz_t */
         mpz_mul_ui(result, num, 12);
         mpz_div(result, result, denom);  /* get 12*h(n) */
-        r = mpz_get_ui(result);
+        r = mpz_get_ui(result);          /* assume result fits into 64 bits */
         break;
  
     }
