@@ -703,7 +703,9 @@ static void doFactors(const Znum &Result, bool test) {
 			ShowLargeNumber(divisors, 6, false, false);
 			if (Result > 0) {
 				auto mob = factorlist.mob();  // mobius only defined for +ve integers
-				std::cout << "\nMöbius             = " << mob;
+				//std::cout << "\nMöbius             = " << mob;
+				char mo[] = "\nMöbius             =";
+				printf_s("%s %d", mo, mob);
 			}
 
 			/* show that the number is the sum of 4 or fewer squares. See
@@ -2163,9 +2165,11 @@ static void helpfunc(const std::string &helpTopic)
 	FILE *doc;
 	char str[1024];
 	bool printtopic = false;
+	bool line1 = true;
 	std::string expr = "";
 	char * newpathC;
 	std::string newpath;
+	const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
 
 retry:
 	//open the doc file and search for a matching topic
@@ -2204,6 +2208,15 @@ retry:
 	while (!feof(doc)) {
 		
 		char *rv = fgets(str, sizeof(str), doc);   //read a line
+		if (line1) {
+			line1 = false;
+			int d = (unsigned char)str[0] - BOM[0];
+			int d1 = (unsigned char)str[1] - BOM[1];
+			int d2 = (unsigned char)str[2] - BOM[2];
+			if (d == 0 && d1 == 0 && d2 == 0) {
+				memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
+			}
+		}
 		if (rv == NULL)
 			if (feof(doc)) {
 				break;
@@ -3433,7 +3446,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	ver %= 100000;                        // remove next 2 digits
 	std::cout << ver << '\n';             // last 5 digits
 
-	auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
+	auto lc = setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
 
 	printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));

@@ -76,11 +76,11 @@ Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
-BPSW(n)         : Baillie–PSW primality test. It returns zero if n is composite, 
+BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
                   considered to be 100% reliable for numbers up to 10000 digits
-APRCL(n)        : Adleman–Pomerance–Rumely primality test. returns zero if n is 
-                  composite, 1 for probable prime (only if BPSW used), 2 for 
+APRCL(n)        : Adleman-Pomerance-Rumely primality test. returns zero if n is 
+                  composite, 1 for probable prime (only if BPSW used), 2 for it
                   definite prime. WARNING: very slow for large numbers 
                   e.g. 20s for 400 digits
                   If the number is > 6021 digits it reverts to the BPSW test.
@@ -111,9 +111,10 @@ R2P(n)          : Number of ways n can be expressed as the sum of x² + y².
                   e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
                   25 = 5²+0 = 3²+4² so R2P(25) = 2
 R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
-                  (order and sign of x and y are significant)
+                  (order and sign of x and y are significant) N.B. very slow
+                  for large numbers e.g. 2 min for a 12 digit number.
 R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
-                  (much faster)
+                  (much faster) Currently restricted to n < 10^28.
 HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
                   n < 10^28. The true HCLASS is not always an integer, but 
                   multiplying by 12 always yields an integer.

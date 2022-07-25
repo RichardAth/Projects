@@ -9,7 +9,7 @@ typedef unsigned long long ulong;
 #define BITS_IN_LONG 64
 #define TYPnumBITS   7
 #define SIGNnumBITS  2
-#define   LGnumBITS (BITS_IN_LONG - 1 - TYPnumBITS)
+#define LGnumBITS (BITS_IN_LONG - 1 - TYPnumBITS)
 #define TYPSHIFT (BITS_IN_LONG - TYPnumBITS)
 #define SIGNSHIFT (BITS_IN_LONG - SIGNnumBITS)
 #define LGBITS      ((1ULL<<LGnumBITS)-1)
@@ -86,29 +86,29 @@ static pari_initX        pari_init_ref;
 //static pari_stack_newX   pari_stack_new_ref;
 static pari_init_optsX   pari_init_opts_ref;
 static pari_init_primesX pari_init_primes_ref;
-static G_GG              addii_ref;
-static G_GG              subii_ref;
-static G_GG              mulii_ref;
+static G_GG              addii_ref;     /* a + b */
+static G_GG              subii_ref;     /* a - b */
+static G_GG              mulii_ref;     /* a * b */
 static dvmdiiX           dvmdii_ref;
 static hclassno6uX       hclassno6u_ref;
 static G_G               hclassno_ref;
 static invmodX           invmod_ref;
 static itorX             itor_ref;
-static rtodblX           rtodbl_ref;
+static rtodblX           rtodbl_ref;    /* floating point to double */
 static dbltorX           dbltor_ref;
-static G_GG              addrr_ref;
-static G_GG              subrr_ref;
-static G_GG              divrr_ref;
-static G_GG              mulrr_ref;
-static divruX            divru_ref;
+static G_GG              addrr_ref;     /* a + b */
+static G_GG              subrr_ref;     /* a - b */
+static G_GG              divrr_ref;     /* a / b  */
+static G_GG              mulrr_ref;     /* a * b */
+static divruX            divru_ref;    
 static pari_print_versionX pari_print_version_ref;
 //parimainstackX    parimainstack_ref;
-static expX              exp_ref;
-static logX              log_ref;
+static expX              exp_ref;       /*  exp(a) */
+static logX              log_ref;       /* log(a)  */
 static GENtostrX         GENtostr_ref;
 static utoiposX          utoipos_ref;
 static utoinegX          utoineg_ref;
-static G_G               floorr_ref;
+static G_G               floorr_ref;     /* floor(x) */
 static cgetiposX         cgetipos_ref;
 static cgetinegX         cgetineg_ref;
 static qfbclassnox       qfbclassno_ref;
@@ -437,7 +437,7 @@ Znum Hclassno12(const Znum &n) {
     return (num * 12) / denom;  /* division is always exact; remainder = 0 */
 }
 
-/* get class number flag = 0 for Shanks method, 1 to use Euler products */
+/* get class number. flag = 0 for Shanks method, 1 to use Euler products */
 Znum classno(const Znum& n, int flag) {
     double rvd;
     Znum num, denom;
