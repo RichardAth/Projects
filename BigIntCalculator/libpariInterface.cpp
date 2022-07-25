@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <windows.h>
 //#include "pari.h"
+extern std::string PariPath;
 
 /* stuff below copied from pari headers, to avoid including humungous pari.h etc*/
 typedef long long* GEN;
@@ -125,7 +126,8 @@ For some reason dynamic linking works OK. */
 static void specinit()
 {
     // Get a handle to the pari DLL module.
-    hinstLib = LoadLibraryA("C:/Program Files (x86)/Pari64-2-13-2/libpari.dll");
+    //hinstLib = LoadLibraryA("C:/Program Files (x86)/Pari64-2-13-2/libpari.dll");
+    hinstLib = LoadLibraryA(PariPath.c_str());
 
     // If the handle is valid, try to get the function addresses.
     if (hinstLib == nullptr) {

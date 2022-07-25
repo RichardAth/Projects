@@ -2045,7 +2045,10 @@ static void doTestsA(const std::string& params) {
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
-std::string helpFilePath = "docfile.txt";  /* can be overwritten from the .ini file */
+
+  /* can be overwritten from the .ini file */
+std::string helpFilePath = "docfile.txt";
+std::string PariPath = "C:/Program Files (x86)/Pari64-2-13-2/libpari.dll";  
 
 /* (re)write the BigIntCalculator.ini file
 initially a .new file is created, then any .old file is deleted
@@ -2070,6 +2073,7 @@ void writeIni(void) {
 	newStr << "msieve-path=" << MsievePath << '\n';
 	newStr << "msieve-prog=" << MsieveProg << '\n';
 	newStr << "helpfile=" << helpFilePath << '\n';
+	newStr << "paripath=" << PariPath << '\n';
 	newStr << "endsound=" << endsound << '\n';
 	newStr << "attsound=" << attsound << '\n';
 	newStr.close();
@@ -2081,15 +2085,18 @@ void writeIni(void) {
 	}
     // rename .ini as .old
 	int rv = rename(iniFname.c_str(), oldFname.c_str());   
-	if (rv == 0 || errno == ENOENT)
-		rv = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+	if (rv == 0 || errno == ENOENT) {
+		int rv2 = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+		if (rv2 != 0)
+			perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+	}
 	else
 		perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
 }
 
 /* read the .ini file and update paths. 
 path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog=, 
-helpfile=, endsound= or attsound=
+helpfile=, endsound=, attsound= or paripath=
 Paths are not case-sensitive. 
 Anything else is saved and is copied if the .ini file is updated 
 
@@ -2150,6 +2157,9 @@ static void processIni(const char * arg) {
 			else if (_strnicmp("attsound=", buffer.c_str(), 9) == 0) {
 				attsound = buffer.substr(9);
 			}
+			else if (_strnicmp("paripath=", buffer.c_str(), 9) == 0) {
+				PariPath = buffer.substr(9);
+			}
 			else inifile.push_back(buffer);  // save anything not recognised
 		}
 		iniStr.close();
@@ -2170,6 +2180,7 @@ static void helpfunc(const std::string &helpTopic)
 	char * newpathC;
 	std::string newpath;
 	const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
+	bool UTF8 = false;          /* set true if UTF8 BOM found */
 
 retry:
 	//open the doc file and search for a matching topic
@@ -2208,15 +2219,6 @@ retry:
 	while (!feof(doc)) {
 		
 		char *rv = fgets(str, sizeof(str), doc);   //read a line
-		if (line1) {
-			line1 = false;
-			int d = (unsigned char)str[0] - BOM[0];
-			int d1 = (unsigned char)str[1] - BOM[1];
-			int d2 = (unsigned char)str[2] - BOM[2];
-			if (d == 0 && d1 == 0 && d2 == 0) {
-				memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
-			}
-		}
 		if (rv == NULL)
 			if (feof(doc)) {
 				break;
@@ -2227,6 +2229,17 @@ retry:
 				fprintf_s(stderr, "fgets error: %s\n", buffer);
 				break;
 			}
+
+		if (line1) {
+			line1 = false;     /* only do this on 1st line */
+			int d = (unsigned char)str[0] - BOM[0];    /* BOM has to be declared as unsigned char */
+			int d1 = (unsigned char)str[1] - BOM[1];
+			int d2 = (unsigned char)str[2] - BOM[2];
+			if (d == 0 && d1 == 0 && d2 == 0) {
+				memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
+				UTF8 = true;
+			}
+		}
 
 		//is this a header?
 		if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) 	{
