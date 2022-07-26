@@ -174,7 +174,8 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex)
 	free(buffer);		// avoid memory leakage
 	std::cout << nbrOutput;
 	if (msglen > 6 && size)
-		std::cout << " (" << msglen << " digits)";
+		if (lang) std::cout << " (" << msglen << " dígitos)";
+		else std::cout << " (" << msglen << " digits)";
 }
 
 /* convert biginteger to normal. Checks for overflow */
@@ -433,7 +434,11 @@ void generatePrimes(unsigned long long int max_val) {
 	// allocate storage for primeList if required
 	{
 		if (verbose > 0)
-			fprintf(stdout, "Expected no of primes is %.0f\n",
+			if (lang)
+				printf_s("número esperado de primos es %.0f \n", 
+					(double)max_val / (log((double)max_val) - 1));
+			else
+				printf_s("Expected no of primes is %.0f\n",
 				(double)max_val / (log((double)max_val) - 1));
 		if (primeList != NULL) free(primeList);
 		plist_size = (size_t)((double)max_val / (log((double)max_val) - 1)) * 102 / 100;
@@ -466,8 +471,12 @@ void generatePrimes(unsigned long long int max_val) {
 	}
 
 	// after completing the while loop we have found all the primes < max_val
-	if (verbose > 0)
-		printf_s("  prime %9lld is %11lld\n", count, numsave);
+	if (verbose > 0) {
+		if (lang)
+			printf_s("  el primo %9lld es %11lld\n", count, numsave);
+		else 
+			printf_s("  prime %9lld is %11lld\n", count, numsave);
+	}
 	primeList[count] = ULLONG_MAX;		// set end marker
 	prime_list_count = (unsigned int)count;
 	primeListMax = primeList[count - 1];
@@ -533,11 +542,11 @@ static void textError(retCode rc) {
 		std::cout << (lang ? "Detenido por el usuario\n" : "Stopped by use\nr");
 		break;*/
 	case retCode::EXPONENT_NEGATIVE: {
-		std::cout << "Exponent is negative\n";
+		std::cout << (lang? "Exponente no debe ser negativo\n" : "Exponent must not be negative\n");
 		break;
 	}
 	case retCode::EXPONENT_TOO_LARGE: {
-		std::cout << "Exponent exceeds 2^31-1\n";
+		std::cout << (lang? "El exponente es mayor que 2^31-1\n": "Exponent exceeds 2^31-1\n");
 		break;
 	}
 	/*case retCode::EXPR_VAR_OR_COUNTER_REQUIRED:
@@ -592,7 +601,10 @@ static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 			SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 
 	if (elSec <= 60.0) {
-		printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
+		if (lang)
+			printf_s("%.4f segundos \n", elSec);
+		else
+			printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
 	}
 	else {
 		/* round to nearest second */
@@ -692,20 +704,19 @@ static void doFactors(const Znum &Result, bool test) {
 		std::cout << '\n';
 		if (factorFlag > 1) {
 			auto divisors = factorlist.NoOfDivs();
-			std::cout << "Number of Divisors = ";
+			std::cout << (lang? "Cantidad de Divisores = " : "Number of Divisors = ");
 			ShowLargeNumber(divisors, 6, false, false);
 
 			divisors = factorlist.DivisorSum();
-			std::cout << "\nSum of Divisors    = ";
+			std::cout << (lang? "\nSuma de divisores     = " : "\nSum of Divisors    = ");
 			ShowLargeNumber(divisors, 6, false, false);
 			divisors = factorlist.totient();
-			std::cout << "\nTotient            = ";
+			std::cout << (lang ? "\nPhi de Euler          = " : "\nTotient            = ");
 			ShowLargeNumber(divisors, 6, false, false);
 			if (Result > 0) {
 				auto mob = factorlist.mob();  // mobius only defined for +ve integers
-				//std::cout << "\nMöbius             = " << mob;
-				char mo[] = "\nMöbius             =";
-				printf_s("%s %d", mo, mob);
+				std::cout << "\nMöbius             = " << mob;
+	
 			}
 
 			/* show that the number is the sum of 4 or fewer squares. See
@@ -769,7 +780,7 @@ static void doFactors(const Znum &Result, bool test) {
 			}
 			auto end = clock(); 
 			double elapsed = (double)end - start;
-			PrintTimeUsed(elapsed, "time used = ");
+			PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " :"time used = ");
 
 			/* store info for summary */
 			sum.time = elapsed / CLOCKS_PER_SEC;
@@ -782,7 +793,7 @@ static void doFactors(const Znum &Result, bool test) {
 		}
 	}
 	else
-		std::cout << " cannot be factorised\n";
+		std::cout << (lang? "no se puede factorizar\n" : " cannot be factorised\n");
 }
 
 /* perform some simple tests. Returns true if x3 is prime 
@@ -880,7 +891,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
-		PrintTimeUsed(elapsed, "time used = ");
+		PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
 		sum.testNum = testnum;
@@ -898,7 +909,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		sum.testNum = testnum;
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
-		PrintTimeUsed(elapsed, "time used = ");
+		PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		results.push_back(sum);
 		return true;    // is prime
@@ -2266,7 +2277,10 @@ retry:
 			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
 							may not end with newline */
 		else
-			printf_s("Help for %s not found \n", helpTopic.data());
+			if (lang)
+				printf_s("Ayuda para %s no encontrado \n", helpTopic.data());
+			else
+				printf_s("Help for %s not found \n", helpTopic.data());
 	}
 	fclose(doc);
 	return;
@@ -3615,7 +3629,7 @@ int main(int argc, char *argv[]) {
 
 			auto end = clock();   // measure amount of time used
 			double elapsed = (double)end - start;
-			PrintTimeUsed(elapsed, "time used = ");
+			PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " : "time used = ");
 			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 			SetThreadExecutionState(ES_CONTINUOUS);
 

@@ -707,9 +707,16 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 	} while (restart);  // keep looping until no more factors found.
 
 	if (verbose > 0) {
-		std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
+		if (lang)
+			std::cout << "fin de la división de prueba. " << Factors.f.size() - 1
+			<< " factores encontrados hasta ahora \n";
+		else
+			std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
 		if (Factors.f.size() > 1) {
-			std::cout << "result after trial division ";
+			if (lang)
+				std::cout << "resultado despues de la division de prueba ";
+			else
+				std::cout << "result after trial division ";
 			Factors.Xprint();
 		}
 	}

@@ -176,15 +176,15 @@ for factors found by YAFU or Msieve */
 	void prCounts() const {
 		if (this->f.size() == 1 && this->f[0].exponent == 1)
 			return;  // number is prime or has not been factored
-		std::cout << "found by";
+		std::cout << (lang? "encontrado por" : "found by");
 		if (this->tdiv > 0)
-			std::cout << " trial division: " << this->tdiv;
+			std::cout << (lang? " la división de prueba: " : " trial division: ") << this->tdiv;
 		if (this->prho > 0)
 			std::cout << " Pollard-rho: " << this->prho;
 		if (this->pm1 > 0)
 			std::cout << " power +/- 1: " << this->pm1;
 		if (this->ecm > 0)
-			std::cout << " elliptic curve: " << this->ecm;
+			std::cout << (lang? "curvas elípticas: " : " elliptic curve: ") << this->ecm;
 		if (this->siqs > 0)
 			std::cout << " SIQS: " << this->siqs;
 		if (this->msieve > 0)
@@ -462,7 +462,7 @@ Repeated factors: No or Yes
 
 };
 
-void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
+//void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
 
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 
