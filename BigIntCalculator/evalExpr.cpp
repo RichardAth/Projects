@@ -1158,12 +1158,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 			return retCode::NUMBER_TOO_LOW;
 
 		result = mpz_bpsw_prp(ZT(p[0]));
-		if (result == 0)
-			std::cout << "composite \n";
-		else if (result == 1)
-			std::cout << "probable prime \n";
-		else if (result == 2)
-			std::cout << "prime \n";
+		if (verbose > 0) {
+			if (result == 0)
+				std::cout << "composite \n";
+			else if (result == 1)
+				std::cout << "probable prime \n";
+			else if (result == 2)
+				std::cout << "prime \n";
+		}
 		break;
 	}
 	case opCode::fn_aprcl: /* Adleman–Pomerance–Rumely primality test  */ {
@@ -1179,12 +1181,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[0] <= 1) 
 			return retCode::NUMBER_TOO_LOW;
 		result = mpz_aprtcle(ZT(p[0]), verbose);
-		if (result == 0)
-			printf_s("composite \n");
-		else if (result == 1)
-			printf_s("probable prime \n");
-		else if (result == 2)
-			printf_s("prime \n");
+		if (verbose > 0) {
+			if (result == 0)
+				printf_s("\ncomposite \n");
+			else if (result == 1)
+				printf_s("\nprobable prime \n");
+			else if (result == 2)
+				printf_s("\nprime \n");
+		}
 		break;
 	}
 	case opCode::fn_numfact: /* number of factors */ {
@@ -1208,7 +1212,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		Znum base;
 		long long exp = PowerCheck(p[0], base, 2);
 		if (exp > 1) {
-			std::cout << p[0] << " = " << base << "^" << exp << '\n';
+			if (verbose > 0)
+				std::cout << p[0] << " = " << base << "^" << exp << '\n';
 			result = -1;
 		}
 		else {

@@ -1,4 +1,4 @@
-/* Copyright 2011,2012,2013 David Cleaver
+﻿/* Copyright 2011,2012,2013 David Cleaver
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -361,7 +361,7 @@ int mpz_selfridge_prp(const mpz_t n)
  * n is a strong pseudoprime to the base 2 and
  * n is a Lucas pseudoprime using the Selfridge parameters.
  See https://en.wikipedia.org/wiki/Baillie%E2%80%93PSW_primality_test
- * There are no known Baillie�PSW pseudoprimes. Despite this, there are conjectured 
+ * There are no known Baillie–PSW pseudoprimes. Despite this, there are conjectured 
  * to be infinitely many. 
  * No examples of composite numbers passing the test are known, and as of June 13, 2009, 
  * Jeff Gilchrist has confirmed that there are no Baillie-PSW pseudoprimes up to 10^(17).

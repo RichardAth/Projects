@@ -376,7 +376,8 @@ Znum llt(const Znum &p) {
 	}
 	if (verbose > 0) { 
 		t3 = clock();
-		printf_s("\ntime used by llt = %.2f sec \n", (double)(t3 - t2) / CLOCKS_PER_SEC);
+		printf_s(lang? "\ntiempo usado por llt = %.2f sec \n": "\ntime used by llt = %.2f sec \n", 
+			(double)(t3 - t2) / CLOCKS_PER_SEC);
 	}
 
 	if (tmp == 0) {
@@ -809,7 +810,10 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 	sum.numsize = (int)ComputeNumDigits(x3, 10);
 
-	std::cout << "\nTest " << testnum << ": factorise ";
+	if (lang)
+		std::cout << "\nPrueba " << testnum << ": factoriza ";
+	else
+		std::cout << "\nTest " << testnum << ": factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
 	if (method == 0) {
@@ -879,6 +883,10 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 	if (!factorlist.isPrime() ) {
 		/* x3 is not prime */
 
+		if (lang)
+			std::cout  << factorlist.fsize() << " factores únicos encontrados, total "
+			<< sum.totalFacs << " factores\n";
+		else
 		std::cout << "found " << factorlist.fsize() << " unique factors, total "
 			<< sum.totalFacs << " factors\n";
 
@@ -887,7 +895,10 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		else
 			sum.ctrs.yafu = sum.totalFacs;
 
-		std::cout << "test " << testnum << " completed at ";
+		if (lang)
+			std::cout << "prueba " << testnum << " terminada as las ";
+		else
+			std::cout << "test " << testnum << " completed at ";
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
@@ -1032,7 +1043,7 @@ static void doTests(void) {
 			Beep(750, 1000);
 		}
 	}
-	std::cout << i << " tests completed\n";
+	std::cout << i << (lang ? "  pruebas completadas\n" : " tests completed\n");
 
 	for (Znum i = 1000; i <= 100000000000000000; ) {
 		Znum x1, x2;
@@ -3230,7 +3241,7 @@ static int processCmd(const std::string &command) {
 		/* will not throw an exception if input has fat finger syndrome.
 			If no valid digits found, sets factorFlag to 0 */
 		factorFlag = atoi(command.substr(1).data());
-		std::cout << "factor set to " << factorFlag << '\n';
+		std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
 		return 1; }  
 	case 7: /* X */ { 
 		hex = true; return 1; }         // hexadecimal output
@@ -3454,9 +3465,10 @@ static void initialise(int argc, char *argv[]) {
 	}
 
 	VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-	printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(),
-		version[0], version[1], version[2], version[3]);
-	std::cout << "last modified on " << modified << '\n';
+	printf_s(lang? "Bigint calculadora versão %d.%d.%d.%d \n" : 
+		   "%s Bigint calculator Version %d.%d.%d.%d \n", 
+		myTime(), version[0], version[1], version[2], version[3]);
+	std::cout << (lang? "última modificação em " : "last modified on ") << modified << '\n';
 
 #ifdef __GNUC__
 	printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -3519,7 +3531,7 @@ retry:
 	/* check for continuation character. If found get continuation line(s) */
 	while (expr.back() == '\\') {   /* ends with continuation character? */
 		std::string cont;
-		std::cout << "continue: ";
+		std::cout << (lang ? "continuar: " : "continue: ");
 		getline(std::cin, cont);   /* get continuation line */
 		strToUpper(cont, cont);   // convert to UPPER CASE 
 		while (!cont.empty() && isspace(cont.back())) {
