@@ -1,4 +1,4 @@
-/*
+Ôªø/*
 This file is part of Alpertron Calculators.
 Copyright 2016 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -16,8 +16,8 @@ SIQS = Self-initializing quadratic sieve
 see http://www.mersennewiki.org/index.php/Self-Initializing_Quadratic_Sieve
 or https://en.wikipedia.org/wiki/Quadratic_sieve
 */
-
-/****************************************************************
+ 
+/* ***************************************************************
 Some results from profiling using Visual Studio (20/6/2018):
 PerformSiqsSeiveStage	72.53%
 SeiveThread				 7.63%
@@ -27,7 +27,7 @@ DoTrialDivision	 3.10%
 (this top 5 totals 90%, the rest is scattered over many functions)
 For numbers > 100 digits, SIQS may not be used at all, in which case
 the results would look completely different.
-*****************************************************************/
+**************************************************************** */
 
 #include "pch.h"
 #define WIN32_LEAN_AND_MEAN
@@ -249,10 +249,10 @@ static void upOneLine(void) {
 static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "Par·metros de SIQS: " : "SIQS parameters: ");
+	strcpy(ptrText, lang ? "Par√°metros de SIQS: " : "SIQS parameters: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, nbrFactorBasePrimes);   // Show number of primes in factor base.
-	strcpy(ptrText, lang ? " primos, lÌmite de la criba: " : " primes, sieve limit: ");
+	strcpy(ptrText, lang ? " primos, l√≠mite de la criba: " : " primes, sieve limit: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
 	ptrSIQSStrings = ptrText;
@@ -290,7 +290,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	u /= 2;
 
 		GetDHMS(&ptrText, elapsedTime);
-	if (lang) {  // espaÒol
+	if (lang) {  // espa√±ol
 		ptrText += sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
 			"Relaciones: %5d completas y %5d obtenidas de %6d parciales.\n"
 			"progreso = %2d%%. ",
@@ -3085,7 +3085,7 @@ static void BlockLanczos(void)
 			GetDHMS(&ptrText, elapsedTime / 10);
 			strcpy(ptrText, "  ");
 			ptrText += strlen(ptrText);
-			strcpy(ptrText, lang ? "Progreso del ·lgebra lineal: " : "Linear algebra progress: ");
+			strcpy(ptrText, lang ? "Progreso del √°lgebra lineal: " : "Linear algebra progress: ");
 			ptrText += strlen(ptrText);
 			int2dec(&ptrText, stepNbr * 3200 / matrixRows);
 			strcpy(ptrText, "%\n");

@@ -81,6 +81,9 @@
     <ClCompile Include="Modsqrt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="libpariInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">
@@ -105,6 +108,45 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parierr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pari.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paricast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paricfg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paricom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paridecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parigen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pariinl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parinf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pariold.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paristio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parisys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="paritune.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

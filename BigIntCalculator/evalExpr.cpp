@@ -101,13 +101,18 @@ enum class opCode {
 	fn_part,
 	fn_np,                /* next prime*/
 	fn_pp,                /* previous prime */
-	fn_r2,
+	fn_r2,                /* R2(n) */
 	fn_r2p,
-	fn_r3,
+	fn_r3,                /* R3(n) */
+	fn_r3h,               /* R3(n) calculated using Hurwitz class number */
+	fn_hurwitz,           /* hurwitz class number */
+	fn_classno,           /* class number */
 	fn_legendre,
 	fn_jacobi,
 	fn_kronecker,
-	fn_llt,
+	fn_tau,               /* ramanujan tau function */
+	fn_stirling,          /* stirling number */
+	fn_llt,               /* lucas lehmer test */
 	fn_sqrt,              /* square root */
 	fn_nroot,             /* nth root */
 	fn_bpsw,              /* primality test */
@@ -120,6 +125,8 @@ enum class opCode {
 	fn_invtot,            /* inverse totient */
 	fn_divisors,          /* list of divisors */
 	fn_primroot,          /* lowest primitive root */
+	fn_popcnt,            /* poulation count AKA Hamming weight */
+	fn_hamdist,           /* hamming distance i.e. number of bits that differ between a and b */
 	fn_invalid = -1,
 };
 
@@ -130,7 +137,7 @@ struct  functions {
 	opCode  fCode;        // integer code for function
 };
 
-/* list of function names. No function name can begin with C, SHL, SHR, NOT, 
+/* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operator. 
  Longer names must come before short ones that start with the same letters to 
  avoid mismatches */
@@ -154,6 +161,8 @@ const static struct functions functionList[]{
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
 	"PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
+	"POPCNT",    1,  opCode::fn_popcnt,     // population count
+	"HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
 	"GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
 	"LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
 	"F",         1,  opCode::fn_fib,			// fibonacci
@@ -167,11 +176,17 @@ const static struct functions functionList[]{
 	"B",         1,  opCode::fn_pp,			// previous prime
 	"R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
 	"R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+	"R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
+											// calculated using hurwitz class number
 	"R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
 	"JA",		 2,  opCode::fn_jacobi,
 	"KR",		 2,  opCode::fn_kronecker,
 	"APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
 	"ISPOW",     1,  opCode::fn_ispow,
+	"HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
+	"CLASSNO",   1,  opCode::fn_classno,    // class number
+	"TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
+	"STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
 };
 
 /* list of operators.  */
@@ -1042,12 +1057,52 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		result = R3(p[0]);
 		break;
 	}
+	case opCode::fn_r3h: {
+		if (p[0] < 0) {
+			return retCode::INVALID_PARAM;  // parameter out of range
+		}
+		if (mpz_sizeinbase(ZT(p[0]), 10) > 28)
+			return retCode::NUMBER_TOO_HIGH;  /* very large numbers cause pari stack overflow */
+		result = R3h((p[0]));
+		break;
+	}
+	case opCode::fn_hurwitz: {
+		if (mpz_sizeinbase(ZT(p[0]), 10) >28)
+			return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
+		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
+		break;
+	}
+	case opCode::fn_classno: {
+		int mod = (int)MulPrToLong(p[0] % 4);
+		if (mod < 0)
+			mod += 4;
+		if (mod > 1)
+			return retCode::INVALID_PARAM;
+		if (isPerfectSquare(p[0]))
+			return retCode::INVALID_PARAM;
+		if  (p[0] > 730000000)
+			return retCode::NUMBER_TOO_HIGH;  /* avoid pari-stack overflow */
+		result = classno(p[0], 0);  /* returns class number */
+		break;
+	}
 
 	/* legendre & kronecker are in fact implemented in MPIR as aliases of jacobi */
 	case opCode::fn_legendre:
 	case opCode::fn_jacobi:
 	case opCode::fn_kronecker: {
 		result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
+		break;
+	}
+	case opCode::fn_tau: {
+		result = tau(p[0]); /* Ramanujan's tau function */
+		break;
+	}
+	case opCode::fn_stirling: {
+		if (p[0] < 0 || p[1] < 0 || p[2] < 1 || p[2]> 2)
+			return retCode::INVALID_PARAM;
+		if (p[0] > LONGLONG_MAX || p[1] > LONGLONG_MAX)
+			return retCode::NUMBER_TOO_HIGH;
+		result = stirling(p[0], p[1], p[2]);
 		break;
 	}
 
@@ -1103,12 +1158,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 			return retCode::NUMBER_TOO_LOW;
 
 		result = mpz_bpsw_prp(ZT(p[0]));
-		if (result == 0)
-			std::cout << "composite \n";
-		else if (result == 1)
-			std::cout << "probable prime \n";
-		else if (result == 2)
-			std::cout << "prime \n";
+		if (verbose > 0) {
+			if (result == 0)
+				std::cout << "composite \n";
+			else if (result == 1)
+				std::cout << "probable prime \n";
+			else if (result == 2)
+				std::cout << "prime \n";
+		}
 		break;
 	}
 	case opCode::fn_aprcl: /* Adleman–Pomerance–Rumely primality test  */ {
@@ -1124,12 +1181,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[0] <= 1) 
 			return retCode::NUMBER_TOO_LOW;
 		result = mpz_aprtcle(ZT(p[0]), verbose);
-		if (result == 0)
-			printf_s("composite \n");
-		else if (result == 1)
-			printf_s("probable prime \n");
-		else if (result == 2)
-			printf_s("prime \n");
+		if (verbose > 0) {
+			if (result == 0)
+				printf_s("\ncomposite \n");
+			else if (result == 1)
+				printf_s("\nprobable prime \n");
+			else if (result == 2)
+				printf_s("\nprime \n");
+		}
 		break;
 	}
 	case opCode::fn_numfact: /* number of factors */ {
@@ -1153,7 +1212,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		Znum base;
 		long long exp = PowerCheck(p[0], base, 2);
 		if (exp > 1) {
-			std::cout << p[0] << " = " << base << "^" << exp << '\n';
+			if (verbose > 0)
+				std::cout << p[0] << " = " << base << "^" << exp << '\n';
 			result = -1;
 		}
 		else {
@@ -1224,6 +1284,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (result <= 0)
 			return retCode::INVALID_PARAM;
 		else break;
+	}
+	case opCode::fn_popcnt:  /* population count */ {
+		if (p[0] < 0)
+			return retCode::NUMBER_TOO_LOW;  /* for -ve number, no of 1-bits is infinite */
+		unsigned long long bitcnt = mpz_popcount(ZT(p[0]));
+		result = bitcnt;
+		break;
+	}
+	case opCode::fn_hamdist: /* hamming distance */ {
+		if ((p[0] < 0 && p[1] >= 0) || (p[0] >= 0 && p[1] < 0))
+			return retCode::INVALID_PARAM;  /* p0 and p1 must have same sign, 
+								      otherwise the distance is infinite */
+		unsigned long long bitcnt = mpz_hamdist(ZT(p[0]), ZT(p[1]));
+		result = bitcnt;
+		break;
 	}
 
 	default:
@@ -1372,7 +1447,10 @@ static void operSearch(const std::string &expr, int &opcode) {
 		/* use case-insensitive compare */
 		if (_strnicmp(expr.data(), operators[ix].oper, strlen(operators[ix].oper)) == 0) {
 			opcode = ix;
-			return;
+			if (operators[ix].operCode == opCode::comb && isalpha(expr[1]))
+				break;  /* if 'C' in expr is followed by another letter it can't be the C operator */
+			else
+				return;
 		}
 	}
 	opcode = -1;  // does not match any operator in list
@@ -1826,7 +1904,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 				exprIndex = exprIndexAux + 1;
 			}
 
-			else {                   // Decimal number.
+			else  /* Decimal number. */ { 
 				std::vector<char> digits;
 				while (exprIndexAux < expr.length()) {
 					// find position of last digit
@@ -1848,8 +1926,8 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 			}
 		}
 
+        /* try to match function name. Names are not case-sensitive */
 		else {
-			/* try to match function name. Names are not case-sensitive */
 			for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
 				if (_strnicmp(&expr[exprIndex],
 					functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {

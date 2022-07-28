@@ -1,6 +1,6 @@
 #pragma once
 
-#define COPYRIGHT_SPANISH "Hecho por Darío Alpern. Actualizado el 18 de febrero de 2018."
+#define COPYRIGHT_SPANISH "Hecho por DarÃ­o Alpern. Actualizado el 18 de febrero de 2018."
 #define COPYRIGHT_ENGLISH "Written by Dario Alpern. Last updated on 18 February 2018."
 
 #ifdef __EMSCRIPTEN__

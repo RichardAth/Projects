@@ -29,6 +29,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 extern Znum zR, zR2, zNI, zN;
 #endif
 
+typedef unsigned __int32 uint32;
+
 /* external function declaration */
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 char* getFileName(const char* filter, HWND owner);
@@ -172,7 +174,8 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex)
 	free(buffer);		// avoid memory leakage
 	std::cout << nbrOutput;
 	if (msglen > 6 && size)
-		std::cout << " (" << msglen << " digits)";
+		if (lang) std::cout << " (" << msglen << " dígitos)";
+		else std::cout << " (" << msglen << " digits)";
 }
 
 /* convert biginteger to normal. Checks for overflow */
@@ -373,7 +376,8 @@ Znum llt(const Znum &p) {
 	}
 	if (verbose > 0) { 
 		t3 = clock();
-		printf_s("\ntime used by llt = %.2f sec \n", (double)(t3 - t2) / CLOCKS_PER_SEC);
+		printf_s(lang? "\ntiempo usado por llt = %.2f sec \n": "\ntime used by llt = %.2f sec \n", 
+			(double)(t3 - t2) / CLOCKS_PER_SEC);
 	}
 
 	if (tmp == 0) {
@@ -431,7 +435,11 @@ void generatePrimes(unsigned long long int max_val) {
 	// allocate storage for primeList if required
 	{
 		if (verbose > 0)
-			fprintf(stdout, "Expected no of primes is %.0f\n",
+			if (lang)
+				printf_s("número esperado de primos es %.0f \n", 
+					(double)max_val / (log((double)max_val) - 1));
+			else
+				printf_s("Expected no of primes is %.0f\n",
 				(double)max_val / (log((double)max_val) - 1));
 		if (primeList != NULL) free(primeList);
 		plist_size = (size_t)((double)max_val / (log((double)max_val) - 1)) * 102 / 100;
@@ -464,8 +472,12 @@ void generatePrimes(unsigned long long int max_val) {
 	}
 
 	// after completing the while loop we have found all the primes < max_val
-	if (verbose > 0)
-		printf_s("  prime %9lld is %11lld\n", count, numsave);
+	if (verbose > 0) {
+		if (lang)
+			printf_s("  el primo %9lld es %11lld\n", count, numsave);
+		else 
+			printf_s("  prime %9lld is %11lld\n", count, numsave);
+	}
 	primeList[count] = ULLONG_MAX;		// set end marker
 	prime_list_count = (unsigned int)count;
 	primeListMax = primeList[count - 1];
@@ -531,11 +543,11 @@ static void textError(retCode rc) {
 		std::cout << (lang ? "Detenido por el usuario\n" : "Stopped by use\nr");
 		break;*/
 	case retCode::EXPONENT_NEGATIVE: {
-		std::cout << "Exponent is negative\n";
+		std::cout << (lang? "Exponente no debe ser negativo\n" : "Exponent must not be negative\n");
 		break;
 	}
 	case retCode::EXPONENT_TOO_LARGE: {
-		std::cout << "Exponent exceeds 2^31-1\n";
+		std::cout << (lang? "El exponente es mayor que 2^31-1\n": "Exponent exceeds 2^31-1\n");
 		break;
 	}
 	/*case retCode::EXPR_VAR_OR_COUNTER_REQUIRED:
@@ -590,7 +602,10 @@ static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
 			SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 
 	if (elSec <= 60.0) {
-		printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
+		if (lang)
+			printf_s("%.4f segundos \n", elSec);
+		else
+			printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
 	}
 	else {
 		/* round to nearest second */
@@ -690,18 +705,19 @@ static void doFactors(const Znum &Result, bool test) {
 		std::cout << '\n';
 		if (factorFlag > 1) {
 			auto divisors = factorlist.NoOfDivs();
-			std::cout << "Number of Divisors = ";
+			std::cout << (lang? "Cantidad de Divisores = " : "Number of Divisors = ");
 			ShowLargeNumber(divisors, 6, false, false);
 
 			divisors = factorlist.DivisorSum();
-			std::cout << "\nSum of Divisors    = ";
+			std::cout << (lang? "\nSuma de divisores     = " : "\nSum of Divisors    = ");
 			ShowLargeNumber(divisors, 6, false, false);
 			divisors = factorlist.totient();
-			std::cout << "\nTotient            = ";
+			std::cout << (lang ? "\nPhi de Euler          = " : "\nTotient            = ");
 			ShowLargeNumber(divisors, 6, false, false);
 			if (Result > 0) {
 				auto mob = factorlist.mob();  // mobius only defined for +ve integers
 				std::cout << "\nMöbius             = " << mob;
+	
 			}
 
 			/* show that the number is the sum of 4 or fewer squares. See
@@ -742,10 +758,30 @@ static void doFactors(const Znum &Result, bool test) {
 					std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
 					Beep(750, 1000);
 				}
+				else {
+					if (factorlist.twosq()) {
+						if (Quad[2] != 0 || Quad[3] != 0)
+							std::cout << "expected c = d= 0; got: \n"
+							<< "number = " << Result << '\n'
+							<< "a= " << Quad[0] << '\n'
+							<< "b= " << Quad[1] << '\n'
+							<< "c= " << Quad[2] << '\n'
+							<< "d= " << Quad[3] << '\n';
+					}
+					//else if (factorlist.sqplustwosq()) {
+					//	if (Quad[1] != Quad[2] || Quad[3] != 0)
+					//		std::cout << "expected b = c and d= 0; got: \n"
+					//		<< "number = " << Result << '\n'
+					//		<< "a= " << Quad[0] << '\n'
+					//		<< "b= " << Quad[1] << '\n'
+					//		<< "c= " << Quad[2] << '\n'
+					//		<< "d= " << Quad[3] << '\n';
+					//}
+				}
 			}
 			auto end = clock(); 
 			double elapsed = (double)end - start;
-			PrintTimeUsed(elapsed, "time used = ");
+			PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " :"time used = ");
 
 			/* store info for summary */
 			sum.time = elapsed / CLOCKS_PER_SEC;
@@ -758,7 +794,7 @@ static void doFactors(const Znum &Result, bool test) {
 		}
 	}
 	else
-		std::cout << " cannot be factorised\n";
+		std::cout << (lang? "no se puede factorizar\n" : " cannot be factorised\n");
 }
 
 /* perform some simple tests. Returns true if x3 is prime 
@@ -774,7 +810,10 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 	sum.numsize = (int)ComputeNumDigits(x3, 10);
 
-	std::cout << "\nTest " << testnum << ": factorise ";
+	if (lang)
+		std::cout << "\nPrueba " << testnum << ": factoriza ";
+	else
+		std::cout << "\nTest " << testnum << ": factorise ";
 	ShowLargeNumber(x3, 6, true, false);
 	std::cout << '\n';
 	if (method == 0) {
@@ -799,14 +838,55 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		/* check that sum of squares is correct */
 		result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
 		if (result != x3) {
-			std::cout << "Quad expected value " << x3 << " actual value " << result << '\n';
+			std::cout << "Quad expected value " << x3 << " actual value " << result << '\n'
+				<< "a= " << Quad[0] << '\n'
+				<< "b= " << Quad[1] << '\n'
+				<< "c= " << Quad[2] << '\n'
+				<< "d= " << Quad[3] << '\n';
 			Beep(750, 1000);
+		}
+		else {
+			if (factorlist.twosq()) {
+				if (Quad[2] != 0 || Quad[3] != 0)
+					std::cout << "expected c = d= 0; got: \n"
+					<< "number = " << x3 << '\n'
+					<< "a= " << Quad[0] << '\n'
+					<< "b= " << Quad[1] << '\n'
+					<< "c= " << Quad[2] << '\n'
+					<< "d= " << Quad[3] << '\n';
+			}
+			else if (factorlist.sqplustwosq()) {
+				if ((Quad[0] != Quad[1] && Quad[1] != Quad[2]) || Quad[3] != 0)
+					std::cout << "expected a= b or b = c and d= 0; got: \n"
+					<< "number = " << x3 << '\n'
+					<< "a= " << Quad[0] << '\n'
+					<< "b= " << Quad[1] << '\n'
+					<< "c= " << Quad[2] << '\n'
+					<< "d= " << Quad[3] << '\n';
+			}
+			else {
+				result = x3;
+				while (isEven(result)) result >>= 1;
+				if ((numLimbs(result) < 4) && ((result & 7) < 7)) {
+					if (Quad[3] != 0)
+						std::cout << "expected d= 0; got: \n"
+						<< "number = " << x3 << '\n'
+						<< "a= " << Quad[0] << '\n'
+						<< "b= " << Quad[1] << '\n'
+						<< "c= " << Quad[2] << '\n'
+						<< "d= " << Quad[3] << '\n';
+				}
+			}
 		}
 	}
 
 	if (!factorlist.isPrime() ) {
 		/* x3 is not prime */
 
+		if (lang)
+			std::cout  << factorlist.fsize() << " factores únicos encontrados, total "
+			<< sum.totalFacs << " factores\n";
+		else
 		std::cout << "found " << factorlist.fsize() << " unique factors, total "
 			<< sum.totalFacs << " factors\n";
 
@@ -815,11 +895,14 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		else
 			sum.ctrs.yafu = sum.totalFacs;
 
-		std::cout << "test " << testnum << " completed at ";
+		if (lang)
+			std::cout << "prueba " << testnum << " terminada as las ";
+		else
+			std::cout << "test " << testnum << " completed at ";
 
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
-		PrintTimeUsed(elapsed, "time used = ");
+		PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		sum.NumFacs = (int)factorlist.fsize();
 		sum.testNum = testnum;
@@ -837,7 +920,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 		sum.testNum = testnum;
 		end = clock();              // measure amount of time used
 		elapsed = (double)end - start;
-		PrintTimeUsed(elapsed, "time used = ");
+		PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
 		sum.time = elapsed / CLOCKS_PER_SEC;
 		results.push_back(sum);
 		return true;    // is prime
@@ -897,7 +980,7 @@ static void doTests(void) {
 		"sumdigits(123456789, 6)",         19,
 		"revdigits(1234567890, 10)",  987654321, 
 		"factconcat(2, 11!)", 22222222333355711,
-		"le(22, 7)",                        1,
+		"le(22, 7)",                        1,    /* legendre */
 		"17c7",                         19448,    // binomial coefficient
 		"(17!) / ((17-7)!*7!)",         19448,
 		"4 ^ 3 ^ 2",                   262144,    // NB expoentiation is right to left evaluation
@@ -914,6 +997,7 @@ static void doTests(void) {
 		"5 < 6 != 7 < 8",                 0,   // returns false (!= has lower priority)
 		"5 < (6 != 7) < 8",              -1,   // returns true; expr evaluated from left to right
 		"R3(49)",                        54,
+		"R3H(49)",                       54,
 		"R2(585)",                       16,
 		"SQRT(1234320)",               1110,
 		"NROOT(2861381721051424,5)",   1234,
@@ -941,6 +1025,8 @@ static void doTests(void) {
 		"lcm(12,20)",                     60,
 		"pi(500)",                        95,
 		"primroot(761)",                   6,   /* primitive root */
+		"hclass(999)",                   384,   /* hurwitz class number*/
+		"classno(1000001)",               94,   /* class number */
 	};
 
 	results.clear();
@@ -957,7 +1043,7 @@ static void doTests(void) {
 			Beep(750, 1000);
 		}
 	}
-	std::cout << i << " tests completed\n";
+	std::cout << i << (lang ? "  pruebas completadas\n" : " tests completed\n");
 
 	for (Znum i = 1000; i <= 100000000000000000; ) {
 		Znum x1, x2;
@@ -1052,6 +1138,26 @@ static void doTests(void) {
 
 	testcnt++;
 	ComputeExpr("n(2^97)*n(2^105)", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of number x3 to squares a^2 + 2*b^2 */
+	ComputeExpr("n(10^7)^2 + 2*n(3*10^6)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^64) to squares a^2 + 2*b^2 */
+	ComputeExpr("n(2^34)^2 + 2*n(2^34+200)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^64) to squares a^2 + 2*b^2 */
+	ComputeExpr("n(10^27)^2 + 2*n(10^32)^2", x3, asgCt);
+	factortest(x3, testcnt);
+
+	testcnt++;
+	/* test reduction of mumber x3 (> 2^192) to squares  */
+	ComputeExpr("n(10^20+477)*n(10^24)*n(10^22)", x3, asgCt);
 	factortest(x3, testcnt);
 
 	auto end = clock();   // measure amount of time used
@@ -1209,7 +1315,7 @@ static void XlargeRand(Znum& a, int size) {
 static void doTests3(void) {
 	Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
 	limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
-	limb bL[MAX_LEN], blM[MAX_LEN], bl2[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
+	limb bL[MAX_LEN], blM[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
 	limb one[MAX_LEN];
 	int numLen = MAX_LEN-2, l2;
 
@@ -1518,6 +1624,7 @@ static void doTests3(void) {
 /* see http://oeis.org/A002102 */
 
 extern unsigned __int64 R2(const unsigned __int64 n);
+extern void squareFree(__int64& n, __int64& sq, factorsS& sqf);
 //static void doTests4(void) {
 //	generatePrimes(2000);
 //	for (int i = 0; i <= 9992; i++) {
@@ -1741,10 +1848,229 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
+/* find next prime after p */
+static long long nextprime(const long long p) {
+	mpz_t pBi, next;
+
+	mpz_init_set_ui(pBi, p);  /* pBi = p */
+	mpz_init(next);
+	mpz_nextprime(next, pBi);
+	return mpz_get_ui(next);
+}
+
+/* return 0 if number is a power of 2 (no odd prime factors),
+          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
+		    and any odd prime factors  of form 8i+5 or 8i+7 have even exponents.
+		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
+		    exponent  
+		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
+		    odd prime factors of form 8i+5 or 8i+7 have an even exponent  */
+static int classify(Znum n) {
+	Znum r, p;
+	fList factors;
+	bool type1 = false;  /* set true if there is any odd prime factors of form 8i+1 or 8i+3 */
+
+	while (isEven(n))
+		n /= 2;
+	if (n == 1)
+		return 0;
+	
+	long long mod = mpz_tdiv_r_ui(ZT(r), ZT(n), 8); /* mod = n (mod 8)*/
+	if (mod == 5 || mod == 7) 
+		return 2;
+
+	factorise(n, factors, nullptr);
+	
+	for (int i = 0; i < factors.fsize(); i++) {
+		/* step through prime factors */
+		p = factors.f[i].Factor;
+		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);  /* mod = p (mod 8) */
+		switch (mod) {
+
+		case 1:
+		case 3:
+			type1 = true;
+			continue;
+
+		case 5:
+		case 7:
+			if ((factors.f[i].exponent & 1) == 0)  /* if exponent is even*/
+				continue;
+			else 
+				return 2;
+
+		default: 
+			abort();   /* should never happen  ! */
+		}
+	}
+
+	/* any odd prime factors is of form 8i+5 or 8i+7 have even exponents. */
+	if (type1)
+		return 1;
+	else
+		return 3; /* no odd prime factors of form 8i+1 or 8i+3 */
+}
+
+/* establish by brute force if a number can be expressed as p1^2 + 2*(p2^2)
+return true if it can, otherwise false */
+static bool sqcheck(const long long x, long long &p1, long long &p2) {
+	long long isq2;
+	if (x % 8 == 7)
+		return false;  /* x can only be expressed as the sum of 4 (or more) squares */
+
+	for (p2 = 1; ; p2++) {
+		isq2 = 2 * p2 * p2;
+		if (isq2 >= x)
+			break;
+
+		if (isPerfectSquare(x - isq2)) {
+			p1 = llSqrt(x - isq2);
+#ifdef _DEBUG
+			if (verbose > 0)
+				std::cout << "x = " << x << "= 2*" << p2 << "^2 + " << p1 << "^2\n";
+#endif
+			return true;
+		}
+	}
+	return false;
+}
+
+/* hypothesis: if a number has 1 or more prime factors of the form 8i+1 or 8i+3, 
+and all odd prime factors of the form 8i+5 or 8i+7 have even exponents it is 
+possible to express it as a^2 + 2*(b^2), otherwise it is impossible*/
+static bool checkAssert(const long long i) {
+	Znum iZ = i;
+	long long isq, isq2;
+	int type; /* 0 if number is a power of 2 (no odd prime factors),
+          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
+		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
+		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
+		    exponent 
+		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
+		    odd prime factors of form 8i+5 or 8i+7 have an even exponent */
+	
+	type = classify(iZ);
+	if (type == 0 || type == 2 || type == 3)
+		if (sqcheck(i, isq, isq2)) {
+			/* assertion fails */
+			std::cout << "i = " << i << " = 2*" << isq2 << "^2 + " << isq << "^2\n";
+			std::cout << "type = " << type << '\n';
+			return false;
+		}
+		else return true;
+	
+	assert(type == 1);
+	if (!sqcheck(i, isq, isq2)) {
+		/* assertion fails */
+		std::cout << "i = " << i << '\n';
+		std::cout << "type = " << type << '\n';
+		return false;
+	}
+	else return true;
+}
+
+/* investigate which numbers can be expressed as a^2 + 2*(b^2)
+
+hypothesis: if a number has one or more prime factors of the form 8i+1 or 8i+3, 
+(i being an integer >= 0), and all odd prime factors of the form 8i+5 or 8i+7 
+have even exponents, it is possible to express it as a^2 + 2*(b^2), 
+otherwise it is impossible.
+This implies that if the number is divided by 2 until the quotioent is odd,
+the number must be 1 or 3 modulo 8
+
+See https://oeis.org/A002479. (this list includes cases where a or b is zero,
+which allows all perfect squares and 2 * perfect square as well.)
+
+command format is testa x[,y[,z]] 
+where x = 1 for test of all primes from 2 to y. 
+            check that p can be expressed as the sum of 2, 3 or 4 squares 
+	  x = 2 to check which numbers in range 2 to y can be expresssed as 
+	        a^2 + 2*(b^2)
+	  x = 3 to check for y random numbers each of size z bits, whether or
+	        not they can be expresssed as a^2 + 2*(b^2)*/
+static void doTestsA(const std::string& params) {
+	long long p1 = 1, p2 = 1000;
+	long long p3 = 0; 
+	int count = 0;
+	fList ifactors;
+	Znum iz, quads[4];
+
+	auto numParams = sscanf_s(params.data(), "%lld,%lld,%lld", &p1, &p2, &p3);
+
+	if (p1 == 1) {
+		for (long long p = 2; p <= p2; p = nextprime(p)) {
+			iz = p;
+			factorise(iz, ifactors, quads);
+			if (p % 4 == 1) {
+				/* p can be expressed as the sum of 2 squares */
+				if (quads[2] != 0 || quads[3] != 0)
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
+			}
+			else if (p % 8 != 7) {
+				/* p can be expressed as the sum of 3 squares */
+				if (quads[3] != 0)
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
+				if (quads[0] != quads[1] && quads[1] != quads[2]) {
+					/* all 3 values are different (we expected 2 the same) */
+					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
+						<< quads[1] << ", " << quads[2] << " ****\n";
+				}
+			}
+			/* if p = 7 (mod 8) 4 squares are needed */
+			count++;
+			if ((count & 0xfff) == 0) {
+				std::cout << count << " primes tested p = " << p << '\n';
+			}
+		}
+		std::cout << count << " primes tested \n";
+		return;
+	}
+	else if (p1 == 2) {
+		for (long long i = 2; i <= p2; i++) {
+			if (!checkAssert(i))
+				system("PAUSE");
+			if ((i & 0xffff) == 1)
+				std::cout << myTime() << ' ' << i - 1 << " tests completed \n";
+		}
+	}
+	else if (p1 == 3) {
+		long long x;
+		if (p3 < 24 || numParams < 3) {
+			std::cout << "Use default 24 for number size in bits \n";
+			p3 = 24;
+		}
+		if (p3 > 63) {
+			std::cout << "** max size is 63 bits! \n";
+			p3 = 63;
+		}
+		/* initialize random seed */
+		std::random_device rd;   // non-deterministic generator
+		std::mt19937_64 gen(rd());  // to seed mersenne twister.
+		std::uniform_int_distribution<long long> dist(1, 1LL<<p3); // distribute results
+													// between 1 and 2^p3 inclusive.
+
+		for (long long count = 0; count < p2; count++) {
+			x = dist(gen);     /* x is a random number */
+			if (!checkAssert(x))
+				system("PAUSE");
+			if ((count & 0xfff) == 0)
+				std::cout << myTime() << ' ' << count+1 << " tests completed \n";
+		}
+	}
+	else
+		std::cout << "** invalid subtest (use 1, 2 or 3) \n";
+	std::cout << "test a completed \n";
+}
+
 
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
-std::string helpFilePath = "docfile.txt";  /* can be overwritten from the .ini file */
+
+  /* can be overwritten from the .ini file */
+std::string helpFilePath = "docfile.txt";
+std::string PariPath = "C:/Program Files (x86)/Pari64-2-13-2/libpari.dll";  
 
 /* (re)write the BigIntCalculator.ini file
 initially a .new file is created, then any .old file is deleted
@@ -1769,6 +2095,7 @@ void writeIni(void) {
 	newStr << "msieve-path=" << MsievePath << '\n';
 	newStr << "msieve-prog=" << MsieveProg << '\n';
 	newStr << "helpfile=" << helpFilePath << '\n';
+	newStr << "paripath=" << PariPath << '\n';
 	newStr << "endsound=" << endsound << '\n';
 	newStr << "attsound=" << attsound << '\n';
 	newStr.close();
@@ -1780,15 +2107,18 @@ void writeIni(void) {
 	}
     // rename .ini as .old
 	int rv = rename(iniFname.c_str(), oldFname.c_str());   
-	if (rv == 0 || errno == ENOENT)
-		rv = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+	if (rv == 0 || errno == ENOENT) {
+		int rv2 = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
+		if (rv2 != 0)
+			perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+	}
 	else
 		perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
 }
 
 /* read the .ini file and update paths. 
 path definitions begin with yafu-path=, yafu-prog=, msieve-path=, msieve-prog=, 
-helpfile=, endsound= or attsound=
+helpfile=, endsound=, attsound= or paripath=
 Paths are not case-sensitive. 
 Anything else is saved and is copied if the .ini file is updated 
 
@@ -1849,6 +2179,9 @@ static void processIni(const char * arg) {
 			else if (_strnicmp("attsound=", buffer.c_str(), 9) == 0) {
 				attsound = buffer.substr(9);
 			}
+			else if (_strnicmp("paripath=", buffer.c_str(), 9) == 0) {
+				PariPath = buffer.substr(9);
+			}
 			else inifile.push_back(buffer);  // save anything not recognised
 		}
 		iniStr.close();
@@ -1864,9 +2197,12 @@ static void helpfunc(const std::string &helpTopic)
 	FILE *doc;
 	char str[1024];
 	bool printtopic = false;
+	bool line1 = true;
 	std::string expr = "";
 	char * newpathC;
 	std::string newpath;
+	const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
+	bool UTF8 = false;          /* set true if UTF8 BOM found */
 
 retry:
 	//open the doc file and search for a matching topic
@@ -1916,6 +2252,17 @@ retry:
 				break;
 			}
 
+		if (line1) {
+			line1 = false;     /* only do this on 1st line */
+			int d = (unsigned char)str[0] - BOM[0];    /* BOM has to be declared as unsigned char */
+			int d1 = (unsigned char)str[1] - BOM[1];
+			int d2 = (unsigned char)str[2] - BOM[2];
+			if (d == 0 && d1 == 0 && d2 == 0) {
+				memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
+				UTF8 = true;
+			}
+		}
+
 		//is this a header?
 		if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) 	{
 
@@ -1941,11 +2288,719 @@ retry:
 			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
 							may not end with newline */
 		else
-			printf_s("Help for %s not found \n", helpTopic.data());
+			if (lang)
+				printf_s("Ayuda para %s no encontrado \n", helpTopic.data());
+			else
+				printf_s("Help for %s not found \n", helpTopic.data());
 	}
 	fclose(doc);
 	return;
 }
+
+// machine info
+double MEAS_CPU_FREQUENCY;
+char CPU_ID_STR[80] = {'\0'};
+
+int CLSIZE;
+char HAS_SSE41;
+#if defined(WIN32)
+char sysname[MAX_COMPUTERNAME_LENGTH + 1];
+unsigned long sysname_sz;
+#else
+char sysname[256];
+int sysname_sz;
+#endif
+
+#ifdef _MSC_VER
+
+/* Core aware timing on Windows, courtesy of Brian Gladman */
+
+#if defined( _WIN64 )
+
+#define current_processor_number GetCurrentProcessorNumber
+
+#else
+
+unsigned long current_processor_number(void)
+{
+	__asm
+	{
+		mov     eax, 1
+		cpuid
+		shr     ebx, 24
+		mov     eax, ebx
+	}
+}
+
+#endif
+
+static int lock_thread_to_core(void)
+{
+	DWORD_PTR afp, afs;
+
+	if (GetProcessAffinityMask(GetCurrentProcess(), &afp, &afs))
+	{
+		afp &= (DWORD_PTR)(1LL << current_processor_number());
+		if (SetThreadAffinityMask(GetCurrentThread(), afp))
+			return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
+}
+
+static int unlock_thread_from_core(void)
+{
+	DWORD_PTR afp, afs;
+
+	if (GetProcessAffinityMask(GetCurrentProcess(), &afp, &afs))
+	{
+		if (SetThreadAffinityMask(GetCurrentThread(), afp))
+			return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
+}
+
+double cycles_per_second = 0.0;
+double ticks_per_second = 0.0;
+double cycles_per_tick = 0.0;
+
+unsigned long long measure_processor_speed(void)
+{
+	unsigned long long cycles;
+
+	lock_thread_to_core();
+	cycles = __rdtsc();
+	Sleep(100);
+	cycles = __rdtsc() - cycles;
+	unlock_thread_from_core();
+	cycles_per_second = 10.0 * (double)cycles;
+
+	if (ticks_per_second == 0.0)
+	{
+		LARGE_INTEGER ll;
+		QueryPerformanceFrequency(&ll);
+		ticks_per_second = (double)ll.QuadPart;
+		cycles_per_tick = cycles_per_second / ticks_per_second;
+	}
+	return cycles;
+}
+
+
+#else
+
+uint64 measure_processor_speed(void)
+{
+	uint64 cycles;
+	struct timeval start, stop;
+	double t_time;
+	TIME_DIFF* difference;
+
+	gettimeofday(&start, NULL);
+
+	cycles = yafu_read_clock();
+	do
+	{
+		gettimeofday(&stop, NULL);
+		difference = my_difftime(&start, &stop);
+		t_time = ((double)difference->secs +
+			(double)difference->usecs / 1000000);
+		free(difference);
+	} while (t_time < 0.1);
+	cycles = yafu_read_clock() - cycles;
+
+	return cycles;                  /* return cycles per second  */
+}
+
+#endif
+
+#if defined(GCC_ASM32X)
+#define HAS_CPUID
+#define CPUID(code, a, b, c, d) 			\
+		ASM_G volatile(					\
+			"movl %%ebx, %%esi   \n\t"		\
+			"cpuid               \n\t"		\
+			"movl %%ebx, %1      \n\t"		\
+			"movl %%esi, %%ebx   \n\t"		\
+			:"=a"(a), "=m"(b), "=c"(c), "=d"(d) 	\
+			:"0"(code) : "%esi")
+#define CPUID2(code1, code2, a, b, c, d) 			\
+		ASM_G volatile(					\
+			"movl %%ebx, %%esi   \n\t"		\
+			"cpuid               \n\t"		\
+			"movl %%ebx, %1      \n\t"		\
+			"movl %%esi, %%ebx   \n\t"		\
+			:"=a"(a), "=m"(b), "=c"(c), "=d"(d) 	\
+			:"0"(code1), "2"(code2) : "%esi")
+
+#elif defined(GCC_ASM64X)
+#define HAS_CPUID
+#define CPUID(code, a, b, c, d) 			\
+		ASM_G volatile(					\
+			"movq %%rbx, %%rsi   \n\t"		\
+			"cpuid               \n\t"		\
+			"movl %%ebx, %1      \n\t"		\
+			"movq %%rsi, %%rbx   \n\t"		\
+			:"=a"(a), "=m"(b), "=c"(c), "=d"(d) 	\
+			:"0"(code) : "%rsi")
+#define CPUID2(code1, code2, a, b, c, d)		\
+		ASM_G volatile(					\
+			"movq %%rbx, %%rsi   \n\t"		\
+			"cpuid               \n\t"		\
+			"movl %%ebx, %1      \n\t"		\
+			"movq %%rsi, %%rbx   \n\t"		\
+			:"=a"(a), "=m"(b), "=c"(c), "=d"(d) 	\
+			:"0"(code1), "2"(code2) : "%rsi")
+
+#elif defined(_MSC_VER)
+#include <intrin.h>
+#define HAS_CPUID
+#define CPUID(code, a, b, c, d)	\
+	{	int _z[4]; \
+		__cpuid(_z, code); \
+		a = _z[0]; \
+		b = _z[1]; \
+		c = _z[2]; \
+		d = _z[3]; \
+	}
+#define CPUID2(code1, code2, a, b, c, d) \
+	{	int _z[4]; \
+		__cpuidex(_z, code1, code2); \
+		a = _z[0]; \
+		b = _z[1]; \
+		c = _z[2]; \
+		d = _z[3]; \
+	}
+#endif
+
+
+// http://msdn.microsoft.com/en-us/library/hskdteyh.aspx
+// cpuid.cpp 
+// processor: x86, x64
+// Use the __cpuid intrinsic to get information about a CPU
+// modified for c compliers and use of CPUID macros 
+//		- brb, 10/26/10
+
+const char* szFeatures[] =
+{
+	"x87 FPU On Chip",
+	"Virtual-8086 Mode Enhancement",
+	"Debugging Extensions",
+	"Page Size Extensions",
+	"Time Stamp Counter",
+	"RDMSR and WRMSR Support",
+	"Physical Address Extensions",
+	"Machine Check Exception",
+	"CMPXCHG8B Instruction",
+	"APIC On Chip",
+	"Unknown1",
+	"SYSENTER and SYSEXIT",
+	"Memory Type Range Registers",
+	"PTE Global Bit",
+	"Machine Check Architecture",
+	"Conditional Move/Compare Instruction",
+	"Page Attribute Table",
+	"36-bit Page Size Extension",
+	"Processor Serial Number",
+	"CFLUSH Extension",
+	"Unknown2",
+	"Debug Store",
+	"Thermal Monitor and Clock Ctrl",
+	"MMX Technology",
+	"FXSAVE/FXRSTOR",
+	"SSE Extensions",
+	"SSE2 Extensions",
+	"Self Snoop",
+	"Multithreading Technology",
+	"Thermal Monitor",
+	"Unknown4",
+	"Pending Break Enable"
+};
+
+
+
+/* return cpuid , cache size, etc  */
+int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, int do_print)
+{
+	char CPUString[0x20];
+	char CPUBrandString[0x40] = { 0 };
+	int CPUInfo[4] = { -1 };
+	int nSteppingID = 0;
+	int nModel = 0;
+	int nFamily = 0;
+	int nProcessorType = 0;
+	int nExtendedmodel = 0;
+	int nExtendedfamily = 0;
+	int nBrandIndex = 0;
+	int nCLFLUSHcachelinesize = 0;
+	int nLogicalProcessors = 0;
+	int nAPICPhysicalID = 0;
+	int nFeatureInfo = 0;
+	int nCacheLineSize = 0;
+	int nL2Associativity = 0;
+	int nCacheSizeK = 0;
+	int nPhysicalAddress = 0;
+	int nVirtualAddress = 0;
+	int nRet = 0;    /* return value */
+
+	int nCores = 0;
+	int nCacheType = 0;
+	int nCacheLevel = 0;
+	int nMaxThread = 0;
+	int nSysLineSize = 0;
+	int nPhysicalLinePartitions = 0;
+	int nWaysAssociativity = 0;
+	int nNumberSets = 0;
+
+	unsigned    nIds, nExIds, i;
+
+	char    bSSE3Instructions = 0;
+	char    bMONITOR_MWAIT = 0;
+	char    bCPLQualifiedDebugStore = 0;
+	char    bVirtualMachineExtensions = 0;
+	char    bEnhancedIntelSpeedStepTechnology = 0;
+	char    bThermalMonitor2 = 0;
+	char    bSupplementalSSE3 = 0;
+	char    bL1ContextID = 0;
+	char    bCMPXCHG16B = 0;
+	char    bxTPRUpdateControl = 0;
+	char    bPerfDebugCapabilityMSR = 0;
+	//char    bSSE41Extensions = 0;
+	char    bSSE42Extensions = 0;
+	char    bPOPCNT = 0;
+
+	char    bMultithreading = 0;
+
+	char    bLAHF_SAHFAvailable = 0;
+	char    bCmpLegacy = 0;
+	char    bSVM = 0;
+	char    bExtApicSpace = 0;
+	char    bAltMovCr8 = 0;
+	char    bLZCNT = 0;
+	char    bSSE4A = 0;
+	char    bMisalignedSSE = 0;
+	char    bPREFETCH = 0;
+	char    bSKINITandDEV = 0;
+	char    bSYSCALL_SYSRETAvailable = 0;
+	char    bExecuteDisableBitAvailable = 0;
+	char    bMMXExtensions = 0;
+	char    bFFXSR = 0;
+	char    b1GBSupport = 0;
+	char    bRDTSCP = 0;
+	char    b64Available = 0;
+	char    b3DNowExt = 0;
+	char    b3DNow = 0;
+	char    bNestedPaging = 0;
+	char    bLBRVisualization = 0;
+	char    bFP128 = 0;
+	char    bMOVOptimization = 0;
+
+	char    bSelfInit = 0;
+	char    bFullyAssociative = 0;
+
+	*bSSE41Extensions = 0;
+
+	// __cpuid with an InfoType argument of 0 returns the number of
+	// valid Ids in CPUInfo[0] and the CPU identification string in
+	// the other three array elements. The CPU identification string is
+	// not in linear order. The code below arranges the information 
+	// in a human readable form.
+	CPUID(0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+	//__cpuid(CPUInfo, 0);
+	nIds = CPUInfo[0];
+	memset(CPUString, 0, sizeof(CPUString));
+	*((int*)CPUString) = CPUInfo[1];
+	*((int*)(CPUString + 4)) = CPUInfo[3];
+	*((int*)(CPUString + 8)) = CPUInfo[2];
+
+	// Get the information associated with each valid Id
+	for (i = 0; i <= nIds; ++i)
+	{
+		CPUID(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+		//__cpuid(CPUInfo, i);
+
+		if (do_print > 1)
+		{
+			printf("\nFor InfoType %d\n", i);
+			printf("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
+			printf("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
+			printf("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
+			printf("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
+		}
+
+		// Interpret CPU feature information.
+		if (i == 1)
+		{
+			nSteppingID = CPUInfo[0] & 0xf;
+			nModel = (CPUInfo[0] >> 4) & 0xf;
+			nFamily = (CPUInfo[0] >> 8) & 0xf;
+			nProcessorType = (CPUInfo[0] >> 12) & 0x3;
+			nExtendedmodel = (CPUInfo[0] >> 16) & 0xf;
+			nExtendedfamily = (CPUInfo[0] >> 20) & 0xff;
+			nBrandIndex = CPUInfo[1] & 0xff;
+			*cachelinesize = nCLFLUSHcachelinesize = ((CPUInfo[1] >> 8) & 0xff) * 8;
+			nLogicalProcessors = ((CPUInfo[1] >> 16) & 0xff);
+			nAPICPhysicalID = (CPUInfo[1] >> 24) & 0xff;
+			bSSE3Instructions = (CPUInfo[2] & 0x1) || 0;
+			bMONITOR_MWAIT = (CPUInfo[2] & 0x8) || 0;
+			bCPLQualifiedDebugStore = (CPUInfo[2] & 0x10) || 0;
+			bVirtualMachineExtensions = (CPUInfo[2] & 0x20) || 0;
+			bEnhancedIntelSpeedStepTechnology = (CPUInfo[2] & 0x80) || 0;
+			bThermalMonitor2 = (CPUInfo[2] & 0x100) || 0;
+			bSupplementalSSE3 = (CPUInfo[2] & 0x200) || 0;
+			bL1ContextID = (CPUInfo[2] & 0x300) || 0;
+			bCMPXCHG16B = (CPUInfo[2] & 0x2000) || 0;
+			bxTPRUpdateControl = (CPUInfo[2] & 0x4000) || 0;
+			bPerfDebugCapabilityMSR = (CPUInfo[2] & 0x8000) || 0;
+			*bSSE41Extensions = (CPUInfo[2] & 0x80000) || 0;
+			bSSE42Extensions = (CPUInfo[2] & 0x100000) || 0;
+			bPOPCNT = (CPUInfo[2] & 0x800000) || 0;
+			nFeatureInfo = CPUInfo[3];
+			bMultithreading = (nFeatureInfo & (1 << 28)) || 0;
+		}
+	}
+
+	// Calling __cpuid with 0x80000000 as the InfoType argument
+	// gets the number of valid extended IDs.
+	CPUID(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+	//__cpuid(CPUInfo, 0x80000000);
+	nExIds = CPUInfo[0];
+	memset(CPUBrandString, 0, sizeof(CPUBrandString));
+
+	// Get the information associated with each extended ID.
+	for (i = 0x80000000; i <= nExIds; ++i)
+	{
+		CPUID(i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+		//__cpuid(CPUInfo, i);
+		if (do_print > 1)
+		{
+			printf("\nFor InfoType %x\n", i);
+			printf("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
+			printf("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
+			printf("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
+			printf("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
+		}
+
+		if (i == 0x80000001)
+		{
+			bLAHF_SAHFAvailable = (CPUInfo[2] & 0x1) || 0;
+			bCmpLegacy = (CPUInfo[2] & 0x2) || 0;
+			bSVM = (CPUInfo[2] & 0x4) || 0;
+			bExtApicSpace = (CPUInfo[2] & 0x8) || 0;
+			bAltMovCr8 = (CPUInfo[2] & 0x10) || 0;
+			bLZCNT = (CPUInfo[2] & 0x20) || 0;
+			bSSE4A = (CPUInfo[2] & 0x40) || 0;
+			bMisalignedSSE = (CPUInfo[2] & 0x80) || 0;
+			bPREFETCH = (CPUInfo[2] & 0x100) || 0;
+			bSKINITandDEV = (CPUInfo[2] & 0x1000) || 0;
+			bSYSCALL_SYSRETAvailable = (CPUInfo[3] & 0x800) || 0;
+			bExecuteDisableBitAvailable = (CPUInfo[3] & 0x10000) || 0;
+			bMMXExtensions = (CPUInfo[3] & 0x40000) || 0;
+			bFFXSR = (CPUInfo[3] & 0x200000) || 0;
+			b1GBSupport = (CPUInfo[3] & 0x400000) || 0;
+			bRDTSCP = (CPUInfo[3] & 0x8000000) || 0;
+			b64Available = (CPUInfo[3] & 0x20000000) || 0;
+			b3DNowExt = (CPUInfo[3] & 0x40000000) || 0;
+			b3DNow = (CPUInfo[3] & 0x80000000) || 0;
+		}
+
+		// Interpret CPU brand string and cache information.
+		if (i == 0x80000002)
+			memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000003)
+			memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000004)
+			memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000006)
+		{
+			nCacheLineSize = CPUInfo[2] & 0xff;
+			nL2Associativity = (CPUInfo[2] >> 12) & 0xf;
+			nCacheSizeK = (CPUInfo[2] >> 16) & 0xffff;
+		}
+		else if (i == 0x80000008)
+		{
+			nPhysicalAddress = CPUInfo[0] & 0xff;
+			nVirtualAddress = (CPUInfo[0] >> 8) & 0xff;
+		}
+		else if (i == 0x8000000A)
+		{
+			bNestedPaging = (CPUInfo[3] & 0x1) || 0;
+			bLBRVisualization = (CPUInfo[3] & 0x2) || 0;
+		}
+		else if (i == 0x8000001A)
+		{
+			bFP128 = (CPUInfo[0] & 0x1) || 0;
+			bMOVOptimization = (CPUInfo[0] & 0x2) || 0;
+		}
+	}
+	ptrdiff_t ix = 0;
+	while (ix < 64 && isblank(CPUBrandString[ix]))
+		ix++;        /* find 1st non-blank character */
+	strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
+	// Display all the information in user-friendly format.
+	if (do_print > 0)
+		printf("\n\nCPU String: %s\n", CPUString);
+
+	if (nIds >= 1)
+	{
+		if (do_print > 0)
+		{
+			if (nSteppingID)
+				printf("Stepping ID = %d\n", nSteppingID);
+			if (nModel)
+				printf("Model = %d\n", nModel);
+			if (nFamily)
+				printf("Family = %d\n", nFamily);
+			if (nProcessorType)
+				printf("Processor Type = %d\n", nProcessorType);
+			if (nExtendedmodel)
+				printf("Extended model = %d\n", nExtendedmodel);
+			if (nExtendedfamily)
+				printf("Extended family = %d\n", nExtendedfamily);
+			if (nBrandIndex)
+				printf("Brand Index = %d\n", nBrandIndex);
+			if (nCLFLUSHcachelinesize)
+				printf("CLFLUSH cache line size = %d\n",
+					nCLFLUSHcachelinesize);
+			if (bMultithreading && (nLogicalProcessors > 0))
+				printf("Logical Processor Count = %d\n", nLogicalProcessors);
+			if (nAPICPhysicalID)
+				printf("APIC Physical ID = %d\n", nAPICPhysicalID);
+
+			if (nFeatureInfo || bSSE3Instructions ||
+				bMONITOR_MWAIT || bCPLQualifiedDebugStore ||
+				bVirtualMachineExtensions || bEnhancedIntelSpeedStepTechnology ||
+				bThermalMonitor2 || bSupplementalSSE3 || bL1ContextID ||
+				bCMPXCHG16B || bxTPRUpdateControl || bPerfDebugCapabilityMSR ||
+				*bSSE41Extensions || bSSE42Extensions || bPOPCNT ||
+				bLAHF_SAHFAvailable || bCmpLegacy || bSVM ||
+				bExtApicSpace || bAltMovCr8 ||
+				bLZCNT || bSSE4A || bMisalignedSSE ||
+				bPREFETCH || bSKINITandDEV || bSYSCALL_SYSRETAvailable ||
+				bExecuteDisableBitAvailable || bMMXExtensions || bFFXSR || b1GBSupport ||
+				bRDTSCP || b64Available || b3DNowExt || b3DNow || bNestedPaging ||
+				bLBRVisualization || bFP128 || bMOVOptimization)
+			{
+				printf("\nThe following features are supported:\n");
+
+				if (bSSE3Instructions)
+					printf("\tSSE3\n");
+				if (bMONITOR_MWAIT)
+					printf("\tMONITOR/MWAIT\n");
+				if (bCPLQualifiedDebugStore)
+					printf("\tCPL Qualified Debug Store\n");
+				if (bVirtualMachineExtensions)
+					printf("\tVirtual Machine Extensions\n");
+				if (bEnhancedIntelSpeedStepTechnology)
+					printf("\tEnhanced Intel SpeedStep Technology\n");
+				if (bThermalMonitor2)
+					printf("\tThermal Monitor 2\n");
+				if (bSupplementalSSE3)
+					printf("\tSupplemental Streaming SIMD Extensions 3\n");
+				if (bL1ContextID)
+					printf("\tL1 Context ID\n");
+				if (bCMPXCHG16B)
+					printf("\tCMPXCHG16B Instruction\n");
+				if (bxTPRUpdateControl)
+					printf("\txTPR Update Control\n");
+				if (bPerfDebugCapabilityMSR)
+					printf("\tPerf\\Debug Capability MSR\n");
+				if (*bSSE41Extensions)
+					printf("\tSSE4.1 Extensions\n");
+				if (bSSE42Extensions)
+					printf("\tSSE4.2 Extensions\n");
+				if (bPOPCNT)
+					printf("\tPPOPCNT Instruction\n");
+
+				i = 0;
+				nIds = 1;
+				while (i < (sizeof(szFeatures) / sizeof(const char*)))
+				{
+					if (nFeatureInfo & nIds)
+					{
+						printf("\t");
+						printf("%s", szFeatures[i]);
+						printf("\n");
+					}
+
+					nIds <<= 1;
+					++i;
+				}
+				if (bLAHF_SAHFAvailable)
+					printf("\tLAHF/SAHF in 64-bit mode\n");
+				if (bCmpLegacy)
+					printf("\tCore multi-processing legacy mode\n");
+				if (bSVM)
+					printf("\tSecure Virtual Machine\n");
+				if (bExtApicSpace)
+					printf("\tExtended APIC Register Space\n");
+				if (bAltMovCr8)
+					printf("\tAltMovCr8\n");
+				if (bLZCNT)
+					printf("\tLZCNT instruction\n");
+				if (bSSE4A)
+					printf("\tSSE4A (EXTRQ, INSERTQ, MOVNTSD, MOVNTSS)\n");
+				if (bMisalignedSSE)
+					printf("\tMisaligned SSE mode\n");
+				if (bPREFETCH)
+					printf("\tPREFETCH and PREFETCHW Instructions\n");
+				if (bSKINITandDEV)
+					printf("\tSKINIT and DEV support\n");
+				if (bSYSCALL_SYSRETAvailable)
+					printf("\tSYSCALL/SYSRET in 64-bit mode\n");
+				if (bExecuteDisableBitAvailable)
+					printf("\tExecute Disable Bit\n");
+				if (bMMXExtensions)
+					printf("\tExtensions to MMX Instructions\n");
+				if (bFFXSR)
+					printf("\tFFXSR\n");
+				if (b1GBSupport)
+					printf("\t1GB page support\n");
+				if (bRDTSCP)
+					printf("\tRDTSCP instruction\n");
+				if (b64Available)
+					printf("\t64 bit Technology\n");
+				if (b3DNowExt)
+					printf("\t3Dnow Ext\n");
+				if (b3DNow)
+					printf("\t3Dnow! instructions\n");
+				if (bNestedPaging)
+					printf("\tNested Paging\n");
+				if (bLBRVisualization)
+					printf("\tLBR Visualization\n");
+				if (bFP128)
+					printf("\tFP128 optimization\n");
+				if (bMOVOptimization)
+					printf("\tMOVU Optimization\n");
+			}
+		}
+	}
+
+	if (nExIds >= 0x80000004 && do_print > 0)
+		printf("\nCPU Brand String: %s\n", CPUBrandString);
+
+	if (nExIds >= 0x80000006 && do_print >0)
+	{
+		printf("Cache Line Size = %d\n", nCacheLineSize);
+		printf("L2 Associativity = %d\n", nL2Associativity);
+		printf("Cache Size = %dK\n", nCacheSizeK);
+	}
+
+
+	for (i = 0;; i++)
+	{
+		CPUID2(0x4, i, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
+		//__cpuidex(CPUInfo, 0x4, i);
+		if (!(CPUInfo[0] & 0xf0)) 
+			break;
+
+		if (i == 0) {
+			nCores = CPUInfo[0] >> 26;
+			if (do_print > 0)
+				printf("\n\nNumber of Cores = %d\n", nCores + 1);
+		}
+
+		nCacheType = (CPUInfo[0] & 0x1f);
+		nCacheLevel = (CPUInfo[0] & 0xe0) >> 5;
+		bSelfInit = (CPUInfo[0] & 0x100) >> 8;
+		bFullyAssociative = (CPUInfo[0] & 0x200) >> 9;
+		nMaxThread = (CPUInfo[0] & 0x03ffc000) >> 14;
+		nSysLineSize = (CPUInfo[1] & 0x0fff);
+		nPhysicalLinePartitions = (CPUInfo[1] & 0x03ff000) >> 12;
+		nWaysAssociativity = (CPUInfo[1]) >> 22;
+		nNumberSets = CPUInfo[2];
+
+		if (do_print > 0) {
+			printf("\n");
+
+			printf("ECX Index %d\n", i);
+			switch (nCacheType)
+			{
+			case 0:
+				printf("   Type: Null\n");
+				break;
+			case 1:
+				printf("   Type: Data Cache\n");
+				break;
+			case 2:
+				printf("   Type: Instruction Cache\n");
+				break;
+			case 3:
+				printf("   Type: Unified Cache\n");
+				break;
+			default:
+				printf("   Type: Unknown\n");
+			}
+
+			printf("   Level = %d\n", nCacheLevel + 1);
+			if (bSelfInit) 	{
+				printf("   Self Initializing\n");
+			}
+			else {
+				printf("   Not Self Initializing\n");
+			}
+			if (bFullyAssociative) {
+				printf("   Is Fully Associatve\n");
+			}
+			else {
+				printf("   Is Not Fully Associatve\n");
+			}
+			printf("   Max Threads = %d\n", nMaxThread + 1);
+			printf("   System Line Size = %d\n", nSysLineSize + 1);
+			printf("   Physical Line Partions = %d\n", nPhysicalLinePartitions + 1);
+			printf("   Ways of Associativity = %d\n", nWaysAssociativity + 1);
+			printf("   Number of Sets = %d\n", nNumberSets + 1);
+		}
+	}
+
+	return  nRet;
+}
+
+// function containing system commands to get the computer name, CPU speed, etc
+static void get_computer_info(char* CPUidstr)
+{
+	//int ret;
+
+	//figure out cpu freq. 0.1 seconds won't be very accurate 
+	MEAS_CPU_FREQUENCY = measure_processor_speed() / 1.0e5;
+
+#ifdef __APPLE__
+	// something in extended cpuid causes a segfault on mac builds.
+	// just disable it for now - this information is not critical for
+	// program operation.
+	strcpy(idstr, "N/A");
+	CLSIZE = 0;
+	L1CACHE = DEFAULT_L1_CACHE_SIZE;
+	L2CACHE = DEFAULT_L2_CACHE_SIZE;
+	HAS_SSE41 = 0;
+
+#else
+	
+	// run an extended cpuid command to get the cache line size, and
+	// optionally print a bunch of info to the screen
+
+	extended_cpuid(CPUidstr, &CLSIZE, &HAS_SSE41, verbose);
+#endif
+
+#if defined(WIN32)
+
+	sysname_sz = MAX_COMPUTERNAME_LENGTH + 1;
+	GetComputerNameA(sysname, &sysname_sz);
+
+#else
+
+	ret = gethostname(sysname, sizeof(sysname) / sizeof(*sysname));
+	sysname[(sizeof(sysname) - 1) / sizeof(*sysname)] = 0;	// null terminate
+	if (ret != 0)
+	{
+		printf("error occured when getting host name\n");
+		strcpy(sysname, "N/A");
+	}
+	sysname_sz = strlen(sysname);
+
+#endif
+
+	return;
+}
+
 
 
 /* evaluate 1 or more expressions, separated by commas */
@@ -2138,7 +3193,7 @@ static int ifCommand(const std::string &command) {
 	return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
-/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command*/
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command */
 static int processCmd(const std::string &command) {
 
 	/* list of commands (static for efficiency) */
@@ -2186,7 +3241,7 @@ static int processCmd(const std::string &command) {
 		/* will not throw an exception if input has fat finger syndrome.
 			If no valid digits found, sets factorFlag to 0 */
 		factorFlag = atoi(command.substr(1).data());
-		std::cout << "factor set to " << factorFlag << '\n';
+		std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
 		return 1; }  
 	case 7: /* X */ { 
 		hex = true; return 1; }         // hexadecimal output
@@ -2199,7 +3254,7 @@ static int processCmd(const std::string &command) {
 				return 1;
 			}
 
-			int ttype = command.data()[4] ;  /* for TEST2 ttype = 2, etc*/
+			char ttype = toupper(command.data()[4]) ;  /* for TEST2 ttype = 2, etc*/
 			switch (ttype) {
 			case '2': {
 				if (command.size() > 5)
@@ -2243,6 +3298,13 @@ static int processCmd(const std::string &command) {
 			}
 			case '9': {
 				doTests9();
+				return 1;
+			}
+			case 'A': {
+				if (command.size() > 5)
+					doTestsA(command.substr(6));         // do basic tests 
+				else
+					doTestsA("");
 				return 1;
 			}
 			default:
@@ -2362,8 +3424,9 @@ static int processCmd(const std::string &command) {
 /* initialisation code, executed once at start of program execution */
 static void initialise(int argc, char *argv[]) {
 	flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
+#ifndef BIGNBR
 	unsigned int control_word; /* save current state of fp control word here */
-	errno_t err;  /* error occurred if value not 0 */
+#endif
 	int version[4]; /* version info from .exe file (taken from .rc resource file) */
 	std::string modified;  /* date & time program last modified */
 
@@ -2402,9 +3465,10 @@ static void initialise(int argc, char *argv[]) {
 	}
 
 	VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-	printf_s("%s Bigint calculator Version %d.%d.%d.%d \n", myTime(),
-		version[0], version[1], version[2], version[3]);
-	std::cout << "last modified on " << modified << '\n';
+	printf_s(lang? "Bigint calculadora versão %d.%d.%d.%d \n" : 
+		   "%s Bigint calculator Version %d.%d.%d.%d \n", 
+		myTime(), version[0], version[1], version[2], version[3]);
+	std::cout << (lang? "última modificação em " : "last modified on ") << modified << '\n';
 
 #ifdef __GNUC__
 	printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
@@ -2421,7 +3485,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	ver %= 100000;                        // remove next 2 digits
 	std::cout << ver << '\n';             // last 5 digits
 
-	auto lc = setlocale(LC_ALL, "en-EN");      // allows non-ascii characters to print
+	auto lc = setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
 
 	printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
@@ -2435,6 +3499,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 	std::cout << "Boost version: " << BOOST_VERSION << '\n';
 
 	processIni(argv[0]); // read .ini file if it exists
+
+	//get the computer name, cache sizes, etc.  store in globals
+	get_computer_info(CPU_ID_STR);
+
+	printf_s("detected %s\n", CPU_ID_STR);
+	printf_s("measured cpu frequency ~= %f\n", 	MEAS_CPU_FREQUENCY);
 
 	return;
 }
@@ -2461,7 +3531,7 @@ retry:
 	/* check for continuation character. If found get continuation line(s) */
 	while (expr.back() == '\\') {   /* ends with continuation character? */
 		std::string cont;
-		std::cout << "continue: ";
+		std::cout << (lang ? "continuar: " : "continue: ");
 		getline(std::cin, cont);   /* get continuation line */
 		strToUpper(cont, cont);   // convert to UPPER CASE 
 		while (!cont.empty() && isspace(cont.back())) {
@@ -2571,7 +3641,7 @@ int main(int argc, char *argv[]) {
 
 			auto end = clock();   // measure amount of time used
 			double elapsed = (double)end - start;
-			PrintTimeUsed(elapsed, "time used = ");
+			PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " : "time used = ");
 			// Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
 			SetThreadExecutionState(ES_CONTINUOUS);
 

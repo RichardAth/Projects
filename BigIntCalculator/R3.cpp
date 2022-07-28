@@ -16,10 +16,7 @@ extern int verbose;
 #include <intsafe.h>
 #include <intrin.h>
 
-struct factorsS {
-	int factorcount;           // number of unique prime factors
-	__int64 factorlist[19][2]; // prime factor, exponent
-};
+
 
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
@@ -429,7 +426,7 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
 
 /* Calculate maximum square divisor of n and divide n by this.
 return adjusted n, square divisor, and factor list of divisor.*/
-static void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
+void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
 	factorsS factorlist;
 
 	primeFactors(n, factorlist);
@@ -497,7 +494,11 @@ R3(n) = 3*T(n) if n == 1,2,5,6 mod 8,
 	   = 4 times Kronecker's function F(n). [Moreno-Wagstaff].
 
 Using PARI/GP we have
-r3(n)=if(n==0,1, if(n%4==0, r3(n/4), if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), if(n%8==3, 24*qfbhclassno(n),if(n%8==7, 0)))))
+r3(n)=if(n==0,1, 
+      if(n%4==0, r3(n/4), 
+	  if(n%4==1 || n%4==2, 12*qfbhclassno(4*n), 
+	  if(n%8==3, 24*qfbhclassno(n),
+	  if(n%8==7, 0)))))
 
 where qfbhclassno is Hurwitz-Kronecker class number 
 see https://oeis.org/A259825
@@ -507,9 +508,21 @@ chapters 5.3 & 5.4
 Given an efficient implementation of qfbhclassno(n) this is much faster than the 
 method below.
 
+ The number of solutions of
+x^2+y^2+z^2=n
+
+for a given n without restriction on the signs or relative sizes of x, y, and z 
+is given by r3(n). Gauss proved that if n is squarefree and n > 4, then
+r3(n) = {24h(-n)  for n=3 (mod 8); 
+         12h(-4n) for n=1,2,5,6 (mod 8); 
+		 0        for n=7 (mod 8)
+	    }
+(Arno 1992), where h(x) is the class number of x.
+h(x) is qfbclassno(x) in PARI/GP
+
 there is also a useful & more practical formula:
-R3(n)= if(n%4==1, 24*sum(r=1,n\4,kronecker(r,n)),
-	   if(n%4==3, 8*sum(r=1,n\2,kronecker(r,n))))
+R3(n)= if(n%4==1, 24 * sum(r=1 to n\4, kronecker(r,n)),
+	   if(n%4==3,  8 * sum(r=1 to n\2, kronecker(r,n))))
 BUT only applicable if, after making n squarefree, n is odd, n!= 7 (mod 8) and n > 1
 This avoids calculating R2 many times, which involves factorisation each time
 but it's still much SLOWER than calculating the sums of R2s.

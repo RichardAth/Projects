@@ -55,3 +55,29 @@ bool isPerfectSquare(__int64 x) {
 	//long long s = intSqrt(x);
 	return (s * s == x);
 }
+
+bool isPerfectSquare(__int64 x, __int64 &ss) {
+	long long s;
+	if (x < 0) return false;
+	if (x == 0) return true;
+	//while ((x & 0x3) == 0) 
+	//	x >>= 2;   // divide by largest possible power of 4
+
+	/* can use _BitScanForward64 instead (slightly faster) */
+	unsigned long ix;
+	auto result = _BitScanForward64(&ix, x);  // for gcc compiler use __builtin_ctzll instead
+	if ((ix & 1) == 1)
+		return false;     // if x contains an odd number of 2 factors it is 
+						  // not a perfect square
+	x >>= ix;
+
+	/* at this stage, x must be odd for a perfect square,
+	so sqrt(x) is odd if x is a perfect square, in which case
+	(sqrt(x))(mod 8) is 1 3 5 or 7. So x (mod 8) has to be 1 */
+	if ((x & 0x7) != 1)
+		return false;  // not a perfect square
+
+	s = llround(sqrt(x));  // slightly faster than intSqrt
+	ss = s << (ix / 2);
+	return (s * s == x);
+}

@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -707,9 +707,16 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 	} while (restart);  // keep looping until no more factors found.
 
 	if (verbose > 0) {
-		std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
+		if (lang)
+			std::cout << "fin de la división de prueba. " << Factors.f.size() - 1
+			<< " factores encontrados hasta ahora \n";
+		else
+			std::cout << "End Trial division. " << Factors.f.size() - 1 << " factors found so far \n";
 		if (Factors.f.size() > 1) {
-			std::cout << "result after trial division ";
+			if (lang)
+				std::cout << "resultado despues de la division de prueba ";
+			else
+				std::cout << "result after trial division ";
 			Factors.Xprint();
 		}
 	}
@@ -859,53 +866,213 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 	return true;
 }
 
+/* compute 3 values the squares of which add up to prime p 
+This function is intended for 8k+1 primes if we want p = x^2 + 2*y^2 
+rather than p = x^2 + y^2. */
+static void compute3squares(const Znum& p, Znum Mult[4]) {
+	Znum q, Tmp, Tmp1, Tmp2, Tmp3, K, M1, M2, M3, M4;
+	std::vector <Znum> roots;
+
+	q = (p - 1) / 2; //  q = (prime-1)/2
+	Mult[0] = 0;
+	do {
+		Mult[0]++;
+		Tmp = Mult[0] * Mult[0] + 1;
+		Tmp = -Tmp;
+		while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult[1]^2 (mod p) */
+		mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
+		// At this moment Tmp1 = (-1 - Mult[0]^2)^((p-1)/2)(Mod p)
+	} while (Tmp1 != 1);  // Continue loop if it is not 1.
+
+	// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
+	Tmp1 = -1 - Mult[0] * Mult[0];
+	roots = ModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+	assert(!roots.empty());
+	Mult[1] = roots[0];
+	/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/
+
+	if (verbose > 1) {
+		std::cout << "3 squares: prime = " << p << " initial Mult[0] = " << Mult[0]
+			<< " Mult[1] = " << Mult[1] << '\n';
+	}
+
+	Mult[2] = 1;
+	Mult[3] = 0;
+	for (;;) {
+		// Compute K <- (Mult[0]^2 + Mult[1]^2 + Mult[2]^2 + Mult[3]^2) / p
+		Tmp = Mult[0] * Mult[0] + Mult[1] * Mult[1];
+		Tmp = Tmp + Mult[2] * Mult[2] + Mult[3] * Mult[3];
+		assert(Tmp % p == 0);
+
+		K = Tmp / p;    // in this loop K is smaller each time round
+		assert(K > 0);
+		if (K == 1) {
+			break;  // we are done when K equals 1
+		}
+		if (isEven(K)) { // If K is even ...
+			if (isEven(Mult[0]) != isEven(Mult[1]))
+			{  // If Mult[0] + Mult[1] is odd...
+				if (isEven(Mult[0]) == isEven(Mult[2])) {
+					// If Mult[0] + Mult[2] is even...
+					Mult[1].swap(Mult[2]);  // swap Mult[1] and Mult[2]
+				}
+				else {
+					Mult[1].swap(Mult[3]); // swap Mult[1] and Mult[3]
+				}
+			} // At this moment Mult[0]+Mult[1] = even, Mult[2]+Mult[3] = even
+			Tmp1 = (Mult[0] + Mult[1]) / 2;
+			Tmp2 = (Mult[0] - Mult[1]) / 2;
+			Tmp3 = (Mult[2] + Mult[3]) / 2;
+			Mult[3] = (Mult[2] - Mult[3]) / 2;
+			Mult[2] = Tmp3;
+			Mult[1] = Tmp2;
+			Mult[0] = Tmp1;
+			if (verbose > 1) {
+				std::cout << "K = " << K;
+				std::cout << " Mult[0]-[3] = " << Mult[0] << ", " << Mult[1] << ", " << Mult[2]
+					<< ", " << Mult[3] << '\n';
+			}
+			continue;
+		} /* end if K is even */
+
+		M1 = Mult[0] % K;
+		if (M1 < 0) {
+			M1 += K;
+		}
+		M2 = Mult[1] % K;
+		if (M2 < 0) {
+			M2 = M2 + K;
+		}
+		M3 = Mult[2] % K;
+		if (M3 < 0) {
+			M3 += K;
+		}
+		M4 = Mult[3] % K;
+		if (M4 < 0) {
+			M4 += K;
+		}
+		Tmp = (K + 1) / 2;  // Tmp <- (K+1) / 2
+		if (M1 >= Tmp) { // If M1 >= K / 2 ... 
+			M1 -= K;     // M1 = M1 - K;    
+		}
+		if (M2 >= Tmp) { // If M2 >= K / 2 ... 
+			M2 -= K;     // M2 = M2 - K;         
+		}
+
+		if (M3 >= Tmp) {  // If M3 >= K / 2 ... 
+			M3 -= K;      // M3 = M3 - K;        
+		}
+		if (M4 >= Tmp) { // If M4 >= K / 2 ... 
+			M4 -= K;     //M4 = M4 - K;        
+		}
+		// Compute Tmp1 <- (Mult[0]*M1 + Mult[1]*M2 + Mult[2]*M3 + Mult[3]*M4) / K
+		Tmp = Mult[0] * M1 + Mult[1] * M2 + Mult[2] * M3 + Mult[3] * M4;
+		Tmp1 = Tmp / K; // BigIntDivide(Tmp, K, Tmp1);
+
+		// Compute Tmp2 <- (Mult[0]*M2 - Mult[1]*M1 + Mult[2]*M4 - Mult[3]*M3) / K
+		Tmp = Mult[0] * M2 - Mult[1] * M1 + Mult[2] * M4 - Mult[3] * M3;
+		Tmp2 = Tmp / K;
+
+		// Compute Tmp3 <- (Mult[0]*M3 - Mult[2]*M1 - Mult[1]*M4 + Mult[3]*M2) / K
+		Tmp = Mult[0] * M3 - Mult[2] * M1 - Mult[1] * M4 + Mult[3] * M2;
+		Tmp3 = Tmp / K;
+
+		// Compute Mult[3] <- (Mult[0]*M4 - Mult[3]*M1 + Mult[1]*M3 - Mult[2]*M2) / K
+		Tmp = Mult[0] * M4 - Mult[3] * M1 + Mult[1] * M3 - Mult[2] * M2; // BigIntSubt(Tmp, Tmp4, Tmp);
+		Mult[3] = Tmp / K;
+
+		Mult[2] = Tmp3;
+		Mult[1] = Tmp2;
+		Mult[0] = Tmp1;
+		if (verbose > 1) {
+			std::cout << "K = " << K;
+			std::cout << " Mult[0]-[3] = " << Mult[0] << ", " << Mult[1] << ", " << Mult[2]
+				<< ", " << Mult[3] << '\n';
+		}
+	}
+	Mult[0] = abs(Mult[0]);   // ensure results are +ve
+	Mult[1] = abs(Mult[1]);
+	Mult[2] = abs(Mult[2]);
+	Mult[3] = abs(Mult[3]);
+
+	/* ensure that Mult[3] is smallest */
+	if (Mult[3] > Mult[2])
+		Mult[3].swap(Mult[2]);
+	if (Mult[3] > Mult[1])
+		Mult[3].swap(Mult[1]);
+	if (Mult[3] > Mult[0])
+		Mult[3].swap(Mult[0]);
+
+	/* if 2 values are equal, ensure that they are 2nd and 3rd */
+	if (Mult[0] == Mult[1])
+		Mult[0].swap(Mult[2]);
+
+	assert(Mult[3] == 0);
+}
+
 /* compute 4 or less values the squares of which add up to prime p,  
-return values in Mult1, Mult2, Mult3 and Mult4 */
-static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
-	Znum &Mult3, Znum &Mult4) {
+return values in Mult[0] to Mult[3] 
+if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
+If p = 7 (mod 8) it cannot be expressed as the sum of 3 squares, otherwise it can.
+If it can, at least two of the 3 squares will be equal (ignoring sign). */
+static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwosq) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
 	Znum TestNbr;
 
 	if (p == 2) {   /* Prime factor is 2 */
-		Mult1 = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
-		Mult2 = 1;
-		Mult3 = 0;
-		Mult4 = 0;
+		Mult[0] = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
+		Mult[1] = 1;
+		Mult[2] = 0;
+		Mult[3] = 0;
+		return;
 	}
 	else {       /* Prime factor p is not 2 */
-		if ((p & 3) == 1) { /* if p = 1 (mod 4) */
+		if ((p & 3) == 1)  /* if p = 1 (mod 4) */ {
+			if (sqplustwosq && ((p & 7) == 1)) {
+				/* get p as the sum of 3 squares rather than 2 */
+				compute3squares(p, Mult);
+				Mult[3] = 0;
+				return;
+			}
+			/* in this case p can be expressed as the sum of 2 squares */
 			q = (p-1)/4; // q = (prime-1)/4
 	  
 			a = 1;
-			do {    // Loop that finds mult1^2 = (-1) mod p
+			do {    // Loop that finds Mult[0]^2 = (-1) mod p
 				a++; 
 				assert(a < p);
-				/* Mult1 = a^q(mod p) */
-				mpz_powm(ZT(Mult1), ZT(a), ZT(q), ZT(p));
-				mpz_powm_ui(ZT(TestNbr), ZT(Mult1), 2, ZT(p));
+				/* Mult[0] = a^q(mod p) */
+				mpz_powm(ZT(Mult[0]), ZT(a), ZT(q), ZT(p));
+				/* Testnbr = Mult[0]^2 (mod p) */
+				mpz_powm_ui(ZT(TestNbr), ZT(Mult[0]), 2, ZT(p));
 			} while (TestNbr != p-1 && TestNbr != -1);
 
-			Mult1 = abs(Mult1);
-			Mult2 = 1;
+			Mult[0] = abs(Mult[0]);
+			if (verbose > 1) {
+				std::cout << "4 squares: prime = " << p << " initial Mult[0] = " << Mult[0] << '\n';
+			}
+			Mult[1] = 1;
 
 			for (;;) {  
-				Tmp = Mult1 * Mult1 + Mult2 * Mult2; // K <- (mult1^2 + mult2^2) / p
+				Tmp = Mult[0] * Mult[0] + Mult[1] * Mult[1]; // K <- (Mult[0]^2 + Mult[1]^2) / p
 				K = Tmp / p;    // in this loop K is smaller each time round   
+				if (verbose > 1) {
+					std::cout << "K = " << K << '\n';
+				}
 				if (K == 1) {  // are we there yet?
-					Mult3 = 0;
-					Mult4 = 0;
+					Mult[2] = 0;
+					Mult[3] = 0;
 					break;     // we are finished
 				}
-				M1 = Mult1 % K;
+				M1 = Mult[0] % K;
 				if (M1 < 0) {
 					M1 += K;
 				}
-				M2 = Mult2 % K;
+				M2 = Mult[1] % K;
 				if (M2 < 0) {
 					M2 += K;
 				}
-				Tmp = (K+1)/2; // Tmp <- (K+1) / 2
-				//subtractdivide(Tmp, -1, 2);       
+				Tmp = (K+1)/2;   //subtractdivide(K, -1, 2);      
 				if (M1 >= Tmp) // If M1 >= K / 2 ... 
 				{
 					M1 -= K;
@@ -913,39 +1080,49 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				if (M2 >= Tmp) {     // If M2 >= K / 2 ...     
 					M2 -= K;
 				}
-				Tmp = Mult1*M1 + Mult2*M2;
-				Tmp2 = Tmp / K;  // Tmp2 <- (mult1*m1 + mult2*m2) / K
-				Tmp = Mult1*M2 - Mult2*M1;
-				Mult2 = Tmp / K;    // Mult2 <- (mult1*m2 - mult2*m1) /K
-				Mult1 = Tmp2;       // Mult1 <- (mult1*m1 + mult2*m2) / K
-			} /* end while */
+				Tmp = Mult[0]*M1 + Mult[1]*M2;
+				Tmp2 = Tmp / K;  // Tmp2 <- (Mult[0]*m1 + Mult[1]*m2) / K
+				Tmp = Mult[0]*M2 - Mult[1]*M1;
+				Mult[1] = Tmp / K;    // Mult[1] <- (Mult[0]*m2 - Mult[1]*m1) /K
+				Mult[0] = Tmp2;       // Mult[0] <- (Mult[0]*m1 + Mult[1]*m2) / K
+				if (verbose > 1) {
+					std::cout << "Mult[0] = " << Mult[0] << " Mult[1] = " << Mult[1] << '\n';
+				}
+			} /* end for */
 		} /* end p = 1 (mod 4) */
 
-		else { /* if p = 3 (mod 4) */
+		else  /* if p = 3 (mod 4) */ 	{
 			q = (p-1)/2; //  q = (prime-1)/2
-			Mult1 = 0;
+			Mult[0] = 0;
 			do {
-				Mult1++;
-				Tmp = Mult1*Mult1 + 1;
+				Mult[0]++;
+				Tmp = Mult[0]*Mult[0] + 1;
 				Tmp = -Tmp;
-				while (Tmp < 0) Tmp += p;
+				while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult[1]^2 (mod p) */
 				mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
-				       // At this moment Tmp1 = (-1 - Mult1^2)^((p-1)/2)(Mod p)
+				       // At this moment Tmp1 = (-1 - Mult[0]^2)^((p-1)/2)(Mod p)
 			} while (Tmp1 != 1);  // Continue loop if it is not 1.
 
-			// After the loop finishes, Tmp1 = (-1 - Mult1^2) is a quadratic residue mod p.
+			// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
+
 			q = (p+1)/4;
 
-			// Find Mult2 <- square root of Tmp1 = Tmp^q (mod p) 
-			mpz_powm(ZT(Mult2), ZT(Tmp), ZT(q), ZT(p));
+			// Find Mult[1] <- square root of Tmp1 = Tmp^q (mod p) 
+			mpz_powm(ZT(Mult[1]), ZT(Tmp), ZT(q), ZT(p));
 
-			Mult3 = 1;
-			Mult4 = 0;
+			/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/
+			if (verbose > 1) {
+				std::cout << "4 squares: prime = " << p << " initial Mult[0] = " << Mult[0] 
+					<< " Mult[1] = " << Mult[1] << '\n';
+			}
+
+			Mult[2] = 1;
+			Mult[3] = 0;
 
 			for (;;) {
-				// Compute K <- (Mult1^2 + Mult2^2 + Mult3^2 + Mult4^2) / p
-				Tmp = Mult1*Mult1 + Mult2*Mult2;
-				Tmp = Tmp + Mult3*Mult3 + Mult4*Mult4;
+				// Compute K <- (Mult[0]^2 + Mult[1]^2 + Mult[2]^2 + Mult[3]^2) / p
+				Tmp = Mult[0]*Mult[0] + Mult[1]*Mult[1];
+				Tmp = Tmp + Mult[2]*Mult[2] + Mult[3]*Mult[3];
 				assert(Tmp%p == 0);
 				K = Tmp / p;    // in this loop K is smaller each time round
 				assert(K > 0);
@@ -955,43 +1132,44 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 
 
 				if (isEven(K)) { // If K is even ...
-					if (isEven(Mult1) != isEven(Mult2))
-					{  // If Mult1 + Mult2 is odd...
-						if (isEven(Mult1) == isEven(Mult3))
-						{   // If Mult1 + Mult3 is even...
-							Tmp = Mult2;  // swap mult2 and mult3
-							Mult2 = Mult3;
-							Mult3 = Tmp;
+					if (isEven(Mult[0]) != isEven(Mult[1]))
+					{  // If Mult[0] + Mult[1] is odd...
+						if (isEven(Mult[0]) == isEven(Mult[2])) {  
+							// If Mult[0] + Mult[2] is even...
+							Mult[1].swap(Mult[2]);  // swap Mult[1] and Mult[2]
 						}
 						else {
-							Tmp = Mult2; // swap mult2 and mult4
-							Mult2 = Mult4;
-							Mult4 = Tmp;
+							Mult[1].swap(Mult[3]); // swap Mult[1] and Mult[3]
 						}
-					} // At this moment Mult1+Mult2 = even, Mult3+Mult4 = even
-					Tmp1 = (Mult1 + Mult2)/2;   
-					Tmp2 = (Mult1 - Mult2)/2;   
-					Tmp3 = (Mult3 + Mult4)/2;   
- 					Mult4 = (Mult3 - Mult4)/2 ;
-					Mult3 = Tmp3;
-					Mult2 = Tmp2;
-					Mult1 = Tmp1;
+					} // At this moment Mult[0]+Mult[1] = even, Mult[2]+Mult[3] = even
+					Tmp1 = (Mult[0] + Mult[1])/2;   
+					Tmp2 = (Mult[0] - Mult[1])/2;   
+					Tmp3 = (Mult[2] + Mult[3])/2;   
+ 					Mult[3] = (Mult[2] - Mult[3])/2 ;
+					Mult[2] = Tmp3;
+					Mult[1] = Tmp2;
+					Mult[0] = Tmp1;
+					if (verbose > 1) {
+						std::cout << "K = " << K;
+						std::cout << " Mult[0]-[3] = " << Mult[0] << ", " << Mult[1] << ", " << Mult[2]
+							<< ", " << Mult[3] << '\n';
+					}
 					continue;
 				} /* end if K is even */
 
-				M1 = Mult1 % K;
+				M1 = Mult[0] % K;
 				if (M1 < 0) {
 					M1 += K;
 				}
-				M2 = Mult2 % K;
+				M2 = Mult[1] % K;
 				if (M2 < 0) {
 					M2 = M2 + K;
 				}
-				M3 = Mult3 % K;
+				M3 = Mult[2] % K;
 				if (M3 < 0) {
 					M3 += K;
 				}
-				M4 = Mult4 % K;
+				M4 = Mult[3] % K;
 				if (M4 < 0) {
 					M4 += K;
 				}
@@ -1009,31 +1187,55 @@ static void ComputeFourSquares(const Znum &p, Znum &Mult1, Znum &Mult2,
 				if (M4 >= Tmp) { // If M4 >= K / 2 ... 
 					M4 -= K;     //M4 = M4 - K;        
 				}
-				// Compute Tmp1 <- (Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4) / K
-				Tmp = Mult1*M1 + Mult2*M2 + Mult3*M3 + Mult4*M4;
+				// Compute Tmp1 <- (Mult[0]*M1 + Mult[1]*M2 + Mult[2]*M3 + Mult[3]*M4) / K
+				Tmp = Mult[0]*M1 + Mult[1]*M2 + Mult[2]*M3 + Mult[3]*M4;
 				Tmp1 = Tmp / K; // BigIntDivide(Tmp, K, Tmp1);
 
-				// Compute Tmp2 <- (Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3) / K
-				Tmp = Mult1*M2 - Mult2*M1 + Mult3*M4 - Mult4*M3;
+				// Compute Tmp2 <- (Mult[0]*M2 - Mult[1]*M1 + Mult[2]*M4 - Mult[3]*M3) / K
+				Tmp = Mult[0]*M2 - Mult[1]*M1 + Mult[2]*M4 - Mult[3]*M3;
 				Tmp2 = Tmp / K;
 
-				// Compute Tmp3 <- (Mult1*M3 - Mult3*M1 - Mult2*M4 + Mult4*M2) / K
-				Tmp = Mult1*M3 - Mult3*M1 - Mult2*M4 + Mult4*M2;
+				// Compute Tmp3 <- (Mult[0]*M3 - Mult[2]*M1 - Mult[1]*M4 + Mult[3]*M2) / K
+				Tmp = Mult[0]*M3 - Mult[2]*M1 - Mult[1]*M4 + Mult[3]*M2;
 				Tmp3 = Tmp / K;
 
-				// Compute Mult4 <- (Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2) / K
-				Tmp = Mult1*M4 - Mult4*M1 + Mult2*M3 - Mult3*M2; // BigIntSubt(Tmp, Tmp4, Tmp);
-				Mult4 = Tmp / K;
+				// Compute Mult[3] <- (Mult[0]*M4 - Mult[3]*M1 + Mult[1]*M3 - Mult[2]*M2) / K
+				Tmp = Mult[0]*M4 - Mult[3]*M1 + Mult[1]*M3 - Mult[2]*M2; // BigIntSubt(Tmp, Tmp4, Tmp);
+				Mult[3] = Tmp / K;
 
-				Mult3 = Tmp3;
-				Mult2 = Tmp2;
-				Mult1 = Tmp1;
-			} /* end while */
+				Mult[2] = Tmp3;
+				Mult[1] = Tmp2;
+				Mult[0] = Tmp1;
+				if (verbose > 1) {
+					std::cout << "K = " << K;
+					std::cout << " Mult[0]-[3] = " << Mult[0] << ", " << Mult[1] << ", " << Mult[2] 
+						<< ", " << Mult[3] << '\n';
+				}
+			} /* end for */
 		} /* end if p = 3 (mod 4) */
 	} /* end prime not 2 */
+
+	Mult[0] = abs(Mult[0]);   // ensure results are +ve
+	Mult[1] = abs(Mult[1]);
+	Mult[2] = abs(Mult[2]);
+	Mult[3] = abs(Mult[3]);
+
+	/* ensure that Mult[3] is smallest */
+	if (Mult[3] > Mult[2])
+		Mult[3].swap(Mult[2]);
+	if (Mult[3] > Mult[1])
+		Mult[3].swap(Mult[1]);
+	if (Mult[3] > Mult[0])
+		Mult[3].swap(Mult[0]);
+
+	/* if 2 values are equal, ensure that they are 2nd and 3rd */
+	if (Mult[0] == Mult[1])
+		Mult[0].swap(Mult[2]);
+
 }
 
-/* compute 3 values the squares of which add up to s *2^2r, return values in quads */
+
+/* compute 3 values the squares of which add up to s * 2^2r, return values in quads */
 static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
 	int m = 0;
@@ -1046,10 +1248,12 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		return;
 	}
 
+
 	/* loop till we find a suitable value of s3. */
 	for (Znum x = 0; ; x++) {
 		assert(x*x < s);
 		s2 = s - x * x;
+	
 		for (s3 = s2, m = 0; isEven(s3); m++) {
 			s3 >>= 1;    // s3 = s2*2^m
 		}
@@ -1075,13 +1279,9 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 		//auto rv = mpz_bpsw_prp(ZT(s3)); /* rv = 0 for composite, 1 = probable prime, 2 = definite prime*/
 		if (rv != 0) {
 			/* s3 is prime of form 4k+1 */
-			ComputeFourSquares(s3, quads[0], quads[1], quads[2], quads[3]);
-			quads[0] = abs(quads[0]);  // ensure results are +ve
-			quads[1] = abs(quads[1]);
+			ComputeFourSquares(s3, quads, false);
 			if (quads[0] < quads[1]) {		
-				Tmp1 = quads[0];           // quads[0] < quads[1], so exchange them.
-				quads[0] = quads[1];
-				quads[1] = Tmp1;
+				quads[0].swap(quads[1]);  // quads[0] < quads[1], so exchange them.
 			}
 			assert(quads[2] == 0);
 			assert(quads[3] == 0);
@@ -1104,22 +1304,17 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 			for (int ix = 0; ix <= 2; ix++)
 				mpz_mul_2exp(ZT(quads[ix]), ZT(quads[ix]), r);
 
+			/* sort into ascending order */
 			if (quads[0] < quads[1]) {
-				Tmp1 = quads[0];		// quads[0] < quads[1], so exchange them.
-				quads[0] = quads[1];
-				quads[1] = Tmp1;
+				quads[0].swap(quads[1]);  // quads[0] < quads[1], so exchange them.
 			}
 
 			if (quads[0] < quads[2]) {
-				Tmp1 = quads[0];	// quads[0] < quads[2], so exchange them.
-				quads[0] = quads[2];
-				quads[2] = Tmp1;
+				quads[0].swap(quads[2]);  // quads[0] < quads[2], so exchange them.
 			}
 
 			if (quads[1] < quads[2]) {
-				Tmp1 = quads[1];	// quads[1] < quads[2], so exchange them.
-				quads[1] = quads[2];
-				quads[2] = Tmp1;
+				quads[1].swap(quads[2]);  // quads[1] < quads[2], so exchange them.
 			}
 
 			return;
@@ -1130,22 +1325,32 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 /* show that the number is the sum of 4 or fewer squares. See
 https://www.alpertron.com.ar/4SQUARES.HTM */
 /* uses the identity:
-(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
-                                    + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
-This allows us to find the sum of squares for each factor separately then combine them */
+(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
+								  + (aC-bD-cA+dB)² + (aD-dA+bC-cB)²
+This allows us to find the sum of squares for each factor separately then combine them 
+If the number is a perfect square just return 1 value.
+If the number can be expressed as the sum of 2 squares return 2 values.
+If the number can be expressed as a square + twice a square, try to find 
+appropriate values.  
+If the number can be expressed as the sum of 3 squares try to find appropriate values.
+For large numbers this may not be practical. 
+The fallback is to find 4 squares, if none of the above are feasible- */
 static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
-	Znum Mult1, Mult2, Mult3, Mult4, Tmp1, Tmp2, Tmp3;
+	Znum Mult[4], Tmp1, Tmp2, Tmp3;
 	Znum pr;
-	bool twoSq = true;
+	bool twoSq;       /* value changed to true if num can be expressed as the sum 
+						of 2 squares */
+	bool sqplustwosq; /* value changed to true if num can be expressed as the sum 
+						of a square + twice a square */
 
-	quads[0] = 1;      // 1 = 1^2 + 0^2 + 0^2 + 0^2
+	quads[0] = 1;      /* initialise quads N.B. 1 = 1^2 + 0^2 + 0^2 + 0^2 */
 	quads[1] = 0;
 	quads[2] = 0;
 	quads[3] = 0;
 
-	if (factorlist.f.size() == 1) {/* only 1 factor? */
+	if (factorlist.f.size() == 1) { /* only 1 factor? */
 		if (factorlist.f[0].Factor == 1) {   // Number to factor is 1.
-			return;
+			return;   // 1 = 1^2 + 0^2 + 0^2 + 0^2
 		}
 		if (factorlist.f[0].Factor == 0) {    // Number to factor is 0.
 			quads[0] = 0;      // 0 = 0^2 + 0^2 + 0^2 + 0^2
@@ -1154,13 +1359,12 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	}
 
 	/* check whether number can be formed as sum of 1 or 2 squares */
-	for (auto f: factorlist.f) {
-		if ((f.Factor & 3) == 3) {  // is factor of form 4k+3?
-			if ((f.exponent & 1) == 1)   // and is the exponent of that factor odd?
-			twoSq = false;    // if yes, number cannot be expressed as sum of 1 or 2 squares
-			break;       
-		}
-	}
+	twoSq = factorlist.twosq();
+	if (!twoSq)
+		sqplustwosq = factorlist.sqplustwosq();  /* true iff num = x^2 + 2*y^2 */
+	else
+		sqplustwosq = false;
+
 	if (!twoSq) {  /* check whether number can be expressed as sum of 3 squares */
 		int r = 0;
 		while ((num & 3) == 0) {
@@ -1168,16 +1372,24 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 			r++;
 		}
 		/* any number which is not of the form 4^r * (8k+7) can be formed as the sum of 3 squares 
-		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem*/
-		if ((numLimbs(num) < 4) && (num & 7) < 7) {
-			/* use compute3squares if number is small (<= 57 digits) and can be 
-			formed from 3 squares. (Each limb is up to 64 bits) */
-			compute3squares(r, num, quads);  
-			return;
+		see https://en.wikipedia.org/wiki/Legendre%27s_three-square_theorem */
+		if  (factorlist.f.size() > 1) 
+			if (numLimbs(num) < 4) 
+				if ((num & 7) < 7 ) {
+			/* use compute3squares if number has more than 1 unique prime factor, 
+			is small (<= 57 digits), and can be formed from 3 squares. 
+			(Each limb is up to 64 bits). Large numbers would take too long.  */
+			if (!sqplustwosq) {
+				compute3squares(r, num, quads);
+				return;
+			}
 		}
 	}
 
-	for (auto Factorx : factorlist.f) {
+	/* the method below will find 4 squares the sum of which is the required number.
+	In many cases it would be possible to use just 3 squares, but the method for
+	that would be too slow. */
+	for (auto &Factorx : factorlist.f) {
 		if (Factorx.exponent % 2 == 0) {
 			continue; /* if Prime factor appears an even number of times, no need to
 					  process it in this for loop */
@@ -1186,30 +1398,61 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 		pr = Factorx.Factor;
 
 		/* compute 4 or less values the squares of which add up to prime pr,
-		return values in Mult1, Mult2, Mult3 and Mult4 */
-		ComputeFourSquares(pr, Mult1, Mult2, Mult3, Mult4);
-		//assert(pr == Mult1*Mult1 + Mult2*Mult2 + Mult3*Mult3 + Mult4*Mult4);
+		return values in Mult[0], Mult[1], Mult[2] and Mult[3] */
+		ComputeFourSquares(pr, Mult, sqplustwosq);
+		if (sqplustwosq) {
+			assert(Mult[3] == 0);
+			/* swap so that Mult[1] = Mult[2]. This ensures that when Mult is combined
+			 into quads we preserve the feature that quads[1] = quads[2] and quads[3] is zero */
+			if (Mult[0] == Mult[1])
+				Mult[0].swap(Mult[2]);
+			else if (Mult[0] == Mult[2])
+				Mult[0].swap(Mult[1]);
+			else if (Mult[1] != Mult[2]) {
+				std::cout << "** expected 2 of 3 values to be equal \n";
+				if (verbose <= 1)
+					std::cout << "pr    = " << pr
+						<< "\nMult[0] = " << Mult[0]
+						<< "\nMult[1] = " << Mult[1]
+						<< "\nMult[2] = " << Mult[2]
+						<< "\nMult[3] = " << Mult[3] << '\n';
+			}
+		}
+		assert(pr == Mult[0] * Mult[0] + Mult[1] * Mult[1] + Mult[2] * Mult[2] + Mult[3] * Mult[3]);
+		if (verbose > 1) {
+			std::cout <<   "pr    = " << pr 
+				      << "\nMult[0] = " << Mult[0]
+					  << "\nMult[1] = " << Mult[1]
+				      << "\nMult[2] = " << Mult[2]
+				      << "\nMult[3] = " << Mult[3] << '\n' ;
+		}
 
 		/* use the identity:
-		(a^2+b^2+c^2+d^2)*(A^2+B^2+C^2+D^2) = (aA+bB+cC+dD)^2 + (aB-bA+cD-dC)^2
-		                                    + (aC-bD-cA+dB)^2 + (aD-dA+bC-cB)^2 
+		(a²+ b²+ c²+ d²)*(A²+ B²+ C²+ D²) = (aA+bB+cC+dD)² + (aB-bA+cD-dC)²
+		                                    + (aC-bD-cA+dB)² + (aD-dA+bC-cB)² 
 		note: if twoSq is true, c, d, C, & D are zero. The expression then 
 		simplifies 	automatically to:  	
-		       (a^2+b^2)*(A^2+B^2) = (aA+bB)^2 + (aB-bA)^2 */
+		       (a²+b²)*(A²+B²) = (aA+bB)² + (aB-bA)² 
+			   
+		Also, if d =0, D = 0, b = c, and B = C we effectively get
+		(a²+ 2.b²)*(A²+ 2B²) = (aA+2bB)² + (aB-bA)²  + (aB-bA)² + (bB-bB)²
+                                  = (aA+2bB)² + 2(aB-bA)²  
+		This occurs when all odd prime factors of the form 8i+5 or 8i+7 have even exponents.
+*/
 
-		Tmp1 = Mult1*quads[0] + Mult2*quads[1] + Mult3*quads[2] + Mult4*quads[3];
-		Tmp2 = Mult1*quads[1] - Mult2*quads[0] + Mult3*quads[3] - Mult4*quads[2];
-		Tmp3 = Mult1*quads[2] - Mult3*quads[0] - Mult2*quads[3] + Mult4*quads[1];
-		quads[3] = Mult1*quads[3] - Mult4*quads[0] + Mult2*quads[2] - Mult3*quads[1];
+		Tmp1 = Mult[0]*quads[0] + Mult[1]*quads[1] + Mult[2]*quads[2] + Mult[3]*quads[3];
+		Tmp2 = Mult[0]*quads[1] - Mult[1]*quads[0] + Mult[2]*quads[3] - Mult[3]*quads[2];
+		Tmp3 = Mult[0]*quads[2] - Mult[2]*quads[0] - Mult[1]*quads[3] + Mult[3]*quads[1];
+		quads[3] = Mult[0]*quads[3] - Mult[3]*quads[0] + Mult[1]*quads[2] - Mult[2]*quads[1];
 
 		quads[2] = Tmp3;
 		quads[1] = Tmp2;
 		quads[0] = Tmp1;
 	} 
 
-	 /* for factors that are perfect squares, multiply quads[0]-3 by sqrt(factor) */
+	 /* for factors that are perfect squares, multiply quads[0]-[3] by sqrt(factor) */
 	for (auto Factorx : factorlist.f) {
-		if (Factorx.Factor >= 2) {
+		if (Factorx.exponent >= 2) {
 			mpz_pow_ui(ZT(Tmp1), ZT(Factorx.Factor), 
 				Factorx.exponent / 2);
 			quads[0] *= Tmp1;
@@ -1228,40 +1471,31 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	is equivalent to a 'bubble sort' with the loops unrolled. There are
 	only 6 comparisons & exchanges for 4 items. */
 
+	/* firstly, put largest value in quads[0] */
 	if (quads[0] < quads[1]) {		// quads[0] < quads[1], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[1];
-		quads[1] = Tmp1;
+		quads[0].swap(quads[1]);
 	}
 
 	if (quads[0] < quads[2]) {	// quads[0] < quads[2], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[2];
-		quads[2] = Tmp1;
+		quads[0].swap(quads[2]);
 	}
 
 	if (quads[0] < quads[3]) {	// quads[0] < quads[3], so exchange them.
-		Tmp1 = quads[0];
-		quads[0] = quads[3];
-		quads[3] = Tmp1;
+		quads[0].swap(quads[3]);
 	}
 
+	/* put 2nd largest value in quads[1] */
 	if (quads[1] < quads[2]) {	// quads[1] < quads[2], so exchange them.
-		Tmp1 = quads[1];
-		quads[1] = quads[2];
-		quads[2] = Tmp1;
+		quads[1].swap(quads[2]);
 	}
 
 	if (quads[1] < quads[3]) {	// quads[1] < quads[3], so exchange them.
-		Tmp1 = quads[1];
-		quads[1] = quads[3];
-		quads[3] = Tmp1;
+		quads[1].swap(quads[3]);
 	}
 
+	/* put 3nd largest value in quads[2] and smallest in quads[4] */
 	if (quads[2] < quads[3]) {	// quads[2] < quads[3], so exchange them.
-		Tmp1 = quads[2];
-		quads[2] = quads[3];
-		quads[3] = Tmp1;
+		quads[2].swap(quads[3]);
 	}
 	return;
 }
