@@ -13,12 +13,17 @@ typedef unsigned long long ulong;
 #define LGnumBITS (BITS_IN_LONG - 1 - TYPnumBITS)
 #define TYPSHIFT (BITS_IN_LONG - TYPnumBITS)
 #define SIGNSHIFT (BITS_IN_LONG - SIGNnumBITS)
+#define EXPOnumBITS (BITS_IN_LONG - SIGNnumBITS)
+#define HIGHEXPOBIT (1ULL<<(EXPOnumBITS-1))
+#define EXPOBITS    ((1ULL<<EXPOnumBITS)-1)
 #define LGBITS      ((1ULL<<LGnumBITS)-1)
 #define typ(x)        ((int64_t)(((ulong)((x)[0])) >> TYPSHIFT))
 #define signe(x)      (((int64_t)((x)[1])) >> SIGNSHIFT)
 #define lgefint(x)      ((int64_t)(((ulong)((x)[1])) & LGBITS))
 #define gmael1(m,x1)             (((GEN*)    (m))[x1])
 #define gel(m,x)     gmael1(m,x)
+#define expo(x)       ((int64_t) ((((ulong)((x)[1])) & EXPOBITS) - HIGHEXPOBIT))
+#define realprec(x)   ((int64_t)(((ulong)((x)[0])) & LGBITS))
 
 enum {
     t_INT = 1,
@@ -57,6 +62,7 @@ typedef      GEN(__cdecl* G_G)      (GEN x);         /* used for all funtions of
 typedef     void(__cdecl* pari_initX)(size_t parisize, ulong maxprime);    /*void    pari_init(size_t parisize, ulong maxprime);*/
 //typedef     void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
 //typedef  int64_t(__cdecl* pari_stack_newX)(pari_stack* s);
+typedef     void(__cdecl* paristack_setsizeX)(size_t rsize, size_t vsize); /* void paristack_setsize(size_t rsize, size_t vsize) */
 typedef     void(__cdecl* pari_init_optsX)(size_t parisize, ulong maxprime, ulong init_opts);
 typedef     void(__cdecl* pari_init_primesX)(ulong maxprime);
 typedef    ulong(__cdecl* hclassno6uX)(ulong D);   /* ulong hclassno6u(ulong D)*/
@@ -117,6 +123,7 @@ static avmaX             avma_ref;
 static set_avmaX         set_avma_ref;
 static G_G               tau_ref;
 static stirlingX         stirling_ref;
+static paristack_setsizeX paristack_setsize_ref;
 
 /* pari library functions are accessed in this way because linking statically to
 libpari.dll doesn't work, presumably because it was compiled with Msys2/gcc and
@@ -140,6 +147,7 @@ static void specinit()
         /* set up function pointers. There over 6000 accessible libpari functions. This is
         a selection of functions that might be useful. */
         pari_init_ref        = (pari_initX)GetProcAddress(hinstLib, "pari_init");
+        paristack_setsize_ref = (paristack_setsizeX)GetProcAddress(hinstLib, "paristack_setsize");
        /* pari_stack_init_ref  = (pari_stack_initX)GetProcAddress(hinstLib, "pari_stack_init");
         pari_stack_new_ref   = (pari_stack_newX)GetProcAddress(hinstLib, "pari_stack_new");*/
         pari_init_opts_ref   = (pari_init_optsX)GetProcAddress(hinstLib, "pari_init_opts");
@@ -176,7 +184,7 @@ static void specinit()
 
 
         /* check that all function pointers were set up successfully */
-        if (nullptr == pari_init_ref ||
+        if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
  /*           nullptr == pari_stack_init_ref ||
             nullptr == pari_stack_new_ref ||*/
             nullptr == pari_init_opts_ref ||
@@ -218,7 +226,7 @@ static void specinit()
         fRunTimeLinkSuccess = true;
 
         pari_init_ref(8000000, 500000);  /* stack size, maxprime */
-
+        paristack_setsize_ref(8'000'000, 80'000'000);  /* change parisizemax to 80 MB */
         if (verbose > 0) {
             pari_print_version_ref();  /* print some info from libpari dll */
             printf("avma = %p\n", *avma_ref);
@@ -414,6 +422,39 @@ uint64_t R3h(Znum n) {
         printf("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return r;            /* return result */
+}
+
+/* convert a T_Real to an mpf_t. The precison of the mpf_t is set to match the T_Real.
+value must be initialised before calling TrealToMP. */
+void TrealToMP(const GEN x, mpf_t value) {
+    int64_t typx = typ(x);
+    int64_t sign, exp, prec, i;
+    if (typx != t_REAL) {
+        std::cerr << "invalid conversion attempted; T_Real expected \n";
+        return;
+    }
+    sign = signe(x);
+    exp = expo(x);
+    prec = realprec(x);  /* this is really the total length of x in 64-bit words */
+    assert(prec >= 3);
+    mpf_set_prec(value, (prec - 2) * 64);  /* set precision (convert length in
+                                           words to length in bits) */
+    mpf_set_ui(value, 0);
+    for (i = 2; i < prec; i++) {    /* copy mantissa from x to value */
+        mpf_mul_2exp(value, value, 64);
+        mpf_add_ui(value, value, x[i]);
+    }
+
+    /* set exponent */
+    int64_t shift = (prec - 2) * 64 - exp - 1;
+    if (shift >= 0)
+        mpf_div_2exp(value, value, shift);
+    else
+        mpf_mul_2exp(value, value, -shift);
+
+    if (sign < 0)
+        mpf_neg(value, value);  /* if x is -ve make value -ve */
+    return;
 }
 
 /* get Hurwitz class number * 12. The Hurwitz class number is not always an integer

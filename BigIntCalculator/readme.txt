@@ -498,6 +498,22 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
 
+   Some timings for factorisation of numbers composed from 2 random primes 
+   approximately the same size:
+
+   20 digits          0.06 sec
+   30 digits          0.12 sec
+   40 digits          0.48 sec
+   50 digits          1.0  sec
+   58 digits          4.6  sec
+   60 digits          4.7  sec
+   69 digits         27    sec
+   80 digits   2 min 44 sec
+   90 digits  17 min
+
+   Factorisation for 60 or more digits uses YAFU. These are 'worst case' 
+   figures. Random nubers of these sizes would be factorised much faster.
+
  Added 5/6/2021
 
  The 'engine'at the heart of the calculator was largely rewritten; 
@@ -528,3 +544,6 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
  The PARI function is very fast, although the algorithm used is a bit mind-blowing.
  A fast method to calculate R3 based on this has also been developed. (The original
  method is desparately slow for numbers of any significant size)
+
+ Now also uses Pari library to calculate the class number, Ramanujan's tau function,
+ and Stirling numbers (first & second kind)

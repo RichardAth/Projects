@@ -1061,13 +1061,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[0] < 0) {
 			return retCode::INVALID_PARAM;  // parameter out of range
 		}
-		if (mpz_sizeinbase(ZT(p[0]), 10) > 28)
+		if (mpz_sizeinbase(ZT(p[0]), 10) > 30)
 			return retCode::NUMBER_TOO_HIGH;  /* very large numbers cause pari stack overflow */
 		result = R3h((p[0]));
 		break;
 	}
 	case opCode::fn_hurwitz: {
-		if (mpz_sizeinbase(ZT(p[0]), 10) >28)
+		if (mpz_sizeinbase(ZT(p[0]), 10) >30)
 			return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
 		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
 		break;
@@ -1080,7 +1080,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 			return retCode::INVALID_PARAM;
 		if (isPerfectSquare(p[0]))
 			return retCode::INVALID_PARAM;
-		if  (p[0] > 730000000)
+		if  (p[0] > 7300000000)
 			return retCode::NUMBER_TOO_HIGH;  /* avoid pari-stack overflow */
 		result = classno(p[0], 0);  /* returns class number */
 		break;
