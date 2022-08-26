@@ -82,6 +82,7 @@ private:
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
+	int pari = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int power = 0;		   // perfect power
@@ -191,6 +192,8 @@ for factors found by YAFU or Msieve */
 			std::cout << " Msieve: " << this->msieve;
 		if (this->yafu > 0)
 			std::cout << " YAFU:   " << this->yafu;
+		if (this->pari > 0)
+			std::cout << " PARI:   " << this->pari;
 		if (this->carm > 0)
 			std::cout << " Carmichael: " << this->carm;
 		if (this->leh > 0)
@@ -475,6 +478,7 @@ long long int PollardRho(long long int n, int depth = 0);
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
 bool callMsieve(const Znum& num, fList& Factors);
 bool callYafu(const Znum& num, fList& Factors);
+void parifactor(const Znum& n, fList& factors);
 
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
 

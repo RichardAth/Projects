@@ -547,3 +547,12 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
 
  Now also uses Pari library to calculate the class number, Ramanujan's tau function,
  and Stirling numbers (first & second kind)
+
+ As an experiment, a feature was added to use Parilib's factor function to factorise
+ larger numbers. It turns out to be generally somewhat slower than the built-in 
+ ECM and SIQS factorisation.
+
+ Similarly to using YAFU or Msieve for factorisation, Pari factorisation is turned 
+ on by PARI ON and off by PARI OFF commands. The pari stack is initialised if it
+ is required but is NOT closed except by a PARI CLOSE command. (There is no need
+ for a PARI OPEN command; it's done automatically if required)

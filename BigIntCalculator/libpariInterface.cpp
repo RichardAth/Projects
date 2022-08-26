@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <windows.h>
+#include "factor.h"
 //#include "pari.h"
 extern std::string PariPath;
 
@@ -17,6 +18,8 @@ typedef unsigned long long ulong;
 #define HIGHEXPOBIT (1ULL<<(EXPOnumBITS-1))
 #define EXPOBITS    ((1ULL<<EXPOnumBITS)-1)
 #define LGBITS      ((1ULL<<LGnumBITS)-1)
+
+#define lg(x)         ((int64_t)(((ulong)((x)[0])) & LGBITS))
 #define typ(x)        ((int64_t)(((ulong)((x)[0])) >> TYPSHIFT))
 #define signe(x)      (((int64_t)((x)[1])) >> SIGNSHIFT)
 #define lgefint(x)      ((int64_t)(((ulong)((x)[1])) & LGBITS))
@@ -24,6 +27,8 @@ typedef unsigned long long ulong;
 #define gel(m,x)     gmael1(m,x)
 #define expo(x)       ((int64_t) ((((ulong)((x)[1])) & EXPOBITS) - HIGHEXPOBIT))
 #define realprec(x)   ((int64_t)(((ulong)((x)[0])) & LGBITS))
+#define int_MSW(x) ((x)+lgefint((x))-1)
+#define int_precW(x) ((x)-1)
 
 enum {
     t_INT = 1,
@@ -54,11 +59,14 @@ enum {
 
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
-bool fRunTimeLinkSuccess = false;
+bool fRunTimeLinkSuccess = false;    /* true when links to parilib set up */
+bool stackinit = false;              /* true when pari stack is initialised */
+bool Pari = false;                   /* true if parilib used for factorisation */
 
 /* typedefs for access to libpari functions */
 typedef      GEN(__cdecl* G_GG)     (GEN x, GEN y);  /* used for all funtions of the form GEN f(GEN x, GEN y) */
 typedef      GEN(__cdecl* G_G)      (GEN x);         /* used for all funtions of the form GEN f(GEN x) */
+typedef     void(__cdecl* v_v) (void);               /* used for functions of the form void f(void) */
 typedef     void(__cdecl* pari_initX)(size_t parisize, ulong maxprime);    /*void    pari_init(size_t parisize, ulong maxprime);*/
 //typedef     void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
 //typedef  int64_t(__cdecl* pari_stack_newX)(pari_stack* s);
@@ -124,114 +132,133 @@ static set_avmaX         set_avma_ref;
 static G_G               tau_ref;
 static stirlingX         stirling_ref;
 static paristack_setsizeX paristack_setsize_ref;
+static G_G               factor_ref;
+static v_v               pari_close_ref;
 
-/* pari library functions are accessed in this way because linking statically to
+/* set up pointers to parilib functions, initialise pari stack.
+pari library functions are accessed in this way because linking statically to
 libpari.dll doesn't work, presumably because it was compiled with Msys2/gcc and
 we are using windows + Visual Studio.
 for every function we want to use, we have to set up a function pointer.
 For some reason dynamic linking works OK. */
-static void specinit()
-{
-    // Get a handle to the pari DLL module.
-    //hinstLib = LoadLibraryA("C:/Program Files (x86)/Pari64-2-13-2/libpari.dll");
-    hinstLib = LoadLibraryA(PariPath.c_str());
+static void specinit() {
 
-    // If the handle is valid, try to get the function addresses.
-    if (hinstLib == nullptr) {
-        std::cerr << "could not access dll for PARI \n";
-        system("PAUSE");
-        abort();
-    }
+    if (!fRunTimeLinkSuccess) {
+        // Get a handle to the pari DLL module.
+        //hinstLib = LoadLibraryA("C:/Program Files (x86)/Pari64-2-13-2/libpari.dll");
+        hinstLib = LoadLibraryA(PariPath.c_str());
 
-    else {
-        /* set up function pointers. There over 6000 accessible libpari functions. This is
-        a selection of functions that might be useful. */
-        pari_init_ref        = (pari_initX)GetProcAddress(hinstLib, "pari_init");
-        paristack_setsize_ref = (paristack_setsizeX)GetProcAddress(hinstLib, "paristack_setsize");
-       /* pari_stack_init_ref  = (pari_stack_initX)GetProcAddress(hinstLib, "pari_stack_init");
-        pari_stack_new_ref   = (pari_stack_newX)GetProcAddress(hinstLib, "pari_stack_new");*/
-        pari_init_opts_ref   = (pari_init_optsX)GetProcAddress(hinstLib, "pari_init_opts");
-        pari_init_primes_ref = (pari_init_primesX)GetProcAddress(hinstLib, "pari_init_primes");
-        addii_ref            = (G_GG)GetProcAddress(hinstLib, "addii");
-        subii_ref            = (G_GG)GetProcAddress(hinstLib, "subii");
-        mulii_ref            = (G_GG)GetProcAddress(hinstLib, "mulii");
-        dvmdii_ref           = (dvmdiiX)GetProcAddress(hinstLib, "dvmdii");
-        hclassno6u_ref       = (hclassno6uX)GetProcAddress(hinstLib, "hclassno6u");
-        hclassno_ref         = (G_G)GetProcAddress(hinstLib, "hclassno");
-        invmod_ref           = (invmodX)GetProcAddress(hinstLib, "invmod");
-        itor_ref             = (itorX)GetProcAddress(hinstLib, "itor");
-        rtodbl_ref           = (rtodblX)GetProcAddress(hinstLib, "rtodbl");
-        dbltor_ref           = (dbltorX)GetProcAddress(hinstLib, "dbltor");
-        addrr_ref            = (G_GG)GetProcAddress(hinstLib, "addrr");
-        subrr_ref            = (G_GG)GetProcAddress(hinstLib, "subrr");
-        divrr_ref            = (G_GG)GetProcAddress(hinstLib, "divrr");
-        mulrr_ref            = (G_GG)GetProcAddress(hinstLib, "mulrr");
-        divru_ref            = (divruX)GetProcAddress(hinstLib, "divru");
-        pari_print_version_ref = (pari_print_versionX)GetProcAddress(hinstLib, "pari_print_version");
-        exp_ref              = (expX)GetProcAddress(hinstLib, "gexp");
-        log_ref              = (logX)GetProcAddress(hinstLib, "glog");
-        utoipos_ref          = (utoiposX)GetProcAddress(hinstLib, "utoipos");
-        utoineg_ref          = (utoinegX)GetProcAddress(hinstLib, "utoineg");
-        GENtostr_ref         = (GENtostrX)GetProcAddress(hinstLib, "GENtostr");
-        floorr_ref           = (G_G)GetProcAddress(hinstLib, "floorr");
-        cgetipos_ref         = (cgetiposX)GetProcAddress(hinstLib, "cgetipos");
-        cgetineg_ref         = (cgetinegX)GetProcAddress(hinstLib, "cgetineg");
-        qfbclassno_ref       =(qfbclassnox)GetProcAddress(hinstLib, "qfbclassno0");
-        avma_ref             = (avmaX)GetProcAddress(hinstLib, "avma");
-        set_avma_ref         = (set_avmaX)GetProcAddress(hinstLib, "set_avma");
-        tau_ref              = (G_G)GetProcAddress(hinstLib, "ramanujantau");
-        stirling_ref         =(stirlingX)GetProcAddress(hinstLib, "stirling");
-
-
-        /* check that all function pointers were set up successfully */
-        if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
- /*           nullptr == pari_stack_init_ref ||
-            nullptr == pari_stack_new_ref ||*/
-            nullptr == pari_init_opts_ref ||
-            nullptr == pari_init_primes_ref ||
-            nullptr == addii_ref ||
-            nullptr == subii_ref ||
-            nullptr == mulii_ref ||
-            nullptr == dvmdii_ref ||
-            nullptr == invmod_ref ||
-            nullptr == itor_ref ||
-            nullptr == rtodbl_ref ||
-            nullptr == dbltor_ref ||
-            nullptr == addrr_ref ||
-            nullptr == subrr_ref ||
-            nullptr == divrr_ref ||
-            nullptr == divru_ref ||
-            nullptr == pari_print_version_ref ||
-            nullptr == hclassno_ref ||
-            nullptr == exp_ref ||
-            nullptr == log_ref ||
-            nullptr == utoipos_ref ||
-            nullptr == utoineg_ref ||
-            nullptr == GENtostr_ref ||
-            nullptr == floorr_ref ||
-            nullptr == cgetipos_ref ||
-            nullptr == cgetineg_ref ||
-            nullptr == hclassno6u_ref ||
-            nullptr == qfbclassno_ref ||
-            nullptr == avma_ref ||
-            nullptr == set_avma_ref ||
-            nullptr == tau_ref ||
-            nullptr == stirling_ref) {
-            fRunTimeLinkSuccess = false;
-            std::cerr << "PARI dynamic linking failed \n";
+        // If the handle is valid, try to get the function addresses.
+        if (hinstLib == nullptr) {
+            std::cerr << "could not access dll for PARI \n";
             system("PAUSE");
             abort();
         }
 
-        fRunTimeLinkSuccess = true;
+        else {
+            /* set up function pointers. There over 6000 accessible libpari functions. This is
+            a selection of functions that might be useful. */
+            pari_init_ref = (pari_initX)GetProcAddress(hinstLib, "pari_init");
+            paristack_setsize_ref = (paristack_setsizeX)GetProcAddress(hinstLib, "paristack_setsize");
+            /* pari_stack_init_ref  = (pari_stack_initX)GetProcAddress(hinstLib, "pari_stack_init");
+             pari_stack_new_ref   = (pari_stack_newX)GetProcAddress(hinstLib, "pari_stack_new");*/
+            pari_init_opts_ref = (pari_init_optsX)GetProcAddress(hinstLib, "pari_init_opts");
+            pari_init_primes_ref = (pari_init_primesX)GetProcAddress(hinstLib, "pari_init_primes");
+            addii_ref = (G_GG)GetProcAddress(hinstLib, "addii");
+            subii_ref = (G_GG)GetProcAddress(hinstLib, "subii");
+            mulii_ref = (G_GG)GetProcAddress(hinstLib, "mulii");
+            dvmdii_ref = (dvmdiiX)GetProcAddress(hinstLib, "dvmdii");
+            hclassno6u_ref = (hclassno6uX)GetProcAddress(hinstLib, "hclassno6u");
+            hclassno_ref = (G_G)GetProcAddress(hinstLib, "hclassno");
+            invmod_ref = (invmodX)GetProcAddress(hinstLib, "invmod");
+            itor_ref = (itorX)GetProcAddress(hinstLib, "itor");
+            rtodbl_ref = (rtodblX)GetProcAddress(hinstLib, "rtodbl");
+            dbltor_ref = (dbltorX)GetProcAddress(hinstLib, "dbltor");
+            addrr_ref = (G_GG)GetProcAddress(hinstLib, "addrr");
+            subrr_ref = (G_GG)GetProcAddress(hinstLib, "subrr");
+            divrr_ref = (G_GG)GetProcAddress(hinstLib, "divrr");
+            mulrr_ref = (G_GG)GetProcAddress(hinstLib, "mulrr");
+            divru_ref = (divruX)GetProcAddress(hinstLib, "divru");
+            pari_print_version_ref = (pari_print_versionX)GetProcAddress(hinstLib, "pari_print_version");
+            exp_ref = (expX)GetProcAddress(hinstLib, "gexp");
+            log_ref = (logX)GetProcAddress(hinstLib, "glog");
+            utoipos_ref = (utoiposX)GetProcAddress(hinstLib, "utoipos");
+            utoineg_ref = (utoinegX)GetProcAddress(hinstLib, "utoineg");
+            GENtostr_ref = (GENtostrX)GetProcAddress(hinstLib, "GENtostr");
+            floorr_ref = (G_G)GetProcAddress(hinstLib, "floorr");
+            cgetipos_ref = (cgetiposX)GetProcAddress(hinstLib, "cgetipos");
+            cgetineg_ref = (cgetinegX)GetProcAddress(hinstLib, "cgetineg");
+            qfbclassno_ref = (qfbclassnox)GetProcAddress(hinstLib, "qfbclassno0");
+            avma_ref = (avmaX)GetProcAddress(hinstLib, "avma");
+            set_avma_ref = (set_avmaX)GetProcAddress(hinstLib, "set_avma");
+            tau_ref = (G_G)GetProcAddress(hinstLib, "ramanujantau");
+            stirling_ref = (stirlingX)GetProcAddress(hinstLib, "stirling");
+            factor_ref = (G_G)GetProcAddress(hinstLib, "factor");
+            pari_close_ref = (v_v)GetProcAddress(hinstLib, "pari_close");
 
-        pari_init_ref(8000000, 500000);  /* stack size, maxprime */
-        paristack_setsize_ref(8'000'000, 80'000'000);  /* change parisizemax to 80 MB */
-        if (verbose > 0) {
-            pari_print_version_ref();  /* print some info from libpari dll */
-            printf("avma = %p\n", *avma_ref);
+            /* check that all function pointers were set up successfully */
+            if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
+                /*           nullptr == pari_stack_init_ref ||
+                           nullptr == pari_stack_new_ref ||*/
+                nullptr == pari_init_opts_ref || nullptr == pari_init_primes_ref ||
+                nullptr == addii_ref || nullptr == subii_ref ||
+                nullptr == mulii_ref || nullptr == dvmdii_ref ||
+                nullptr == invmod_ref || nullptr == itor_ref ||
+                nullptr == rtodbl_ref || nullptr == dbltor_ref ||
+                nullptr == addrr_ref || nullptr == subrr_ref ||
+                nullptr == divrr_ref || nullptr == divru_ref ||
+                nullptr == pari_print_version_ref ||
+                nullptr == hclassno_ref || nullptr == exp_ref ||
+                nullptr == log_ref || nullptr == utoipos_ref ||
+                nullptr == utoineg_ref || nullptr == GENtostr_ref ||
+                nullptr == floorr_ref || nullptr == cgetipos_ref ||
+                nullptr == cgetineg_ref || nullptr == hclassno6u_ref ||
+                nullptr == qfbclassno_ref || nullptr == avma_ref ||
+                nullptr == set_avma_ref || nullptr == tau_ref ||
+                nullptr == stirling_ref || nullptr == factor_ref ||
+                nullptr == pari_close_ref) {
+                fRunTimeLinkSuccess = false;
+                std::cerr << "PARI dynamic linking failed \n";
+                system("PAUSE");
+                abort();
+            }
+
+            fRunTimeLinkSuccess = true;
         }
     }
+
+    if (!stackinit) {
+        pari_init_ref(8000000, 500000);  /* stack size 8 MB, maxprime */
+        paristack_setsize_ref(8'000'000, 80'000'000);  /* change parisizemax to 80 MB */
+        stackinit = true;
+        if (verbose > 0) {
+            pari_print_version_ref();  /* print some info from libpari dll */
+            printf("Pari stack initialised. avma = %p\n", *avma_ref);
+        }
+    }
+}
+
+/* convert t_INT in x to mpz_t in value */
+static void InttoMP(const GEN x, mpz_t value) {
+#ifdef _DEBUG
+    assert(typ(x) == t_INT);
+#endif
+    int64_t s = signe(x);
+    int64_t i, lx = lgefint(x);   /* lx = effective length of x */
+
+    if (s == 0) {
+        mpz_set_ui(value, 0);   /* x = 0 */
+        return;
+    }
+
+    mpz_set_ui(value, 0);   /* value = 0 */
+    GEN y = int_MSW(x);  /* y points to most significant word of x */
+    for (i = 2; i < lx; i++, y = int_precW(y)) {
+        mpz_mul_2exp(value, value, 64); /* move more significant bits left 64 bits*/
+        mpz_add_ui(value, value, *y);   /* add next 64-bit limb */
+    }
+    if (s < 0)
+        mpz_neg(value, value);  /* if x  is -ve, flip sign */
 }
 
 /* convert GEN to MPIR/GMP multi-precision
@@ -250,7 +277,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
     switch (typx) {
     case t_INT: {
         int64_t s = signe(x);
-        int64_t i, lx = lgefint(x);
+        int64_t lx = lgefint(x);   /* lx = effective length of x */
 
         mpz_set_ui(denom, 1);
         if (s == 0) {
@@ -258,16 +285,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
             val_d = 0.0;
             return;
         }
-
-        mpz_set_ui(value, 0);   /* value = 0 */
-        int64_t* y = x + lx - 1;  /* y points to most significant word of x */
-        for (i = 2; i < lx; i++, y--) {
-            mpz_mul_2exp(value, value, 64); /* move more significant bits left 64 bits*/
-            mpz_add_ui(value, value, *y);   /* add next 64-bit limb */
-        }
-        if (s < 0)
-            mpz_neg(value, value);  /* if x  is -ve, flip sign */
-
+        InttoMP(x, value);
         val_d = mpz_get_d(value);  /* convert to floating point */
         return;
     }
@@ -275,62 +293,28 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
         GEN num = gel(x, 1);      /* numerator */
         GEN den = gel(x, 2);     /* denominator */
         int64_t s = signe(num);
-        int64_t i, lnum = lgefint(num), lden = lgefint(den);
+
         if (s == 0) {
             mpz_set_ui(value, 0);  /* x = 0 */
             mpz_set_ui(denom, 1);
             val_d = 0;
             return;
         }
-
-        mpz_set_ui(value, 0);   /* value = 0 */
-        int64_t* y = num + lnum - 1;  /* y points to most significant word of num */
-        for (i = 2; i < lnum; i++, y--) {
-            mpz_mul_2exp(value, value, 64);
-            mpz_add_ui(value, value, *y);
-        }
-        if (s < 0)
-            mpz_neg(value, value);  /* if num  is -ve, flip sign */
+        InttoMP(num, value);
 
         s = signe(den);
         if (s == 0) {
             mpz_set_ui(denom, 0);  /* this would be weird! Mathematically the value is infinite!*/
             return;
         }
-
-        mpz_set_ui(denom, 0);   /* denom = 0 */
-        y = den + lden - 1;  /* y points to most significant word of denom */
-        for (i = 2; i < lden; i++, y--) {
-            mpz_mul_2exp(denom, denom, 64);
-            mpz_add_ui(denom, denom, *y);
-        }
-        if (s < 0)
-            mpz_neg(denom, denom);  /* if denom  is -ve, flip sign */
-
+        InttoMP(den, denom);
         val_d = mpz_get_d(value) / mpz_get_d(denom);
         return;
     }
     case t_REAL: {
         GEN xi = floorr_ref(x);   /* xi = integer part of x*/
-        int64_t s = signe(xi);
-        int64_t i, lx = lgefint(xi);
         mpz_set_ui(denom, 1);
-
-        /* convert (GEN)xi to (mpz_t)value */
-        if (s == 0) {
-            mpz_set_ui(value, 0);
-        }
-        else {
-            mpz_set_ui(value, 0);   /* value = 0 */
-            int64_t* y = xi + lx - 1;  /* y points to most significant word of xi */
-            for (i = 2; i < lx; i++, y--) {
-                mpz_mul_2exp(value, value, 64); /* move more significant bits left 64 bits*/
-                mpz_add_ui(value, value, *y);   /* add next 64-bit limb */
-            }
-            if (s < 0)
-                mpz_neg(value, value);  /* if xi  is -ve, flip sign */
-        }
-
+        InttoMP(xi, value);/* convert (GEN)xi to (mpz_t)value */
         val_d = rtodbl_ref(x);  /* also convert x to normal floating point */
         return;
     }
@@ -361,15 +345,14 @@ GEN MPtoGEN(const mpz_t num) {
 /* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting. 
 assume that R3(n) < 2^64. Note: n is a copy of the original value. This copy
 is modified. */
-uint64_t R3h(Znum n) {
+Znum R3h(Znum n) {
     mpz_t num, denom, result;
     mpz_inits(num, denom, result, nullptr);
     double hxd;
     GEN x, hx;
-    uint64_t r;
+    Znum r;
 
-    if (fRunTimeLinkSuccess == false)
-        specinit();
+    specinit();   /* initialise as required*/
     ulong* av = *avma_ref;  /* save address of available memory */
 
     if (n == 0)
@@ -394,21 +377,20 @@ uint64_t R3h(Znum n) {
         GENtoMP(hx, num, denom, hxd);    /* convert hx from GEN to mpz_t */
         mpz_mul_ui(result, num, 12);
         mpz_div(result, result, denom);  /* get 12*h(n) */
-        r = mpz_get_ui(result);          /* assume result fits into 64 bits */
+        r = result;          /* convert to Znum */
         break;
- 
     }
 
     case 3:  /* n%8 = 3 */
-        /* get 24 * h(n) */
+        /* get 24 * h(n) */ {
         x = MPtoGEN(ZT(n));
         hx = hclassno_ref(x);
         GENtoMP(hx, num, denom, hxd);
         mpz_mul_ui(result, num, 24);     /* result = num * 24 */
         mpz_div(result, result, denom);  /* result =(num * 24)/denom  = 24*h(n)  */
-        r = mpz_get_ui(result);         /* convert to 64-bit integer */
+        r = result;         /* convert to Znum */
         break;
-
+    }
     case 7:  /* n%8 = 7 */
         return 0;
 
@@ -416,7 +398,7 @@ uint64_t R3h(Znum n) {
         abort();   /* should never happen */
     }
 
-    mpz_clears(num, denom, result, nullptr);
+    mpz_clears(num, denom, result, nullptr);  /* avoid memory leakage */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf("used %lld bytes on pari stack \n", (long long)diff);
@@ -464,8 +446,7 @@ Znum Hclassno12(const Znum &n) {
     double rvd;
     Znum num, denom;
 
-    if (fRunTimeLinkSuccess == false)
-        specinit();
+    specinit();  /* initialise as required*/
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
@@ -482,52 +463,46 @@ Znum Hclassno12(const Znum &n) {
 
 /* get class number. flag = 0 for Shanks method, 1 to use Euler products */
 Znum classno(const Znum& n, int flag) {
-    double rvd;
-    Znum num, denom;
+    Znum num;
 
-    if (fRunTimeLinkSuccess == false)
-        specinit();
+    specinit();    /* initialise as required*/
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     /* flag = 0 for Shanks method, 1 to use Euler products */
     GEN retval = qfbclassno_ref(ng, flag);
-    GENtoMP(retval, ZT(num), ZT(denom), rvd);
+    InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
-    return num / denom;
+    return num;
 }
 
 /* ramanujantau(n): compute the value of Ramanujan's tau function at n, assuming the GRH.
 Algorithm in O(n^{1/2+eps}). */
 Znum tau(const Znum& n) {
-    double rvd;
-    Znum num, denom;
+    Znum num;
 
-    if (fRunTimeLinkSuccess == false)
-        specinit();
+    specinit();    /* initialise as required*/
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     GEN retval = tau_ref(ng);
-    GENtoMP(retval, ZT(num), ZT(denom), rvd);
+    InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
-    return num / denom;
+    return num;
 }
 
 /* if flag=1 return the Stirling number of the first kind s(n, k), 
 if flag=2, return the Stirling number of the second kind S(n, k). */
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
-    double rvd;
-    Znum num, denom;
+    Znum num;
 
-    if (fRunTimeLinkSuccess == false)
-        specinit();
+    specinit();     /* initialise as required*/
     ulong* av = *avma_ref;
 
     /* convert m, n, and flag to 64-bit integers */
@@ -535,10 +510,82 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     uint64_t lm = MulPrToLong(m);
     long long f = MulPrToLong(flag);
     GEN retval = stirling_ref(ln, lm, f);  /* get stirling number */
-    GENtoMP(retval, ZT(num), ZT(denom), rvd);  /* convert result to Znums */
+    InttoMP(retval, ZT(num));  /* convert result to Znums */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
-    return num / denom;
+    return num;
+}
+
+/* process "PARI ... " command */
+void pariParam(const std::string& command) {
+    std::string param = command.substr(4);  /* remove "PARI */
+
+    while (param[0] == ' ')
+        param.erase(0, 1);              /* remove leading space(s) */
+
+    if (param == "ON" || param == "on") {
+        Pari = true;  /* switch to using parilib for factorisation */
+        yafu = false;
+        msieve = false;
+    }
+    else if (param == "OFF" || param == "off")
+        Pari = false;
+    else if (param == "close" || param == "CLOSE") {
+        if (stackinit) {
+            pari_close_ref();    /* free pari stack */
+            stackinit = false;
+            if (verbose > 0)
+                std::cout << "Pari stack closed \n";
+        }
+    }
+    else
+        std::cout << "Invalid Pari command \n";
+    return;
+}
+
+/* factorise n using parilib factor() function.*/
+void parifactor(const Znum& n, fList &factors) {
+    GEN nG, flM, fG, prime, exp, expv;
+    long long numFactors, typfl, typf, typexp;
+    Znum pZ, expZ;
+
+    specinit();    /* initialise as required*/
+    ulong* av = *avma_ref;  /* save address of available memory */
+
+    if (verbose > 1) {
+        std::cout << "factorise " << n << " using parilib \n";
+    }
+
+    nG = MPtoGEN(ZT(n));   /* convert n to t_INT format */
+    flM = factor_ref(nG);  /* get factors of n using parilib */
+    
+    typfl = typ(flM);
+    assert(typfl == t_MAT);  /* factors are returned in a matrix*/
+  
+    fG = gel(flM, 1);     /* the matrix contains 2 columns*/
+    typf = typ(fG);       /* 1st column is the (prime?) factors */
+    assert(typf == t_COL);
+    numFactors = lg(fG)-1;
+    assert(numFactors >= 1);
+    exp = gel(flM, 2);     /* 2nd column is the exponents */
+    typexp = typ(exp);
+    assert(typexp == t_COL);
+
+    for (int i = 1; i <= numFactors; i++) {
+        prime = gel(fG, i);     /* get factor (should be prime) */
+        long long tp = typ(prime);
+        assert(tp == t_INT);
+        expv = gel(exp, i);    /* and corresponding exponent */
+        long long texp = typ(expv);
+        assert(texp == t_INT);
+        InttoMP(prime, ZT(pZ));   /* convert factor to Znum format */
+        insertBigFactor(factors, pZ);     /* add factor to factor list */
+        if (verbose > 1) {
+            InttoMP(expv, ZT(expZ));
+            std::cout << "factor " << pZ << "^" << expZ << "\n";
+        }
+    }
+    set_avma_ref((ulong)av);      /* recover memory used */
 }

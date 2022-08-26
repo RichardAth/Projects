@@ -114,9 +114,9 @@ R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z�
                   (order and sign of x and y are significant) N.B. very slow
                   for large numbers e.g. 2 min for a 12 digit number.
 R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
-                  (much faster) Currently restricted to n < 10^28.
+                  (much faster) Currently restricted to n < 10^32.
 HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
-                  n < 10^28. The true HCLASS is not always an integer, but 
+                  n < 10^32. The true HCLASS is not always an integer, but 
                   multiplying by 12 always yields an integer.
 CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
                   not a perfect square. For +ve n, n must be < 730,000,000 to avoid

@@ -802,7 +802,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 		int nooflimbs = numLimbs(Zpower);
 		// get approximate size (1 limb = 64 bits)
-		if (nooflimbs <=3 || (!msieve && !yafu)) {
+		if (nooflimbs <=3 || (!msieve && !yafu && !Pari)) {
 			/* use built-in ECM & SIQS if number to factor <= 192 bits (58 digits)
 			   because this is fastest for smaller numbers,
 			   or if both YAFU and Msieve are turned off */
@@ -841,15 +841,21 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			should be set. */
 			if (msieve)  
 				rv = callMsieve(Zpower, Factors);
-			else
+			else if (yafu)
 				rv = callYafu(Zpower, Factors);
+			else {
+				parifactor(Zpower, Factors);
+				rv = true;
+			}
 			if (rv) {
 				i = -1;   // success; restart loop at beginning to tidy up!
 				// record any increase in number of factors
 				if (msieve)
 					Factors.msieve += (int)(Factors.f.size() - fsave); 
-				else
+				else if (yafu)
 					Factors.yafu += (int)(Factors.f.size() - fsave); 
+				else 
+					Factors.pari += (int)(Factors.f.size() - fsave);
 			}
 			else {
 				msieve = false;   // failed once, don't try again

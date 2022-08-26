@@ -3200,7 +3200,8 @@ static int processCmd(const std::string &command) {
 	const static std::vector<std::string> list =
 	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
 	   "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
-	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF" };
+	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF",
+	   "PARI"};
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -3414,6 +3415,10 @@ static int processCmd(const std::string &command) {
 			/* if command processed, now save it for possible loop */
 			exprList.push_back(command);  
 		/* to be completed for rv =-1, rv = 1*/
+		return 1;
+	}
+	case 18: /* PARI */ {
+		pariParam(command);
 		return 1;
 	}
 	default:
