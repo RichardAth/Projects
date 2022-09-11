@@ -67,10 +67,10 @@ bool Pari = false;                   /* true if parilib used for factorisation *
 typedef      GEN(__cdecl* G_GG)     (GEN x, GEN y);  /* used for all funtions of the form GEN f(GEN x, GEN y) */
 typedef      GEN(__cdecl* G_G)      (GEN x);         /* used for all funtions of the form GEN f(GEN x) */
 typedef     void(__cdecl* v_v) (void);               /* used for functions of the form void f(void) */
-typedef     void(__cdecl* pari_initX)(size_t parisize, ulong maxprime);    /*void    pari_init(size_t parisize, ulong maxprime);*/
+typedef     void(__cdecl* pari_initX)(size_t, ulong);    /*void    pari_init(size_t parisize, ulong maxprime);*/
 //typedef     void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
 //typedef  int64_t(__cdecl* pari_stack_newX)(pari_stack* s);
-typedef     void(__cdecl* paristack_setsizeX)(size_t rsize, size_t vsize); /* void paristack_setsize(size_t rsize, size_t vsize) */
+typedef     void(__cdecl* paristack_setsizeX)(size_t, size_t); /* void paristack_setsize(size_t rsize, size_t vsize) */
 typedef     void(__cdecl* pari_init_optsX)(size_t parisize, ulong maxprime, ulong init_opts);
 typedef     void(__cdecl* pari_init_primesX)(ulong maxprime);
 typedef    ulong(__cdecl* hclassno6uX)(ulong D);   /* ulong hclassno6u(ulong D)*/
@@ -80,7 +80,7 @@ typedef      GEN(__cdecl* itorX)    (GEN x, int64_t prec);     /* GEN    itor(GE
 typedef   double(__cdecl* rtodblX)  (GEN x);      /* double  rtodbl(GEN x); */
 typedef      GEN(__cdecl* dbltorX)  (double x);   /* GEN     dbltor(double x); */
 typedef      GEN(__cdecl* divruX)   (GEN x, ulong y);
-typedef     void(__cdecl* pari_print_versionX)(void);   /* void pari_print_version(void)*/
+
 typedef      GEN(__cdecl* expX)     (GEN x, int64_t prec);  /* GEN gexp(GEN x, int64_t prec)*/
 typedef      GEN(__cdecl* logX)     (GEN x, int64_t prec);  /* GEN glog(GEN x, int64_t prec)*/
 typedef   char* (__cdecl* GENtostrX)(GEN x);        /* char*   GENtostr(GEN x);*/
@@ -116,7 +116,7 @@ static G_GG              subrr_ref;     /* a - b */
 static G_GG              divrr_ref;     /* a / b  */
 static G_GG              mulrr_ref;     /* a * b */
 static divruX            divru_ref;    
-static pari_print_versionX pari_print_version_ref;
+static v_v               pari_print_version_ref;
 //parimainstackX    parimainstack_ref;
 static expX              exp_ref;       /*  exp(a) */
 static logX              log_ref;       /* log(a)  */
@@ -179,7 +179,7 @@ static void specinit() {
             divrr_ref = (G_GG)GetProcAddress(hinstLib, "divrr");
             mulrr_ref = (G_GG)GetProcAddress(hinstLib, "mulrr");
             divru_ref = (divruX)GetProcAddress(hinstLib, "divru");
-            pari_print_version_ref = (pari_print_versionX)GetProcAddress(hinstLib, "pari_print_version");
+            pari_print_version_ref = (v_v)GetProcAddress(hinstLib, "pari_print_version");
             exp_ref = (expX)GetProcAddress(hinstLib, "gexp");
             log_ref = (logX)GetProcAddress(hinstLib, "glog");
             utoipos_ref = (utoiposX)GetProcAddress(hinstLib, "utoipos");
@@ -343,20 +343,20 @@ GEN MPtoGEN(const mpz_t num) {
 }
 
 /* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting. 
-assume that R3(n) < 2^64. Note: n is a copy of the original value. This copy
-is modified. */
+Note: n is intentionally a copy of the original value. This copy is modified. */
 Znum R3h(Znum n) {
     mpz_t num, denom, result;
-    mpz_inits(num, denom, result, nullptr);
     double hxd;
     GEN x, hx;
     Znum r;
 
-    specinit();   /* initialise as required*/
-    ulong* av = *avma_ref;  /* save address of available memory */
-
     if (n == 0)
         return 1;   /* easiest to make n = 0 a special case*/
+
+    specinit();   /* initialise as required*/
+    ulong* av = *avma_ref;  /* save address of available memory */
+    mpz_inits(num, denom, result, nullptr);
+
     /* note: r3(4n) = r3(n) */
     while ((n & 3) == 0)
         n >>= 2;  /* if n is a multiple of 4, divide n by 4*/
@@ -392,7 +392,8 @@ Znum R3h(Znum n) {
         break;
     }
     case 7:  /* n%8 = 7 */
-        return 0;
+        r = 0;
+        break;
 
     default:   /* n%8 = 0 or 4 */
         abort();   /* should never happen */
@@ -569,6 +570,7 @@ void parifactor(const Znum& n, fList &factors) {
     assert(typf == t_COL);
     numFactors = lg(fG)-1;
     assert(numFactors >= 1);
+
     exp = gel(flM, 2);     /* 2nd column is the exponents */
     typexp = typ(exp);
     assert(typexp == t_COL);
