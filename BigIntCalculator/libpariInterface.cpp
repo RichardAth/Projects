@@ -11,9 +11,9 @@ typedef unsigned long long ulong;
 #define BITS_IN_LONG 64
 #define TYPnumBITS   7
 #define SIGNnumBITS  2
-#define LGnumBITS (BITS_IN_LONG - 1 - TYPnumBITS)
-#define TYPSHIFT (BITS_IN_LONG - TYPnumBITS)
-#define SIGNSHIFT (BITS_IN_LONG - SIGNnumBITS)
+#define LGnumBITS   (BITS_IN_LONG - 1 - TYPnumBITS)
+#define TYPSHIFT    (BITS_IN_LONG - TYPnumBITS)
+#define SIGNSHIFT   (BITS_IN_LONG - SIGNnumBITS)
 #define EXPOnumBITS (BITS_IN_LONG - SIGNnumBITS)
 #define HIGHEXPOBIT (1ULL<<(EXPOnumBITS-1))
 #define EXPOBITS    ((1ULL<<EXPOnumBITS)-1)
@@ -22,12 +22,12 @@ typedef unsigned long long ulong;
 #define lg(x)         ((int64_t)(((ulong)((x)[0])) & LGBITS))
 #define typ(x)        ((int64_t)(((ulong)((x)[0])) >> TYPSHIFT))
 #define signe(x)      (((int64_t)((x)[1])) >> SIGNSHIFT)
-#define lgefint(x)      ((int64_t)(((ulong)((x)[1])) & LGBITS))
-#define gmael1(m,x1)             (((GEN*)    (m))[x1])
-#define gel(m,x)     gmael1(m,x)
+#define lgefint(x)    ((int64_t)(((ulong)((x)[1])) & LGBITS))
+#define gmael1(m,x1)  (((GEN*)    (m))[x1])
+#define gel(m,x)      gmael1(m,x)
 #define expo(x)       ((int64_t) ((((ulong)((x)[1])) & EXPOBITS) - HIGHEXPOBIT))
 #define realprec(x)   ((int64_t)(((ulong)((x)[0])) & LGBITS))
-#define int_MSW(x) ((x)+lgefint((x))-1)
+#define int_MSW(x)   ((x)+lgefint((x))-1)
 #define int_precW(x) ((x)-1)
 
 enum {
@@ -325,7 +325,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
 }
 
 /* convert mpz_t to GEN */
-GEN MPtoGEN(const mpz_t num) {
+static GEN MPtoGEN(const mpz_t num) {
     ptrdiff_t numlimbs = mpz_size(num);
     GEN rv;
     if (numlimbs == 0) {
@@ -409,7 +409,7 @@ Znum R3h(Znum n) {
 
 /* convert a T_Real to an mpf_t. The precison of the mpf_t is set to match the T_Real.
 value must be initialised before calling TrealToMP. */
-void TrealToMP(const GEN x, mpf_t value) {
+static void TrealToMP(const GEN x, mpf_t value) {
     int64_t typx = typ(x);
     int64_t sign, exp, prec, i;
     if (typx != t_REAL) {

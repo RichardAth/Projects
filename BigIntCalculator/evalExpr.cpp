@@ -88,6 +88,7 @@ enum class opCode {
 	fn_modpow,
 	fn_modinv,
 	fn_totient,
+	fn_carmichael,
 	fn_numdivs,
 	fn_sumdivs,
 	fn_sumdigits,
@@ -145,6 +146,7 @@ const static struct functions functionList[]{
 	"MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
 	"MODINV",    2,  opCode::fn_modinv,
 	"TOTIENT",   1,  opCode::fn_totient,
+	"CARMICHAEL",1,  opCode::fn_carmichael,
 	"SUMDIVS",   1,  opCode::fn_sumdivs,
 	"SUMDIGITS", 2,  opCode::fn_sumdigits,
 	"SQRT",      1,  opCode::fn_sqrt,
@@ -270,6 +272,20 @@ static Znum ComputeTotient(const Znum &n) {
 	if (rv) {
 		auto tot = factorlist.totient();
 		return tot;
+	}
+	else return 0;
+}
+
+/* Calculate Carmichael Function AKA reduced totient */
+static Znum ComputeCarmichael(const Znum& n) {
+	fList factorlist;
+
+	if (n == 1)
+		return 1;
+	auto rv = factorise(n, factorlist, nullptr);
+	if (rv) {
+		auto car = factorlist.carmichael();
+		return car;
 	}
 	else return 0;
 }
@@ -930,6 +946,12 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[0] < 1) 
 			return retCode::NUMBER_TOO_LOW;;
 		result = ComputeTotient(p[0]);
+		break;
+	}
+	case opCode::fn_carmichael: {			// totient
+		if (p[0] < 1)
+			return retCode::NUMBER_TOO_LOW;;
+		result = ComputeCarmichael(p[0]);
 		break;
 	}
 	case opCode::fn_numdivs: {		// NUMDIVS

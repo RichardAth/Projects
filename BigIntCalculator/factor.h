@@ -118,6 +118,27 @@ public:
 		return result;
 	}
 
+/* find  Carmichael function λ(n) See Wikpedia
+https://en.wikipedia.org/wiki/Carmichael_function#Computing_%CE%BB(n)_with_Carmichael's_theorem
+AKA reduced totient function. 
+See also https://oeis.org/A002322 */
+	Znum carmichael() const {
+		// this only works if factorisation is complete!
+		if (this->f.empty())
+			return 0;  /* unable to calculate */
+		Znum result = 1, term;
+		for (auto i : this->f) {
+			if (i.Factor == 2 && i.exponent > 2)
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2
+			else {
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+				term = term * (i.Factor - 1);	                     // (p^(e-1)-1)*(p-1)
+			}
+			mpz_lcm(ZT(result), ZT(result), ZT(term));
+		}
+		return result;
+	}
+
 /* For any positive integer n, define μ(n) as the sum of the primitive nth roots of unity.
 It has values in {−1, 0, 1} depending on the factorization of n into prime factors:
 μ(n) = 1 if n is a square-free positive integer with an even number of prime factors.
@@ -286,7 +307,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			return (b / 2);
 		//else return (b + 1) / 2;
 		else {
-		/* if b is odd the the exponents of ALL (4k+1) prime factors of n are even,
+		/* if b is odd the the exponents of ALL prime factors of n other than 2 are even,
 		therefore n is a perfect square, or 2*perfect square */
 			if ((a0 & 1) == 0)
 				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect

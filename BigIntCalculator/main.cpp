@@ -2297,6 +2297,8 @@ retry:
 	return;
 }
 
+
+/* code 'borrowed' from YAFU */
 // machine info
 double MEAS_CPU_FREQUENCY;
 char CPU_ID_STR[80] = {'\0'};

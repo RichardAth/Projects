@@ -75,6 +75,10 @@ Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
 Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
+Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
+                  m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                  and n that is coprime to n. Also known as the reduced totient
+                  function.
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
