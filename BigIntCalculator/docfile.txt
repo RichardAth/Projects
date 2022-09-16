@@ -129,10 +129,10 @@ TAU(x)          : Ramanujan's tau function
 STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
                   if f = 2, return the Stirling number of the second kind S(n,k).
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
-JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
-                  of p, otherwise it is one if there is a solution of x² = a (mod p) 
-                  and it is -1 when the congruence has no solution. 
-                  Extension of Legendre to all odd values of p.
+                  The result is zero when a is a multiple of p, otherwise it is 
+                  one if there is a solution of x² = a (mod p) and it is -1 when 
+                  the congruence has no solution.
+JA(a,p)         : Jacobi value for (a/p). Extension of Legendre to all odd values of p.
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0

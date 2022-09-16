@@ -589,5 +589,8 @@ void parifactor(const Znum& n, fList &factors) {
             std::cout << "factor " << pZ << "^" << expZ << "\n";
         }
     }
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
 }

@@ -974,6 +974,7 @@ static void doTests(void) {
 		"modpow(8, 7, 6)",                  2,   // modular power
 		"modpow(8, -2, 5)",                 4,   // negative exponent OK in some cases
 		"totient(201)",		              132,
+		"carmichael(201)",                 66,
 		"numdivs(7!)",                     60,
 		"sumdivs(7!)",                  19344,
 		"numdigits(123456789, 6)",         11,
