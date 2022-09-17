@@ -81,12 +81,40 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 
 	/* must treat prime=2 as a special case. */
 	if (prime == 2 && c != 0) {
-		/* there are no roots unless c = 1 */
-		if (c% mod == 1) {
+		if (c == 1) {
 			roots.push_back(1);
 			roots.push_back(mod - 1);  /* get 2nd root */
+			if (mod > 4) {
+				roots.push_back(mod / 2 - 1);
+				roots.push_back(mod / 2 + 1);
+			}
 		}
-		return roots;
+		else if (isPerfectSquare(c)) {
+			r1 = sqrt(c);
+			if (mod % c == 0) {
+				/* both mod & c are powers of 2 */
+				while (r1 < mod) {
+					if (r1 * r1 % mod == c) {
+						roots.push_back(r1);
+						roots.push_back(mod - r1);
+					}
+					r1 += c;
+				}
+			}
+			else {
+				while (r1 < mod) {
+					roots.push_back(r1);
+					roots.push_back(mod - r1);
+					r1 += mod / 2;
+				}
+			}
+		}
+	  /* todo deal with remaining cases */
+		/* remove any duplicates */
+		std::sort(roots.begin(), roots.end());
+		auto last = std::unique(roots.begin(), roots.end());
+		roots.erase(last, roots.end());
+			return roots;
 	}
 
 	/* this part was derived from Wikipedia
@@ -106,9 +134,15 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 	r1 = modPower(x, power(prime, lambda - 1), mod);
 	r2 = modPower(c, (power(prime, lambda) - 2 * power(prime, lambda - 1) + 1) / 2, mod);
 	root = modMult(r1, r2, mod);    /* get final product */
-	roots.push_back(root);
-	roots.push_back(mod - root);    /* get 2nd root */
-
+	if ((root * root) % mod == c) {
+		roots.push_back(root);
+		roots.push_back(mod - root);    /* get 2nd root */
+	}
+	else {
+		if (verbose > 0 || root > 0) {
+			std::cerr << "invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
+		}
+	}
 	return roots;
 }
 
@@ -330,7 +364,7 @@ static bool test9once(long long a, long long m) {
 	}
 
 	if (error) {
-		printf_s("a = %lld, m = %lld, Znum results don't match! \nGot: ", a, m);
+		printf_s("Modsqrt(%lld, %lld), Znum results don't match! \nGot: ", a, m);
 		for (auto r : r3) {
 			gmp_printf("%Zd, ", r);
 		}
@@ -363,29 +397,21 @@ static bool test9once(long long a, long long m) {
 void doTests9(void) {
 	bool rv = true;
 
+	for (long long m = 2; m <= 100; m++)
+		for (long long a = 0; a < m; a++) {
+ 			rv &= test9once(a, m);
+		}
+
 	rv &= test9once(99, 107);      // roots are 45 and 62
-	rv &= test9once(3, 22);        // roots are 5 & 17
-	rv &= test9once(99, 100);      // no roots
 	rv &= test9once(2191, 12167);  // roots are 1115, 11052
 	rv &= test9once(4142, 24389);  // roots are 2333, 22056
 	rv &= test9once(3, 143);       // roots are 17, 61, 82, 126
 	rv &= test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	rv &= test9once(9, 44);        // roots are 3, 19, 25, 41
-	rv &= test9once(0, 44);        // roots are zero, 22
-	rv &= test9once(0, 4);         // roots are 0, 2
-	rv &= test9once(0, 9);         // roots are 0, 3, 6
-	rv &= test9once(0, 8);         // roots are 0, 4
-	rv &= test9once(0, 27);        // roots are 0, 9, 18
-	rv &= test9once(0, 16);        // roots are 0, 4, 8, 12
-	rv &= test9once(0, 32);        // roots are 0, 8, 16, 24
 	rv &= test9once(0, 176);       // roots are zero, 44, 88, 132
 	rv &= test9once(1, 121550625); // roots are 1, 15491251, 51021251, 55038124,
 								   // 66512501, 70529374, 106059374, 121550624,
 	rv &= test9once(0, 121550625); // 11025 different roots!
-	rv &= test9once(8, 28);        // roots are 6, 8, 20, 22
-	rv &= test9once(6, 30);        // roots are 6, 24
-	rv &= test9once(42, 66);       // roots are 30, 36
-
+	
 	if (rv)
 		std::cout << "All modular square root tests completed successfully. \n";
 	else
