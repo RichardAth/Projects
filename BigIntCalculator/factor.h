@@ -99,6 +99,8 @@ public:
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend int classify(Znum n);
+	friend void SolveEquation(Znum* pValA, const Znum* pValB, const Znum* pValC,
+		Znum* pValN, Znum* pGcdAllParm, Znum* pValNnParm);
 
 	/* methods that are in the class */
 

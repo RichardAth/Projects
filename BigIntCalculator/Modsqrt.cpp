@@ -51,6 +51,65 @@ void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, 
 	return;
 }
 
+/* special for prime =2*/
+std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
+	Znum r1, r2, root, x, x2;
+	Znum mod = power(prime, lambda);
+	std::vector <Znum> roots;
+	assert(prime == 2);
+
+	if (c == 1) {
+		roots.push_back(1);
+		roots.push_back(mod - 1);  /* get 2nd root */
+		if (mod > 4) {
+			roots.push_back(mod / 2 - 1);
+			roots.push_back(mod / 2 + 1);
+		}
+	}
+	else if (isPerfectSquare(c)) {
+		r1 = sqrt(c);
+		if (mod % c == 0) {
+			/* both mod & c are powers of 2 */
+			while (r1 < mod) {
+				if (r1 * r1 % mod == c) {
+					roots.push_back(r1);
+					roots.push_back(mod - r1);
+				}
+				r1 += c;
+			}
+		}
+		else {
+			while (r1 < mod) {
+				roots.push_back(r1);
+				roots.push_back(mod - r1);
+				r1 += mod / 2;
+			}
+		}
+	}
+	else if((lambda >= 3) && (c%8 ==1)) {
+		for (x = 1; x <= 7; x += 2) /* x = 1, 3, 5, 7 */ {
+			x2 = x;
+			for (int k = 3; k <= lambda; k++) {
+				Znum i = ((x2 * x2 - c) / pow2(k)) % 2;
+				if (i == -1) i = 1;
+				x2 = x2+ i * pow2(k - 1);
+			}
+			while (x2 < 0)
+				x2 += mod;
+			if (x2 >= mod)
+				x2 %= mod;   /* ensure x2 is in range 0 to mod-1 */
+			roots.push_back(x2);
+			roots.push_back(mod - x2);
+		}
+	}
+	/* todo deal with remaining cases */
+	  /* remove any duplicates */
+	std::sort(roots.begin(), roots.end());
+	auto last = std::unique(roots.begin(), roots.end());
+	roots.erase(last, roots.end());
+	return roots;
+}
+
 /* find x such that x^2 ≡ c mod prime^lambda 
   the method used was partly derived from Wikipedia but the cases where c=0, 
   and where prime=2 are all my own work. I have not seen descriptions that cover 
@@ -80,41 +139,9 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 	}
 
 	/* must treat prime=2 as a special case. */
-	if (prime == 2 && c != 0) {
-		if (c == 1) {
-			roots.push_back(1);
-			roots.push_back(mod - 1);  /* get 2nd root */
-			if (mod > 4) {
-				roots.push_back(mod / 2 - 1);
-				roots.push_back(mod / 2 + 1);
-			}
-		}
-		else if (isPerfectSquare(c)) {
-			r1 = sqrt(c);
-			if (mod % c == 0) {
-				/* both mod & c are powers of 2 */
-				while (r1 < mod) {
-					if (r1 * r1 % mod == c) {
-						roots.push_back(r1);
-						roots.push_back(mod - r1);
-					}
-					r1 += c;
-				}
-			}
-			else {
-				while (r1 < mod) {
-					roots.push_back(r1);
-					roots.push_back(mod - r1);
-					r1 += mod / 2;
-				}
-			}
-		}
-	  /* todo deal with remaining cases */
-		/* remove any duplicates */
-		std::sort(roots.begin(), roots.end());
-		auto last = std::unique(roots.begin(), roots.end());
-		roots.erase(last, roots.end());
-			return roots;
+	if (prime == 2)  {
+		roots = ModSqrtp2(c, prime, lambda);
+		return roots;
 	}
 
 	/* this part was derived from Wikipedia
@@ -139,8 +166,8 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 		roots.push_back(mod - root);    /* get 2nd root */
 	}
 	else {
-		if (verbose > 0 || root > 0) {
-			std::cerr << "invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
+		if (verbose > 1 || root > 0) {
+			std::cerr << "discarded invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
 		}
 	}
 	return roots;
@@ -259,7 +286,10 @@ to find the moduluar square root modulo m where m is not prime we need to
 find the square root modulo each prime factor p1, p2 ... of m. We can combine 
 one root for each prime factor using the Chinese remainder theorem (CRT). 
 If m has x unique prime factors there are generally 2^x combinations 
-giving 2^x roots. The idea to use CRT came from a Stack Overflow answer */
+giving 2^x roots. The idea to use CRT came from a Stack Overflow answer 
+This does not work reliably if either:
+    mod contains factor 2^n where n >2
+	mod and a are not mutually prime */
 std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 	fList pFactors;
 	Znum cMod = 1;
@@ -345,12 +375,12 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 
 /* calculate modular square roots using 2 different methods & compare results.
    Return true if results match, otherwise false. */
-static bool test9once(long long a, long long m) {
-	std::vector <long long> r2;
+static bool test9once(long long a, long long m, std::vector <long long> &r2) {
 	std::vector <Znum> r3;
 	Znum az = a;   /* change type from 64-bit to extended precision */
 	Znum mz = m;   /* change type from 64-bit to extended precision */
 	bool error = false;
+	r2.clear();
 
 	r2 = ModSqrtBF(a, m);  /* brute force method */
 	r3 = ModSqrt(az, mz);  /* sophisticated (faster) method */
@@ -396,21 +426,33 @@ static bool test9once(long long a, long long m) {
 /* test modular square root */
 void doTests9(void) {
 	bool rv = true;
+	std::vector<long long> roots;
+	std::vector<Znum> rootsZ;
+	
+	//for (long long m = 2; m <= 256; m *= 2) {
+	//	for (long long a = 0; a < m; a++) {
+	//		//roots = ModSqrtBF(a, m);
+	//		test9once(a, m, roots);
+	//	}
+	//}
 
-	for (long long m = 2; m <= 100; m++)
+
+	for (long long m = 2; m <= 128; m++)
 		for (long long a = 0; a < m; a++) {
- 			rv &= test9once(a, m);
+ 			rv &= test9once(a, m, roots);
 		}
 
-	rv &= test9once(99, 107);      // roots are 45 and 62
-	rv &= test9once(2191, 12167);  // roots are 1115, 11052
-	rv &= test9once(4142, 24389);  // roots are 2333, 22056
-	rv &= test9once(3, 143);       // roots are 17, 61, 82, 126
-	rv &= test9once(11, 2 * 5 * 7 * 19); // roots are 121, 159 411, 639, 691, 919, 1171, 1209
-	rv &= test9once(0, 176);       // roots are zero, 44, 88, 132
-	rv &= test9once(1, 121550625); // roots are 1, 15491251, 51021251, 55038124,
-								   // 66512501, 70529374, 106059374, 121550624,
-	rv &= test9once(0, 121550625); // 11025 different roots!
+	//rv &= test9once(99, 107, roots);      // roots are 45 and 62
+	rv &= test9once(2191, 12167, roots);  // roots are 1115, 11052
+	rv &= test9once(4142, 24389, roots);  // roots are 2333, 22056
+	rv &= test9once(3, 143, roots);       // roots are 17, 61, 82, 126
+	rv &= test9once(11, 2 * 5 * 7 * 19, roots); // roots are 121, 159 411, 639, 
+	                                      // 691, 919, 1171, 1209
+	rv &= test9once(0, 176, roots);       // roots are zero, 44, 88, 132
+	rv &= test9once(1, 121550625, roots); // roots are 1, 15491251, 51021251, 
+								          // 55038124, 66512501, 70529374, 
+	                                      // 106059374, 121550624,
+	rv &= test9once(0, 121550625, roots); // 11025 different roots!
 	
 	if (rv)
 		std::cout << "All modular square root tests completed successfully. \n";
