@@ -84,6 +84,12 @@
     <ClCompile Include="libpariInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="quadmod.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="quadmodLL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">
@@ -147,6 +153,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="paritune.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="quadmodLL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

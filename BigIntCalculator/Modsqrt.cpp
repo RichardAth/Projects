@@ -1,5 +1,8 @@
 ﻿#include "pch.h"
+#include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
+void textError(retCode rc);
 
 static std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 

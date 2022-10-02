@@ -15,6 +15,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include "bignbr.h"   /* access PrimalityTest function*/
+#include "bigint.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"

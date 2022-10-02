@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 
 #include <map>
+#include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 #include "showtime.h"
 

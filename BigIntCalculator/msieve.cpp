@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 #include "showtime.h"
 bool changepath(std::string &path, std::string &prog);

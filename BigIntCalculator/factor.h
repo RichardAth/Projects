@@ -20,6 +20,14 @@ struct factorsS {
 	__int64 factorlist[19][2]; // prime factor, exponent
 };
 
+struct sFactors
+{
+	int *ptrFactor;
+	int multiplicity;
+	int upperBound;
+	int Type;
+};
+
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
@@ -99,8 +107,7 @@ public:
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend int classify(Znum n);
-	friend void SolveEquation(Znum* pValA, const Znum* pValB, const Znum* pValC,
-		Znum* pValN, Znum* pGcdAllParm, Znum* pValNnParm);
+	friend void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
 	/* methods that are in the class */
 
@@ -542,7 +549,7 @@ enum class retCode
 	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
 	//EXPR_BASE_MUST_BE_POSITIVE,
 	//EXPR_POWER_MUST_BE_POSITIVE,
-	//EXPR_MODULUS_MUST_BE_NONNEGATIVE,
+	EXPR_MODULUS_MUST_BE_NONNEGATIVE,
 	//EXPR_VAR_OR_COUNTER_REQUIRED,
 	EXPR_OK = 0,
 	EXPR_FAIL = 1

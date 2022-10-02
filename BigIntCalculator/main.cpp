@@ -18,6 +18,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
+#include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 
 #include "diagnostic.h"
@@ -68,7 +70,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* function declarations, only for functions that have forward references */
-static void textError(retCode rc);
+void textError(retCode rc);
 
 
 /* get time in format hh:mm:ss */
@@ -487,7 +489,7 @@ void generatePrimes(unsigned long long int max_val) {
 
 
 /* translate error code to text and output it*/
-static void textError(retCode rc) {
+void textError(retCode rc) {
 	/*
 	error codes currently used:
 	NUMBER_TOO_LOW,
@@ -571,10 +573,10 @@ static void textError(retCode rc) {
 	//case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
 	//	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
 	//	break;
-	//case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
-	//	std::cout << (lang ? "El módulo no debe ser negativo\n" :
-	//		"Modulus must not be negative\n");
-	//	break;
+	case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
+		std::cout << (lang ? "El módulo no debe ser negativo\n" :
+			"Modulus must not be negative\n");
+		break;
 	default:
 		printf_s( "unknown error code: %d\n", (int)rc);
 		break;
@@ -3204,7 +3206,7 @@ static int processCmd(const std::string &command) {
 	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
 	   "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
 	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF",
-	   "PARI"};
+	   "PARI", "QMES"};
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -3422,6 +3424,11 @@ static int processCmd(const std::string &command) {
 	}
 	case 18: /* PARI */ {
 		pariParam(command);
+		return 1;
+	}
+	case 19: /* QMES */
+	{
+		quadModEqn(command);
 		return 1;
 	}
 	default:

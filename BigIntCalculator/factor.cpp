@@ -17,8 +17,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <intrin.h>
 #include "showtime.h"
-#include "factor.h"
 #include "bignbr.h"
+#include "bigint.h"
+#include "factor.h"
+
 #undef min                 // use std::min
 
 static long long Gamma[386];

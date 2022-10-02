@@ -38,6 +38,7 @@ bool isPerfectSquare(const Znum &num);
 void msieveParam(const std::string& expupper);   /*process Msieve commands */
 void yafuParam(const std::string& command);      /*process YAFU commands */
 void pariParam(const std::string& command);      /*process YAFU commands */
+int quadModEqn(const std::string& command);  /* Quadratic Modular Equation Solver */
 void printvars(std::string name);
 void doTests9(void);  /* modular square root test */
 

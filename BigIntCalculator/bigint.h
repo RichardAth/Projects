@@ -23,6 +23,7 @@ enum eSign
 	SIGN_POSITIVE = 0,
 	SIGN_NEGATIVE,
 };
+void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot);
 
 class BigInteger {
 
@@ -47,12 +48,12 @@ public:
 	bool isEven() const {
 		return ((limbs[0] & 1) == 0);
 	}
-	/*BigInteger sqRoot() const {
+	BigInteger sqRoot() const {
 		BigInteger sqrRoot;
 		squareRoot((*this).limbs, sqrRoot.limbs, (*this).nbrLimbs, &sqrRoot.nbrLimbs);
 		sqrRoot.sign = SIGN_POSITIVE;
 		return sqrRoot;
-	}*/
+	}
 	long long lldata() const { /* convert to long long */
 		int noOfLimbs;
 		long long rv = 0;
@@ -153,7 +154,7 @@ public:
 
 	friend BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2);
 	friend BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend);
-	friend static void BigIntNegate(BigInteger &pDest);
+	friend void BigIntNegate(BigInteger &pDest);
 	friend BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor);
 	friend BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor);
 	friend BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2);
@@ -161,7 +162,7 @@ public:
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
 	friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
-	//friend void BigIntGcd (const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &Result);
+	friend void BigIntGcd (const BigInteger &pArg1, const BigInteger &pArg2, BigInteger &Result);
 	//friend void BigIntModularDivision(const BigInteger &Num, const BigInteger &Den, 
 		//const BigInteger &mod, BigInteger &quotient);
 	friend void subtractdivide(BigInteger &BigInt, int subt, int divisor);
@@ -170,11 +171,11 @@ public:
 	friend int getRemainder(const BigInteger &pBigInt, int divisor);  // BigInt%divisor
 	friend bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
 	friend bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
-	//friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
+	friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
 	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend double logBigInt(const BigInteger &BigInt); /* natural log of BigInt */
-	//friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
+	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
@@ -272,6 +273,13 @@ public:
 		return sum;
 	}
 
+	/* unary - */
+	BigInteger operator - () {
+		BigInteger result = *this;
+		BigIntNegate(result);
+		return result;
+	}
+
 	BigInteger operator << (const int b) const {
 		BigInteger temp;
 		shiftBI(*this, b, temp);
@@ -349,7 +357,30 @@ public:
 	}
 };
 
+bool BigIntIsZero(const BigInteger* value);
+void BigIntChSign(BigInteger* value);
+
 void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
+void PrintBigInteger(const BigInteger* pBigInt, int groupLength);
+void copyStr(char** pptrString, const char* stringToCopy);
+void BigInteger2Dec(char** ppDecimal, const BigInteger* pBigInt, int groupLength);
+void IntArray2BigInteger(const int* ptrValues, /*@out@*/BigInteger* bigint);
+void DivideBigNbrByMaxPowerOf2(int* pShRight, limb* number, int* pNbrLimbs);
+void BigInteger2IntArray(/*@out@*/int* ptrValues, const BigInteger* bigint);
+void BigIntPowerOf2(BigInteger* pResult, int exponent);
+void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen);
+void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLen);
+void BigIntDivideBy2(BigInteger* nbr);
+void BigIntAnd(const BigInteger* firstArg,
+	const BigInteger* secondArg, BigInteger* result);
+void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint);
+void UncompressLimbsBigInteger(const limb* ptrValues, /*@out@*/BigInteger* bigint);
+int BigIntJacobiSymbol(const BigInteger* upper, const BigInteger* lower);
+void BigIntModularPower(const BigInteger* base, const BigInteger* exponent,
+	BigInteger* power);
+void BigIntModularDivision(const BigInteger* Num, const BigInteger* Den,
+	const BigInteger* mod, BigInteger* quotient);
+
 /* output operators declaration */
 std::ostream  &operator<<(std::ostream  &s, const BigInteger &n);
 std::wostream &operator<<(std::wostream &s, const BigInteger &n);

@@ -33,6 +33,7 @@ the results would look completely different.
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 #include "showtime.h"
 
