@@ -883,9 +883,12 @@ void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
 	mask = (1 << shRg) - 1;
 	for (index2 = index; index2 < nbrLimbs; index2++)
 	{
-		number[index2] = ((number[index2] >> shRg) |
-			(number[index2 + 1] << (BITS_PER_GROUP - shRg))) &
+		if (index2 < nbrLimbs - 1)
+			number[index2] = ((number[index2] >> shRg) |
+				(number[index2 + 1] << (BITS_PER_GROUP - shRg))) &
 			MAX_VALUE_LIMB;
+		else
+			number[index2] = (number[index2] >> shRg);
 	}
 	if (index > 0)
 	{   // Move limbs to final position.

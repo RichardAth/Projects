@@ -25,7 +25,7 @@ $P = 211
 $X = 3291009114642412084309938365114701009965471731267159726697218047
 
 You can get help on the following topics by entering "HELP <topic>";
-expression  function  yafu  msieve  other  test  loop   background
+expression  function  yafu  msieve  other  test  loop   background qmes
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
@@ -130,7 +130,7 @@ STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k),
                   if f = 2, return the Stirling number of the second kind S(n,k).
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
                   The result is zero when a is a multiple of p, otherwise it is 
-                  one if there is a solution of x² = a (mod p) and it is -1 when 
+                  one if there is a solution of x² ≡ a (mod p) and it is -1 when 
                   the congruence has no solution.
 JA(a,p)         : Jacobi value for (a/p). Extension of Legendre to all odd values of p.
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
@@ -504,7 +504,7 @@ IF ($p < 10000) REPEAT
 
 format is IF (expression) REPEAT 
           or IF (expression) STOP 
-		  or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
+          or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
           the [ELSE (expression ...)] part is optional
 
 The IF command is processed as follows:
@@ -526,3 +526,26 @@ before the last LOOP command are not shown.
 Note that invalid expressions and commands other than IF are not saved, and there 
 is no way to edit saved expressions. It is only possible to delete them all using 
 the LOOP command and start again.
+
+[QMES]
+
+The Quadratic modular equation solver is entered by the QMES command.
+
+This can solve equations of the form ax² + bx + c ≡ 0 (mod n) where the integer 
+unknown x is in the range 0 ≤ x < n. In particular, it can find modular square 
+roots by setting a = -1, b = 0, c = number whose root we want to find and 
+n = modulus.
+When prompted, enter values for a, b, c and n. These can be numbers or expressions.
+The calculator accepts numbers of up to 10000 digits but notice that the modulus n 
+has to be factored (some large numbers cannot be factored in a reasonable amount of 
+time). The same factorisation process as described elsewhere is used.
+
+This is actually Dario Alpern's solver, converted from a web page to a console 
+program. 
+
+QMES is also used to implement the modsqrt function, because the Tonelli-Shanks
+method commonly used does not work if the modulus when factored has a power of
+2 which is 2^4 or higher, or if the modulus is not square-free and the number
+for which the root is is to be found is also a multiple of the prime factor 
+that is squared. DA's method finds all the roots, even for these awkward cases.
+

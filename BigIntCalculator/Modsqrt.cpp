@@ -386,7 +386,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2) {
 	r2.clear();
 
 	r2 = ModSqrtBF(a, m);  /* brute force method */
-	r3 = ModSqrt(az, mz);  /* sophisticated (faster) method */
+	r3 = ModSqrtQE(az, mz);  /* sophisticated (faster) method */
 	if (r3.size() != r2.size())
 		error = true;
 	else {

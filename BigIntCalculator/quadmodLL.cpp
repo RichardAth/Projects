@@ -16,12 +16,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
+#include <cassert>
 #include "pch.h"
 #include "bignbr.h"
 #include "bigint.h"
 #include "quadmodLL.h"
 #include "factor.h"
 //#include "commonstruc.h"
+
+extern BigInteger MontgomeryMultR1BI, MontgomeryMultR2BI;
 
 struct stQuad
 {
@@ -64,9 +67,9 @@ static BigInteger* pValNn;
 fList Nfactors;
 
 /* function pointers */
-static pSolution Solution;
-static pShowSolutionsModPrime ShowSolutionsModPrime;
-static pShowNoSolsModPrime ShowNoSolsModPrime;
+static pSolution Solution = nullptr;
+static pShowSolutionsModPrime ShowSolutionsModPrime = nullptr;;
+static pShowNoSolsModPrime ShowNoSolsModPrime = nullptr;
 
 struct sFactors astFactorsMod[maxFactors+1];
 int factorsMod[20000];
@@ -579,15 +582,36 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
     return true;
 }
 
-/* uses global variable prime, TestNbr */
+/* uses global variable prime, Aux[3], Aux[4], Aux[5], TestNbr, result returned in sqrRoot */
 static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     int correctBits;
+
+    if (verbose > 1) {
+        printf("ComputeSquareRootModPowerOfP: Aux[3] = ");
+        PrintBigInteger(&Aux[3], 0);
+        printf("\n prime = ");
+        PrintBigInteger(&prime, 0);
+        putchar('\n');
+    }
+
     NumberLength = prime.nbrLimbs;
     int NumberLengthBytes = NumberLength * (int)sizeof(limb);
     (void)memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime*/
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
+    if (verbose > 1) {
+        printf("MontgomeryMultR1 = ");
+        PrintBigInteger(&MontgomeryMultR1BI, 0);
+        printf("\nMontgomeryMultR2 = ");
+        PrintBigInteger(&MontgomeryMultR2BI, 0);
+        putchar('\n');
+    }
     Q = prime;    // CopyBigInt(&Q, &prime);
+    if (verbose > 1) {
+        printf("Q = ");
+        PrintBigInteger(&Q, 0);
+        printf("\n");
+    }
     if ((prime.limbs[0] & 3) == 3)
     {                 // prime mod 4 = 3
         subtractdivide(Q, -1, 4);   // Q <- (prime+1)/4.
@@ -633,8 +657,18 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             int e;
             int r;
             // Step 1.
-            subtractdivide(Q, 1, 1);   // Q <- (prime-1).
+            Q--;  // subtractdivide(Q, 1, 1);   // Q <- (prime-1).
+            if (verbose > 1) {
+                printf("Q = ");
+                PrintBigInteger(&Q, 0);
+                printf("\n");
+            }
             DivideBigNbrByMaxPowerOf2(&e, Q.limbs, &Q.nbrLimbs);
+            if (verbose > 1) {
+                printf("step 1: Q = ");
+                PrintBigInteger(&Q, 0);
+                printf(" e = %d \n", e);
+            }
             // Step 2.
             x = 1;
             do
@@ -642,9 +676,19 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
                 x++;
                 Aux[3] = x;  // intToBigInteger(&Aux[3], x);
             } while (BigIntJacobiSymbol(&Aux[3], &prime) >= 0);
+            if (verbose > 1) {
+                printf("step2: Aux[3] = %d \n", x);
+            }
+
             // Step 3.
             // Get z <- x^q (mod p) in Montgomery notation.
             modPowBaseInt(x, Q.limbs, Q.nbrLimbs, Aux[4].limbs);  // z
+            if (verbose > 1) {
+                Aux[4].nbrLimbs = NumberLength;
+                printf("step 3: Aux[4] = ");
+                PrintBigInteger(&Aux[4], 0);
+                putchar('\n');
+            }
             // Step 4.
             NumberLengthBytes = NumberLength * (int)sizeof(limb);
             (void)memcpy(Aux[5].limbs, Aux[4].limbs, NumberLengthBytes); // y
@@ -654,6 +698,23 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             modPow(Aux[6].limbs, K1.limbs, K1.nbrLimbs, Aux[7].limbs); // x
             modmult(Aux[6].limbs, Aux[7].limbs, Aux[8].limbs);         // v
             modmult(Aux[8].limbs, Aux[7].limbs, Aux[9].limbs);         // w
+            if (verbose > 1) {
+                Aux[6].nbrLimbs = NumberLength;
+                Aux[7].nbrLimbs = NumberLength;
+                Aux[8].nbrLimbs = NumberLength;
+                Aux[9].nbrLimbs = NumberLength;
+                printf("step 4: Aux[5] = ");
+                PrintBigInteger(&Aux[5], 0);
+                printf("\nAux[6] = ");
+                PrintBigInteger(&Aux[6], 0);
+                printf("\nAux[7] = ");
+                PrintBigInteger(&Aux[7], 0);
+                printf("\nAux[8] = ");
+                PrintBigInteger(&Aux[8], 0);
+                printf("\nAux[9] = ");
+                PrintBigInteger(&Aux[9], 0);
+                putchar('\n');
+            }
             // Step 5
             while (memcmp(Aux[9].limbs, MontgomeryMultR1, NumberLengthBytes) != 0)
             {
@@ -738,7 +799,9 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
         PrintBigInteger(&prime, 0);
         printf("\ndiscriminant = ");
         PrintBigInteger(&discriminant, 0);
-        putchar('\n');
+        printf("\nV = ");
+        PrintBigInteger(&V, 0);
+        putchar ('\n');
     }
 
     // Number of bits of square root of discriminant to compute: expon + bits_a + 1,
@@ -786,6 +849,11 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     // Compute inverse of -2*A (mod prime^(expon - deltaZeros)).
     ValAOdd = *pValA + *pValA; // BigIntAdd(pValA, pValA, &ValAOdd);
     (void)BigIntPowerIntExp(prime, expon - deltaZeros, tmp1); /* tmp1 = prime^(expon-deltaZeros) */
+    if (verbose > 1) {
+        printf("prime^(expon-deltaZeros) = ");
+        PrintBigInteger(&tmp1, 0);
+        putchar('\n');
+    }
     ValAOdd %= tmp1;  //(void)BigIntRemainder(&ValAOdd, &tmp1, &ValAOdd);
     nbrLimbs = tmp1.nbrLimbs;
     if (ValAOdd.sign == SIGN_NEGATIVE) {
@@ -806,6 +874,11 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     GetMontgomeryParms(NumberLength);
     BigIntModularDivision(&tmp2, &ValAOdd, &tmp1, &Aux[0]);
     ValAOdd = Aux[0];       // CopyBigInt(&ValAOdd, &Aux[0]);
+    if (verbose > 1) {
+        printf("ValAOdd = ");
+        PrintBigInteger(&ValAOdd, 0);
+        putchar('\n');
+    }
     if (discriminant == 0)  // (BigIntIsZero(&discriminant))
     {     // Discriminant is zero.
         int lenBytes = nbrLimbs * (int)sizeof(limb);
@@ -833,8 +906,13 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
         if (BigIntJacobiSymbol(&Aux[3], &prime) != 1) {
             return false;         // Not a quadratic residue, so go out.
         }
-        // Compute square root of discriminant.
+        // Compute square root (mod prime) of discriminant in Aux[3]. result in sqrRoot
         ComputeSquareRootModPowerOfP(nbrBitsSquareRoot);
+        if (verbose > 1) {
+            printf("sqrRoot = ");
+            PrintBigInteger(&sqrRoot, 0);
+            putchar('\n');
+        }
         // Multiply by square root of discriminant by prime^deltaZeros.
         for (ctr = 0; ctr < deltaZeros; ctr++)  {
             sqrRoot *= prime;    // (void)BigIntMultiply(&sqrRoot, &prime, &sqrRoot);
@@ -961,10 +1039,11 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
     discriminant *= 4;               // multint(&discriminant, &discriminant, 4);             /* discriminant = 4 * a.c */
     discriminant = Aux[0] - discriminant;  // BigIntSubt(&Aux[0], &discriminant, &discriminant);  /*  discriminant = b^2 - 4*a.c */
 
-    /* temp */
-    printf("\n discriminant = ");
-    PrintBigInteger(&discriminant, 0);
-    putchar('\n');
+    if (verbose > 1) {
+        printf("\n discriminant = ");
+        PrintBigInteger(&discriminant, 0);
+        putchar('\n');
+    }
 
     if (prime == 2)     //((prime.nbrLimbs == 1) && (prime.limbs[0] == 2))
     {         /* Prime p is 2 */

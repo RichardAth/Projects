@@ -247,6 +247,8 @@
     <ClCompile Include="quadmodLL.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+      <FloatingPointExceptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</FloatingPointExceptions>
     </ClCompile>
     <ClCompile Include="R3.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>

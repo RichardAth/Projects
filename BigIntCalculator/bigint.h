@@ -264,8 +264,15 @@ public:
 		return *this;
 	}
 	BigInteger &operator -= (const int b) {
-		addbigint(*this, -b);
-		return *this;
+		if (b <= 0x3FFFFFFF && b >= -0x3FFFFFFF) {
+			(*this, -b);
+			return *this;
+		}
+		else {
+			BigInteger bb = b;
+			*this = BigIntSubt(*this, bb);
+			return *this;
+		}
 	}
 	BigInteger operator - (const int b) const {
 		BigInteger sum = *this;

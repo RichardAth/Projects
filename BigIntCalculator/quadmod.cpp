@@ -35,18 +35,6 @@ void textError(retCode rc);
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, 
     bool* multiV = nullptr);
 
-
-retCode ComputeExpression(const char* exprA, BigInteger *result, bool dummy) {
-    std::string exp = exprA;
-    Znum value;
-    int asgct;
-    bool multiv;
-    retCode rc = ComputeExpr(exp, value, asgct, &multiv);
-    *result = value;
-    return rc;
-}
-
-
 static BigInteger discriminant;
 static BigInteger sqrtDiscriminant;
 static BigInteger Aux0;
@@ -61,7 +49,17 @@ BigInteger ValC;
 BigInteger ValN;
 int SolNbr;
 char* ptrOutput;
-extern int factorsMod[20000];
+static std::vector <Znum> roots;
+
+retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
+    std::string exp = exprA;
+    Znum value;
+    int asgct;
+    bool multiv;
+    retCode rc = ComputeExpr(exp, value, asgct, &multiv);
+    *result = value;
+    return rc;
+}
 
 static int Show(const BigInteger* num, const char* str, int t)
 {
@@ -104,15 +102,27 @@ void Show1(const BigInteger* num, int t)
 void Solution(BigInteger* value)
 {
     SolNbr++;
-    int2dec(&ptrOutput, SolNbr);
+    int2dec(&ptrOutput, SolNbr);  /* copy solution to output buffer */
     copyStr(&ptrOutput, " x = ");
     BigInteger2Dec(&ptrOutput, value, groupLen);
     copyStr(&ptrOutput, "\n");
 
-    /* temp */
-    printf("solution nbr %4d ", SolNbr);
-    PrintBigInteger(value, 0);
-    putchar('\n');
+    if (verbose > 1) {
+        printf("solution nbr %4d ", SolNbr);
+        PrintBigInteger(value, 0);
+        putchar('\n');
+    }
+}
+
+void solms(BigInteger* value) {
+    Znum vZ;
+
+    BigtoZ(vZ, *value);
+    roots.push_back(vZ);
+    if (verbose > 1) {
+        SolNbr++;
+        gmp_printf("solution nbr %4d %Zd\n", SolNbr, vZ);
+    }
 }
 
 // Solve Ax^2 + Bx + C = 0 in integers.
@@ -190,15 +200,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
 
 void textErrorQuadMod(char** pptrOutput, retCode rc)
 {
-    if (rc == retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE)
-    {
-        copyStr(pptrOutput, lang ? "No debe ser negativo" :
-            "Must not be negative");
-    }
-    else
-    {
-        textError(rc);
-    }
+    textError(rc);
 }
 
 /* solve Quadratic modular equations of the form a⁢x² + b⁢x + c ≡ 0 (mod n) where
@@ -209,6 +211,7 @@ the factorisation can take an excessive length of time
 Coefficients are in ValA, ValB, ValC and ValN=modulus
 */
 static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& ValC, BigInteger& ValN) {
+    
     ValN.sign = SIGN_POSITIVE;
     ValA %= ValN; // (void)BigIntRemainder(&ValA, &ValN, &ValA);
     ValB %= ValN; // (void)BigIntRemainder(&ValB, &ValN, &ValB);
@@ -244,8 +247,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
         {
             long long Gcd;
             Gcd = GcdAll.lldata();   /* change type */
-            for (int ctr = 0; ctr < Gcd; ctr++)
-            {
+            for (int ctr = 0; ctr < Gcd; ctr++) {
                 Aux0 = ctr; //intToBigInteger(&Aux0, ctr);
                 Solution(&Aux0);
             }
@@ -254,7 +256,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
     }
 
     /* N != 1 */
-    SetCallbacksForSolveEquation(Solution, NULL, NULL);
+
     SolveEquation(&ValA, &ValB, &ValC, &ValN, &GcdAll, &ValNn);
 }
 
@@ -275,23 +277,23 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
     rc = ComputeExpression(aText, &ValA, false);  /* convert a from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
-        copyStr(&ptrOutput, lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ");
+        std::cout << (lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ") ;
         textErrorQuadMod(&ptrOutput, rc);
-        //copyStr(&ptrOutput, "/n");
+        return;
     }
     rc = ComputeExpression(bText, &ValB, false);  /* convert b from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
-        copyStr(&ptrOutput, lang ? "Coeficiente lineal: " : "Linear coefficient: ");
+        std::cout << (lang ? "Coeficiente lineal: " : "Linear coefficient: ");
         textErrorQuadMod(&ptrOutput, rc);
-        copyStr(&ptrOutput, "/n");
+        return;
     }
     rc = ComputeExpression(cText, &ValC, false);   /* convert c from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
-        copyStr(&ptrOutput, lang ? "Término independiente: " : "Constant coefficient: ");
+        std::cout << (lang ? "Término independiente: " : "Constant coefficient: ");
         textErrorQuadMod(&ptrOutput, rc);
-        copyStr(&ptrOutput, "/n");
+        return;
     }
     rc = ComputeExpression(modText, &ValN, false);   /* convert mod from text to BigInteger */
     if ((rc == retCode::EXPR_OK) && (ValN.sign == SIGN_NEGATIVE))
@@ -300,9 +302,9 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
     }
     if (rc != retCode::EXPR_OK)
     {
-        copyStr(&ptrOutput, lang ? "Módulo: " : "Modulus: ");
+        std::cout << (lang ? "Módulo: " : "Modulus: ");
         textErrorQuadMod(&ptrOutput, rc);
-        copyStr(&ptrOutput, "/n");
+        return;
     }
     if (ptrOutput == output)
     {    // No errors found. send ax² + bx +c = 0 (mod n) to output buffer.
@@ -318,11 +320,13 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
         SolNbr = 0;
         ptrBeginSol = ptrOutput;  /* save output pointer */
         copyStr(&ptrOutput, "\n");
+
         if (ValN == 0) {
             // Mod zero => Equation in integer numbers
             SolveIntegerEquation(ValA, ValB, ValC);
         }
         else {
+            SetCallbacksForSolveEquation(Solution, NULL, NULL);
             ModulusIsNotZero(ValA, ValB, ValC, ValN);
         }
         if (SolNbr == 0)
@@ -335,7 +339,7 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
             copyStr(&ptrOutput, "\n");
         }
     }
-    //copyStr(&ptrOutput, "<p>");
+
     copyStr(&ptrOutput, lang ? COPYRIGHT_SPANISH : COPYRIGHT_ENGLISH);
     copyStr(&ptrOutput, "\n");
 }
@@ -371,5 +375,34 @@ int quadModEqn(const std::string &command) {
     return 0;
 }
 
+std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
+
+    roots.clear();
+    Znum am = aa%m;
+    if (am < 0)
+        am += m;  /* normalise a so it's in range 0 to m-1 */
+    if (verbose > 1 && am != aa) {
+        std::cout << "modsqrt(" << aa << ", " << m << ") \n changed to: \nmodsqrt("
+            << am << ", " << m << ")\n";
+    }
+
+    BigInteger a, b, c, n;
+
+    if (m == 1) {
+        /* every number ≡ 0 (mod 1)*/
+        roots.push_back(0);
+        return roots;
+    }
+
+    a = -1;
+    b = 0;
+    c = am;
+    n = m;
+    /* solve -x² +c = 0 (mod n) */
+    SetCallbacksForSolveEquation(solms, NULL, NULL);
+    ModulusIsNotZero(a, b, c, n);  /* get the roots */
+    std::sort(roots.begin(), roots.end());
+    return roots;
+}
 
 

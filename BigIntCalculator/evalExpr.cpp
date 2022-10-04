@@ -1248,7 +1248,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
 		if (p[1] <= 0)
 			return retCode::NUMBER_TOO_LOW;  /* modulus must be +ve */
-		roots = ModSqrt(p[0], p[1]);
+		roots = ModSqrtQE(p[0], p[1]);
 		if (verbose > 0) {
 			if (roots.empty())
 				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);

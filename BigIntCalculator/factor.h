@@ -498,6 +498,7 @@ Repeated factors: No or Yes
 //void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
 
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
 
 extern int ElipCurvNo;            // Elliptic Curve Number
 

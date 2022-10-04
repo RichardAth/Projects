@@ -894,7 +894,7 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 
 	// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
 	Tmp1 = -1 - Mult[0] * Mult[0];
-	roots = ModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+	roots = ModSqrtQE(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
 	assert(!roots.empty());
 	Mult[1] = roots[0];
 	/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/

@@ -1,7 +1,7 @@
 #pragma once
 
-#define COPYRIGHT_SPANISH "Hecho por Darío Alpern. Actualizado el 18 de febrero de 2018."
-#define COPYRIGHT_ENGLISH "Written by Dario Alpern. Last updated on 18 February 2018."
+#define COPYRIGHT_SPANISH "Hecho por Darío Alpern. Actualizado el 17 de setiembre de 2022."
+#define COPYRIGHT_ENGLISH "Written by Dario Alpern. Last updated on 17 September 2022."
 
 #ifdef __EMSCRIPTEN__
 int stamp(void);
