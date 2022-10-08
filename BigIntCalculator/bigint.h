@@ -14,9 +14,12 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* Biginteger has been made into a class, with operator overload so that normal
+/* BigInteger has been made into a class, with operator overload so that normal
 operators do what you would expect. However, these Bigintegers are now only used
-by modmult functions which in turn are only used by the built-in ECM function. */
+by modmult functions which in turn are only used by the built-in ECM function. 
+Oct 2022 update: Solving Modular Quadratic Equations makes extensive use of
+BIgIntegers. As it uses modular arithmetic in obscure ways, and  is is fast
+enough, switching to Znums does not seem worthwhile. */
 
 enum eSign
 {

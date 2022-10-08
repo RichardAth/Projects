@@ -706,7 +706,7 @@ void addbigint(BigInteger &Result, int addend) {
 
 	if (addend < 0) {
 		// reverse signs of addend and result
-		addend = -addend;
+		addend = -addend;  /* warning! if int = INT_MIN this won't work; an overflow will occur */
 		if (sign == SIGN_POSITIVE) 	{
 			sign = SIGN_NEGATIVE;  // addend and result have opposite signs
 		}
@@ -761,21 +761,6 @@ that follow */
 //	}
 //}
 
-/* uses global value NumberLength for starting value for number of limbs. */
-//static int getNbrLimbs(const limb *bigNbr)
-//{
-//	//const limb *ptrLimb = bigNbr + NumberLength;
-//	auto ix = NumberLength;
-//	while (ix > 0)
-//	{
-//		if (bigNbr[ix-1] != 0)
-//		{
-//			return (int)(ix);
-//		}
-//		ix--;   // reduce length because most significant limb is zero
-//	}
-//	return 1;  // BigNbr is zero
-//}
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. Also uses global value NumberLength for number of ints. */

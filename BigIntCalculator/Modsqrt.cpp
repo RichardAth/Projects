@@ -129,7 +129,7 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 	if (c < 0)
 		c += mod;  /* ensure c is in range 0 to mod-1 */
 
-	/* treat c=0 as special case */
+	/* treat c=0 as special case. 0 is a solution, but there may be others. */
 	if (c == 0) {
 		r1 = power(prime, (lambda + 1) / 2);  /* smallest non-zero root is the
 										   smallest power of prime >= sqrt(mod) */
@@ -149,7 +149,9 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 
 	/* this part was derived from Wikipedia
 	see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#Tonelli's_algorithm_will_work_on_mod_p^k
-	The explanation there is not very clear but I got working code out of it */
+	The explanation there is not very clear but I got working code out of it.
+	BUT if c is a multiple of prime we get a single root = 0, and the 'lifting' 
+	formula just gives 0, which is generally not a valid solution */
 	rx = primeModSqrt(c, prime);   /* rx^2 ≡ c (mod prime) */
 	if (rx.empty()) {
 		roots.clear();
@@ -159,6 +161,7 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 		x = std::min(rx[0], rx[1]);  /* take smaller root */
 	else
 		x = rx[0];
+
 	/* the calculation is done in stages, applying modulus each time, to avoid
 	 trying to generate enormous intermediate values */
 	r1 = modPower(x, power(prime, lambda - 1), mod);

@@ -124,6 +124,7 @@ enum class opCode {
 	fn_maxfact,           /* largest factor */
 	fn_ispow,             /* check if perfect power */
 	fn_modsqrt,           /* modular square root */
+	fn_modsqrtOld,        /* modular square root using Tonelli-Shanks */
 	fn_invtot,            /* inverse totient */
 	fn_divisors,          /* list of divisors */
 	fn_primroot,          /* lowest primitive root */
@@ -159,6 +160,7 @@ const static struct functions functionList[]{
 	"NUMFACT",   1,  opCode::fn_numfact,
 	"MINFACT",   1,  opCode::fn_minfact,
 	"MAXFACT",   1,  opCode::fn_maxfact,
+	"MODSQRTOLD", 2, opCode::fn_modsqrtOld, // find x such that x^2 = a mod p
 	"MODSQRT",   2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
 	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
@@ -949,7 +951,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		result = ComputeTotient(p[0]);
 		break;
 	}
-	case opCode::fn_carmichael: {			// totient
+	case opCode::fn_carmichael: {			// reduced totient
 		if (p[0] < 1)
 			return retCode::NUMBER_TOO_LOW;;
 		result = ComputeCarmichael(p[0]);
@@ -1247,8 +1249,33 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	case opCode::fn_modsqrt: /* modular square root */ {
 		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
 		if (p[1] <= 0)
-			return retCode::NUMBER_TOO_LOW;  /* modulus must be +ve */
+			return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
 		roots = ModSqrtQE(p[0], p[1]);
+		if (verbose > 0) {
+			if (roots.empty())
+				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
+			else {
+				gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
+				for (Znum r : roots)
+					gmp_printf("%Zd, ", r);
+				putchar('\n');
+			}
+		}
+		/* the result can be: no solution: roots is empty
+							  or one  or more solutions */
+		if (roots.empty())
+			return retCode::INVALID_PARAM;  /* no solution exists */
+
+		result = roots[0];     /* ignore 2nd solution, if any */
+		multiValue = true;     /* indicate multiple return values */
+
+		break;
+	}
+	case opCode::fn_modsqrtOld: /* modular square root */ {
+		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
+		if (p[1] <= 0)
+			return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
+		roots = ModSqrt(p[0], p[1]);  /* uses Tonelli-Shanks algorithm */
 		if (verbose > 0) {
 			if (roots.empty())
 				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);

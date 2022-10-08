@@ -51,14 +51,15 @@ int SolNbr;
 char* ptrOutput;
 static std::vector <Znum> roots;
 
+/* interfac matcher between DA's code and expression evaluation function */
 retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
     std::string exp = exprA;
     Znum value;
     int asgct;
     bool multiv;
     retCode rc = ComputeExpr(exp, value, asgct, &multiv);
-    *result = value;
-    return rc;
+    *result = value;  /* copy value of expression */
+    return rc;  /* pass back return code too */
 }
 
 static int Show(const BigInteger* num, const char* str, int t)
@@ -98,7 +99,7 @@ void Show1(const BigInteger* num, int t)
     }
 }
 
-/* store solution */
+/* store solution in output buffer*/
 void Solution(BigInteger* value)
 {
     SolNbr++;
@@ -114,6 +115,7 @@ void Solution(BigInteger* value)
     }
 }
 
+/* store solution in roots vector */
 void solms(BigInteger* value) {
     Znum vZ;
 
@@ -126,7 +128,7 @@ void solms(BigInteger* value) {
 }
 
 // Solve Ax^2 + Bx + C = 0 in integers.
-// uses global variables ValA, ValB, ValC
+// uses global variables ValA, ValB, ValC, Aux0
 static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB, 
     const BigInteger& ValC) {
     if (ValA == 0)           //(BigIntIsZero(&ValA))
@@ -198,8 +200,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
     SolNbr = 1;
 }
 
-void textErrorQuadMod(char** pptrOutput, retCode rc)
-{
+void textErrorQuadMod(retCode rc){
     textError(rc);
 }
 
@@ -209,6 +210,7 @@ modular square roots by setting a = -1, b = 0, c = number whose root we want to 
 and n = modulus.  The modulus has to be factored, so if it is too large
 the factorisation can take an excessive length of time
 Coefficients are in ValA, ValB, ValC and ValN=modulus
+Uses global variable Aux0
 */
 static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& ValC, BigInteger& ValN) {
     
@@ -249,7 +251,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
             Gcd = GcdAll.lldata();   /* change type */
             for (int ctr = 0; ctr < Gcd; ctr++) {
                 Aux0 = ctr; //intToBigInteger(&Aux0, ctr);
-                Solution(&Aux0);
+                SolutionP(&Aux0);
             }
         }
         return;
@@ -278,21 +280,21 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ") ;
-        textErrorQuadMod(&ptrOutput, rc);
+        textError(rc);
         return;
     }
     rc = ComputeExpression(bText, &ValB, false);  /* convert b from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente lineal: " : "Linear coefficient: ");
-        textErrorQuadMod(&ptrOutput, rc);
+        textError(rc);
         return;
     }
     rc = ComputeExpression(cText, &ValC, false);   /* convert c from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Término independiente: " : "Constant coefficient: ");
-        textErrorQuadMod(&ptrOutput, rc);
+        textError(rc);
         return;
     }
     rc = ComputeExpression(modText, &ValN, false);   /* convert mod from text to BigInteger */
@@ -303,7 +305,7 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Módulo: " : "Modulus: ");
-        textErrorQuadMod(&ptrOutput, rc);
+        textError(rc);
         return;
     }
     if (ptrOutput == output)
@@ -344,28 +346,42 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
     copyStr(&ptrOutput, "\n");
 }
 
-
+/* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
+expressions for a, b, c, and n are entered as text and converted to numbers,
+then the equation is solved. */
 int quadModEqn(const std::string &command) {
     char A[50], B[50], C[50], N[50];
-    printf("Quadratic Modular Equation Solver\n");
-    printf("solve equations of the form Ax² + Bx + C = 0 (mod N) where"
-        " the unknown integer x is in the range 0 <= x < N. \n");
-    printf("In particular, it can find modular square roots by setting "
-        "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
+    if (lang) {
+        printf("Resolución de ecuaciones cuadráticas modulares \n");
+        printf("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
+            " (mod n) donde la incógnita entera x se encuentra en el rango"
+            " 0 ≤ x < n.\n");
+         printf("En particular, puede hallar raíces cuadradasmodulares si ingresa "
+            " a = -1, b = 0, c = número cuya raíz se desea hallar y n = módulo.\n");
 
-    printf("Enter value for A: ");
+         printf("ingrese el valor para A: ");
+    }
+    else { /* english */
+        printf("Quadratic Modular Equation Solver\n");
+         printf("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
+            " the unknown integer x is in the range 0 <= x < N. \n");
+        printf("In particular, it can find modular square roots by setting "
+            "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
+
+        printf("Enter value for A: ");
+    }
     fgets(A, sizeof(A), stdin);
     if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
 
-    printf("Enter value for B: ");
+    printf((lang)?  "ingrese el valor para B: " : "Enter value for B: ");
     fgets(B, sizeof(B), stdin);
     if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
 
-    printf("Enter value for C: ");
+    printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
     fgets(C, sizeof(C), stdin);
     if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
 
-    printf("Enter value for N: ");
+    printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
     fgets(N, sizeof(N), stdin);
     if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
 
@@ -375,6 +391,7 @@ int quadModEqn(const std::string &command) {
     return 0;
 }
 
+/* find modular square root */
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
     roots.clear();

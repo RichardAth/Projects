@@ -15,7 +15,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #pragma fenv_access (on)
 
 #include "pch.h"
-#define WIN32_LEAN_AND_MEAN
+#include <fcntl.h>
+#include <io.h>
+
+//#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
 #include "bignbr.h"
@@ -931,9 +934,6 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 static void doTests(void) {
 	Znum x3, x4, result, result1;
-	/*std::vector <token> exprTokens;
-	std::vector <token> rPolish;
-	int rpLen;*/
 	int i, asgCt;
 	int testcnt = 0;
 	struct test {
@@ -1022,6 +1022,8 @@ static void doTests(void) {
 		"modsqrt(2191, 23^3)",         1115,
 		"modsqrt(4142, 29^3)",         2333,
 		"modsqrt(3, 143)",               17,
+		"modsqrt(9, 27)",                 3,
+		"modsqrt(17, 32)",                7,
 		"minfact(99)",                    3,
 		"maxfact(99)",                    11,
 		"numfact(99)",                     2,
@@ -2277,8 +2279,12 @@ retry:
 	}
 
 	/* doc file has been opened successfully */
+	/* change stdout mode to support unicode (need to use wprintf, not printf) 
+	this allows multi-byte charactes to be printed */
+	fflush(stdout);
+	int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
 	if (verbose > 0)
-		printf_s("searching for help on '%s'\n", helpTopic.data());
+		wprintf_s(L"searching for help on '%S'\n", helpTopic.data());
 
 	/* exit this loop when reached EOF or the next topic after the one required 
 	is reached */
@@ -2323,20 +2329,23 @@ retry:
 		}
 		else {  /* not a header line */
 			if (printtopic)
-				printf_s("%s", str);  /* print only if within the required topic */
+				wprintf_s(L"%S", str);  /* print only if within the required topic */
 		}
 	}
 
 	if (feof(doc)) {
 		if (printtopic)
-			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
+			wprintf(L"\n");   /* contrary to the POSIX standard, the last line of the file
 							may not end with newline */
 		else
 			if (lang)
-				printf_s("Ayuda para %s no encontrado \n", helpTopic.data());
+				wprintf_s(L"Ayuda para %S no encontrado \n", helpTopic.data());
 			else
-				printf_s("Help for %s not found \n", helpTopic.data());
+				wprintf_s(L"Help for %S not found \n", helpTopic.data());
 	}
+	/* change stdout back to normal */
+	fflush(stdout);
+	_setmode(_fileno(stdout), oldmode);
 	fclose(doc);
 	return;
 }
@@ -3344,7 +3353,7 @@ static int processCmd(const std::string &command) {
 				return 1;
 			}
 			case '9': {
-				doTests9();
+				doTests9();   /* test modular square root */
 				return 1;
 			}
 			case 'A': {
@@ -3469,7 +3478,7 @@ static int processCmd(const std::string &command) {
 	}
 	case 19: /* QMES */
 	{
-		quadModEqn(command);
+		quadModEqn(command);  /* Quadratic Modular Equation Solver */
 		return 1;
 	}
 	default:

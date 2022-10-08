@@ -549,3 +549,13 @@ method commonly used does not work if the modulus when factored has a power of
 for which the root is is to be found is also a multiple of the prime factor 
 that is squared. DA's method finds all the roots, even for these awkward cases.
 
+[PRINT]
+
+Russsian
+ЁЂЃЄЅФЧЫЮ
+
+Greek
+ΆΌΈΏΣπσψόϒΩϕΠ
+
+accents etc
+«áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿?

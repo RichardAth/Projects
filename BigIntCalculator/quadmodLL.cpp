@@ -67,7 +67,7 @@ static BigInteger* pValNn;
 fList Nfactors;
 
 /* function pointers */
-static pSolution Solution = nullptr;
+pSolution SolutionP = nullptr;
 static pShowSolutionsModPrime ShowSolutionsModPrime = nullptr;;
 static pShowNoSolsModPrime ShowNoSolsModPrime = nullptr;
 
@@ -97,7 +97,8 @@ void printFactors(sFactors flist[]) {
 }
 
 /* the same factor list is returned in both factorsMod and astfactorsMod,
-in different formats */
+in different formats 
+Uses global variable Aux0 */
 void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
     Znum N;
     int numFactors;
@@ -194,7 +195,7 @@ void PerformChineseRemainderTheorem(void)
             // The solution is V*ValNn + currentSolution
             K1 = V * *pValNn;      // (void)BigIntMultiply(&V, pValNn, &K1);
             K1 += currentSolution; // BigIntAdd(&K1, &currentSolution, &K1);
-            Solution(&K1);
+            SolutionP(&K1);
             V++;                   // addbigint(&V, 1);      // V <- V + 1
             K1 = V - *pGcdAll;     // BigIntSubt(&V, pGcdAll, &K1);
         }
@@ -236,9 +237,9 @@ static void setNbrLimbs(BigInteger* pBigNbr) {
 }
 
 // Solve Bx + C = 0 (mod N).
-// uses global variables Aux[0], NumberLength, Common.Quad.Increment,
+// uses global variables Aux[0], NumberLength, Common.Quad.Increment, Aux2
 // common.quad.solution1, common.quad.solution2, factorsMod, astFactorsMod, etc
-static void SolveModularLinearEquation(BigInteger* pValA, const BigInteger* pValB,
+static void SolveModularLinearEquation(const BigInteger* pValB,
     const BigInteger* pValC, BigInteger* pValN)
 {
     int NumberLengthBytes;
@@ -250,14 +251,12 @@ static void SolveModularLinearEquation(BigInteger* pValA, const BigInteger* pVal
     BigInteger* ptrSolution2 = quad.Solution2;
 
     if (verbose > 1) {
-        printf("SolveModularLinearEquation: a = ");
-        PrintBigInteger(pValA, -1);
-        printf(" b = ");
-        PrintBigInteger(pValB, -1);
+        printf("SolveModularLinearEquation: b = ");
+        PrintBigInteger(pValB, 0);
         printf(" c = ");
-        PrintBigInteger(pValC, -1);
+        PrintBigInteger(pValC, 0);
         printf(" n = ");
-        PrintBigInteger(pValN, -1);
+        PrintBigInteger(pValN, 0);
         putchar('\n');
     }
     BigIntGcd(*pValB, *pValN, Aux[0]);
@@ -309,17 +308,17 @@ static void SolveModularLinearEquation(BigInteger* pValA, const BigInteger* pVal
         pstFactor->ptrFactor = ptrFactorsMod;
         pstFactor->multiplicity = 1;
         GetMontgomeryParmsPowerOf2(powerOf2);
-        // Use ValA (which is zero for linear equations) as a temporary area.
+        // Use Aux2 as a temporary area.
         // ptrSolution1 <- 1 / |ValB|
-        ComputeInversePower2(pValB->limbs, ptrSolution1->limbs, pValA->limbs);
+        ComputeInversePower2(pValB->limbs, ptrSolution1->limbs, Aux2.limbs);
         // ptrSolution1 <- |ValC| / |ValB|
         modmult(ptrSolution1->limbs, pValC->limbs, ptrSolution1->limbs);
         NumberLengthBytes = NumberLength * (int)sizeof(int);
         // ptrSolution1 <- -ValC / ValB
         if (pValB->sign == pValC->sign)
-        {
-            (void)memset(pValA->limbs, 0, NumberLengthBytes);
-            SubtractBigNbr(pValA->limbs, ptrSolution1->limbs, ptrSolution1->limbs, NumberLength);
+        {  /* change  sign of Solution1 */
+            (void)memset(Aux2.limbs, 0, NumberLengthBytes);
+            SubtractBigNbr(Aux2.limbs, ptrSolution1->limbs, ptrSolution1->limbs, NumberLength);
         }
         // Discard bits outside number in most significant limb.
         ptrSolution1->limbs[NumberLength - 1] &= (1 << (powerOf2 % BITS_PER_GROUP)) - 1;
@@ -436,8 +435,8 @@ static void findQuadraticSolution(BigInteger* pSolution, int exponent)
 
 // Solve Ax^2 + Bx + C = 0 (mod 2^expon).
 static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
-    const BigInteger* pValA, const BigInteger* pValB, const BigInteger* pValC, BigInteger& prime)
-{
+    const BigInteger* pValA, const BigInteger* pValB, const BigInteger* pValC, 
+    BigInteger& prime) {
     int expon = exponent;
     int bitsAZero;
     int bitsBZero;
@@ -450,6 +449,8 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         PrintBigInteger(pValB, 0);
         printf("\n c = ");
         PrintBigInteger(pValC, 0);
+        printf("\n prime = ");
+        PrintBigInteger(&prime, 0);
         putchar('\n');
     }
 
@@ -582,7 +583,8 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
     return true;
 }
 
-/* uses global variable prime, Aux[3], Aux[4], Aux[5], TestNbr, result returned in sqrRoot */
+/* uses global variable prime, Aux[3] to Aux[9], TestNbr, discriminant, 
+result returned in sqrRoot */
 static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     int correctBits;
 
@@ -694,7 +696,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             (void)memcpy(Aux[5].limbs, Aux[4].limbs, NumberLengthBytes); // y
             r = e;
             K1 = Q;    // CopyBigInt(&K1, &Q);
-            subtractdivide(K1, 1, 2);
+            subtractdivide(K1, 1, 2);  /* K1 = (K-1)/2*/
             modPow(Aux[6].limbs, K1.limbs, K1.nbrLimbs, Aux[7].limbs); // x
             modmult(Aux[6].limbs, Aux[7].limbs, Aux[8].limbs);         // v
             modmult(Aux[8].limbs, Aux[7].limbs, Aux[9].limbs);         // w
@@ -746,6 +748,11 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
         modmult(Aux[4].limbs, toConvert, toConvert);
         UncompressLimbsBigInteger(toConvert, &SqrtDisc);
     }
+    if (verbose > 1) {
+        printf("SqrtDisc = ");
+        PrintBigInteger(&SqrtDisc, 0);
+        printf("\n");
+    }
     // Obtain inverse of square root stored in SqrtDisc (mod prime).
     tmp2 = 1;  // intToBigInteger(&tmp2, 1);
     BigIntModularDivision(&tmp2, &SqrtDisc, &prime, &sqrRoot);
@@ -776,6 +783,11 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     }
     sqrRoot *= discriminant;  // (void)BigIntMultiply(&sqrRoot, &discriminant, &sqrRoot);
     sqrRoot %= Q;             // (void)BigIntRemainder(&sqrRoot, &Q, &sqrRoot);
+    if (verbose > 1) {
+        printf("sqrRoot = ");
+        PrintBigInteger(&sqrRoot, 0);
+        printf("\n");
+    }
 }
 
 // Solve Ax^2 + Bx + C = 0 (mod p^expon).
@@ -908,11 +920,11 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
         }
         // Compute square root (mod prime) of discriminant in Aux[3]. result in sqrRoot
         ComputeSquareRootModPowerOfP(nbrBitsSquareRoot);
-        if (verbose > 1) {
-            printf("sqrRoot = ");
-            PrintBigInteger(&sqrRoot, 0);
-            putchar('\n');
-        }
+        //if (verbose > 1) {
+        //    printf("sqrRoot = ");
+        //    PrintBigInteger(&sqrRoot, 0);
+        //    putchar('\n');
+        //}
         // Multiply by square root of discriminant by prime^deltaZeros.
         for (ctr = 0; ctr < deltaZeros; ctr++)  {
             sqrRoot *= prime;    // (void)BigIntMultiply(&sqrRoot, &prime, &sqrRoot);
@@ -955,7 +967,7 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     return true;
 }
 
-/* uses global variables prime, Q */
+/* uses global variables prime, Q quad.solution1, quad.solution2 ... */
 static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     const BigInteger* pValA, const BigInteger* pValB, const BigInteger* pValC)
 {
@@ -965,21 +977,24 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     int NumberLengthBytes;
 
 
-    /* temp */
-    printf("QuadraticTermMultipleOfP: expon = %d \nb = ", expon);
-    PrintBigInteger(pValB, 0);
-    printf("\nC = ");
-    PrintBigInteger(pValC, 0);
-    printf("\nprime = ");
-    PrintBigInteger(&prime, 0);
-    putchar('\n');
+    if (verbose > 1) {
+        printf("QuadraticTermMultipleOfP: expon = %d \nA = ", expon);
+        PrintBigInteger(pValA, 0);
+        printf("\nB = ");
+        PrintBigInteger(pValB, 0);
+        printf("\nC = ");
+        PrintBigInteger(pValC, 0);
+        printf("\nprime = ");
+        PrintBigInteger(&prime, 0);
+        putchar('\n');
+    }
 
     NumberLength = prime.nbrLimbs;
     NumberLengthBytes = NumberLength * (int)sizeof(limb);
     (void)memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime */
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
-    BigIntModularDivision(pValC, pValB, &prime, ptrSolution);
+    BigIntModularDivision(pValC, pValB, &prime, ptrSolution); /* Solution = C/B (mod prime) */
     BigIntChSign(ptrSolution);  // BigIntNegate(ptrSolution, ptrSolution);
     if (ptrSolution->sign == SIGN_NEGATIVE)
     {
@@ -994,10 +1009,10 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
         Q %= V;                      //(void)BigIntRemainder(&Q, &V, &Q);
         Q *= *ptrSolution;           // (void)BigIntMultiply(&Q, ptrSolution, &Q);   // a*x_n^2 + b*x_n
         Q += *pValC;                 // BigIntAdd(&Q, pValC, &Q);   // a*x_n^2 + b*x_n + c
-        Q %= V;                      //(void)BigIntRemainder(&Q, &V, &Q);           // Numerator. 
-        L *= 2;                // multint(&L, &L, 2);                          // 2*a*x_n
-        L += *pValB;           // BigIntAdd(&L, pValB, &L);  // 2*a*x_n + b
-        L %= V;                // (void)BigIntRemainder(&L, &V, &L);           // Denominator
+        Q %= V;                      //(void)BigIntRemainder(&Q, &V, &Q);    // Numerator. 
+        L *= 2;                     // multint(&L, &L, 2);                   // 2*a*x_n
+        L += *pValB;                // BigIntAdd(&L, pValB, &L);      // 2*a*x_n + b
+        L %= V;                     // (void)BigIntRemainder(&L, &V, &L);    // Denominator
         NumberLength = V.nbrLimbs;
         NumberLengthBytes = NumberLength * (int)sizeof(limb);
         (void)memcpy(TestNbr, V.limbs, NumberLengthBytes);
@@ -1011,10 +1026,16 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
             *ptrSolution += V;  //BigIntAdd(ptrSolution, &V, ptrSolution);
         }
     }
+
     (void)BigIntPowerIntExp(prime, expon, Q);  /* Q = prime^expon */
     *ptrSolution %= Q;           //(void)BigIntRemainder(ptrSolution, &Q, ptrSolution);
     /* make Solution 2 = Solution 1*/
     quad.Solution2[factorIndex] = quad.Solution1[factorIndex];  // CopyBigInt(&quad.Solution2[factorIndex], &quad.Solution1[factorIndex]);
+    if (verbose > 1) {
+        printf("Solution = ");
+        PrintBigInteger(ptrSolution, 0);
+        putchar('\n');
+    }
 }
 
 static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
@@ -1104,13 +1125,13 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
 void SetCallbacksForSolveEquation(pSolution solutionCback,
     pShowSolutionsModPrime showSolutionsModPrime, pShowNoSolsModPrime showNoSolsModPrime)
 {
-    Solution = solutionCback;
+    SolutionP = solutionCback;
     ShowSolutionsModPrime = showSolutionsModPrime;
     ShowNoSolsModPrime = showNoSolsModPrime;
 }
 
 // Solve Ax² + Bx + C = 0 (mod N).
-void SolveEquation(BigInteger* pValA, const BigInteger* pValB,
+void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
     const BigInteger* pValC, BigInteger* pValN,
     BigInteger* pGcdAllParm, BigInteger* pValNnParm)
 {
@@ -1137,7 +1158,7 @@ void SolveEquation(BigInteger* pValA, const BigInteger* pValB,
     Aux[0] = *pValA % *pValN;   //(void)BigIntRemainder(pValA, pValN, &Aux[0]);
     if (Aux[0] == 0)            //(BigIntIsZero(&Aux[0]))
     {           // Linear equation.
-        SolveModularLinearEquation(pValA, pValB, pValC, pValN);
+        SolveModularLinearEquation(pValB, pValC, pValN);
         return;
     }
     if (LastModulus != *pValN)  //(!BigIntEqual(&LastModulus, pValN))
