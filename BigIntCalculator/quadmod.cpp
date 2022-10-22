@@ -86,6 +86,7 @@ static int Show(const BigInteger* num, const char* str, int t)
     return t;
 }
 
+/* uses global variable Aux1 */
 void Show1(const BigInteger* num, int t)
 {
     int u = Show(num, "", t);
@@ -128,7 +129,7 @@ void solms(BigInteger* value) {
 }
 
 // Solve Ax^2 + Bx + C = 0 in integers.
-// uses global variables ValA, ValB, ValC, Aux0
+// uses global variables Aux0, Aux1, Aux2, discriminant, sqrtDiscriminant
 static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB, 
     const BigInteger& ValC) {
     if (ValA == 0)           //(BigIntIsZero(&ValA))

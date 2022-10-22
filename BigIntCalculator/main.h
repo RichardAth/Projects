@@ -40,7 +40,7 @@ void yafuParam(const std::string& command);      /*process YAFU commands */
 void pariParam(const std::string& command);      /*process YAFU commands */
 int quadModEqn(const std::string& command);  /* Quadratic Modular Equation Solver */
 void printvars(std::string name);
-void doTests9(void);  /* modular square root test */
+void doTests9(const std::string& params);  /* modular square root test */
 
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
@@ -54,7 +54,7 @@ Znum              power(const Znum& x, unsigned long long n);
 int jacobi(__int64 k, unsigned __int64 n);
 int jacobi(const Znum& k, const Znum& n); 
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
-Znum             modMult(const Znum& a, const Znum& b, Znum mod);
+Znum             modMult(const Znum& a, const Znum& b, const Znum &mod);
 
 Znum R3h(Znum n);
 Znum Hclassno12(const Znum& n);

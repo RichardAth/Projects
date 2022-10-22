@@ -160,7 +160,7 @@ unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int6
 	}
 	return x;
 }
-Znum modMult(const Znum &a, const Znum &b, Znum mod) {
+Znum modMult(const Znum &a, const Znum &b, const Znum &mod) {
 	Znum res;
 	res = a * b;
 	mpz_mod(ZT(res), ZT(res), ZT(mod));

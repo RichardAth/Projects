@@ -103,9 +103,17 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 				x2 %= mod;   /* ensure x2 is in range 0 to mod-1 */
 			roots.push_back(x2);
 			roots.push_back(mod - x2);
+			if (x2 < mod / 2) {
+				roots.push_back(mod / 2 + x2);
+				roots.push_back(mod / 2 - x2);
+			}
+			else {
+				roots.push_back(x2 - mod / 2);
+				roots.push_back(mod * 3 / 2 - x2);
+			}
 		}
 	}
-	/* todo deal with remaining cases */
+	/* todo deal with any remaining cases */
 	  /* remove any duplicates */
 	std::sort(roots.begin(), roots.end());
 	auto last = std::unique(roots.begin(), roots.end());
@@ -155,6 +163,10 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 	rx = primeModSqrt(c, prime);   /* rx^2 ≡ c (mod prime) */
 	if (rx.empty()) {
 		roots.clear();
+		if (isPerfectSquare(c)) {
+			roots.push_back(sqrt(c));
+			roots.push_back(mod - sqrt(c));
+		}
 		return roots;     /* there are no solutions */
 	}
 	if (rx.size() > 1)
@@ -174,6 +186,10 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 	else {
 		if (verbose > 1 || root > 0) {
 			std::cerr << "discarded invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
+		}
+		if (isPerfectSquare(c)) {
+			roots.push_back(sqrt(c));
+			roots.push_back(mod - sqrt(c));
 		}
 	}
 	return roots;
@@ -381,7 +397,8 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 
 /* calculate modular square roots using 2 different methods & compare results.
    Return true if results match, otherwise false. */
-static bool test9once(long long a, long long m, std::vector <long long> &r2) {
+static bool test9once(long long a, long long m, std::vector <long long> &r2,
+	bool old) {
 	std::vector <Znum> r3;
 	Znum az = a;   /* change type from 64-bit to extended precision */
 	Znum mz = m;   /* change type from 64-bit to extended precision */
@@ -389,7 +406,10 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2) {
 	r2.clear();
 
 	r2 = ModSqrtBF(a, m);  /* brute force method */
-	r3 = ModSqrtQE(az, mz);  /* sophisticated (faster) method */
+	if (old)
+		r3 = ModSqrt(az, mz);
+	else
+		r3 = ModSqrtQE(az, mz);  /* sophisticated (faster) method */
 	if (r3.size() != r2.size())
 		error = true;
 	else {
@@ -430,35 +450,30 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2) {
 }
 
 /* test modular square root */
-void doTests9(void) {
+void doTests9(const std::string& params) {
 	bool rv = true;
 	std::vector<long long> roots;
 	std::vector<Znum> rootsZ;
-	
-	//for (long long m = 2; m <= 256; m *= 2) {
-	//	for (long long a = 0; a < m; a++) {
-	//		//roots = ModSqrtBF(a, m);
-	//		test9once(a, m, roots);
-	//	}
-	//}
+	bool old;
 
+	old = (params == "old" || params == "OLD");
 
 	for (long long m = 2; m <= 128; m++)
 		for (long long a = 0; a < m; a++) {
- 			rv &= test9once(a, m, roots);
+ 			rv &= test9once(a, m, roots, old);
 		}
 
-	//rv &= test9once(99, 107, roots);      // roots are 45 and 62
-	rv &= test9once(2191, 12167, roots);  // roots are 1115, 11052
-	rv &= test9once(4142, 24389, roots);  // roots are 2333, 22056
-	rv &= test9once(3, 143, roots);       // roots are 17, 61, 82, 126
-	rv &= test9once(11, 2 * 5 * 7 * 19, roots); // roots are 121, 159 411, 639, 
+	//rv &= test9once(99, 107, roots, old);      // roots are 45 and 62
+	rv &= test9once(2191, 12167, roots, old);  // roots are 1115, 11052
+	rv &= test9once(4142, 24389, roots, old);  // roots are 2333, 22056
+	rv &= test9once(3, 143, roots, old);       // roots are 17, 61, 82, 126
+	rv &= test9once(11, 2 * 5 * 7 * 19, roots, old); // roots are 121, 159 411, 639, 
 	                                      // 691, 919, 1171, 1209
-	rv &= test9once(0, 176, roots);       // roots are zero, 44, 88, 132
-	rv &= test9once(1, 121550625, roots); // roots are 1, 15491251, 51021251, 
+	rv &= test9once(0, 176, roots, old);       // roots are zero, 44, 88, 132
+	rv &= test9once(1, 121550625, roots, old); // roots are 1, 15491251, 51021251, 
 								          // 55038124, 66512501, 70529374, 
 	                                      // 106059374, 121550624,
-	rv &= test9once(0, 121550625, roots); // 11025 different roots!
+	rv &= test9once(0, 121550625, roots, old); // 11025 different roots!
 	
 	if (rv)
 		std::cout << "All modular square root tests completed successfully. \n";

@@ -1,4 +1,4 @@
-﻿//
+﻿ //
 // This file is part of Alpertron Calculators.
 //
 // Copyright 2017-2021 Dario Alejandro Alpern
@@ -128,7 +128,7 @@ void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
 
 // Use Chinese remainder theorem to obtain the solutions.
 /* for each solution <solution()> is called.
-The input parameters are in common.quad, astFactorsMod, Aux, exponents,  ... */
+The input parameters are in quad, astFactorsMod, Aux, exponents,  GcdAll, ... */
 void PerformChineseRemainderTheorem(void)
 {
     int T1;
@@ -238,7 +238,7 @@ static void setNbrLimbs(BigInteger* pBigNbr) {
 
 // Solve Bx + C = 0 (mod N).
 // uses global variables Aux[0], NumberLength, Common.Quad.Increment, Aux2
-// common.quad.solution1, common.quad.solution2, factorsMod, astFactorsMod, etc
+// quad.solution1, quad.solution2, factorsMod, astFactorsMod, etc
 static void SolveModularLinearEquation(const BigInteger* pValB,
     const BigInteger* pValC, BigInteger* pValN)
 {
@@ -328,6 +328,15 @@ static void SolveModularLinearEquation(const BigInteger* pValB,
         solutionNbr++;
     }
     astFactorsMod[0].multiplicity = solutionNbr;
+    if (verbose > 1) {
+        printf("solution = ");
+        PrintBigInteger(ptrSolution1, 0);
+        printf("\nquad.Increment[0] = ");
+        PrintBigInteger(&quad.Increment[0], 0);
+        printf("\nquad.Increment[1] = ");
+        PrintBigInteger(&quad.Increment[1], 0);
+        printf("\nsolutionNbr = %d \n", solutionNbr);
+    } 
     PerformChineseRemainderTheorem();
 }
 
@@ -373,23 +382,24 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
     }
 }
 
-// Find quadratic solution of Quadr*x^2 + Linear*x + Const = 0 (mod 2^expon)
-// when Quadr is even and Linear is odd. In this case there is unique solution.
-// uses global variables const, Aux0, Aux1, Aux2
+// Find quadratic solution of Quadr*x^2 + Linear*x + Const = 0 (mod 2^exponent)
+// when Quadr is even and Linear is odd. In this case there is a unique solution.
+// uses global variables Quadr, Linear, Const, Aux0, Aux1, Aux2
+// see Lemma 3, and Algorithm 1
 static void findQuadraticSolution(BigInteger* pSolution, int exponent)
 {
     int bytesLen;
     int expon = exponent;
     int bitMask = 1;
     limb* ptrSolution = pSolution->limbs;
-    BigIntPowerOf2(&Aux0, expon);
+    BigIntPowerOf2(&Aux0, expon);    /* Aux0 = 2^exponent */
     bytesLen = Aux0.nbrLimbs * (int)sizeof(limb);
     (void)memset(pSolution->limbs, 0, bytesLen);
     while (expon > 0)
     {
         expon--;
         BigIntPowerOf2(&Aux2, expon);   /* Aux2 *= 2^expon */
-        Aux2--; //addbigint(&Aux2, -1);              // Aux2 <- 2^expon -1
+        Aux2--; //addbigint(&Aux2, -1);   // Aux2 <- 2^expon -1 (used as a bitmask)
         if ((Const.limbs[0] & 1) != 0)
         {        // Const is odd.
             *ptrSolution |= bitMask;
@@ -414,19 +424,19 @@ static void findQuadraticSolution(BigInteger* pSolution, int exponent)
             // Linear <- 2*Quadr + Linear and Quadr <- 2*Quadr.
             Quadr *= 2; //BigIntMultiplyBy2(&Quadr);         // Quadr*2
             Linear += Quadr;  // BigIntAdd(&Linear, &Quadr, &Linear);
-            BigIntAnd(&Linear, &Aux2, &Linear);   // Reduce mod 2^expon
+            Linear &= Aux2; // BigIntAnd(&Linear, &Aux2, &Linear);   // Reduce mod 2^expon
         }
         else
         {        // Const is even.
             BigIntDivideBy2(&Const);           // Const/2
             Quadr *= 2; // BigIntMultiplyBy2(&Quadr);         // Quadr*2
         }
-        BigIntAnd(&Const, &Aux2, &Const);    // Reduce mod 2^expon
-        BigIntAnd(&Quadr, &Aux2, &Quadr);    // Reduce mod 2^expon
+        Const &= Aux2; // (&Const, &Aux2, &Const);    // Reduce mod 2^expon
+        Quadr &= Aux2; // BigIntAnd(&Quadr, &Aux2, &Quadr);    // Reduce mod 2^expon
         bitMask *= 2;
-        if (bitMask < 0)  {
+        if (bitMask < 0)  {  /* bitmask overflow?*/
             bitMask = 1;
-            ptrSolution++;
+            ptrSolution++;   /* if so, move to next limb */
         }
     }
     NumberLength = Aux0.nbrLimbs;
@@ -482,20 +492,21 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
     if (((bitsAZero == 0) && (bitsBZero == 0) && (bitsCZero == 0)) ||
         ((bitsAZero > 0) && (bitsBZero > 0) && (bitsCZero == 0)))
     {
-        return false;   // No solutions, so go out.
+        return false;   // No solutions, so go out. (Lemma 2)
     }
     if ((bitsAZero == 0) && (bitsBZero > 0))
-    {           // The solution in this case requires square root.
-      // compute s = ((b/2)^2 - a*c)/a^2, q = odd part of s,
-      // r = maximum exponent of power of 2 that divides s.
+    {  /* see corollary 1 */
+        // The solution in this case requires square root.
+        // compute s = ((b/2)^2 - a*c)/a^2, q = odd part of s,
+        // r = maximum exponent of power of 2 that divides s.
         tmp1 = *pValB;  // CopyBigInt(&tmp1, pValB);
         BigIntDivideBy2(&tmp1);
         tmp1 *= tmp1;   // (void)BigIntMultiply(&tmp1, &tmp1, &tmp1);  // (b/2)^2
         tmp2 = *pValA * *pValC;     // (void)BigIntMultiply(pValA, pValC, &tmp2);  // a*c
         tmp1 -= tmp2; // BigIntSubt(&tmp1, &tmp2, &tmp1);      // (b/2)^2 - a*c
-        BigIntPowerOf2(&K1, expon);  /* K1 *= 2^expon */
-        K1--;         //addbigint(&K1, -1);
-        BigIntAnd(&tmp1, &K1, &ValCOdd);      // (b/2) - a*c mod 2^n
+        BigIntPowerOf2(&K1, expon);  /* K1 = 2^expon */
+        K1--;         //addbigint(&K1, -1);   (K1 is used as a bitmask)
+        ValCOdd = tmp1 & K1; // BigIntAnd(&tmp1, &K1, &ValCOdd);   // r = (b/2) - a*c mod 2^n
         NumberLength = K1.nbrLimbs;
         if (NumberLength > ValAOdd.nbrLimbs)
         {   /* extra leading limbs are set to zero */
@@ -509,9 +520,9 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         }
         ComputeInversePower2(ValAOdd.limbs, tmp2.limbs, tmp1.limbs);
         ValCOdd *= tmp2;     // (void)BigIntMultiply(&ValCOdd, &tmp2, &ValCOdd);
-        BigIntAnd(&ValCOdd, &K1, &ValCOdd);      // ((b/2) - a*c)/a mod 2^n
+        ValCOdd &= K1; // BigIntAnd(&ValCOdd, &K1, &ValCOdd);      // ((b/2) - a*c)/a mod 2^n
         ValCOdd *= tmp2;        // (void)BigIntMultiply(&ValCOdd, &tmp2, &ValCOdd);
-        BigIntAnd(&ValCOdd, &K1, &ValCOdd);      // s = ((b/2) - a*c)/a^2 mod 2^n
+        ValCOdd &= K1; // BigIntAnd(&ValCOdd, &K1, &ValCOdd);    // s = ((b/2) - a*c)/a^2 mod 2^n
         if (ValCOdd == 0)        //(BigIntIsZero(&ValCOdd))
         {         // s = 0, so its square root is also zero.
             sqrRoot = 0; // intToBigInteger(&sqrRoot, 0);
@@ -546,11 +557,11 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         BigIntDivideBy2(&tmp1);               // b/2
         tmp1 *= tmp2;       // (void)BigIntMultiply(&tmp1, &tmp2, &tmp1);  // b/2a
         BigIntChSign(&tmp1);                  // -b/2a
-        BigIntAnd(&tmp1, &K1, &tmp1);         // -b/2a mod 2^expon
+        tmp1 &= K1; // BigIntAnd(&tmp1, &K1, &tmp1);         // -b/2a mod 2^expon
         tmp2 = tmp1 + sqrRoot;  // BigIntAdd(&tmp1, &sqrRoot, &tmp2);
-        BigIntAnd(&tmp2, &K1, &quad.Solution1[factorIndex]);
+        quad.Solution1[factorIndex] = tmp2 & K1; // BigIntAnd(&tmp2, &K1, &quad.Solution1[factorIndex]);
         tmp2 = tmp1 - sqrRoot;   // BigIntSubt(&tmp1, &sqrRoot, &tmp2);
-        BigIntAnd(&tmp2, &K1, &quad.Solution2[factorIndex]);
+        quad.Solution2[factorIndex] = tmp2 & K1; // BigIntAnd(&tmp2, &K1, &quad.Solution2[factorIndex]);
     }
     else if ((bitsAZero == 0) && (bitsBZero == 0))  {
         Quadr = *pValA *2;   // CopyBigInt(&Quadr, pValA);
@@ -791,7 +802,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
 }
 
 // Solve Ax^2 + Bx + C = 0 (mod p^expon).
-/* uses global variables prime, discriminant */
+/* uses global variables prime, discriminant, V */
 static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     const BigInteger* pValA, const BigInteger* pValB)
 {
@@ -967,7 +978,8 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     return true;
 }
 
-/* uses global variables prime, Q quad.solution1, quad.solution2 ... */
+/* Solve aX^2 + bX + C = 0 (mod p^e)
+uses global variables prime, Q, V, quad.solution1, quad.solution2 ... */
 static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     const BigInteger* pValA, const BigInteger* pValB, const BigInteger* pValC)
 {
@@ -975,7 +987,6 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     // x_{n+1} = x_n - (a*x_n^2 + b*x_n + c) / (2*a_x + b)      
     BigInteger* ptrSolution = &quad.Solution1[factorIndex];
     int NumberLengthBytes;
-
 
     if (verbose > 1) {
         printf("QuadraticTermMultipleOfP: expon = %d \nA = ", expon);
@@ -1038,6 +1049,8 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     }
 }
 
+/* uses global variables sol1Invalid, sol2Invalid, Aux[0], discriminant, prime,
+quad.solution1, quad.solution2, */
 static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
     const BigInteger* pValA, const BigInteger* pValB, const BigInteger* pValC)
 {
@@ -1083,11 +1096,11 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
         return false;
     }
     if (sol1Invalid)
-    {     // common.quad.Solution1 is invalid. Overwrite it with common.quad.Solution2.
+    {     // quad.Solution1 is invalid. Overwrite it with quad.Solution2.
         quad.Solution1[factorIndex] = quad.Solution2[factorIndex]; // (&quad.Solution1[factorIndex], &quad.Solution2[factorIndex]);
     }
     else if (sol2Invalid)
-    {     // common.quad.Solution2 is invalid. Overwrite it with common.quad.Solution1.
+    {     // quad.Solution2 is invalid. Overwrite it with quad.Solution1.
         quad.Solution2[factorIndex] = quad.Solution1[factorIndex]; // CopyBigInt(&quad.Solution2[factorIndex], &quad.Solution1[factorIndex]);
     }
     else {              // Nothing to do.

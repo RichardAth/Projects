@@ -296,7 +296,7 @@ void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) 
 	return;
 }
  
-/* BigInt = e^logar.  This is the inverse function of LogBigNbr. As the result
+/* BigInt = e^logar.  This is the inverse function of LogBigInt. As the result
 is an integer it is not exact, and also for large values only at best the 1st
 15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
@@ -830,7 +830,8 @@ void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
 }
 
 
-
+/* divide number by 2 (right shift) until it is odd. Return changed value of number
+and the number of 0-bits shifted out. */
 void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
 {
 	int power2 = 0;
@@ -1379,6 +1380,11 @@ void BigIntChSign(BigInteger* value)
 	}
 }
 
+void BigIntAbs(BigInteger* value) {
+	if (value->sign == SIGN_NEGATIVE)
+		value->sign = SIGN_POSITIVE;
+}
+
 void IntArray2BigInteger(const int* ptrValues, BigInteger* bigint)
 {
 	const int* piValues = ptrValues;
@@ -1676,10 +1682,19 @@ static void InternalBigIntLogical(const BigInteger* firstArgum,
 	ConvertToTwosComplement(result);
 }
 
-void BigIntAnd(const BigInteger* firstArg,
-	const BigInteger* secondArg, BigInteger* result)
-{
+void BigIntAnd(const BigInteger* firstArg, const BigInteger* secondArg, 
+	BigInteger* result) {
 	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_AND);
+}
+
+void BigIntOr(const BigInteger* firstArg, const BigInteger* secondArg, 
+	BigInteger* result) {
+	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_OR);
+}
+
+void BigIntXor(const BigInteger* firstArg, 	const BigInteger* secondArg, 
+	BigInteger* result) {
+	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_XOR);
 }
 
 void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint)

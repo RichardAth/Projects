@@ -28,6 +28,7 @@ enum eSign
 };
 void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot);
 
+
 class BigInteger {
 
 public:				// should be private members
@@ -56,6 +57,12 @@ public:
 		squareRoot((*this).limbs, sqrRoot.limbs, (*this).nbrLimbs, &sqrRoot.nbrLimbs);
 		sqrRoot.sign = SIGN_POSITIVE;
 		return sqrRoot;
+	}
+	BigInteger abs() const {
+		BigInteger result = *this;
+		if (result.sign == SIGN_NEGATIVE)
+			result.sign = SIGN_POSITIVE;
+		return result;
 	}
 	long long lldata() const { /* convert to long long */
 		int noOfLimbs;
@@ -193,8 +200,14 @@ public:
 	friend void LLToBig(BigInteger &num, long long LL, int exp);
 	//friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
-	//friend void ModInvBigNbr(int *num, int *inv, int *mod, int NumLen);
+	
 	friend void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result);
+	friend void BigIntAnd(const BigInteger* firstArg, const BigInteger* secondArg, 
+		BigInteger* result);
+	friend void BigIntOr(const BigInteger* firstArg, const BigInteger* secondArg,
+		BigInteger* result);
+	friend void BigIntXor(const BigInteger* firstArg, const BigInteger* secondArg,
+		BigInteger* result);
 
 	BigInteger  operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);
@@ -268,7 +281,7 @@ public:
 	}
 	BigInteger &operator -= (const int b) {
 		if (b <= 0x3FFFFFFF && b >= -0x3FFFFFFF) {
-			(*this, -b);
+			addbigint(*this, -b);
 			return *this;
 		}
 		else {
@@ -288,6 +301,17 @@ public:
 		BigInteger result = *this;
 		BigIntNegate(result);
 		return result;
+	}
+
+	/* bitwise and */
+	BigInteger operator & (const BigInteger& b) const {
+		BigInteger result;
+		BigIntAnd(this, &b, &result);
+		return result;
+	}
+	BigInteger operator &= (const BigInteger& b) {
+		BigIntAnd(this, &b, this);
+		return *this;
 	}
 
 	BigInteger operator << (const int b) const {
@@ -369,7 +393,7 @@ public:
 
 bool BigIntIsZero(const BigInteger* value);
 void BigIntChSign(BigInteger* value);
-
+void BigIntAbs(BigInteger* value);
 void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
 void PrintBigInteger(const BigInteger* pBigInt, int groupLength);
 void copyStr(char** pptrString, const char* stringToCopy);
@@ -381,8 +405,7 @@ void BigIntPowerOf2(BigInteger* pResult, int exponent);
 void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen);
 void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLen);
 void BigIntDivideBy2(BigInteger* nbr);
-void BigIntAnd(const BigInteger* firstArg,
-	const BigInteger* secondArg, BigInteger* result);
+
 void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint);
 void UncompressLimbsBigInteger(const limb* ptrValues, /*@out@*/BigInteger* bigint);
 int BigIntJacobiSymbol(const BigInteger* upper, const BigInteger* lower);

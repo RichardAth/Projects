@@ -1465,6 +1465,18 @@ static void doTests3(void) {
 			gmp_printf("a =%Zd p = %Zd expected %Zd  \n", a, p, b1);
 		}
 
+		pBI = aBI & bBI.abs();
+		BigtoZ(p, pBI);
+		if (p != (a & abs(b))) {
+			gmp_printf("logical and of %Zx & %Zx failed; \ngot %Zx, expected %Zx \n",
+				a, abs(b), p, (a & abs(b)));
+		}
+		assert(p == (a & abs(b)));
+
+		pBI = aBI;
+		pBI &= bBI.abs();
+		assert(p == (a & abs(b)));
+
 		a *= 1237953;                 // increase a & b, then repeat
 		b *= -129218;
 	}
@@ -3353,7 +3365,10 @@ static int processCmd(const std::string &command) {
 				return 1;
 			}
 			case '9': {
-				doTests9();   /* test modular square root */
+				if (command.size() > 5)
+					doTests9(command.substr(6));         // do basic tests 
+				else
+					doTests9("");   /* test modular square root */
 				return 1;
 			}
 			case 'A': {
