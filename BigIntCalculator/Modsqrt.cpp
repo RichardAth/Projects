@@ -56,7 +56,7 @@ void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, 
 
 /* special for prime =2*/
 std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
-	Znum r1, r2, root, x, x2;
+	Znum r1, r2, root, x, x2, gcdv, increment, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
 	assert(prime == 2);
@@ -69,50 +69,54 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 			roots.push_back(mod / 2 + 1);
 		}
 	}
+	else if ((lambda >= 3) && (c % 8 == 1)) {
+		x2 = 1;
+		for (int k = 3; k <= lambda; k++) {
+			Znum i = ((x2 * x2 - c) / pow2(k)) % 2;
+			if (i == -1) i = 1;
+			x2 = x2 + i * pow2(k - 1);
+		}
+		while (x2 < 0)
+			x2 += mod;
+		if (x2 >= mod)
+			x2 %= mod;   /* ensure x2 is in range 0 to mod-1 */
+		roots.push_back(x2);
+		roots.push_back(mod - x2);
+		if (x2 < mod / 2) {
+			roots.push_back(mod / 2 + x2);
+			roots.push_back(mod / 2 - x2);
+		}
+		else {
+			roots.push_back(x2 - mod / 2);
+			roots.push_back(mod * 3 / 2 - x2);
+		}
+	}
 	else if (isPerfectSquare(c)) {
+		gcdv = gcd(c, mod);
+		if (gcdv > 1) {
+			increment = mod / (2 * sqrt(gcdv));
+			if (increment > c)
+				increment = c;
+		}
+		else increment = c;
 		r1 = sqrt(c);
-		if (mod % c == 0) {
+		 {
 			/* both mod & c are powers of 2 */
 			while (r1 < mod) {
 				if (r1 * r1 % mod == c) {
 					roots.push_back(r1);
 					roots.push_back(mod - r1);
 				}
-				r1 += c;
+				else if (verbose > 1) {
+					std::cerr << "discarded invalid root: c = " << c << " mod = " 
+						<< mod << " root = " << r1 << " increment = " << increment <<'\n';
+				}
+				r1 += increment;
 			}
 		}
-		else {
-			while (r1 < mod) {
-				roots.push_back(r1);
-				roots.push_back(mod - r1);
-				r1 += mod / 2;
-			}
-		}
+
 	}
-	else if((lambda >= 3) && (c%8 ==1)) {
-		for (x = 1; x <= 7; x += 2) /* x = 1, 3, 5, 7 */ {
-			x2 = x;
-			for (int k = 3; k <= lambda; k++) {
-				Znum i = ((x2 * x2 - c) / pow2(k)) % 2;
-				if (i == -1) i = 1;
-				x2 = x2+ i * pow2(k - 1);
-			}
-			while (x2 < 0)
-				x2 += mod;
-			if (x2 >= mod)
-				x2 %= mod;   /* ensure x2 is in range 0 to mod-1 */
-			roots.push_back(x2);
-			roots.push_back(mod - x2);
-			if (x2 < mod / 2) {
-				roots.push_back(mod / 2 + x2);
-				roots.push_back(mod / 2 - x2);
-			}
-			else {
-				roots.push_back(x2 - mod / 2);
-				roots.push_back(mod * 3 / 2 - x2);
-			}
-		}
-	}
+
 	/* todo deal with any remaining cases */
 	  /* remove any duplicates */
 	std::sort(roots.begin(), roots.end());
@@ -121,40 +125,34 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	return roots;
 }
 
-/* find x such that x^2 ≡ c mod prime^lambda 
-  the method used was partly derived from Wikipedia but the cases where c=0, 
-  and where prime=2 are all my own work. I have not seen descriptions that cover 
-  these cases let alone working code that does what this does ANYWHERE and, 
-  believe me, I looked. */
-std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda) {
+
+std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda) {
 	std::vector <Znum> roots;
-	Znum r1, r2, root, x, c;
+	Znum r1, r2, root, x, gcdv, sqrtc, increment;
 	Znum mod = power(prime, lambda);
 
 	std::vector <Znum> rx;
 
-	c  = cc%mod;
-	if (c < 0)
-		c += mod;  /* ensure c is in range 0 to mod-1 */
-
-	/* treat c=0 as special case. 0 is a solution, but there may be others. */
-	if (c == 0) {
-		r1 = power(prime, (lambda + 1) / 2);  /* smallest non-zero root is the
-										   smallest power of prime >= sqrt(mod) */
-		r2 = 0;
-		while (r2 < mod) {
-			roots.push_back(r2);
-			r2 += r1;  /* the roots form an arithmetic progression: 0, r1, 2*r1, 3*r1 etc */
-		}
-		return roots;
-	}
-
 	/* must treat prime=2 as a special case. */
-	if (prime == 2)  {
+	if (prime == 2) {
 		roots = ModSqrtp2(c, prime, lambda);
 		return roots;
 	}
 
+	/* is c a perfect square and a multiple of of prime? */
+	gcdv = gcd(c, mod);
+	if (gcdv > 1 && isPerfectSquare(c, sqrtc)) {
+		increment = mod / sqrt(gcdv);
+		for (r1 = sqrtc; r1 < mod; r1 += increment) {
+				roots.push_back(r1);
+				roots.push_back(mod - r1);
+		}
+		std::sort(roots.begin(), roots.end());
+		auto last = std::unique(roots.begin(), roots.end());
+		roots.erase(last, roots.end());
+		return roots;
+	}
+	
 	/* this part was derived from Wikipedia
 	see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#Tonelli's_algorithm_will_work_on_mod_p^k
 	The explanation there is not very clear but I got working code out of it.
@@ -193,6 +191,50 @@ std::vector <Znum> ModSqrt2(const Znum &cc, const Znum &prime, const int lambda)
 		}
 	}
 	return roots;
+}
+
+/* find x such that x^2 ≡ c mod prime^lambda
+  the method used was partly derived from Wikipedia but the cases where c=0,
+  and where prime=2 are all my own work. I have not seen descriptions that cover
+  these cases let alone working code that does what this does ANYWHERE and,
+  believe me, I looked. */
+std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int lambda) {
+	Znum mod = power(prime, lambda);
+	Znum c, r1, r2, gcdv, sqrtgcd;
+	std::vector <Znum> roots;
+
+	c = cc % mod;
+	if (c < 0)
+		c += mod;  /* ensure c is in range 0 to mod-1 */
+
+	/* treat c=0 as special case. 0 is a solution, but there may be others. */
+	if (c == 0) {
+		r1 = power(prime, (lambda + 1) / 2);  /* smallest non-zero root is the
+										   smallest power of prime >= sqrt(mod) */
+		r2 = 0;
+		while (r2 < mod) {
+			roots.push_back(r2);
+			r2 += r1;  /* the roots form an arithmetic progression: 0, r1, 2*r1, 3*r1 etc */
+		}
+		return roots;
+	}
+
+	gcdv = gcd(c, mod);
+	if (gcdv > 1) {
+		if (isPerfectSquare(gcdv, sqrtgcd)) {
+			roots = ModSqrt2x(c / gcdv, prime, lambda);
+			if (roots.empty())
+				return roots;  /* no solutions*/
+			r1 = roots[0];  /* we only need 1 of the roots just obtained */
+			roots = ModSqrt2x(gcdv, prime, lambda);
+			for (size_t i = 0; i < roots.size(); i++)
+				roots[i] = modMult(roots[i], r1, mod);
+			return roots;
+		}
+		else return roots;  /* no solutions*/
+	}
+	else
+		return(ModSqrt2x(c, prime, lambda));
 }
 
 /*
@@ -458,7 +500,7 @@ void doTests9(const std::string& params) {
 
 	old = (params == "old" || params == "OLD");
 
-	for (long long m = 2; m <= 128; m++)
+	for (long long m = 2; m <= 200; m++)
 		for (long long a = 0; a < m; a++) {
  			rv &= test9once(a, m, roots, old);
 		}
