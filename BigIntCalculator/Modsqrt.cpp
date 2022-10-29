@@ -54,33 +54,44 @@ void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, 
 	return;
 }
 
-/* c is a power of 2, prime = 2, c < 2^lambda */
+/* find least significant 1-bit in num, equivalent to counting 0-bits, starting from 
+least significant bit. If num is a power of 2, then 2^return value = num.*/
+long long countZeroBits(const Znum &num) {
+	mp_bitcnt_t r = mpz_scan1(ZT(num), 0);
+	return r;
+}
+
+/* calculate max power of p that is a divisor of num */
+long long extract(const Znum& num, const Znum p) {
+	Znum residue;
+	mp_bitcnt_t r = mpz_remove(ZT(residue), ZT(num), ZT(p));
+	return r;
+}
+
+/* c is an even power of 2, prime = 2, c < 2^lambda */
 std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) {
-	Znum increment, r1;
+	Znum increment, r1, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
-	size_t size1, size2;
+	//size_t size1, size2;
+	long long k = countZeroBits(c);
+	assert((k & 1) == 0);  /* k must be even */
+	sqrtc = power((Znum)2, k / 2);
 
-	increment = mod / (2*sqrt(c));
-	if (sqrt(c)*4 > increment)
-		increment = sqrt(c)*4;
+	if ((3+k) <= lambda)
+		increment = mod / (2*sqrtc);  /* increment = 2^(lambda-1-k/2)*/
+	else
+		increment = sqrtc*4;          /* increment = 2^(2+k/2)*/
 
 	/* the roots are 2 arithmetic progressions */
-	r1 = sqrt(c);
+	r1 = sqrtc;
 
-	while (r1 < mod) {
-		if (r1 * r1 % mod == c) {
-			roots.push_back(r1);
-			roots.push_back(mod - r1);
-		}
-		else if (verbose > 0) {
-			std::cerr << "discarded invalid root: c = " << c << " mod = "
-				<< mod << " root = " << r1 << " increment = " << increment << '\n';
-		}
-		r1 += increment;
+	for (r1 = sqrtc; r1 < mod; r1 += increment) {
+		roots.push_back(r1);
+		roots.push_back(mod - r1);
 	}
 	std::sort(roots.begin(), roots.end());
-	size1 = roots.size();
+	/*size1 = roots.size();
 	auto last = std::unique(roots.begin(), roots.end());
 	roots.erase(last, roots.end());
 	size2 = roots.size();
@@ -88,7 +99,7 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 		std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
 			<< " duplicate roots \n" << "retained "<< size2 << " roots \n";
 
-	}
+	}*/
 	return roots;
 }
 
@@ -149,29 +160,32 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	return roots;
 }
 
-/* c is a perfect square and an even power of of prime */
+/* c is a perfect square and an even power of of prime, prime > 2( */
 std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda) {
 	Znum mod = power(prime, lambda);
 	Znum r1, r2, sqrtc, increment;
 	std::vector <Znum> roots;
-	size_t size1, size2;
+	//size_t size1, size2;
+
+	long long k = extract(c, prime);   /* find k such that prime^k = c */
+	assert((k & 1) == 0);   /* k must be even */
 
 	/* the roots are 2 arithmetic progressions */
-	sqrtc = sqrt(c);
-	increment = mod / sqrtc;
+	sqrtc = power(prime, k/2);
+	increment = mod / sqrtc;  /* increment = prime^(lambda - k/2) */
 	for (r1 = sqrtc; r1 < mod; r1 += increment) {
 		roots.push_back(r1);
 		roots.push_back(mod - r1);
 	}
 	std::sort(roots.begin(), roots.end());
-	size1 = roots.size();
-	auto last = std::unique(roots.begin(), roots.end());
-	roots.erase(last, roots.end());
-	size2 = roots.size();
-	if (size2 != size1 && verbose > 0) {
-		std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
-			<< " duplicate roots \n";
-	}
+	//size1 = roots.size();
+	//auto last = std::unique(roots.begin(), roots.end());
+	//roots.erase(last, roots.end());
+	//size2 = roots.size();
+	//if (size2 != size1 && verbose > 0) {
+	//	std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
+	//		<< " duplicate roots \n";
+	//}
 	return roots;
 }
 
@@ -528,7 +542,7 @@ void doTests9(const std::string& params) {
 	std::vector<long long> roots;
 	std::vector<Znum> rootsZ;
 	bool old;
-
+	auto start = clock();	// used to measure execution time
 	old = (params == "old" || params == "OLD");
 
 	for (long long m = 2; m <= 200; m++)
@@ -552,4 +566,7 @@ void doTests9(const std::string& params) {
 		std::cout << "All modular square root tests completed successfully. \n";
 	else
 		std::cout << "One or more modular square root tests failed. \n";
+	auto end = clock();   // measure amount of time used
+	double elapsed = (double)end - start;
+	PrintTimeUsed(elapsed, "All tests completed. Time used = ");
 }

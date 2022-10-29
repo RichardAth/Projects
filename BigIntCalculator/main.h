@@ -41,6 +41,7 @@ void pariParam(const std::string& command);      /*process YAFU commands */
 int quadModEqn(const std::string& command);  /* Quadratic Modular Equation Solver */
 void printvars(std::string name);
 void doTests9(const std::string& params);  /* modular square root test */
+void PrintTimeUsed(double elapsed, const std::string& msg = "");
 
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,

@@ -596,7 +596,7 @@ static void strToUpper(const std::string &s, std::string &d) {
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format */
-static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
+void PrintTimeUsed(double elapsed, const std::string &msg) {
 
 	if (msg.size() > 1)
 		std::cout << myTime() << ' ' << msg;
