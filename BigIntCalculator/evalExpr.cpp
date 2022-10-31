@@ -160,8 +160,8 @@ const static struct functions functionList[]{
 	"NUMFACT",   1,  opCode::fn_numfact,
 	"MINFACT",   1,  opCode::fn_minfact,
 	"MAXFACT",   1,  opCode::fn_maxfact,
-	"MODSQRTOLD", 2, opCode::fn_modsqrtOld, // find x such that x^2 = a mod p
-	"MODSQRT",   2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"MODSQRTNEW",2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"MODSQRT",   2,  opCode::fn_modsqrtOld, // find x such that x^2 = a mod p
 	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient

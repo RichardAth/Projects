@@ -107,7 +107,7 @@ public:
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend int classify(Znum n);
-	friend void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
+	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
 	/* methods that are in the class */
 

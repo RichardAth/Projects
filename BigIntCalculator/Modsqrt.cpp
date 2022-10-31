@@ -473,10 +473,14 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	a = a % m;
 	if (a < 0)
 		a += m;  /* normalise a so it's in range 0 to m-1 */
-	for (long long r = 0; r < m; r++) {
-		if (r*r%m == a)
+	for (long long r = 0; r <= m/2; r++) {
+		if (r * r % m == a) {
 			roots.push_back(r);
+			if (r > 0 &&(r*2 != m))
+				roots.push_back(m - r);  /* usually, m-r is also a root */
+		}
 	}
+	std::sort(roots.begin(), roots.end());
 	return roots;
 }
 
@@ -494,7 +498,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 	if (old)
 		r3 = ModSqrt(az, mz);
 	else
-		r3 = ModSqrtQE(az, mz);  /* sophisticated (faster) method */
+		r3 = ModSqrtQE(az, mz);  
 	if (r3.size() != r2.size())
 		error = true;
 	else {
@@ -514,7 +518,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 		else {
 			printf_s("\n should be: ");
 			for (auto r : r2) {
-				printf_s("%lld, ", r);
+				printf_s("%lld, ", r); 
 			}
 			putchar('\n');
 		}
@@ -543,12 +547,15 @@ void doTests9(const std::string& params) {
 	std::vector<Znum> rootsZ;
 	bool old;
 	auto start = clock();	// used to measure execution time
-	old = (params == "old" || params == "OLD");
+	old = (params != "new" && params != "NEW");
 
-	for (long long m = 2; m <= 200; m++)
+	for (long long m = 2; m <= 2000; m++) {
 		for (long long a = 0; a < m; a++) {
- 			rv &= test9once(a, m, roots, old);
+			rv &= test9once(a, m, roots, old);
 		}
+		if (m % 100 == 0)
+			std::cout << m + 1 << " tests completed \r";
+	}
 
 	//rv &= test9once(99, 107, roots, old);      // roots are 45 and 62
 	rv &= test9once(2191, 12167, roots, old);  // roots are 1115, 11052

@@ -47,7 +47,7 @@ BigInteger ValA;
 BigInteger ValB;
 BigInteger ValC;
 BigInteger ValN;
-int SolNbr;
+int SolNbr = 0;
 char* ptrOutput;
 static std::vector <Znum> roots;
 
@@ -100,8 +100,29 @@ void Show1(const BigInteger* num, int t)
     }
 }
 
+bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
+    const BigInteger* pValB, const BigInteger* pValC, const BigInteger* pValN) {
+    ValNn = *pValA;
+    ValNn *= *sol;
+    ValNn *= *sol; 
+    ValNn += *sol * *pValB; 
+    ValNn += *pValC;
+    ValNn %= *pValN;
+    if (ValNn != 0) {   
+        std::cout << "invalid solution: a= " << *pValA
+            << "\n    b = " << *pValB
+            << "\n    c = " << *pValC
+            << "\n    n = " << *pValN
+            << "\n  sol = " << *sol << '\n';
+
+        return false;
+    }
+    else return true;
+}
+
 /* store solution in output buffer*/
-void Solution(BigInteger* value)
+void Solution(const BigInteger* value, const BigInteger * pValA, 
+    const BigInteger * pValB, const BigInteger * pValC, const BigInteger * pValN)
 {
     SolNbr++;
     int2dec(&ptrOutput, SolNbr);  /* copy solution to output buffer */
@@ -114,10 +135,12 @@ void Solution(BigInteger* value)
         PrintBigInteger(value, 0);
         putchar('\n');
     }
+    checkSolution(value, pValA, pValB, pValC, pValN);
 }
 
 /* store solution in roots vector */
-void solms(BigInteger* value) {
+void solms(const BigInteger* value, const BigInteger* pValA,
+    const BigInteger* pValB, const BigInteger* pValC, const BigInteger* pValN) {
     Znum vZ;
 
     BigtoZ(vZ, *value);
@@ -126,6 +149,7 @@ void solms(BigInteger* value) {
         SolNbr++;
         gmp_printf("solution nbr %4d %Zd\n", SolNbr, vZ);
     }
+    checkSolution(value, pValA, pValB, pValC, pValN);
 }
 
 // Solve Ax^2 + Bx + C = 0 in integers.
@@ -150,7 +174,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
             {      // ValC is multiple of ValB: solution is -ValC / ValB.
                 Aux0 = ValC / ValB; //(void)BigIntDivide(&ValC, &ValB, &Aux0);
                 Aux0 = -Aux0;       //BigIntNegate(&Aux0, &Aux0);
-                Solution(&Aux0);
+                Solution(&Aux0, &ValA, &ValB, &ValC, &ValN);
             }
             else {      // No solutions on integers.
                 return;
@@ -186,7 +210,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
         if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))
         {      // (sqrtDiscriminant-ValB)/(2*ValA) is integer: it is a solution.
             Aux2 = Aux1 / Aux0;        //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
-            Solution(&Aux2);
+            Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
         //BigIntNegate(&sqrtDiscriminant, &sqrtDiscriminant);
         BigIntChSign(&sqrtDiscriminant);
@@ -195,7 +219,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
         if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))
         {      // (-sqrtDiscriminant-ValB)/(2*ValA) is integer: it is a solution.
             Aux2 = Aux1 / Aux0;         //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
-            Solution(&Aux2);
+            Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
     }
     SolNbr = 1;
@@ -252,7 +276,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
             Gcd = GcdAll.lldata();   /* change type */
             for (int ctr = 0; ctr < Gcd; ctr++) {
                 Aux0 = ctr; //intToBigInteger(&Aux0, ctr);
-                SolutionP(&Aux0);
+                SolutionP(&Aux0, &ValA, &ValB, &ValC, &ValN);
             }
         }
         return;
@@ -329,7 +353,7 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
             SolveIntegerEquation(ValA, ValB, ValC);
         }
         else {
-            SetCallbacksForSolveEquation(Solution, NULL, NULL);
+            SetCallbacksForSolveEquation(Solution);
             ModulusIsNotZero(ValA, ValB, ValC, ValN);
         }
         if (SolNbr == 0)
@@ -417,7 +441,8 @@ std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
     c = am;
     n = m;
     /* solve -x² +c = 0 (mod n) */
-    SetCallbacksForSolveEquation(solms, NULL, NULL);
+    SetCallbacksForSolveEquation(solms);
+    SolNbr = 0;
     ModulusIsNotZero(a, b, c, n);  /* get the roots */
     std::sort(roots.begin(), roots.end());
     return roots;

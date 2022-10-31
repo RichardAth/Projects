@@ -55,6 +55,7 @@ static int Exponents[maxFactors];
 static BigInteger Aux[maxFactors];
 static BigInteger tmp1;
 static BigInteger tmp2;
+static BigInteger ValNn;
 static int nbrFactors;
 static bool sol1Invalid;
 static bool sol2Invalid;
@@ -63,7 +64,7 @@ static BigInteger Aux0;
 static BigInteger Aux1;
 static BigInteger Aux2;
 static BigInteger* pGcdAll;
-static BigInteger* pValNn;
+const static BigInteger* pValNn;
 fList Nfactors;
 
 /* function pointers */
@@ -99,7 +100,7 @@ void printFactors(sFactors flist[]) {
 /* the same factor list is returned in both factorsMod and astfactorsMod,
 in different formats 
 Uses global variable Aux0 */
-void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
+void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
     Znum N;
     int numFactors;
     int* pFactorsMod = factorsMod;
@@ -128,8 +129,10 @@ void factor(BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
 
 // Use Chinese remainder theorem to obtain the solutions.
 /* for each solution <solution()> is called.
-The input parameters are in quad, astFactorsMod, Aux, exponents,  GcdAll, ... */
-void PerformChineseRemainderTheorem(void)
+The input parameters are in quad, astFactorsMod, Aux, exponents,  GcdAll, pValNn, 
+... */
+void PerformChineseRemainderTheorem(const BigInteger *pValA, const BigInteger *pValB, 
+    const BigInteger *pValC, const BigInteger *pValN)
 {
     int T1;
     int expon;
@@ -195,7 +198,7 @@ void PerformChineseRemainderTheorem(void)
             // The solution is V*ValNn + currentSolution
             K1 = V * *pValNn;      // (void)BigIntMultiply(&V, pValNn, &K1);
             K1 += currentSolution; // BigIntAdd(&K1, &currentSolution, &K1);
-            SolutionP(&K1);
+            SolutionP(&K1, pValA, pValB, pValC, pValN);
             V++;                   // addbigint(&V, 1);      // V <- V + 1
             K1 = V - *pGcdAll;     // BigIntSubt(&V, pGcdAll, &K1);
         }
@@ -239,8 +242,8 @@ static void setNbrLimbs(BigInteger* pBigNbr) {
 // Solve Bx + C = 0 (mod N).
 // uses global variables Aux[0], NumberLength, Common.Quad.Increment, Aux2
 // quad.solution1, quad.solution2, factorsMod, astFactorsMod, etc
-static void SolveModularLinearEquation(const BigInteger* pValB,
-    const BigInteger* pValC, BigInteger* pValN)
+static void SolveModularLinearEquation(const BigInteger * pValA, const BigInteger* pValB,
+    const BigInteger* pValC, const BigInteger* pValN)
 {
     int NumberLengthBytes;
     int powerOf2;
@@ -249,6 +252,7 @@ static void SolveModularLinearEquation(const BigInteger* pValB,
     struct sFactors* pstFactor = &astFactorsMod[1];
     BigInteger* ptrSolution1 = quad.Solution1;
     BigInteger* ptrSolution2 = quad.Solution2;
+    ValNn = *pValN;
 
     if (verbose > 1) {
         printf("SolveModularLinearEquation: b = ");
@@ -268,20 +272,20 @@ static void SolveModularLinearEquation(const BigInteger* pValB,
     // Modular division routines used work for power of 2 or odd numbers.
     // This requires to compute the quotient in two steps.
     // N = r*2^k (r = odd)
-    DivideBigNbrByMaxPowerOf2(&powerOf2, pValN->limbs, &pValN->nbrLimbs);
+    DivideBigNbrByMaxPowerOf2(&powerOf2, ValNn.limbs, &ValNn.nbrLimbs);
    
-    NumberLength = pValN->nbrLimbs;
+    NumberLength = ValNn.nbrLimbs;
     NumberLengthBytes = NumberLength * (int)sizeof(limb);
-    if (*pValN != 1)   //((pValN->nbrLimbs != 1) || (pValN->limbs[0] != 1))
+    if (ValNn != 1)   //((pValN->nbrLimbs != 1) || (pValN->limbs[0] != 1))
     {       // ValN is not 1.
-        quad.Increment[solutionNbr] = *pValN;  // CopyBigInt(&quad.Increment[solutionNbr], pValN);
+        quad.Increment[solutionNbr] = ValNn;  // CopyBigInt(&quad.Increment[solutionNbr], pValN);
         Exponents[solutionNbr] = 1;
-        (void)memcpy(TestNbr, pValN->limbs, NumberLengthBytes);
+        (void)memcpy(TestNbr, ValNn.limbs, NumberLengthBytes);
         TestNbr[NumberLength] = 0;
         // Perform division using odd modulus r.
         GetMontgomeryParms(NumberLength);
         // ptrSolution1 <- ValC / |ValB|
-        BigIntModularDivision(pValC, pValB, pValN, ptrSolution1);
+        BigIntModularDivision(pValC, pValB, &ValNn, ptrSolution1);
         // ptrSolution1 <- -ValC / ValB (mod N)
         if (*ptrSolution1 != 0)     //(!BigIntIsZero(ptrSolution1))
         {
@@ -337,7 +341,7 @@ static void SolveModularLinearEquation(const BigInteger* pValB,
         PrintBigInteger(&quad.Increment[1], 0);
         printf("\nsolutionNbr = %d \n", solutionNbr);
     } 
-    PerformChineseRemainderTheorem();
+    PerformChineseRemainderTheorem(pValA, pValB, pValC, pValN);
 }
 
 // Compute sqrRoot <- sqrt(ValCOdd) mod 2^expon.
@@ -1135,22 +1139,23 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
     return true;
 }
 
-void SetCallbacksForSolveEquation(pSolution solutionCback,
-    pShowSolutionsModPrime showSolutionsModPrime, pShowNoSolsModPrime showNoSolsModPrime)
+void SetCallbacksForSolveEquation(pSolution solutionCback
+    //, pShowSolutionsModPrime showSolutionsModPrime, pShowNoSolsModPrime showNoSolsModPrime
+)
 {
     SolutionP = solutionCback;
-    ShowSolutionsModPrime = showSolutionsModPrime;
-    ShowNoSolsModPrime = showNoSolsModPrime;
+    //ShowSolutionsModPrime = showSolutionsModPrime;
+    //ShowNoSolsModPrime = showNoSolsModPrime;
 }
 
 // Solve Ax² + Bx + C = 0 (mod N).
 void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
-    const BigInteger* pValC, BigInteger* pValN,
-    BigInteger* pGcdAllParm, BigInteger* pValNnParm)
+    const BigInteger* pValC, const BigInteger* pValN,
+    BigInteger* pGcdAllParm, const BigInteger* pValNnParm)
 {
     const struct sFactors* pstFactor;
     pGcdAll = pGcdAllParm;
-    pValNn = pValNnParm;
+    pValNn = pValNnParm;  /* pValNn is used in PerformChineseRemainderTheorem */
 
     if (verbose > 1) {
         printf("SolveEquation: a = ");
@@ -1171,7 +1176,7 @@ void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
     Aux[0] = *pValA % *pValN;   //(void)BigIntRemainder(pValA, pValN, &Aux[0]);
     if (Aux[0] == 0)            //(BigIntIsZero(&Aux[0]))
     {           // Linear equation.
-        SolveModularLinearEquation(pValB, pValC, pValN);
+        SolveModularLinearEquation(pValA, pValB, pValC, pValN);
         return;
     }
     if (LastModulus != *pValN)  //(!BigIntEqual(&LastModulus, pValN))
@@ -1237,5 +1242,5 @@ void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
         Exponents[factorIndex] = 0;
         pstFactor++;    /* move pointer to next factor */
     }   // end for
-    PerformChineseRemainderTheorem();
+    PerformChineseRemainderTheorem(pValA, pValB, pValC, pValN);
 }
