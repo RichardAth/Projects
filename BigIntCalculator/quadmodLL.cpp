@@ -910,6 +910,8 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     {     // Discriminant is zero.
         int lenBytes = nbrLimbs * (int)sizeof(limb);
         (void)memset(sqrRoot.limbs, 0, lenBytes);
+        sqrRoot.nbrLimbs = 1;            /* added 31/10/22 */
+        sqrRoot.sign = SIGN_POSITIVE;    /* added 31/10/22 */
     }
     else
     {      // Discriminant is not zero.
