@@ -158,6 +158,9 @@
     <ClInclude Include="quadmodLL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt">

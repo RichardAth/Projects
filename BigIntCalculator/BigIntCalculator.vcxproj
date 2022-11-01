@@ -296,6 +296,7 @@
     <ClInclude Include="bigint.h" />
     <ClInclude Include="bignbr.h" />
     <ClInclude Include="diagnostic.h" />
+    <ClInclude Include="expression.h" />
     <ClInclude Include="factor.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="pari.h" />
