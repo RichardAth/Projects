@@ -100,6 +100,7 @@ void Show1(const BigInteger* num, int t)
     }
 }
 
+/* verify that solution is valid */
 bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
     const BigInteger* pValB, const BigInteger* pValC, const BigInteger* pValN) {
     ValNn = *pValA;
@@ -107,7 +108,7 @@ bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
     ValNn *= *sol; 
     ValNn += *sol * *pValB; 
     ValNn += *pValC;
-    ValNn %= *pValN;
+    ValNn %= *pValN;   /*ValNn = (a*sol^2 +b*sol +c) modulo n */
     if (ValNn != 0) {   
         std::cout << "invalid solution: a= " << *pValA
             << "\n    b = " << *pValB
@@ -115,7 +116,7 @@ bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
             << "\n    n = " << *pValN
             << "\n  sol = " << *sol << '\n';
 
-        return false;
+        return false;   /* not a valid solution */
     }
     else return true;
 }
@@ -447,5 +448,4 @@ std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
     std::sort(roots.begin(), roots.end());
     return roots;
 }
-
 
