@@ -100,6 +100,7 @@ void Show1(const BigInteger* num, int t)
     }
 }
 
+#ifdef _DEBUG
 /* verify that solution is valid */
 bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
     const BigInteger* pValB, const BigInteger* pValC, const BigInteger* pValN) {
@@ -120,6 +121,7 @@ bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
     }
     else return true;
 }
+#endif
 
 /* store solution in output buffer*/
 void Solution(const BigInteger* value, const BigInteger * pValA, 
@@ -134,9 +136,19 @@ void Solution(const BigInteger* value, const BigInteger * pValA,
     if (verbose > 1) {
         printf("solution nbr %4d ", SolNbr);
         PrintBigInteger(value, 0);
+        printf("\na = ");
+        PrintBigInteger(pValA, 0);
+        printf(", b= ");
+        PrintBigInteger(pValB, 0);
+        printf(", c= ");
+        PrintBigInteger(pValC, 0); 
+        printf(", n= ");
+        PrintBigInteger(pValN, 0);
         putchar('\n');
     }
+#ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
+#endif
 }
 
 /* store solution in roots vector */
@@ -148,9 +160,20 @@ void solms(const BigInteger* value, const BigInteger* pValA,
     roots.push_back(vZ);
     if (verbose > 1) {
         SolNbr++;
-        gmp_printf("solution nbr %4d %Zd\n", SolNbr, vZ);
+        gmp_printf("solution nbr %4d %Zd ", SolNbr, vZ);
+        printf("\na = ");
+        PrintBigInteger(pValA, 0);
+        printf(", b= ");
+        PrintBigInteger(pValB, 0);
+        printf(", c= ");
+        PrintBigInteger(pValC, 0);
+        printf(", n= ");
+        PrintBigInteger(pValN, 0);
+        putchar('\n');
     }
+#ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
+#endif
 }
 
 // Solve Ax^2 + Bx + C = 0 in integers.
@@ -255,7 +278,10 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
         return;
     }
     BigIntGcd(ValN, GcdAll, Aux0);
+    Aux0.sign = SIGN_POSITIVE;
     GcdAll = Aux0;      //CopyBigInt(&GcdAll, &Aux0);
+    if (verbose > 1 && GcdAll > 1)
+        std::cout << "ModulusIsNotZero: GcdAll = " << GcdAll << '\n';
     // Divide all coefficients by gcd(ValA, ValB, ValC, ValN).
     ValA /= GcdAll;     //(void)BigIntDivide(&ValA, &GcdAll, &ValA);
     ValB /= GcdAll;     //(void)BigIntDivide(&ValB, &GcdAll, &ValB);
@@ -449,3 +475,105 @@ std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
     return roots;
 }
 
+/* test quadratic modular equation solver */
+
+/* verify that solution is valid */
+bool checkSolution(const Znum &sol, const Znum &A, const Znum &B, const Znum &C, 
+    const Znum &N) {
+    Znum result;
+    result = A *sol * sol;
+    result += sol * B;
+    result += C;
+    result %= N;   /*ValNn = (a*sol^2 +b*sol +c) modulo n */
+    if (result != 0) {
+        std::cout << "invalid solution: a= " << A
+            << "\n    b = " << B
+            << "\n    c = " << C
+            << "\n    n = " << N
+            << "\n  sol = " << sol << '\n';
+        std::cout << "result = " << result << " should be 0 \n";
+        return false;   /* not a valid solution */
+    }
+    else return true;
+}
+
+void doTestsA(const std::string& params) {
+    long long p1;  // number of tests; must be greater than 0
+    long long p2;  // size of numbers to be factored in bits (>= 48)
+    gmp_randstate_t state;
+    Znum a, b, c, n;
+
+    auto numParams = sscanf_s(params.data(), "%lld,%lld", &p1, &p2);
+    if (p1 <= 0 || numParams < 1) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+    if (p2 < 20 || numParams < 2) {
+        std::cout << "Use default 20 for number size in bits \n";
+        p2 = 20;
+    }
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    gmp_randseed_ui(state, 756128234);
+    /* fixed seed means that the exact same tests can be repeated provided
+       that the same size of number is used each time */
+
+    auto start = clock();	// used to measure execution time
+    SetCallbacksForSolveEquation(solms);
+
+    for (int i = 1; i <= p1; i++) {
+        mpz_urandomb(ZT(a), state, p2);  // get random number, size=p2 bits
+        mpz_urandomb(ZT(b), state, p2);  // get random number, size=p2 bits
+        mpz_urandomb(ZT(c), state, p2);  // get random number, size=p2 bits
+        mpz_urandomb(ZT(n), state, p2);  // get random number, size=p2 bits
+        SolNbr = 0;
+
+        if (n == 0) {
+            ValA = a;
+            ValB = b;
+            ValC = c;
+            SolveIntegerEquation(ValA, ValB, ValC);
+            if (roots.size() > 0) {
+                std::cout << "roots are: ";
+                for (int j = 0; j < roots.size(); j++) {
+                    std::cout << roots[j] << ", ";
+
+                }
+                putchar('\n');
+                for (int j = 0; j < roots.size(); j++)
+                    checkSolution(roots[j], a, b, c, n);
+            }
+        }
+        else {
+            while (true) {
+                roots.clear();
+                std::cout << "solve: " << a << "x² + "
+                    << b << "x + " << c << " = 0 (mod " << n << ") \n";
+                ValA = a;
+                ValB = b;
+                ValC = c;
+                ValN = n;
+                ModulusIsNotZero(ValA, ValB, ValC, ValN);
+                if (roots.size() > 0) {
+                    std::cout << "roots are: ";
+                    for (int j = 0; j < roots.size(); j++) {
+                        std::cout << roots[j] << ", ";
+                        
+                    }
+                    putchar('\n'); 
+                    for (int j = 0; j < roots.size(); j++)
+                        checkSolution(roots[j], a, b, c, n);
+                }
+                if (roots.size() > 0 || i > p1)
+                    break;
+                i++;
+                c++;       /* try again, wth only c changed */
+                c %= n;
+            }
+        }
+    }
+
+    auto end = clock();   // measure amount of time used
+    double elapsed = (double)end - start;
+    PrintTimeUsed(elapsed, "All tests completed. Time used = ");
+    gmp_randclear(state);  // clear state - avoid memory leakage
+}

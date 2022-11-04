@@ -484,10 +484,86 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	return roots;
 }
 
+void test9timerx(int type, int p2d, int p3d) {
+	gmp_randstate_t state;
+	Znum x, m;
+	std::vector <Znum> r;
+	std::vector <long long> rl;
+	long long rCount = 0, nrCount = 0;
+	char msg[3][30] = { "Standard modsqrt time used: ",
+						"Brute force: time used: ",
+						"QMES: time used: " };
+
+	gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+	gmp_randseed_ui(state, 756128234);
+	/* fixed seed means that the exact same tests can be repeated provided
+	   that the same size of number is used each time */
+
+	auto start = clock();	// used to measure execution time
+	for (int i = 1; i <= p3d; i++) {
+		mpz_urandomb(ZT(x), state, p2d);  // get random number, size=p2 bits
+		mpz_urandomb(ZT(m), state, p2d);  // get random number, size=p2 bits
+		switch (type) {
+		case 0:
+			r = ModSqrt(x, m);
+			if (r.empty())
+				nrCount++;
+			else
+				rCount += r.size();
+			break;
+		case 1:
+			if (p2d < 64) {
+				long long xl = MulPrToLong(x);
+				long long ml = MulPrToLong(m);
+				rl = ModSqrtBF(xl, ml);
+				if (rl.empty())
+					nrCount++;
+				else
+					rCount += rl.size();
+			}
+			break;
+		case 2:
+			r = ModSqrt(x, m);
+			if (r.empty())
+				nrCount++;
+			else
+				rCount += r.size();
+			break;
+		}
+	}
+	gmp_randclear(state);  // clear state - avoid memory leakage
+	std::cout << "No roots = " << nrCount << " found " << rCount << " roots \n";
+	auto end = clock();   // measure amount of time used
+	double elapsed = (double)end - start;
+	PrintTimeUsed(elapsed, msg[type]);
+
+ }
+void test9timer(const std::vector <std::string>& p) {
+	int p2d = -1, p3d = -1;
+
+	if (p.size() >= 2) {
+		p2d = atoi(p[1].c_str());  /* convert to binary */
+	}
+	if (p2d < 20) {
+		std::cout << "Use default 20 for number size in bits \n";
+		p2d = 20;
+	}
+	if (p.size() >= 3)
+	p3d = atoi(p[2].c_str());  /* convert to binary */
+	if (p3d < 10) {
+		std::cout << "Use default 10 for number of tests \n";
+		p3d = 10;
+	}
+	test9timerx(0, p2d, p3d);
+	if (p2d < 26)
+		test9timerx(1, p2d, p3d);
+	test9timerx(2, p2d, p3d);
+}
+
 /* calculate modular square roots using 2 different methods & compare results.
    Return true if results match, otherwise false. */
 static bool test9once(long long a, long long m, std::vector <long long> &r2,
-	bool old) {
+	bool newb) {
 	std::vector <Znum> r3;
 	Znum az = a;   /* change type from 64-bit to extended precision */
 	Znum mz = m;   /* change type from 64-bit to extended precision */
@@ -495,10 +571,10 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 	r2.clear();
 
 	r2 = ModSqrtBF(a, m);  /* brute force method */
-	if (old)
-		r3 = ModSqrt(az, mz);
+	if (newb)
+		r3 = ModSqrtQE(az, mz);
 	else
-		r3 = ModSqrtQE(az, mz);  
+		r3 = ModSqrt(az, mz);  
 	if (r3.size() != r2.size())
 		error = true;
 	else {
@@ -541,33 +617,55 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 }
 
 /* test modular square root */
-void doTests9(const std::string& params) {
+void doTests9(const std::string& porig) {
+	std::string params = porig;
 	bool rv = true;
 	std::vector<long long> roots;
 	std::vector<Znum> rootsZ;
-	bool old;
-	auto start = clock();	// used to measure execution time
-	old = (params != "new" && params != "NEW");
+	bool newb = false;
+	std::vector<std::string> p;
+	char seps[] = " ,\n";
+	char* token = nullptr;
+	char* next = nullptr;
 
+	token = strtok_s(&params[0], seps, &next);
+	while (token != nullptr) {
+		p.push_back(token);
+		token = strtok_s(nullptr, seps, &next);
+	}
+
+	//auto numParams = sscanf_s(params.data(), "%s,%s,%s",
+		//p1, sizeof(p1), p2, sizeof(p2), p3, sizeof(p3));
+	if (p.size() >= 1) {
+		int timec = _strnicmp(p[0].c_str(), "time", 4);
+		if (timec == 0) {
+			test9timer(p);
+			return;
+		}
+
+		int cmp = _strnicmp(p[0].c_str(), "new", 3);
+		newb = (cmp == 0);
+	}
+	auto start = clock();	// used to measure execution time
 	for (long long m = 2; m <= 2000; m++) {
 		for (long long a = 0; a < m; a++) {
-			rv &= test9once(a, m, roots, old);
+			rv &= test9once(a, m, roots, newb);
 		}
 		if (m % 100 == 0)
 			std::cout << m + 1 << " tests completed \r";
 	}
 
-	//rv &= test9once(99, 107, roots, old);      // roots are 45 and 62
-	rv &= test9once(2191, 12167, roots, old);  // roots are 1115, 11052
-	rv &= test9once(4142, 24389, roots, old);  // roots are 2333, 22056
-	//rv &= test9once(3, 143, roots, old);       // roots are 17, 61, 82, 126
-	rv &= test9once(11, 2 * 5 * 7 * 19, roots, old); // roots are 121, 159 411, 639, 
+	//rv &= test9once(99, 107, roots, newb);      // roots are 45 and 62
+	rv &= test9once(2191, 12167, roots, newb);  // roots are 1115, 11052
+	rv &= test9once(4142, 24389, roots, newb);  // roots are 2333, 22056
+	//rv &= test9once(3, 143, roots, newb);       // roots are 17, 61, 82, 126
+	rv &= test9once(11, 2 * 5 * 7 * 19, roots, newb); // roots are 121, 159 411, 639, 
 	                                      // 691, 919, 1171, 1209
-	//rv &= test9once(0, 176, roots, old);       // roots are zero, 44, 88, 132
-	rv &= test9once(1, 121550625, roots, old); // roots are 1, 15491251, 51021251, 
+	//rv &= test9once(0, 176, roots, newb);       // roots are zero, 44, 88, 132
+	rv &= test9once(1, 121550625, roots, newb); // roots are 1, 15491251, 51021251, 
 								          // 55038124, 66512501, 70529374, 
 	                                      // 106059374, 121550624,
-	rv &= test9once(0, 121550625, roots, old); // 11025 different roots!
+	rv &= test9once(0, 121550625, roots, newb); // 11025 different roots!
 	
 	if (rv)
 		std::cout << "All modular square root tests completed successfully. \n";

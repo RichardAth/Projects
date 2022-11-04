@@ -1906,221 +1906,6 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
-/* find next prime after p */
-static long long nextprime(const long long p) {
-	mpz_t pBi, next;
-
-	mpz_init_set_ui(pBi, p);  /* pBi = p */
-	mpz_init(next);
-	mpz_nextprime(next, pBi);
-	return mpz_get_ui(next);
-}
-
-/* return 0 if number is a power of 2 (no odd prime factors),
-          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
-		    and any odd prime factors  of form 8i+5 or 8i+7 have even exponents.
-		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
-		    exponent  
-		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
-		    odd prime factors of form 8i+5 or 8i+7 have an even exponent  */
-static int classify(Znum n) {
-	Znum r, p;
-	fList factors;
-	bool type1 = false;  /* set true if there is any odd prime factors of form 8i+1 or 8i+3 */
-
-	while (isEven(n))
-		n /= 2;
-	if (n == 1)
-		return 0;
-	
-	long long mod = mpz_tdiv_r_ui(ZT(r), ZT(n), 8); /* mod = n (mod 8)*/
-	if (mod == 5 || mod == 7) 
-		return 2;
-
-	factorise(n, factors, nullptr);
-	
-	for (int i = 0; i < factors.fsize(); i++) {
-		/* step through prime factors */
-		p = factors.f[i].Factor;
-		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);  /* mod = p (mod 8) */
-		switch (mod) {
-
-		case 1:
-		case 3:
-			type1 = true;
-			continue;
-
-		case 5:
-		case 7:
-			if ((factors.f[i].exponent & 1) == 0)  /* if exponent is even*/
-				continue;
-			else 
-				return 2;
-
-		default: 
-			abort();   /* should never happen  ! */
-		}
-	}
-
-	/* any odd prime factors is of form 8i+5 or 8i+7 have even exponents. */
-	if (type1)
-		return 1;
-	else
-		return 3; /* no odd prime factors of form 8i+1 or 8i+3 */
-}
-
-/* establish by brute force if a number can be expressed as p1^2 + 2*(p2^2)
-return true if it can, otherwise false */
-static bool sqcheck(const long long x, long long &p1, long long &p2) {
-	long long isq2;
-	if (x % 8 == 7)
-		return false;  /* x can only be expressed as the sum of 4 (or more) squares */
-
-	for (p2 = 1; ; p2++) {
-		isq2 = 2 * p2 * p2;
-		if (isq2 >= x)
-			break;
-
-		if (isPerfectSquare(x - isq2)) {
-			p1 = llSqrt(x - isq2);
-#ifdef _DEBUG
-			if (verbose > 0)
-				std::cout << "x = " << x << "= 2*" << p2 << "^2 + " << p1 << "^2\n";
-#endif
-			return true;
-		}
-	}
-	return false;
-}
-
-/* hypothesis: if a number has 1 or more prime factors of the form 8i+1 or 8i+3, 
-and all odd prime factors of the form 8i+5 or 8i+7 have even exponents it is 
-possible to express it as a^2 + 2*(b^2), otherwise it is impossible*/
-static bool checkAssert(const long long i) {
-	Znum iZ = i;
-	long long isq, isq2;
-	int type; /* 0 if number is a power of 2 (no odd prime factors),
-          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
-		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
-		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
-		    exponent 
-		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
-		    odd prime factors of form 8i+5 or 8i+7 have an even exponent */
-	
-	type = classify(iZ);
-	if (type == 0 || type == 2 || type == 3)
-		if (sqcheck(i, isq, isq2)) {
-			/* assertion fails */
-			std::cout << "i = " << i << " = 2*" << isq2 << "^2 + " << isq << "^2\n";
-			std::cout << "type = " << type << '\n';
-			return false;
-		}
-		else return true;
-	
-	assert(type == 1);
-	if (!sqcheck(i, isq, isq2)) {
-		/* assertion fails */
-		std::cout << "i = " << i << '\n';
-		std::cout << "type = " << type << '\n';
-		return false;
-	}
-	else return true;
-}
-
-/* investigate which numbers can be expressed as a^2 + 2*(b^2)
-
-hypothesis: if a number has one or more prime factors of the form 8i+1 or 8i+3, 
-(i being an integer >= 0), and all odd prime factors of the form 8i+5 or 8i+7 
-have even exponents, it is possible to express it as a^2 + 2*(b^2), 
-otherwise it is impossible.
-This implies that if the number is divided by 2 until the quotioent is odd,
-the number must be 1 or 3 modulo 8
-
-See https://oeis.org/A002479. (this list includes cases where a or b is zero,
-which allows all perfect squares and 2 * perfect square as well.)
-
-command format is testa x[,y[,z]] 
-where x = 1 for test of all primes from 2 to y. 
-            check that p can be expressed as the sum of 2, 3 or 4 squares 
-	  x = 2 to check which numbers in range 2 to y can be expresssed as 
-	        a^2 + 2*(b^2)
-	  x = 3 to check for y random numbers each of size z bits, whether or
-	        not they can be expresssed as a^2 + 2*(b^2)*/
-static void doTestsA(const std::string& params) {
-	long long p1 = 1, p2 = 1000;
-	long long p3 = 0; 
-	int count = 0;
-	fList ifactors;
-	Znum iz, quads[4];
-
-	auto numParams = sscanf_s(params.data(), "%lld,%lld,%lld", &p1, &p2, &p3);
-
-	if (p1 == 1) {
-		for (long long p = 2; p <= p2; p = nextprime(p)) {
-			iz = p;
-			factorise(iz, ifactors, quads);
-			if (p % 4 == 1) {
-				/* p can be expressed as the sum of 2 squares */
-				if (quads[2] != 0 || quads[3] != 0)
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
-			}
-			else if (p % 8 != 7) {
-				/* p can be expressed as the sum of 3 squares */
-				if (quads[3] != 0)
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
-				if (quads[0] != quads[1] && quads[1] != quads[2]) {
-					/* all 3 values are different (we expected 2 the same) */
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-						<< quads[1] << ", " << quads[2] << " ****\n";
-				}
-			}
-			/* if p = 7 (mod 8) 4 squares are needed */
-			count++;
-			if ((count & 0xfff) == 0) {
-				std::cout << count << " primes tested p = " << p << '\n';
-			}
-		}
-		std::cout << count << " primes tested \n";
-		return;
-	}
-	else if (p1 == 2) {
-		for (long long i = 2; i <= p2; i++) {
-			if (!checkAssert(i))
-				system("PAUSE");
-			if ((i & 0xffff) == 1)
-				std::cout << myTime() << ' ' << i - 1 << " tests completed \n";
-		}
-	}
-	else if (p1 == 3) {
-		long long x;
-		if (p3 < 24 || numParams < 3) {
-			std::cout << "Use default 24 for number size in bits \n";
-			p3 = 24;
-		}
-		if (p3 > 63) {
-			std::cout << "** max size is 63 bits! \n";
-			p3 = 63;
-		}
-		/* initialize random seed */
-		std::random_device rd;   // non-deterministic generator
-		std::mt19937_64 gen(rd());  // to seed mersenne twister.
-		std::uniform_int_distribution<long long> dist(1, 1LL<<p3); // distribute results
-													// between 1 and 2^p3 inclusive.
-
-		for (long long count = 0; count < p2; count++) {
-			x = dist(gen);     /* x is a random number */
-			if (!checkAssert(x))
-				system("PAUSE");
-			if ((count & 0xfff) == 0)
-				std::cout << myTime() << ' ' << count+1 << " tests completed \n";
-		}
-	}
-	else
-		std::cout << "** invalid subtest (use 1, 2 or 3) \n";
-	std::cout << "test a completed \n";
-}
 
 
 std::vector<std::string> inifile;  // copy contents of .ini here
@@ -3364,20 +3149,20 @@ static int processCmd(const std::string &command) {
 				testerrors();
 				return 1;
 			}
-			case '9': {
+			case '9': {  /* test modular square root */
 				if (command.size() > 5)
-					doTests9(command.substr(6));         // do basic tests 
+					doTests9(command.substr(6));         
 				else
-					doTests9("");   /* test modular square root */
+					doTests9("");   
 				return 1;
 			}
-			case 'A': {
+			case 'A': { /* test quadratic modular equation solver */
 				if (command.size() > 5)
 					doTestsA(command.substr(6));         // do basic tests 
-				else
-					doTestsA("");
-				return 1;
+				else doTestsA("");   /* test modular square root */
+					return 1;
 			}
+
 			default:
 				return 0;  /* not a recognised command */
 			}
