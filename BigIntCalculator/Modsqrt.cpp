@@ -467,7 +467,8 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 }
 
 /* find modular square roots by brute force. Incredibly simple compared to the
-  faster more sophisticated method. */
+  faster more sophisticated method. N.B. very slow for larger numbers
+  e.g a 30 bit modulus takes about 1 second. Each extra bit doubles the time. */
 static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	std::vector <long long> roots;
 	a = a % m;
@@ -490,7 +491,7 @@ void test9timerx(int type, int p2d, int p3d) {
 	std::vector <Znum> r;
 	std::vector <long long> rl;
 	long long rCount = 0, nrCount = 0;
-	char msg[3][30] = { "Standard modsqrt time used: ",
+	char msg[3][30] = { "Standard modsqrt: time used: ",
 						"Brute force: time used: ",
 						"QMES: time used: " };
 
@@ -511,6 +512,7 @@ void test9timerx(int type, int p2d, int p3d) {
 			else
 				rCount += r.size();
 			break;
+
 		case 1:
 			if (p2d < 64) {
 				long long xl = MulPrToLong(x);
@@ -523,7 +525,7 @@ void test9timerx(int type, int p2d, int p3d) {
 			}
 			break;
 		case 2:
-			r = ModSqrt(x, m);
+			r = ModSqrtQE(x, m);
 			if (r.empty())
 				nrCount++;
 			else
@@ -536,28 +538,29 @@ void test9timerx(int type, int p2d, int p3d) {
 	auto end = clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, msg[type]);
-
  }
+
 void test9timer(const std::vector <std::string>& p) {
 	int p2d = -1, p3d = -1;
 
 	if (p.size() >= 2) {
 		p2d = atoi(p[1].c_str());  /* convert to binary */
 	}
-	if (p2d < 20) {
-		std::cout << "Use default 20 for number size in bits \n";
-		p2d = 20;
+	if (p2d < 10) {
+		std::cout << "Use default 10 for number size in bits \n";
+		p2d = 10;
 	}
-	if (p.size() >= 3)
-	p3d = atoi(p[2].c_str());  /* convert to binary */
-	if (p3d < 10) {
-		std::cout << "Use default 10 for number of tests \n";
-		p3d = 10;
+	if (p.size() >= 3) 
+		p3d = atoi(p[2].c_str());  /* convert to binary */
+	if (p3d < 5) {
+		std::cout << "Use default 5 for number of tests \n";
+		p3d = 5;
 	}
-	test9timerx(0, p2d, p3d);
-	if (p2d < 26)
-		test9timerx(1, p2d, p3d);
-	test9timerx(2, p2d, p3d);
+
+	test9timerx(0, p2d, p3d);       /* use standard modsqrt*/
+	if (p2d <= 30)
+		test9timerx(1, p2d, p3d);  /* use brute force modsqrt */
+	test9timerx(2, p2d, p3d);      /* use QMES modsqrt */
 }
 
 /* calculate modular square roots using 2 different methods & compare results.
