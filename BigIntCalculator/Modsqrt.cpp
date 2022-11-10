@@ -68,6 +68,19 @@ long long extract(const Znum& num, const Znum p) {
 	return r;
 }
 
+/* print roots only if verbose > 1 */
+void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
+	if (verbose > 1) {
+		std::cout << "modsqrt(" << x << ", " << m << ") = ";
+		if (!roots.empty())
+			for (auto r : roots)
+				std::cout << r << ", ";
+		else
+			std::cout << "<empty>";
+		putchar('\n');
+	}
+}
+
 /* c is an even power of 2, prime = 2, c < 2^lambda */
 std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) {
 	Znum increment, r1, sqrtc;
@@ -90,7 +103,8 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 		roots.push_back(r1);
 		roots.push_back(mod - r1);
 	}
-	std::sort(roots.begin(), roots.end());
+	printroots(c, mod, roots);
+	//std::sort(roots.begin(), roots.end());
 	/*size1 = roots.size();
 	auto last = std::unique(roots.begin(), roots.end());
 	roots.erase(last, roots.end());
@@ -109,7 +123,7 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	Znum r1, r2, root, x, x2, gcdv, increment, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
-	size_t size1, size2;
+	//size_t size1, size2;
 	assert(prime == 2);
 
 	if (c == 1) {
@@ -145,10 +159,10 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 			roots.push_back(mod * 3 / 2 - x2);
 		}
 	}
+	printroots(c, mod, roots);
 
-	  /* remove any duplicates */
-	std::sort(roots.begin(), roots.end());
-	size1 = roots.size();
+	//std::sort(roots.begin(), roots.end());
+	/*size1 = roots.size();
 	auto last = std::unique(roots.begin(), roots.end());
 	roots.erase(last, roots.end());
 	size2 = roots.size();
@@ -156,7 +170,7 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 		std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
 			<< " duplicate roots \n" << "retained " << size2 << " roots \n";
 
-	}
+	}*/
 	return roots;
 }
 
@@ -177,7 +191,8 @@ std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda
 		roots.push_back(r1);
 		roots.push_back(mod - r1);
 	}
-	std::sort(roots.begin(), roots.end());
+	printroots(c, mod, roots);
+	//std::sort(roots.begin(), roots.end());
 	//size1 = roots.size();
 	//auto last = std::unique(roots.begin(), roots.end());
 	//roots.erase(last, roots.end());
@@ -203,6 +218,7 @@ std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda)
 	rx = primeModSqrt(c, prime);   /* rx^2 ≡ c (mod prime) */
 	if (rx.empty()) {
 		roots.clear();
+		printroots(c, mod, roots);
 		return roots;     /* there are no solutions  */
 	}
 	if (rx.size() > 1)
@@ -224,6 +240,7 @@ std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda)
 			std::cerr << "discarded invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
 		}
 	}
+	printroots(c, mod, roots);
 	return roots;
 }
 
@@ -250,6 +267,7 @@ std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int lambda)
 			roots.push_back(r2);
 			r2 += r1;  /* the roots form an arithmetic progression: 0, r1, 2*r1, 3*r1 etc */
 		}
+		printroots(c, mod, roots);
 		return roots;
 	}
 
@@ -271,9 +289,15 @@ std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int lambda)
 
 			for (size_t i = 0; i < roots.size(); i++)
 				roots[i] = modMult(roots[i], r1, mod);
+
+			printroots(c, mod, roots);
+
 			return roots;
 		}
-		else return roots;  /* no solutions*/
+		else {
+			printroots(c, mod, roots);
+			return roots;  /* gcdv is not a perfect square: no solutions*/
+		}
 	}
 	else  /* c and mod are mutually prime*/
 		if (prime == 2)
@@ -303,18 +327,22 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	// Simple case
 	if (a == 0) {
 		result.push_back(0);
+		printroots(a, prime, result);
 		return result;
 	}
 
 	if (prime == 2) {
 		result.push_back(a);  // a is 0 or 1
+		printroots(a, prime, result);
 		return result;
 	}
 
 	/* Check solution existence on odd prime. Because prime is prime the Jacobi
 	symbol is the same as the Legendre symbol. */
-	if (jacobi(a, prime) != 1)
+	if (jacobi(a, prime) != 1) {
+		printroots(a, prime, roots);
 		return result;    // empty list; no solutions
+	}
 #ifdef _DEBUG
 	/* recheck existence of solution */
 	{
@@ -331,6 +359,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		R = modPower(a, (prime + 1) / 4, prime);
 		result.push_back(R);
 		result.push_back(prime - R);
+		printroots(a, prime, result);
 		return result;
 	}
 
@@ -386,6 +415,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 
 	result.push_back(R);
 	result.push_back(prime - R);
+	printroots(a, prime, result);
 	return result;
 }
 
@@ -410,11 +440,15 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 
 	/* below is a necessary condition, but satisfying this test does not guarantee 
 	  that there are any roots. */
-	if ((m % 4 != 2) && (mpz_kronecker(ZT(a), ZT(m)) == -1))
+	if ((m % 4 != 2) && (mpz_kronecker(ZT(a), ZT(m)) == -1)) {
+		printroots(a, m, cRoots);
 		return cRoots;   /* return empty list; no solutions */
+	}
 	Znum m2 = m / 2;
-	if ((m % 4 == 2) && (mpz_kronecker(ZT(a), ZT(m2)) == -1))
+	if ((m % 4 == 2) && (mpz_kronecker(ZT(a), ZT(m2)) == -1)) {
+		printroots(a, m, cRoots);
 		return cRoots;   /* return empty list; no solutions */
+	}
 
 	auto rv = factorise(m, pFactors, nullptr);
 	assert(rv);    /* check factorisation worked */
@@ -431,7 +465,9 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 			pRoots = primeModSqrt(a, p);   /*find roots such that r^2 = a mod p */
 
 		if (pRoots.empty()) {
+			printroots(a, p, pRoots);
 			cRoots.clear();   /* there are no solutions */
+			printroots(a, m, cRoots);
 			return cRoots;
 		}
 
@@ -455,6 +491,7 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 	}
 
 	/* sort roots into ascending order */
+	printroots(a, m, cRoots);
 	std::sort(cRoots.begin(), cRoots.end());
 #ifdef _DEBUG
 	for (Znum r : cRoots) {

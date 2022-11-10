@@ -255,9 +255,9 @@ void textErrorQuadMod(retCode rc){
 
 /* solve Quadratic modular equations of the form a⁢x² + b⁢x + c ≡ 0 (mod n) where
 the integer unknown x is in the range 0 ≤ x < n. In particular, it can find
-modular square roots by setting a = -1, b = 0, c = number whose root we want to find
-and n = modulus.  The modulus has to be factored, so if it is too large
-the factorisation can take an excessive length of time
+modular square roots by setting a = -1, b = 0, c = number whose root we want to 
+find and n = modulus.  The modulus has to be factored, so if it is too large the 
+factorisation can take an excessive length of time
 Coefficients are in ValA, ValB, ValC and ValN=modulus
 Uses global variable Aux0
 */
