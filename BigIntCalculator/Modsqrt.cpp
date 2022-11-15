@@ -86,9 +86,9 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 	Znum increment, r1, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
-	//size_t size1, size2;
 	long long k = countZeroBits(c);
 	assert((k & 1) == 0);  /* k must be even */
+
 	sqrtc = power((Znum)2, k / 2);
 
 	if ((3+k) <= lambda)
@@ -104,16 +104,6 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 		roots.push_back(mod - r1);
 	}
 	printroots(c, mod, roots);
-	//std::sort(roots.begin(), roots.end());
-	/*size1 = roots.size();
-	auto last = std::unique(roots.begin(), roots.end());
-	roots.erase(last, roots.end());
-	size2 = roots.size();
-	if (size2 != size1 && verbose > 0) {
-		std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
-			<< " duplicate roots \n" << "retained "<< size2 << " roots \n";
-
-	}*/
 	return roots;
 }
 
@@ -123,7 +113,6 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	Znum r1, r2, root, x, x2, gcdv, increment, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
-	//size_t size1, size2;
 	assert(prime == 2);
 
 	if (c == 1) {
@@ -137,9 +126,13 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	else if ((lambda >= 3) && (c % 8 == 1)) {
 		x2 = 1;
 		for (int k = 3; k <= lambda; k++) {
-			Znum i = ((x2 * x2 - c) / pow2(k)) % 2;
+			Znum i = ((x2 * x2 - c) / pow2bi(k)) % 2;
 			if (i == -1) i = 1;
-			x2 = x2 + i * pow2(k - 1);
+			x2 = x2 + i * pow2bi(k - 1);
+			if (verbose > 1) {
+				std::cout << "modsqrt(" << c << ", " << pow2bi(k) << ") = "
+					<< x2 << '\n';
+			}
 		}
 		while (x2 < 0)
 			x2 += mod;
@@ -160,17 +153,6 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 		}
 	}
 	printroots(c, mod, roots);
-
-	//std::sort(roots.begin(), roots.end());
-	/*size1 = roots.size();
-	auto last = std::unique(roots.begin(), roots.end());
-	roots.erase(last, roots.end());
-	size2 = roots.size();
-	if (size2 != size1 && verbose > 0) {
-		std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
-			<< " duplicate roots \n" << "retained " << size2 << " roots \n";
-
-	}*/
 	return roots;
 }
 
@@ -179,7 +161,6 @@ std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda
 	Znum mod = power(prime, lambda);
 	Znum r1, r2, sqrtc, increment;
 	std::vector <Znum> roots;
-	//size_t size1, size2;
 
 	long long k = extract(c, prime);   /* find k such that prime^k = c */
 	assert((k & 1) == 0);   /* k must be even */
@@ -192,15 +173,6 @@ std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda
 		roots.push_back(mod - r1);
 	}
 	printroots(c, mod, roots);
-	//std::sort(roots.begin(), roots.end());
-	//size1 = roots.size();
-	//auto last = std::unique(roots.begin(), roots.end());
-	//roots.erase(last, roots.end());
-	//size2 = roots.size();
-	//if (size2 != size1 && verbose > 0) {
-	//	std::cout << "modsqrt(" << c << ", " << mod << ") discarded " << size1 - size2
-	//		<< " duplicate roots \n";
-	//}
 	return roots;
 }
 
@@ -490,14 +462,15 @@ std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m) {
 		}
 	}
 
-	/* sort roots into ascending order */
 	printroots(a, m, cRoots);
-	std::sort(cRoots.begin(), cRoots.end());
+
+	std::sort(cRoots.begin(), cRoots.end()); /* sort roots into ascending order */
 #ifdef _DEBUG
 	for (Znum r : cRoots) {
 		Znum x1 = r * r%m;
 		if (x1 != a)
-			std::cerr << "Invalid root a = " << a << " m = " << m << " root = " << r << '\n';
+			std::cerr << "Invalid root a = " << a << " m = " << m << " root = " 
+			<< r << '\n';
 	}
 #endif
 	return cRoots;
