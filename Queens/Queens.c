@@ -143,8 +143,8 @@ void printB (const bool board[][B_SIZE]) {
 	BOOL r;
 
 	// print chessboard pattern
-	for (int i = 0; i <= B_SIZE; i++) {
-		for (int j = 0; j <= B_SIZE; j++) {
+	for (int i = 0; i < B_SIZE; i++) {
+		for (int j = 0; j < B_SIZE; j++) {
 			if (!((i + j) % 2)) {
 				r = SetConsoleTextAttribute(stanout,
 					BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED
@@ -412,7 +412,7 @@ int main(int argc, char ** argv)
 	int bt[B_SIZE] = { 0 };   // this array is used when backtracking.
 	int row = 0, col = 0;
 	BOOL r;
-	system("PAUSE");
+ 	system("PAUSE");
 
 	setFontSize(16); /* set font and font size */
 
