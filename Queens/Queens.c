@@ -162,13 +162,14 @@ void printB (const bool board[][B_SIZE]) {
 			if (board[i][j]) printf("Q ");
 			else printf("  ");
 		}
-		printf("\n");
 		r = SetConsoleTextAttribute(stanout,
-			FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED );	   // black text on white background.
+			BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED
+			| BACKGROUND_INTENSITY);   // black text on white background.
 		if (!r) {
 			fprintf(stderr, "SetConsoleTextAttribute failed %d at line %d\n", GetLastError(), __LINE__);
 			return;
 		}
+		printf("\n");
 	}
 
 	r = SetConsoleTextAttribute(stanout,
