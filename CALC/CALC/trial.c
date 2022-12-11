@@ -101,7 +101,7 @@ int main(int argc, char ** argv)
 		printf("\n");
 		printf("\t\tA NUMBER THEORY CALCULATOR\n");
 		printf("\t\tK.R.MATTHEWS, 20th September 2016\n\n");
-		printf("\n");
+		printf("\n\t\t see http://www.numbertheory.org/calc/krm_calc.html for more info \n");
 		;
 		printf("Type exit to quit, help for information:\n");
 
