@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="integer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="wrappers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="y.tab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ytab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="calc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unistd_DOS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fun.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="roots.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="primepow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bigprime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CALC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="reduce.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="carnielli.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readme.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trial.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="collatz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cubicr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cyclo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="davison.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dujella.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="elliptic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="func.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i3.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i5I.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i5m.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i5R.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i6I.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i6R.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i7I.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i8.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="i9.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lagrange.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lll.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lllgcd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lllhermi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lupei.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="m_collatz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mpqsieve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nfunc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="p-adic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pI.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pq_collatz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primepow.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="primes1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="qres.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="reductio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="roots.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rsa.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Stack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Symbol.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tangent.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="two_collatz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utility.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="wrappers.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cfrac.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="diagnostics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
