@@ -543,12 +543,6 @@ time). The same factorisation process as described elsewhere is used.
 This is actually Dario Alpern's solver, converted from a web page to a console 
 program. 
 
-QMES is also used to implement the modsqrt function, because the Tonelli-Shanks
-method commonly used does not work if the modulus when factored has a power of
-2 which is 2^4 or higher, or if the modulus is not square-free and the number
-for which the root is is to be found is also a multiple of the prime factor 
-that is squared. DA's method finds all the roots, even for these awkward cases.
-
 [PRINT]
 
 Russsian

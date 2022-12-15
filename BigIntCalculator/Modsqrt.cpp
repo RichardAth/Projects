@@ -495,6 +495,10 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 	return roots;
 }
 
+/* do timed modsqrt tests. type = 0 for standard modsqrt, 1 for brute force, 
+2 for modsqrt using quadratic modular equation solver. 
+p2d = test number size in bits.
+p3d = number of tests */
 void test9timerx(int type, int p2d, int p3d) {
 	gmp_randstate_t state;
 	Znum x, m;
@@ -551,8 +555,9 @@ void test9timerx(int type, int p2d, int p3d) {
  }
 
 void test9timer(const std::vector <std::string>& p) {
-	int p2d = -1, p3d = -1;
+	int p2d = -1, p3d = -1;  /* save p2 and p3 as binary values */
 
+	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */
 	if (p.size() >= 2) {
 		p2d = atoi(p[1].c_str());  /* convert to binary */
 	}
@@ -631,33 +636,32 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 
 /* test modular square root */
 void doTests9(const std::string& porig) {
-	std::string params = porig;
+	std::string params = porig;  /* copy parameters to a writeable string */
 	bool rv = true;
 	std::vector<long long> roots;
 	std::vector<Znum> rootsZ;
 	bool newb = false;
-	std::vector<std::string> p;
-	char seps[] = " ,\n";
+	std::vector<std::string> p;   /* each parameter is stored separately in p */
+	const char seps[] = " ,\n";   /* separators between parameters; either , or space */
 	char* token = nullptr;
 	char* next = nullptr;
 
+	/* separate params text into an array of tokens, by finding the separator characters */
 	token = strtok_s(&params[0], seps, &next);
 	while (token != nullptr) {
 		p.push_back(token);
 		token = strtok_s(nullptr, seps, &next);
 	}
 
-	//auto numParams = sscanf_s(params.data(), "%s,%s,%s",
-		//p1, sizeof(p1), p2, sizeof(p2), p3, sizeof(p3));
 	if (p.size() >= 1) {
 		int timec = _strnicmp(p[0].c_str(), "time", 4);
 		if (timec == 0) {
-			test9timer(p);
+			test9timer(p);   /* 1st parameter is "time", other parameters passed on */
 			return;
 		}
 
 		int cmp = _strnicmp(p[0].c_str(), "new", 3);
-		newb = (cmp == 0);
+		newb = (cmp == 0);  // true if 1st parameter = "new"
 	}
 	auto start = clock();	// used to measure execution time
 	for (long long m = 2; m <= 2000; m++) {
@@ -674,7 +678,7 @@ void doTests9(const std::string& porig) {
 	//rv &= test9once(3, 143, roots, newb);       // roots are 17, 61, 82, 126
 	rv &= test9once(11, 2 * 5 * 7 * 19, roots, newb); // roots are 121, 159 411, 639, 
 	                                      // 691, 919, 1171, 1209
-	//rv &= test9once(0, 176, roots, newb);       // roots are zero, 44, 88, 132
+	// 121550625 = 3^4 * 5^4 * 7^4
 	rv &= test9once(1, 121550625, roots, newb); // roots are 1, 15491251, 51021251, 
 								          // 55038124, 66512501, 70529374, 
 	                                      // 106059374, 121550624,
