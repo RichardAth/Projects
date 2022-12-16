@@ -1183,7 +1183,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	3. Compute p0 = 2(sr-2 mod r)s - 1.
 	4. Select an integer j0. Find the first prime in the sequence p0 +2jrs,
 	for j = j0; j0 + 1; j0 + 2; : : : (see Note 4.54). Denote this prime by
-	p = p0 + 2jrs.
+	p = p0 + 2jrs. Note: if p0 is has a common factor with r this sequence will 
+	never find a prime. 
 	5. Return(p).
 
   4.54 Note (implementing Gordon’s algorithm)
@@ -1202,11 +1203,18 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	Znum r, s, t, t2, p0;
 
 	//1. s and t should be about half the bitlength of p
-	mpz_urandomb(ZT(s), state, bits/2-2);
-	mpz_nextprime(ZT(s), ZT(s));        // make s prime
-
+	for (;;) {
+		mpz_urandomb(ZT(s), state, bits / 2 - 2);
+		mpz_nextprime(ZT(s), ZT(s));        // make s prime
+		if (NoOfBits(s) >= (bits / 2 - 5))
+			break;  /* try again if s is too small */
+	}
+	for (;;) {
 	mpz_urandomb(ZT(t), state, bits/2 -2);
 	mpz_nextprime(ZT(t), ZT(t));        // make t prime
+	if (NoOfBits(t) >= (bits / 2 - 5))
+		break;  /* try again if t is too small */
+	}
 
 
 	// 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
@@ -1222,6 +1230,9 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 
 	// 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
 	p = p0;
+	while (gcd(p, r*s) != 1)
+		p+=2;  /* if p has any common factors with r or s we need to make an
+	           adjustment. Otherwise we would never find a prime. */
 	while (mpz_bpsw_prp(ZT(p)) == 0)
 	//while (!mpz_likely_prime_p(ZT(p), state, 0))
 		p += 2 * r*s;
