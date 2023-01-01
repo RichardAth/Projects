@@ -1239,14 +1239,14 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	return;
 }
 
-/* generate RSA-style difficult to factor number, size = bits +/- 1 */
+/* generate RSA-style difficult to factor number, size = bits +/- 2 */
 static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 	Znum p, q;
 	x = 0;
 
 	/* keep generating random strong primes till we get a pair that produces
 	a product of about the right size. */
-	while (abs(NoOfBits(x)-bits) >1) {
+	while (abs(NoOfBits(x)-bits) >2) {
 		gordon(p, state, bits / 2);
 		gordon(q, state, bits / 2);
 		x = p * q;

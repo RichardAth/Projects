@@ -5,6 +5,10 @@
 #include "factor.h"
 //#include "pari.h"
 extern std::string PariPath;
+extern HWND handConsole;      /* handle to console window */
+/* check file status */
+void fileStatus(const std::string& progname);
+char* getFileName(const char* filter, HWND owner);
 
 /* stuff below copied from pari headers, to avoid including humungous pari.h etc*/
 typedef long long* GEN;
@@ -521,6 +525,37 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     return num;
 }
 
+/* replace path, return true if change actually made. 
+otherwise return false */
+static bool changepath(std::string& path) {
+    bool rewrite = false;
+    char* newpathC;
+    std::string newpath;
+    std::string newprog;
+    std::string::size_type n;
+
+    newpathC = getFileName("dll Files\0*.dll\0\0", handConsole);
+    if (newpathC == NULL) {
+        std::cout << "command cancelled \n";
+        return false;
+    }
+    newpath = newpathC;  // copy C-style string to std::string
+    n = newpath.rfind('\\');   // look for '\'
+    if (n == std::string::npos) {
+        std::cout << "command cancelled \n";
+        return false;
+    }
+    else {
+         if (newpath != path) {
+            std::cout << "old path: " << path << '\n';
+            std::cout << "new path: " << newpath << '\n';
+            path = newpath;
+            rewrite = true;
+        }
+    }
+    return rewrite;
+}
+
 /* process "PARI ... " command */
 void pariParam(const std::string& command) {
     std::string param = command.substr(4);  /* remove "PARI */
@@ -542,6 +577,19 @@ void pariParam(const std::string& command) {
             if (verbose > 0)
                 std::cout << "Pari stack closed \n";
         }
+    }
+    else if (param.substr(0, 4) == "PATH")  {
+        param.erase(0, 4);  // get rid of "PATH"
+        while (param[0] == ' ')
+            param.erase(0, 1);              /* remove leading space(s) */
+        if (param != "SET") {
+            std::cout << "path = " << PariPath << '\n';
+        }
+        else {
+            if (changepath(PariPath))
+                writeIni();  // rewrite .ini file
+        }
+        fileStatus(PariPath);
     }
     else
         std::cout << "Invalid Pari command \n";

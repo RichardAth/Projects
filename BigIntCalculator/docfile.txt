@@ -25,7 +25,7 @@ $P = 211
 $X = 3291009114642412084309938365114701009965471731267159726697218047
 
 You can get help on the following topics by entering "HELP <topic>";
-expression  function  yafu  msieve  other  test  loop   background qmes
+expression  function  yafu  msieve  other  test  loop   background qmes pari
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
@@ -553,3 +553,21 @@ Greek
 
 accents etc
 «áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿?
+
+[PARI]
+
+PARI/GP is a widely used computer algebra system designed for fast computations 
+in number theory (factorizations, algebraic number theory, elliptic curves...), 
+but also contains a large number of other useful functions.
+
+A number of functions in this calculator have ben implemented using libpari.
+These functions are: R3H, HCLASS, CLASSNO, TAU, STIRLING. The first time one of
+these functions is called the linkage to libpari is set up. If the linking 
+process fails the program aborts. (If these functions are never called the 
+linkage is not set up, and the libpari file need not exist)
+
+The name of the libpari file is obtained from the paripath parameter in the 
+BigIntCalculator.ini file, e.g. 
+    paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
+
+To install libpari go to https://pari.math.u-bordeaux.fr/download.html
