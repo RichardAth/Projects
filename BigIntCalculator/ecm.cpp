@@ -1268,7 +1268,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 }
 
 /* initialise variables. zN = number to be factored */
-static void ecminit(Znum zN) {
+static void ecminit(const Znum &zN) {
 	int P, Q;
 
 	ZtoBig(TestNbrBI, zN);   /* copy zN to TestNbr. NB throw exception
@@ -1318,7 +1318,7 @@ static void ecminit(Znum zN) {
 
 /* find factor of zN. returns true if successful. The factor found is returned 
    in Zfactor */
-bool ecm(Znum &zN, fList &Factors, Znum &Zfactor) {
+bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor) {
 
 #ifdef log
 	std::string name1 = std::tmpnam(nullptr);

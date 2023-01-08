@@ -169,6 +169,7 @@ V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
 PRINT  Print the names and values of any user variables.
 LIST   Print all stored expressions.
 HELP   (this command)
+QMES   Enter Quadratic Modular Equation Solver
 EXIT
 
 [YAFU]
@@ -447,9 +448,8 @@ attempt to factorise it. This step may return factors that are not prime factors
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
 using a list of primes. If a factor is found that is: 
-    less than the cube of the largest prime in the trial division list, 
-    and has no factors in the list, 
-    and the factor is not prime 
+    less than the cube of the largest prime in the trial division prime list, 
+    and has no factors in that list, and the factor is not prime 
 then the factor can only have two prime factors. In this case factorise it using 
 Pollard's Rho algorithm. 
 

@@ -102,7 +102,7 @@ public:
 	friend bool factor(const Znum &toFactor, fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 
-	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
+	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);

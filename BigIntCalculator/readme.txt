@@ -14,8 +14,9 @@ HISTORY
 
 the program was converted from browser-based to a console window. The advantage
 is that it is somewhat faster, and the calculator part has been carefully tested.
-The disadvantage is that you have to download and build it. In order to do that
-you need GMP or MPIR multi-precision library and the Boost multi-precision library.
+The disadvantage is that you have to download the source code and build it. In 
+order to do that you need GMP or MPIR multi-precision library and the Boost 
+multi-precision library.
 
 the following changes were made:
 

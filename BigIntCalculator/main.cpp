@@ -3073,7 +3073,8 @@ static int processCmd(const std::string &command) {
 		if (len > 1 && command.substr(0, len) == list[ix])
 			break;  /* exit loop if match found */
 		if (len == 1 && command == list[ix])
-			break;   /* 1-letter commands with no parameters only match 1-letter input */
+			break;   /* 1-letter commands with no parameters only match 1-letter input.
+		             F and V commands do have parameters */
 	}
 
 	if (ix >= list.size())
