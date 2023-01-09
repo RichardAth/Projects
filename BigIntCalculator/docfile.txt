@@ -476,7 +476,7 @@ B. Test whether the number is prime:
 sample timing:
 2^311-1 (94 digits)
 YAFU on             10 min 
-MSIEVE on           5 min
+MSIEVE on           30 min
 builtin ECM & SIQS 57 min
 [LOOP]
 Simple lists of expressions can be executed repeatedly using the REPEAT n

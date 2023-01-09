@@ -500,7 +500,7 @@ Repeated factors: No or Yes
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
 
-extern int ElipCurvNo;            // Elliptic Curve Number
+//extern int ElipCurvNo;            // Elliptic Curve Number
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);

@@ -38,7 +38,7 @@ static COORD coordScreen = { 0, 0 };    // home for the cursor
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 static int yieldFreq;   // used to control output of status messages 
-int ElipCurvNo;            // Elliptic Curve Number
+static int ElipCurvNo;            // Elliptic Curve Number
 
 
 /*
@@ -1320,6 +1320,7 @@ static void ecminit(const Znum &zN) {
    in Zfactor */
 bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor) {
 
+	ElipCurvNo = 1;  // start with 1st curve
 #ifdef log
 	std::string name1 = std::tmpnam(nullptr);
 	auto dotpos = name1.find('.');

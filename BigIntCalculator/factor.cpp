@@ -808,7 +808,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			/* use built-in ECM & SIQS if number to factor <= 192 bits (58 digits)
 			   because this is fastest for smaller numbers,
 			   or if both YAFU and Msieve are turned off */
-			ElipCurvNo = 1;  // start with 1st curve
+			//ElipCurvNo = 1;  // start with 1st curve
 			auto rv = ecm(Zpower, Factors, Zfactor);          
 			// get a factor of number. result in Zfactor
 			if (!rv)
