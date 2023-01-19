@@ -24,6 +24,20 @@ static limb adjustedArgument[MAX_LEN];
 static limb arrAux[MAX_LEN];
 static int bitLengthCycle[20];
 
+int getNbrLimbs(const limb* bigNbr)
+{
+	const limb* ptrLimb = bigNbr + NumberLength;
+	while (ptrLimb > bigNbr)
+	{
+		ptrLimb--;
+		if (*ptrLimb != 0)
+		{
+			return (int)(ptrLimb - bigNbr + 1);
+		}
+	}
+	return 1;
+}
+
 /*return addend1 + addend2 (used to overload + operator) */
 BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 	int ctr, nbrLimbs;
@@ -116,7 +130,7 @@ BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2) {
 }
 
 /* Dest = -Dest */
-static void BigIntNegate (BigInteger &pDest) {
+void BigIntNegate (BigInteger &pDest) {
 	
 	if (pDest.sign == SIGN_POSITIVE && (pDest.nbrLimbs != 1 || pDest.limbs[0] != 0))
 	{
@@ -282,7 +296,7 @@ void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) 
 	return;
 }
  
-/* BigInt = e^logar.  This is the inverse function of LogBigNbr. As the result
+/* BigInt = e^logar.  This is the inverse function of LogBigInt. As the result
 is an integer it is not exact, and also for large values only at best the 1st
 15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
@@ -360,57 +374,57 @@ double logBigInt (const BigInteger &pBigInt) {
 }
 
 /* divide by 2, use right shift for speed */
-//void BigIntDivide2(BigInteger &pArg) {
-//	int nbrLimbs = pArg.nbrLimbs;
-//	int ctr = nbrLimbs - 1;
-//	unsigned int carry;
-//	//limb *ptrLimb = &pArg->limbs[ctr];
-//	limb *ptrLimb = pArg.limbs;
-//	carry = 0;
-//	for (; ctr >= 0; ctr--)
-//	{
-//		carry = (carry << BITS_PER_GROUP) + (unsigned int)ptrLimb[ctr];
-//		ptrLimb[ctr] = (int)(carry >> 1);
-//		carry &= 1;
-//	}
-//	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1] == 0)
-//	{     // Most significant limb is zero, so reduce size by one limb.
-//		pArg.nbrLimbs--;
-//	}
-//}
+void BigIntDivide2(BigInteger &pArg) {
+	int nbrLimbs = pArg.nbrLimbs;
+	int ctr = nbrLimbs - 1;
+	unsigned int carry;
+	//limb *ptrLimb = &pArg->limbs[ctr];
+	limb *ptrLimb = pArg.limbs;
+	carry = 0;
+	for (; ctr >= 0; ctr--)
+	{
+		carry = (carry << BITS_PER_GROUP) + (unsigned int)ptrLimb[ctr];
+		ptrLimb[ctr] = (int)(carry >> 1);
+		carry &= 1;
+	}
+	if (nbrLimbs > 1 && pArg.limbs[nbrLimbs - 1] == 0)
+	{     // Most significant limb is zero, so reduce size by one limb.
+		pArg.nbrLimbs--;
+	}
+}
 
 /* arg = arg*2^power. Throw exception if product is too large */
-//static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
-//{
-//	int ctr;
-//	int nbrLimbs = pArg.nbrLimbs;
-//	limb *ptrLimbs = pArg.limbs;
-//
-//	for (; power2 > 0; power2--) {
-//		/*each time round the loop multiplies arg by 2 */
-//		unsigned int carry = 0;
-//		for (ctr = 0; ctr < nbrLimbs; ctr++)
-//		{
-//			carry += (unsigned int)ptrLimbs[ctr] << 1;
-//			ptrLimbs[ctr] = (int)(carry & MAX_VALUE_LIMB);
-//			carry >>= BITS_PER_GROUP;
-//		}
-//		if (carry != 0)
-//		{
-//			ptrLimbs[ctr] = (int)carry;
-//			nbrLimbs++;
-//			if (nbrLimbs > MAX_LEN) {
-//				std::string line = std::to_string(__LINE__);
-//				std::string mesg = "number too big : cannot do multiplication : ";
-//				mesg += __func__;
-//				mesg += " line ";  mesg += line;
-//				mesg += " in file "; mesg += __FILE__;
-//				throw std::range_error(mesg);
-//			}
-//		}
-//	}
-//	pArg.nbrLimbs = nbrLimbs;
-//}
+static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
+{
+	int ctr;
+	int nbrLimbs = pArg.nbrLimbs;
+	limb *ptrLimbs = pArg.limbs;
+
+	for (; power2 > 0; power2--) {
+		/*each time round the loop multiplies arg by 2 */
+		unsigned int carry = 0;
+		for (ctr = 0; ctr < nbrLimbs; ctr++)
+		{
+			carry += (unsigned int)ptrLimbs[ctr] << 1;
+			ptrLimbs[ctr] = (int)(carry & MAX_VALUE_LIMB);
+			carry >>= BITS_PER_GROUP;
+		}
+		if (carry != 0)
+		{
+			ptrLimbs[ctr] = (int)carry;
+			nbrLimbs++;
+			if (nbrLimbs > MAX_LEN) {
+				std::string line = std::to_string(__LINE__);
+				std::string mesg = "number too big : cannot do multiplication : ";
+				mesg += __func__;
+				mesg += " line ";  mesg += line;
+				mesg += " in file "; mesg += __FILE__;
+				throw std::range_error(mesg);
+			}
+		}
+	}
+	pArg.nbrLimbs = nbrLimbs;
+}
 
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
@@ -496,59 +510,59 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 }
 
 /* calculate GCD of arg1 & arg2*/
-//void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
-//{
-//	int nbrLimbs1 = Arg1.nbrLimbs;
-//	int nbrLimbs2 = Arg2.nbrLimbs;
-//	int power2;
-//	static BigInteger Power;
-//	if (Arg1 == 0)
-//	{               // First argument is zero, so the GCD is second argument.
-//		Result = Arg2;    //CopyBigInt(Result, pArg2);
-//		return;
-//	}
-//	if (Arg2 == 0)
-//	{               // Second argument is zero, so the GCD is first argument.
-//		Result = Arg1;		//CopyBigInt(Result, pArg1);
-//		return;
-//	}
-//	// Reuse Base and Power temporary variables.
-//	Base = Arg1;     // CopyBigInt(Base, Arg1);   
-//	Power = Arg2;   //  CopyBigInt(Power, Arg2); 
-//	Base.sign = SIGN_POSITIVE;
-//	Power.sign = SIGN_POSITIVE;
-//	power2 = 0;
-//	while (((Base.limbs[0] | Power.limbs[0]) & 1) == 0)
-//	{  // Both values are even
-//		BigIntDivide2(Base);
-//		BigIntDivide2(Power);
-//		power2++;
-//	}
-//
-//	while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
-//	{    // Main GCD loop.
-//		if (Base.isEven()) {     // Number is even. Divide it by 2.
-//			BigIntDivide2(Base);
-//			continue;
-//		}
-//		if (Power.isEven())  {     // Number is even. Divide it by 2.
-//			BigIntDivide2(Power);
-//			continue;
-//		}
-//		Result = Base - Power; // BigIntSubt(Base, Power, Result);
-//		if (Result >= 0) {
-//			Base = Result; // CopyBigInt(Base, Result);
-//			BigIntDivide2(Base);
-//		}
-//		else {
-//			Power = Result; // CopyBigInt(Power, Result);
-//			Power.sign = SIGN_POSITIVE;
-//			BigIntDivide2(Power);
-//		}
-//	}
-//	Result = Base; // CopyBigInt(Result, Base);
-//	BigIntMutiplyPower2(Result, power2); /* Result *= 2^power     */
-//}
+void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
+{
+	int nbrLimbs1 = Arg1.nbrLimbs;
+	int nbrLimbs2 = Arg2.nbrLimbs;
+	int power2;
+	static BigInteger Power;
+	if (Arg1 == 0)
+	{               // First argument is zero, so the GCD is second argument.
+		Result = Arg2;    //CopyBigInt(Result, pArg2);
+		return;
+	}
+	if (Arg2 == 0)
+	{               // Second argument is zero, so the GCD is first argument.
+		Result = Arg1;		//CopyBigInt(Result, pArg1);
+		return;
+	}
+	// Reuse Base and Power temporary variables.
+	Base = Arg1;     // CopyBigInt(Base, Arg1);   
+	Power = Arg2;   //  CopyBigInt(Power, Arg2); 
+	Base.sign = SIGN_POSITIVE;
+	Power.sign = SIGN_POSITIVE;
+	power2 = 0;
+	while (((Base.limbs[0] | Power.limbs[0]) & 1) == 0)
+	{  // Both values are even
+		BigIntDivide2(Base);
+		BigIntDivide2(Power);
+		power2++;
+	}
+
+	while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
+	{    // Main GCD loop.
+		if (Base.isEven()) {     // Number is even. Divide it by 2.
+			BigIntDivide2(Base);
+			continue;
+		}
+		if (Power.isEven())  {     // Number is even. Divide it by 2.
+			BigIntDivide2(Power);
+			continue;
+		}
+		Result = Base - Power; // BigIntSubt(Base, Power, Result);
+		if (Result >= 0) {
+			Base = Result; // CopyBigInt(Base, Result);
+			BigIntDivide2(Base);
+		}
+		else {
+			Power = Result; // CopyBigInt(Power, Result);
+			Power.sign = SIGN_POSITIVE;
+			BigIntDivide2(Power);
+		}
+	}
+	Result = Base; // CopyBigInt(Result, Base);
+	BigIntMutiplyPower2(Result, power2); /* Result *= 2^power     */
+}
 
 /* add addend to big number */
 static void addToAbsValue(limb *pLimbs, int *pNbrLimbs, int addend) {
@@ -692,7 +706,7 @@ void addbigint(BigInteger &Result, int addend) {
 
 	if (addend < 0) {
 		// reverse signs of addend and result
-		addend = -addend;
+		addend = -addend;  /* warning! if int = INT_MIN this won't work; an overflow will occur */
 		if (sign == SIGN_POSITIVE) 	{
 			sign = SIGN_NEGATIVE;  // addend and result have opposite signs
 		}
@@ -747,21 +761,6 @@ that follow */
 //	}
 //}
 
-/* uses global value NumberLength for starting value for number of limbs. */
-//static int getNbrLimbs(const limb *bigNbr)
-//{
-//	//const limb *ptrLimb = bigNbr + NumberLength;
-//	auto ix = NumberLength;
-//	while (ix > 0)
-//	{
-//		if (bigNbr[ix-1] != 0)
-//		{
-//			return (int)(ix);
-//		}
-//		ix--;   // reduce length because most significant limb is zero
-//	}
-//	return 1;  // BigNbr is zero
-//}
 
 /* creates a list of values from a BigInteger, 1st entry in list is number of 
 values that follow. Also uses global value NumberLength for number of ints. */
@@ -831,54 +830,58 @@ void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
 }
 
 
-
-//void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
-//{
-//	int power2 = 0;
-//	long long mask;
-//	int index, index2,  shRg;
-//	int nbrLimbs = *pNbrLimbs;
-//	// Start from least significant limb (number zero).
-//	for (index = 0; index < nbrLimbs; index++)
-//	{
-//		if (number[index] != 0)
-//		{
-//			break;
-//		}
-//		power2 += BITS_PER_GROUP;
-//	}
-//	for (mask = 0x1; mask <= MAX_VALUE_LIMB; mask *= 2)
-//	{
-//		if ((number[index] & mask) != 0)
-//		{
-//			break;
-//		}
-//		power2++;
-//	}
-//	// Divide number by this power.
-//	shRg = power2 % BITS_PER_GROUP; // Shift right bit counter
-//	if ((number[nbrLimbs - 1] & (-(1 << shRg))) != 0)
-//	{   // Most significant bits set.
-//		*pNbrLimbs = nbrLimbs - index;
-//	}
-//	else
-//	{   // Most significant bits not set.
-//		*pNbrLimbs = nbrLimbs - index - 1;
-//	}
-//	// Move number shRg bits to the right.
-//	mask = (1 << shRg) - 1;
-//	for (index2 = index; index2 < nbrLimbs; index2++)
-//	{
-//		number[index2] = ((number[index2] >> shRg) |
-//			(number[index2 + 1] << (BITS_PER_GROUP - shRg))) &
-//			MAX_VALUE_LIMB;
-//	}
-//	if (index > 0)
-//	{   // Move limbs to final position.
-//		memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
-//	}
-//	*pShRight = power2;
-//}
+/* divide number by 2 (right shift) until it is odd. Return changed value of number
+and the number of 0-bits shifted out. */
+void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
+{
+	int power2 = 0;
+	long long mask;
+	int index, index2,  shRg;
+	int nbrLimbs = *pNbrLimbs;
+	// Start from least significant limb (number zero).
+	for (index = 0; index < nbrLimbs; index++)
+	{
+		if (number[index] != 0)
+		{
+			break;
+		}
+		power2 += BITS_PER_GROUP;
+	}
+	for (mask = 0x1; mask <= MAX_VALUE_LIMB; mask *= 2)
+	{
+		if ((number[index] & mask) != 0)
+		{
+			break;
+		}
+		power2++;
+	}
+	// Divide number by this power.
+	shRg = power2 % BITS_PER_GROUP; // Shift right bit counter
+	if ((number[nbrLimbs - 1] & (-(1 << shRg))) != 0)
+	{   // Most significant bits set.
+		*pNbrLimbs = nbrLimbs - index;
+	}
+	else
+	{   // Most significant bits not set.
+		*pNbrLimbs = nbrLimbs - index - 1;
+	}
+	// Move number shRg bits to the right.
+	mask = (1 << shRg) - 1;
+	for (index2 = index; index2 < nbrLimbs; index2++)
+	{
+		if (index2 < nbrLimbs - 1)
+			number[index2] = ((number[index2] >> shRg) |
+				(number[index2 + 1] << (BITS_PER_GROUP - shRg))) &
+			MAX_VALUE_LIMB;
+		else
+			number[index2] = (number[index2] >> shRg);
+	}
+	if (index > 0)
+	{   // Move limbs to final position.
+		memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
+	}
+	*pShRight = power2;
+}
 
 
 
@@ -1348,4 +1351,444 @@ BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
 		len--;  // remove any leading zeros
 	Quotient.nbrLimbs = len;
 	return Quotient;
+}
+
+bool BigIntIsZero(const BigInteger* value)
+{
+	if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
+	{
+		return true;     // Number is zero.
+	}
+	if (value->nbrLimbs == 0) return true;  /* no limbs (not initialised) */
+
+	return false;      // Number is not zero.
+}
+
+void BigIntChSign(BigInteger* value)
+{
+	if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
+	{    // Value is zero. Do not change sign.
+		return;
+	}
+	if (value->sign == SIGN_POSITIVE)
+	{
+		value->sign = SIGN_NEGATIVE;
+	}
+	else
+	{
+		value->sign = SIGN_POSITIVE;
+	}
+}
+
+void BigIntAbs(BigInteger* value) {
+	if (value->sign == SIGN_NEGATIVE)
+		value->sign = SIGN_POSITIVE;
+}
+
+void IntArray2BigInteger(const int* ptrValues, BigInteger* bigint)
+{
+	const int* piValues = ptrValues;
+	limb* destLimb = bigint->limbs;
+	int nbrLimbs = *piValues;
+	piValues++;
+	if (nbrLimbs > 0)
+	{
+		bigint->sign = SIGN_POSITIVE;
+	}
+	else
+	{
+		bigint->sign = SIGN_NEGATIVE;
+		nbrLimbs = -nbrLimbs;
+	}
+	if (NumberLength == 1)
+	{
+		*destLimb = *piValues;
+		bigint->nbrLimbs = 1;
+	}
+	else
+	{
+		int ctr;
+		bigint->nbrLimbs = nbrLimbs;
+		for (ctr = 0; ctr < nbrLimbs; ctr++)
+		{
+			*destLimb = *piValues;
+			destLimb++;
+			piValues++;
+		}
+		for (; ctr < NumberLength; ctr++)
+		{
+			*destLimb = 0;
+			destLimb++;
+		}
+	}
+}
+
+void BigInteger2IntArray(/*@out@*/int* ptrValues, const BigInteger* bigint)
+{
+	int* pValues = ptrValues;
+	const limb* srcLimb = bigint->limbs;
+	if (NumberLength == 1)
+	{
+		*pValues = ((bigint->sign == SIGN_POSITIVE) ? 1 : -1);
+		*(pValues + 1) = *srcLimb;
+	}
+	else
+	{
+		int nbrLimbs;
+		nbrLimbs = getNbrLimbs(srcLimb);
+		*pValues = ((bigint->sign == SIGN_POSITIVE) ? nbrLimbs : -nbrLimbs);
+		pValues++;
+		for (int ctr = 0; ctr < nbrLimbs; ctr++)
+		{
+			*pValues = *srcLimb;
+			pValues++;
+			srcLimb++;
+		}
+	}
+}
+
+/* set Result to 2^exponent  */
+void BigIntPowerOf2(BigInteger* pResult, int exponent)
+{
+	unsigned int power2 = (unsigned int)exponent % (unsigned int)BITS_PER_GROUP;
+	int nbrLimbs = exponent / BITS_PER_GROUP;
+	if (nbrLimbs > 0)
+	{
+		int nbrLimbsBytes = nbrLimbs * (int)sizeof(limb);
+		(void)memset(pResult->limbs, 0, nbrLimbsBytes);
+	}
+	pResult->limbs[nbrLimbs] = (int)(1U << power2);
+	pResult->nbrLimbs = nbrLimbs + 1;
+	pResult->sign = SIGN_POSITIVE;
+}
+
+void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen)
+{
+	unsigned int carry = 0U;
+	const limb* ptrNbr1 = pNbr1;
+	const limb* ptrNbr2 = pNbr2;
+	const limb* ptrEndSum = pSum + nbrLen;
+	for (limb* ptrSum = pSum; ptrSum < ptrEndSum; ptrSum++)
+	{
+		unsigned int tmp;
+		carry = (carry >> BITS_PER_GROUP) + (unsigned int)*ptrNbr1 +
+			(unsigned int)*ptrNbr2;
+		tmp = carry & MAX_INT_NBR_U;
+		*ptrSum = (int)tmp;
+		ptrNbr1++;
+		ptrNbr2++;
+	}
+}
+
+/* Diff = Nbr1 - Nbr2 */
+void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLen)
+{
+	unsigned int borrow = 0U;
+	const limb* ptrNbr1 = pNbr1;
+	const limb* ptrNbr2 = pNbr2;
+	const limb* ptrEndDiff = pDiff + nbrLen;
+	for (limb* ptrDiff = pDiff; ptrDiff < ptrEndDiff; ptrDiff++)
+	{
+		unsigned int tmp;
+		borrow = (unsigned int)*ptrNbr1 - (unsigned int)*ptrNbr2 -
+			(borrow >> BITS_PER_GROUP);
+		tmp = borrow & MAX_INT_NBR_U;
+		*ptrDiff = (int)tmp;
+		ptrNbr1++;
+		ptrNbr2++;
+	}
+}
+
+void BigIntDivideBy2(BigInteger* nbr)
+{
+	int nbrLimbs = nbr->nbrLimbs;
+	limb* ptrDest = &nbr->limbs[0];
+	unsigned int curLimb = (unsigned int)*ptrDest;
+	for (int ctr = 1; ctr < nbrLimbs; ctr++)
+	{  // Process starting from least significant limb.
+		unsigned int nextLimb = (unsigned int)*(ptrDest + 1);
+		*ptrDest = (int)(((curLimb >> 1) | (nextLimb << BITS_PER_GROUP_MINUS_1)) &
+			MAX_VALUE_LIMB);
+		ptrDest++;
+		curLimb = nextLimb;
+	}
+	*ptrDest = (int)((curLimb >> 1) & MAX_VALUE_LIMB);
+	if ((nbrLimbs > 1) && (nbr->limbs[nbrLimbs - 1] == 0))
+	{
+		nbr->nbrLimbs--;
+	}
+}
+
+enum eOper {
+	OPERATION_AND = 0,
+	OPERATION_OR,
+	OPERATION_XOR,
+};
+
+void ConvertToTwosComplement(BigInteger* value)
+{
+	int idx;
+	int nbrLimbs;
+	limb* ptrLimb;
+	if (value->sign == SIGN_POSITIVE)
+	{    // If number is positive, no conversion is needed.
+		while (value->nbrLimbs > 1)
+		{
+			if (value->limbs[value->nbrLimbs - 1] != 0)
+			{
+				break;
+			}
+			value->nbrLimbs--;
+		}
+		return;
+	}
+	nbrLimbs = value->nbrLimbs;
+	ptrLimb = &value->limbs[0];
+	for (idx = 0; idx < nbrLimbs; idx++)
+	{
+		if (*ptrLimb != 0)
+		{
+			break;
+		}
+		ptrLimb++;
+	}
+	if (idx < nbrLimbs)
+	{
+		*ptrLimb = (int)(LIMB_RANGE - (unsigned int)*ptrLimb);
+		ptrLimb++;
+	}
+	for (; idx < nbrLimbs; idx++)
+	{
+		*ptrLimb = MAX_INT_NBR - *ptrLimb;
+		ptrLimb++;
+	}
+}
+
+static void InternalBigIntLogical(const BigInteger* firstArgum,
+	const BigInteger* secondArgum, BigInteger* result, enum eOper operation)
+{
+	const BigInteger* firstArg;
+	const BigInteger* secondArg;
+	int idx;
+	int carryFirst = 0;
+	int carrySecond = 0;
+	int limbFirst;
+	int limbSecond;
+	if (firstArgum->nbrLimbs < secondArgum->nbrLimbs)
+	{    // After the exchange, firstArg has not fewer limbs than secondArg.
+		firstArg = secondArgum;
+		secondArg = firstArgum;
+	}
+	else
+	{
+		firstArg = firstArgum;
+		secondArg = secondArgum;
+	}
+	for (idx = 0; idx < secondArg->nbrLimbs; idx++)
+	{
+		limbFirst = firstArg->limbs[idx];
+		limbSecond = secondArg->limbs[idx];
+		if (firstArg->sign == SIGN_NEGATIVE)
+		{
+			carryFirst -= limbFirst;
+			limbFirst = carryFirst & MAX_INT_NBR;
+			carryFirst >>= 31;
+		}
+		if (secondArg->sign == SIGN_NEGATIVE)
+		{
+			carrySecond -= limbSecond;
+			limbSecond = carrySecond & MAX_INT_NBR;
+			carrySecond >>= 31;
+		}
+		if (operation == OPERATION_AND)
+		{
+			result->limbs[idx] = limbFirst & limbSecond;
+		}
+		else if (operation == OPERATION_OR)
+		{
+			result->limbs[idx] = limbFirst | limbSecond;
+		}
+		else
+		{
+			result->limbs[idx] = limbFirst ^ limbSecond;
+		}
+	}
+	if (firstArg->sign == SIGN_POSITIVE)
+	{
+		limbFirst = 0;
+	}
+	else
+	{
+		limbFirst = -1;
+	}
+	for (; idx < firstArg->nbrLimbs; idx++)
+	{
+		limbSecond = secondArg->limbs[idx];
+		if (secondArg->sign == SIGN_NEGATIVE)
+		{
+			carrySecond -= limbSecond;
+			limbSecond = carrySecond & MAX_INT_NBR;
+			carrySecond >>= 31;
+		}
+		if (operation == OPERATION_AND)
+		{
+			result->limbs[idx] = limbFirst & limbSecond;
+		}
+		else if (operation == OPERATION_OR)
+		{
+			result->limbs[idx] = limbFirst | limbSecond;
+		}
+		else
+		{
+			result->limbs[idx] = limbFirst ^ limbSecond;
+		}
+	}
+	// Generate sign of result according to operation and
+	// signs of arguments.
+	if (operation == OPERATION_AND)
+	{
+		if ((firstArg->sign == SIGN_NEGATIVE) && (secondArg->sign == SIGN_NEGATIVE))
+		{
+			result->sign = SIGN_NEGATIVE;
+		}
+		else
+		{
+			result->sign = SIGN_POSITIVE;
+		}
+	}
+	else if (operation == OPERATION_OR)
+	{
+		if ((firstArg->sign == SIGN_POSITIVE) && (secondArg->sign == SIGN_POSITIVE))
+		{
+			result->sign = SIGN_POSITIVE;
+		}
+		else
+		{
+			result->sign = SIGN_NEGATIVE;
+		}
+	}
+	else     // XOR operation
+	{
+		if (firstArg->sign == secondArg->sign)
+		{
+			result->sign = SIGN_POSITIVE;
+		}
+		else
+		{
+			result->sign = SIGN_NEGATIVE;
+		}
+	}
+	result->nbrLimbs = firstArg->nbrLimbs;
+	ConvertToTwosComplement(result);
+}
+
+void BigIntAnd(const BigInteger* firstArg, const BigInteger* secondArg, 
+	BigInteger* result) {
+	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_AND);
+}
+
+void BigIntOr(const BigInteger* firstArg, const BigInteger* secondArg, 
+	BigInteger* result) {
+	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_OR);
+}
+
+void BigIntXor(const BigInteger* firstArg, 	const BigInteger* secondArg, 
+	BigInteger* result) {
+	InternalBigIntLogical(firstArg, secondArg, result, OPERATION_XOR);
+}
+
+void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint)
+{
+	if (NumberLength == 1)
+	{
+		*ptrValues = bigint->limbs[0];
+	}
+	else
+	{
+		int numberLengthBytes = NumberLength * (int)sizeof(limb);
+		int nbrLimbs = bigint->nbrLimbs;
+		if (nbrLimbs > NumberLength)
+		{
+			(void)memcpy(ptrValues, bigint->limbs, numberLengthBytes);
+		}
+		else
+		{
+			int nbrLimbsBytes = nbrLimbs * (int)sizeof(limb);
+			(void)memcpy(ptrValues, bigint->limbs, nbrLimbsBytes);
+			nbrLimbsBytes = numberLengthBytes - nbrLimbsBytes;
+			(void)memset(ptrValues + nbrLimbs, 0, nbrLimbsBytes);
+		}
+	}
+}
+
+void UncompressLimbsBigInteger(const limb* ptrValues, /*@out@*/BigInteger* bigint)
+{
+	if (NumberLength == 1)
+	{
+		bigint->limbs[0] = *ptrValues;
+		bigint->nbrLimbs = 1;
+	}
+	else
+	{
+		int nbrLimbs;
+		const limb* ptrValue1;
+		int numberLengthBytes = NumberLength * (int)sizeof(limb);
+		(void)memcpy(bigint->limbs, ptrValues, numberLengthBytes);
+		ptrValue1 = ptrValues + NumberLength;
+		for (nbrLimbs = NumberLength; nbrLimbs > 1; nbrLimbs--)
+		{
+			ptrValue1--;
+			if (*ptrValue1 != 0)
+			{
+				break;
+			}
+		}
+		bigint->nbrLimbs = nbrLimbs;
+	}
+}
+
+int BigIntJacobiSymbol(const BigInteger* upper, const BigInteger* lower)
+{
+	int t;
+	int power2;
+	static BigInteger a;
+	static BigInteger m;
+	static BigInteger tmp;
+	m = *lower; // CopyBigInt(&m, lower);               // m <- lower
+	DivideBigNbrByMaxPowerOf2(&power2, m.limbs, &m.nbrLimbs);
+	a = *upper % *lower; // (void)BigIntRemainder(upper, lower, &a);   // a <- upper % lower
+	t = 1;
+	if (upper->sign == SIGN_NEGATIVE)
+	{
+		a.sign = SIGN_POSITIVE;
+		if ((m.limbs[0] & 3) == 3)
+		{
+			t = -1;
+		}
+	}
+	while (!BigIntIsZero(&a))             // a != 0
+	{
+		while ((a.limbs[0] & 1) == 0)
+		{     // a is even.
+			BigIntDivideBy2(&a);              // a <- a / 2
+			if (((m.limbs[0] & 7) == 3) || ((m.limbs[0] & 7) == 5))
+			{   // m = 3 or m = 5 (mod 8)
+				t = -t;
+			}
+		}
+		tmp = a; // CopyBigInt(&tmp, &a);      // Exchange a and m.
+		a = m;   // CopyBigInt(&a, &m);
+		m = tmp; // CopyBigInt(&m, &tmp);
+		if ((a.limbs[0] & m.limbs[0] & 3) == 3)
+		{   // a = 3 and m = 3 (mod 4)
+			t = -t;
+		}
+		tmp = a % m;  // (void)BigIntRemainder(&a, &m, &tmp);
+		a = tmp;      // CopyBigInt(&a, &tmp);      // a <- a % m  
+	}
+	if ((m.nbrLimbs == 1) && (m.limbs[0] == 1))
+	{              // Absolute value of m is 1.
+		return t;
+	}
+	return 0;
 }

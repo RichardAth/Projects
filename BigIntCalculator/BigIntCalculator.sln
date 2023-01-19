@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.489
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BigIntCalculator", "BigIntCalculator.vcxproj", "{221FFA2E-52EA-4C92-9FF3-43C571902168}"
 EndProject
@@ -42,6 +42,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Baillie-PSW", "..\Baillie-PSW\Baillie-PSW.vcxproj", "{BC6C29A1-88BE-411C-B853-F89968FA064C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QuadraticModularEquationSolver", "..\QuadraticModularEquationSolver\QuadraticModularEquationSolver.vcxproj", "{8AABED21-0481-4000-9E8D-5C09FE5F8576}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -131,6 +133,14 @@ Global
 		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x64.Build.0 = Release|x64
 		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x86.ActiveCfg = Release|Win32
 		{BC6C29A1-88BE-411C-B853-F89968FA064C}.Release|x86.Build.0 = Release|Win32
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Debug|x64.ActiveCfg = Debug|x64
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Debug|x64.Build.0 = Debug|x64
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Debug|x86.ActiveCfg = Debug|Win32
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Debug|x86.Build.0 = Debug|Win32
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Release|x64.ActiveCfg = Release|x64
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Release|x64.Build.0 = Release|x64
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Release|x86.ActiveCfg = Release|Win32
+		{8AABED21-0481-4000-9E8D-5C09FE5F8576}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

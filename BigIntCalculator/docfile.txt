@@ -25,7 +25,7 @@ $P = 211
 $X = 3291009114642412084309938365114701009965471731267159726697218047
 
 You can get help on the following topics by entering "HELP <topic>";
-expression  function  yafu  msieve  other  test  loop   background
+expression  function  yafu  msieve  other  test  loop   background qmes pari
 
 [EXPRESSION]
 You can enter expressions that use the following operators, also functions 
@@ -75,6 +75,10 @@ Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
 Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
+Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
+                  m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                  and n that is coprime to n. Also known as the reduced totient
+                  function.
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
@@ -114,9 +118,9 @@ R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z�
                   (order and sign of x and y are significant) N.B. very slow
                   for large numbers e.g. 2 min for a 12 digit number.
 R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
-                  (much faster) Currently restricted to n < 10^28.
+                  (much faster) Currently restricted to n < 10^32.
 HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
-                  n < 10^28. The true HCLASS is not always an integer, but 
+                  n < 10^32. The true HCLASS is not always an integer, but 
                   multiplying by 12 always yields an integer.
 CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
                   not a perfect square. For +ve n, n must be < 730,000,000 to avoid
@@ -125,10 +129,10 @@ TAU(x)          : Ramanujan's tau function
 STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
                   if f = 2, return the Stirling number of the second kind S(n,k).
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
-JA(a,p)         : Jacobi value for (a/p). The result is zero when a is a multiple 
-                  of p, otherwise it is one if there is a solution of x² = a (mod p) 
-                  and it is -1 when the congruence has no solution. 
-                  Extension of Legendre to all odd values of p.
+                  The result is zero when a is a multiple of p, otherwise it is 
+                  one if there is a solution of x² ≡ a (mod p) and it is -1 when 
+                  the congruence has no solution.
+JA(a,p)         : Jacobi value for (a/p). Extension of Legendre to all odd values of p.
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
 ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
@@ -165,6 +169,7 @@ V n  : Set 'verbosity' to n. n=0 is the default which minimises output.
 PRINT  Print the names and values of any user variables.
 LIST   Print all stored expressions.
 HELP   (this command)
+QMES   Enter Quadratic Modular Equation Solver
 EXIT
 
 [YAFU]
@@ -443,9 +448,8 @@ attempt to factorise it. This step may return factors that are not prime factors
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
 using a list of primes. If a factor is found that is: 
-    less than the cube of the largest prime in the trial division list, 
-    and has no factors in the list, 
-    and the factor is not prime 
+    less than the cube of the largest prime in the trial division prime list, 
+    and has no factors in that list, and the factor is not prime 
 then the factor can only have two prime factors. In this case factorise it using 
 Pollard's Rho algorithm. 
 
@@ -472,7 +476,7 @@ B. Test whether the number is prime:
 sample timing:
 2^311-1 (94 digits)
 YAFU on             10 min 
-MSIEVE on           5 min
+MSIEVE on           30 min
 builtin ECM & SIQS 57 min
 [LOOP]
 Simple lists of expressions can be executed repeatedly using the REPEAT n
@@ -500,7 +504,7 @@ IF ($p < 10000) REPEAT
 
 format is IF (expression) REPEAT 
           or IF (expression) STOP 
-		  or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
+          or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
           the [ELSE (expression ...)] part is optional
 
 The IF command is processed as follows:
@@ -522,3 +526,48 @@ before the last LOOP command are not shown.
 Note that invalid expressions and commands other than IF are not saved, and there 
 is no way to edit saved expressions. It is only possible to delete them all using 
 the LOOP command and start again.
+
+[QMES]
+
+The Quadratic modular equation solver is entered by the QMES command.
+
+This can solve equations of the form ax² + bx + c ≡ 0 (mod n) where the integer 
+unknown x is in the range 0 ≤ x < n. In particular, it can find modular square 
+roots by setting a = -1, b = 0, c = number whose root we want to find and 
+n = modulus.
+When prompted, enter values for a, b, c and n. These can be numbers or expressions.
+The calculator accepts numbers of up to 10000 digits but notice that the modulus n 
+has to be factored (some large numbers cannot be factored in a reasonable amount of 
+time). The same factorisation process as described elsewhere is used.
+
+This is actually Dario Alpern's solver, converted from a web page to a console 
+program. 
+
+[PRINT]
+
+Russsian
+ЁЂЃЄЅФЧЫЮ
+
+Greek
+ΆΌΈΏΣπσψόϒΩϕΠ
+
+accents etc
+«áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿?
+
+[PARI]
+
+PARI/GP is a widely used computer algebra system designed for fast computations 
+in number theory (factorizations, algebraic number theory, elliptic curves...), 
+but also contains a large number of other useful functions.
+
+A number of functions in this calculator have ben implemented using libpari.
+These functions are: R3H, HCLASS, CLASSNO, TAU, STIRLING. The first time one of
+these functions is called the linkage to libpari is set up. If the linking 
+process fails the program aborts. (If these functions are never called the 
+linkage is not set up, and the libpari file need not exist)
+
+The name of the libpari file is obtained from the paripath parameter in the 
+BigIntCalculator.ini file, e.g. 
+    paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
+
+To install libpari go to https://pari.math.u-bordeaux.fr/download.html

@@ -84,6 +84,12 @@
     <ClCompile Include="libpariInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="quadmod.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="quadmodLL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">
@@ -149,6 +155,12 @@
     <ClInclude Include="paritune.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="quadmodLL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt">
@@ -169,6 +181,9 @@
   <ItemGroup>
     <None Include="x64\Release\BigIntCalculator.ini" />
     <None Include="..\..\..\..\..\Documents\my word docs\inverse_totient.docx">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="Modular square root.docx">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

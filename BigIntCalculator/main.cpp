@@ -15,9 +15,14 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #pragma fenv_access (on)
 
 #include "pch.h"
-#define WIN32_LEAN_AND_MEAN
+#include <fcntl.h>
+#include <io.h>
+
+//#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
+#include "bignbr.h"
+#include "bigint.h"
 #include "factor.h"
 
 #include "diagnostic.h"
@@ -68,7 +73,7 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* function declarations, only for functions that have forward references */
-static void textError(retCode rc);
+void textError(retCode rc);
 
 
 /* get time in format hh:mm:ss */
@@ -487,7 +492,7 @@ void generatePrimes(unsigned long long int max_val) {
 
 
 /* translate error code to text and output it*/
-static void textError(retCode rc) {
+void textError(retCode rc) {
 	/*
 	error codes currently used:
 	NUMBER_TOO_LOW,
@@ -571,10 +576,10 @@ static void textError(retCode rc) {
 	//case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
 	//	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
 	//	break;
-	//case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
-	//	std::cout << (lang ? "El módulo no debe ser negativo\n" :
-	//		"Modulus must not be negative\n");
-	//	break;
+	case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
+		std::cout << (lang ? "El módulo no debe ser negativo\n" :
+			"Modulus must not be negative\n");
+		break;
 	default:
 		printf_s( "unknown error code: %d\n", (int)rc);
 		break;
@@ -591,7 +596,7 @@ static void strToUpper(const std::string &s, std::string &d) {
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format */
-static void PrintTimeUsed(double elapsed, const std::string &msg = "") {
+void PrintTimeUsed(double elapsed, const std::string &msg) {
 
 	if (msg.size() > 1)
 		std::cout << myTime() << ' ' << msg;
@@ -929,9 +934,6 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
 
 static void doTests(void) {
 	Znum x3, x4, result, result1;
-	/*std::vector <token> exprTokens;
-	std::vector <token> rPolish;
-	int rpLen;*/
 	int i, asgCt;
 	int testcnt = 0;
 	struct test {
@@ -974,6 +976,7 @@ static void doTests(void) {
 		"modpow(8, 7, 6)",                  2,   // modular power
 		"modpow(8, -2, 5)",                 4,   // negative exponent OK in some cases
 		"totient(201)",		              132,
+		"carmichael(201)",                 66,
 		"numdivs(7!)",                     60,
 		"sumdivs(7!)",                  19344,
 		"numdigits(123456789, 6)",         11,
@@ -1019,6 +1022,8 @@ static void doTests(void) {
 		"modsqrt(2191, 23^3)",         1115,
 		"modsqrt(4142, 29^3)",         2333,
 		"modsqrt(3, 143)",               17,
+		"modsqrt(9, 27)",                 3,
+		"modsqrt(17, 32)",                7,
 		"minfact(99)",                    3,
 		"maxfact(99)",                    11,
 		"numfact(99)",                     2,
@@ -1178,7 +1183,8 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	3. Compute p0 = 2(sr-2 mod r)s - 1.
 	4. Select an integer j0. Find the first prime in the sequence p0 +2jrs,
 	for j = j0; j0 + 1; j0 + 2; : : : (see Note 4.54). Denote this prime by
-	p = p0 + 2jrs.
+	p = p0 + 2jrs. Note: if p0 is has a common factor with r this sequence will 
+	never find a prime. 
 	5. Return(p).
 
   4.54 Note (implementing Gordon’s algorithm)
@@ -1197,11 +1203,18 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 	Znum r, s, t, t2, p0;
 
 	//1. s and t should be about half the bitlength of p
-	mpz_urandomb(ZT(s), state, bits/2-2);
-	mpz_nextprime(ZT(s), ZT(s));        // make s prime
-
+	for (;;) {
+		mpz_urandomb(ZT(s), state, bits / 2 - 2);
+		mpz_nextprime(ZT(s), ZT(s));        // make s prime
+		if (NoOfBits(s) >= (bits / 2 - 5))
+			break;  /* try again if s is too small */
+	}
+	for (;;) {
 	mpz_urandomb(ZT(t), state, bits/2 -2);
 	mpz_nextprime(ZT(t), ZT(t));        // make t prime
+	if (NoOfBits(t) >= (bits / 2 - 5))
+		break;  /* try again if t is too small */
+	}
 
 
 	// 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
@@ -1217,20 +1230,23 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
 
 	// 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
 	p = p0;
+	while (gcd(p, r*s) != 1)
+		p+=2;  /* if p has any common factors with r or s we need to make an
+	           adjustment. Otherwise we would never find a prime. */
 	while (mpz_bpsw_prp(ZT(p)) == 0)
 	//while (!mpz_likely_prime_p(ZT(p), state, 0))
 		p += 2 * r*s;
 	return;
 }
 
-/* generate RSA-style difficult to factor number, size = bits +/- 1 */
+/* generate RSA-style difficult to factor number, size = bits +/- 2 */
 static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 	Znum p, q;
 	x = 0;
 
 	/* keep generating random strong primes till we get a pair that produces
 	a product of about the right size. */
-	while (abs(NoOfBits(x)-bits) >1) {
+	while (abs(NoOfBits(x)-bits) >2) {
 		gordon(p, state, bits / 2);
 		gordon(q, state, bits / 2);
 		x = p * q;
@@ -1355,6 +1371,10 @@ static void doTests3(void) {
 		pBI -= bBI;
 		assert(p == (a - b));         // verify subtraction
 
+		pBI = -aBI;           /* unary - */
+		BigtoZ(p, pBI);
+		assert(p = -a);
+
 		pBI = aBI * bBI;
 		BigtoZ(p, pBI);
 		Znum prod;
@@ -1437,12 +1457,39 @@ static void doTests3(void) {
 		BigtoZ(p, pBI);              // p = pBI = aBI + max;
 		assert(p == a + INT_MAX);    // veryify addition of int
 
+		pBI = aBI + INT_MIN;
+		BigtoZ(p, pBI);              // p = pBI = aBI + (-max);
+		b1 = a + INT_MIN;
+		if (p != b1) {
+			gmp_printf("a =%Zd p = %Zd expected %Zd  \n", a, p, b1);
+		}
+		assert(p == b1);       // veryify addition of -ve int
+
 		pBI = aBI - INT_MAX;
 		BigtoZ(p, pBI);               // p = pBI = aBI - max;
 		assert(p == a - INT_MAX);;    // veryify subtraction of int
 
+		pBI = aBI - (long long)INT_MIN;
+		BigtoZ(p, pBI);               // p = pBI = aBI - max;
+		b1 = a - (long long)INT_MIN;
+		if (p != b1) {
+			gmp_printf("a =%Zd p = %Zd expected %Zd  \n", a, p, b1);
+		}
+
+		pBI = aBI & bBI.abs();
+		BigtoZ(p, pBI);
+		if (p != (a & abs(b))) {
+			gmp_printf("logical and of %Zx & %Zx failed; \ngot %Zx, expected %Zx \n",
+				a, abs(b), p, (a & abs(b)));
+		}
+		assert(p == (a & abs(b)));
+
+		pBI = aBI;
+		pBI &= bBI.abs();
+		assert(p == (a & abs(b)));
+
 		a *= 1237953;                 // increase a & b, then repeat
-		b *= 129218;
+		b *= -129218;
 	}
 
 	auto end = clock();              // measure amount of time used
@@ -1560,7 +1607,7 @@ static void doTests3(void) {
 		/* set up modulus and Mongomery parameters */
 		XlargeRand(mod, c);					// get large random number (up to 32 * c bits)
 		mod |= 1;                       // set lowest bit (make sure mod is odd)
-		GetMontgomeryParms(mod);
+		GetMontgomeryParms(mod);   /* set up zR, zR1, zR2, zNI */
 		numLen = MAX_LEN - 2;
 		ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
 		while (modL[numLen - 1] == 0)
@@ -1573,8 +1620,8 @@ static void doTests3(void) {
 		modmult(a, zR2, am);             // convert a to Montgomery (Znum) in am
 		numLen = MAX_LEN - 2;
 		ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
-		//while (aL[numLen - 1] == 0)
-		//	numLen--;                    // adjust length i.e. remove leading zeros
+		while (aL[numLen - 1] == 0)
+			numLen--;                    // adjust length i.e. remove leading zeros
 		//NumberLength = numLen;
 		modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
 		modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
@@ -1585,34 +1632,56 @@ static void doTests3(void) {
 	elapsed = (double)end - start;
 	std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
-	largeRand(b);				     // get large random number  b
-	b |= 1;                         /* make sure b is odd */
-	GetMontgomeryParms(b);
-	modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
-	
-	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+	largeRand(mod);				     // get large random number  b
+	mod |= 1;                         /* make sure b is odd */
+	std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
+	GetMontgomeryParms(mod);      /* set up zR, zR1, zR2, zNI */
 	numLen = MAX_LEN - 2;
+	ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+	while (modL[numLen - 1] == 0)
+		numLen--;                    // adjust length i.e. remove leading zeros
+	memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	NumberLength = numLen;
+	GetMontgomeryParms(numLen);
+
+	a %= mod;
+	modmult(a, zR2, am);      // convert a to montgomery
+	ZtoLimbs(aL, a, numLen);
+
+	largeRand(b);
+	b %= mod;
+	modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
+	numLen = MAX_LEN - 2;
+	ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+	
 	while (bL[numLen - 1] == 0)
 		numLen--;                    // adjust length i.e. remove leading zeros
-	NumberLength = numLen;
-	memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-	GetMontgomeryParms(numLen);
+	//NumberLength = numLen;
+
+	//memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+	//GetMontgomeryParms(numLen);
 	modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
 	for (int i = 1; i < 200000000; i++) {
-		modmult(alM, blM, plm);                   // p = a*b mod m (limbs)
+		modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
 		memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-		modmult(am, bm, pm);                      // p = a*b mod m (Znum)
+		modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
 		am = pm;						          //a = p (Znum)
+		REDC(p, pm);					 // convert p from montgomery (Znum)
+		modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+		LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+		assert(p2 == p);
 		if (i % 20000000 == 0) {
 			std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
 		}
+		if (p == 0)
+			break;
 	}
 
-	REDC(p, pm);					 // convert p from montgomery (Znum)
-	modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-	LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-	assert(p2 == p);
+	//REDC(p, pm);					 // convert p from montgomery (Znum)
+	//modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+	//LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+	//assert(p2 == p);
 
 	end = clock();              // measure amount of time used
 	elapsed = (double)end - start;
@@ -1848,221 +1917,6 @@ static void doTests7(const std::string &params) {
 	PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
-/* find next prime after p */
-static long long nextprime(const long long p) {
-	mpz_t pBi, next;
-
-	mpz_init_set_ui(pBi, p);  /* pBi = p */
-	mpz_init(next);
-	mpz_nextprime(next, pBi);
-	return mpz_get_ui(next);
-}
-
-/* return 0 if number is a power of 2 (no odd prime factors),
-          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
-		    and any odd prime factors  of form 8i+5 or 8i+7 have even exponents.
-		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
-		    exponent  
-		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
-		    odd prime factors of form 8i+5 or 8i+7 have an even exponent  */
-static int classify(Znum n) {
-	Znum r, p;
-	fList factors;
-	bool type1 = false;  /* set true if there is any odd prime factors of form 8i+1 or 8i+3 */
-
-	while (isEven(n))
-		n /= 2;
-	if (n == 1)
-		return 0;
-	
-	long long mod = mpz_tdiv_r_ui(ZT(r), ZT(n), 8); /* mod = n (mod 8)*/
-	if (mod == 5 || mod == 7) 
-		return 2;
-
-	factorise(n, factors, nullptr);
-	
-	for (int i = 0; i < factors.fsize(); i++) {
-		/* step through prime factors */
-		p = factors.f[i].Factor;
-		long long mod = mpz_tdiv_r_ui(ZT(r), ZT(p), 8);  /* mod = p (mod 8) */
-		switch (mod) {
-
-		case 1:
-		case 3:
-			type1 = true;
-			continue;
-
-		case 5:
-		case 7:
-			if ((factors.f[i].exponent & 1) == 0)  /* if exponent is even*/
-				continue;
-			else 
-				return 2;
-
-		default: 
-			abort();   /* should never happen  ! */
-		}
-	}
-
-	/* any odd prime factors is of form 8i+5 or 8i+7 have even exponents. */
-	if (type1)
-		return 1;
-	else
-		return 3; /* no odd prime factors of form 8i+1 or 8i+3 */
-}
-
-/* establish by brute force if a number can be expressed as p1^2 + 2*(p2^2)
-return true if it can, otherwise false */
-static bool sqcheck(const long long x, long long &p1, long long &p2) {
-	long long isq2;
-	if (x % 8 == 7)
-		return false;  /* x can only be expressed as the sum of 4 (or more) squares */
-
-	for (p2 = 1; ; p2++) {
-		isq2 = 2 * p2 * p2;
-		if (isq2 >= x)
-			break;
-
-		if (isPerfectSquare(x - isq2)) {
-			p1 = llSqrt(x - isq2);
-#ifdef _DEBUG
-			if (verbose > 0)
-				std::cout << "x = " << x << "= 2*" << p2 << "^2 + " << p1 << "^2\n";
-#endif
-			return true;
-		}
-	}
-	return false;
-}
-
-/* hypothesis: if a number has 1 or more prime factors of the form 8i+1 or 8i+3, 
-and all odd prime factors of the form 8i+5 or 8i+7 have even exponents it is 
-possible to express it as a^2 + 2*(b^2), otherwise it is impossible*/
-static bool checkAssert(const long long i) {
-	Znum iZ = i;
-	long long isq, isq2;
-	int type; /* 0 if number is a power of 2 (no odd prime factors),
-          1 if there is at least one odd prime factors of form 8i+1 or 8i+3
-		    and any odd prime factors is of form 8i+5 or 8i+7 have even exponents.
-		  2 if one ore more odd prime factors of form 8i+5 or 8i+7 has an odd
-		    exponent 
-		  3 if there are no odd prime factors of form 8i+1 or 8i+3, and all 
-		    odd prime factors of form 8i+5 or 8i+7 have an even exponent */
-	
-	type = classify(iZ);
-	if (type == 0 || type == 2 || type == 3)
-		if (sqcheck(i, isq, isq2)) {
-			/* assertion fails */
-			std::cout << "i = " << i << " = 2*" << isq2 << "^2 + " << isq << "^2\n";
-			std::cout << "type = " << type << '\n';
-			return false;
-		}
-		else return true;
-	
-	assert(type == 1);
-	if (!sqcheck(i, isq, isq2)) {
-		/* assertion fails */
-		std::cout << "i = " << i << '\n';
-		std::cout << "type = " << type << '\n';
-		return false;
-	}
-	else return true;
-}
-
-/* investigate which numbers can be expressed as a^2 + 2*(b^2)
-
-hypothesis: if a number has one or more prime factors of the form 8i+1 or 8i+3, 
-(i being an integer >= 0), and all odd prime factors of the form 8i+5 or 8i+7 
-have even exponents, it is possible to express it as a^2 + 2*(b^2), 
-otherwise it is impossible.
-This implies that if the number is divided by 2 until the quotioent is odd,
-the number must be 1 or 3 modulo 8
-
-See https://oeis.org/A002479. (this list includes cases where a or b is zero,
-which allows all perfect squares and 2 * perfect square as well.)
-
-command format is testa x[,y[,z]] 
-where x = 1 for test of all primes from 2 to y. 
-            check that p can be expressed as the sum of 2, 3 or 4 squares 
-	  x = 2 to check which numbers in range 2 to y can be expresssed as 
-	        a^2 + 2*(b^2)
-	  x = 3 to check for y random numbers each of size z bits, whether or
-	        not they can be expresssed as a^2 + 2*(b^2)*/
-static void doTestsA(const std::string& params) {
-	long long p1 = 1, p2 = 1000;
-	long long p3 = 0; 
-	int count = 0;
-	fList ifactors;
-	Znum iz, quads[4];
-
-	auto numParams = sscanf_s(params.data(), "%lld,%lld,%lld", &p1, &p2, &p3);
-
-	if (p1 == 1) {
-		for (long long p = 2; p <= p2; p = nextprime(p)) {
-			iz = p;
-			factorise(iz, ifactors, quads);
-			if (p % 4 == 1) {
-				/* p can be expressed as the sum of 2 squares */
-				if (quads[2] != 0 || quads[3] != 0)
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
-			}
-			else if (p % 8 != 7) {
-				/* p can be expressed as the sum of 3 squares */
-				if (quads[3] != 0)
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-					<< quads[1] << ", " << quads[2] << ", " << quads[3] << " ****\n";
-				if (quads[0] != quads[1] && quads[1] != quads[2]) {
-					/* all 3 values are different (we expected 2 the same) */
-					std::cerr << "p= " << p << "quads are; " << quads[0] << ", "
-						<< quads[1] << ", " << quads[2] << " ****\n";
-				}
-			}
-			/* if p = 7 (mod 8) 4 squares are needed */
-			count++;
-			if ((count & 0xfff) == 0) {
-				std::cout << count << " primes tested p = " << p << '\n';
-			}
-		}
-		std::cout << count << " primes tested \n";
-		return;
-	}
-	else if (p1 == 2) {
-		for (long long i = 2; i <= p2; i++) {
-			if (!checkAssert(i))
-				system("PAUSE");
-			if ((i & 0xffff) == 1)
-				std::cout << myTime() << ' ' << i - 1 << " tests completed \n";
-		}
-	}
-	else if (p1 == 3) {
-		long long x;
-		if (p3 < 24 || numParams < 3) {
-			std::cout << "Use default 24 for number size in bits \n";
-			p3 = 24;
-		}
-		if (p3 > 63) {
-			std::cout << "** max size is 63 bits! \n";
-			p3 = 63;
-		}
-		/* initialize random seed */
-		std::random_device rd;   // non-deterministic generator
-		std::mt19937_64 gen(rd());  // to seed mersenne twister.
-		std::uniform_int_distribution<long long> dist(1, 1LL<<p3); // distribute results
-													// between 1 and 2^p3 inclusive.
-
-		for (long long count = 0; count < p2; count++) {
-			x = dist(gen);     /* x is a random number */
-			if (!checkAssert(x))
-				system("PAUSE");
-			if ((count & 0xfff) == 0)
-				std::cout << myTime() << ' ' << count+1 << " tests completed \n";
-		}
-	}
-	else
-		std::cout << "** invalid subtest (use 1, 2 or 3) \n";
-	std::cout << "test a completed \n";
-}
 
 
 std::vector<std::string> inifile;  // copy contents of .ini here
@@ -2233,8 +2087,12 @@ retry:
 	}
 
 	/* doc file has been opened successfully */
+	/* change stdout mode to support unicode (need to use wprintf, not printf) 
+	this allows multi-byte charactes to be printed */
+	fflush(stdout);
+	int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
 	if (verbose > 0)
-		printf_s("searching for help on '%s'\n", helpTopic.data());
+		wprintf_s(L"searching for help on '%S'\n", helpTopic.data());
 
 	/* exit this loop when reached EOF or the next topic after the one required 
 	is reached */
@@ -2279,24 +2137,29 @@ retry:
 		}
 		else {  /* not a header line */
 			if (printtopic)
-				printf_s("%s", str);  /* print only if within the required topic */
+				wprintf_s(L"%S", str);  /* print only if within the required topic */
 		}
 	}
 
 	if (feof(doc)) {
 		if (printtopic)
-			putchar('\n');   /* contrary to the POSIX standard, the last line of the file
+			wprintf(L"\n");   /* contrary to the POSIX standard, the last line of the file
 							may not end with newline */
 		else
 			if (lang)
-				printf_s("Ayuda para %s no encontrado \n", helpTopic.data());
+				wprintf_s(L"Ayuda para %S no encontrado \n", helpTopic.data());
 			else
-				printf_s("Help for %s not found \n", helpTopic.data());
+				wprintf_s(L"Help for %S not found \n", helpTopic.data());
 	}
+	/* change stdout back to normal */
+	fflush(stdout);
+	_setmode(_fileno(stdout), oldmode);
 	fclose(doc);
 	return;
 }
 
+
+/* code 'borrowed' from YAFU */
 // machine info
 double MEAS_CPU_FREQUENCY;
 char CPU_ID_STR[80] = {'\0'};
@@ -3200,7 +3063,8 @@ static int processCmd(const std::string &command) {
 	const static std::vector<std::string> list =
 	{ "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
 	   "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
-	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF" };
+	   "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF",
+	   "PARI", "QMES"};
 
 	/* do 1st characters of text in command match anything in list? */
 	int ix = 0;
@@ -3209,7 +3073,8 @@ static int processCmd(const std::string &command) {
 		if (len > 1 && command.substr(0, len) == list[ix])
 			break;  /* exit loop if match found */
 		if (len == 1 && command == list[ix])
-			break;   /* 1-letter commands with no parameters only match 1-letter input */
+			break;   /* 1-letter commands with no parameters only match 1-letter input.
+		             F and V commands do have parameters */
 	}
 
 	if (ix >= list.size())
@@ -3296,17 +3161,20 @@ static int processCmd(const std::string &command) {
 				testerrors();
 				return 1;
 			}
-			case '9': {
-				doTests9();
+			case '9': {  /* test modular square root */
+				if (command.size() > 5)
+					doTests9(command.substr(6));         
+				else
+					doTests9("");   
 				return 1;
 			}
-			case 'A': {
+			case 'A': { /* test quadratic modular equation solver */
 				if (command.size() > 5)
 					doTestsA(command.substr(6));         // do basic tests 
-				else
-					doTestsA("");
-				return 1;
+				else doTestsA("");   /* test modular square root */
+					return 1;
 			}
+
 			default:
 				return 0;  /* not a recognised command */
 			}
@@ -3414,6 +3282,15 @@ static int processCmd(const std::string &command) {
 			/* if command processed, now save it for possible loop */
 			exprList.push_back(command);  
 		/* to be completed for rv =-1, rv = 1*/
+		return 1;
+	}
+	case 18: /* PARI */ {
+		pariParam(command);
+		return 1;
+	}
+	case 19: /* QMES */
+	{
+		quadModEqn(command);  /* Quadratic Modular Equation Solver */
 		return 1;
 	}
 	default:

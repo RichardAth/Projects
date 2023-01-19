@@ -14,8 +14,9 @@ HISTORY
 
 the program was converted from browser-based to a console window. The advantage
 is that it is somewhat faster, and the calculator part has been carefully tested.
-The disadvantage is that you have to download and build it. In order to do that
-you need GMP or MPIR multi-precision library and the Boost multi-precision library.
+The disadvantage is that you have to download the source code and build it. In 
+order to do that you need GMP or MPIR multi-precision library and the Boost 
+multi-precision library.
 
 the following changes were made:
 
@@ -242,13 +243,14 @@ This file contains the file paths for various files used by the calculator
 
 Anything not recognised as a parameter to be used is ignored. The path names 
 and executable file names for YAFU and Msieve can be specified, also the name
-of the help file used by the HELP command and the names of two sound files.
+of the help file used by the HELP command, the names of two sound files and
+the location of the libpari file.
 
 The "attsound" file is played when prompting for input and the "endsound" file
 is played when processing a command or expression that took more than 10 seconds
 is completed.
 
-A typical file looks like:
+A typical BigIntCalculator.ini file looks like:
 
     %file originally created on 26/07/2020 at 19:53:52
     yafu-path=C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
@@ -258,6 +260,7 @@ A typical file looks like:
     helpfile=C:\Users\admin99\Source\Repos\RichardAth\Projects\BigIntCalculator\docfile.txt
     endsound=c:/Windows/Media/Alarm09.wav
     attsound=c:/Windows/Media/chimes.wav
+    paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
 
 
  ALTERNATIVES
@@ -336,10 +339,9 @@ the following functions and operators are only in the calculator
 n!                                  factorial
 n!..!                               multi-factorial, not to be confused with (n!)!
 n#                                  primorial. 
-
 B(n)                                Previous probable prime before n
 F(n)                                Fibonacci number Fn
-L(n)                                Lucas number Ln = Fn-1 + Fn+1
+L(n)                                Lucas number Ln = F(n-1) + F(n+1)
 N(n)                                Next probable prime after n
 PI(n)                               the number of prime numbers less than or equal to n
 P(n)                                Unrestricted Partition Number (number of 
@@ -353,6 +355,10 @@ Modpow(m,n,r)                       finds m^n modulo r. more efficient than (m^n
                                     if gcd(m, r) is 1
 Totient(n)                          finds the number of positive integers less than n 
                                     which are relatively prime to n.
+Carmichael(n)                     : λ(n) of a positive integer n is the smallest positive integer 
+                                    m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                                    and n that is coprime to n. Also known as the reduced totient
+                                    function.
 IsPrime(n)                          returns zero if n is not probable prime, -1 if it is.
 NumDivs(n)                          Number of positive divisors of n either prime or composite.
 SumDivs(n)                          Sum of all positive divisors of n both prime and composite.
@@ -367,6 +373,9 @@ R2(n)                               The number of ways n can be formed as the su
 R3(n)                               The number of ways n can be formed as the sum of x^2 + y^2 + z^2
                                     where x, y and z are negative, zero, or positive.
 									WARNING: for large n this is very slow
+R3H(n)                              Same as R3(n) but using the Hurwitz class number to get
+                                    the result. Much faster but requires PARI-GP to have been
+                                    installed.
 llt(n)                              Do Lucas-Lehmer primality test on 2^n-1.
                                     Return 0 if 2^n-1 is composite, 1 if prime
 sqrt(n)                             Calculate floor(sqrt(n))
@@ -374,6 +383,21 @@ nroot(x, n)                         Calculate nth root of x
 numfact(n)                          returns the number of uniqe factors in n
 minfact(n)                          returns the value of the smallest factor of n
 maxfact(n)                          returns the value of the largest factor of n
+FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the mode m
+                  mode    Order of factors    Repeated factors
+                  0       Ascending           No
+                  1       Descending          No
+                  2       Ascending           Yes
+                  3       Descending          Yes
+HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
+                  n < 10^32. The true HCLASS is not always an integer, but 
+                  multiplying by 12 always yields an integer.
+CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
+                  not a perfect square. For +ve n, n must be < 730,000,000 to avoid
+                  pari stack overflow.
+TAU(x)          : Ramanujan's tau function
+STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
+                  if f = 2, return the Stirling number of the second kind S(n,k).
 
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)                  0 <= exponent <= 2^31-1, also result is estimated 
@@ -498,6 +522,22 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    The 'time' column gives the time required for each factorisation to one-
    hundredth of a second.
 
+   Some timings for factorisation of numbers composed from 2 random primes 
+   approximately the same size:
+
+   20 digits          0.06 sec
+   30 digits          0.12 sec
+   40 digits          0.48 sec
+   50 digits          1.0  sec
+   58 digits          4.6  sec
+   60 digits          4.7  sec
+   69 digits         27    sec
+   80 digits   2 min 44 sec
+   90 digits  17 min
+
+   Factorisation for 60 or more digits uses YAFU. These are 'worst case' 
+   figures. Random nubers of these sizes would be factorised much faster.
+
  Added 5/6/2021
 
  The 'engine'at the heart of the calculator was largely rewritten; 
@@ -517,14 +557,31 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
         numbers on the stack to perform an operation an error is reported.
 
  Added July 2022
+ 
+ A number of functions in this calculator have ben implemented using libpari.
+These functions are: R3H, HCLASS, CLASSNO, TAU, STIRLING. Although PARI is
+written in C, the coding methods used in PARI are so different from the rest of 
+the calculator that it is easier to link dynamically to the libpari dll and
+convert numbers to and from the PARI 'GEN' format as required, rather than
+convert PARI function source code. Because the libpari dll is compiled using
+MSYSYS2, not Visual Studio, a less common method to link to the dll has to be 
+used. 
 
- An interface to library part of PARI-GP was developed. I failed to get a working
- version of the PARI library compiled using Visual Studio, so instead used the 
- precompiled dll file. However this dll file was compiled using MSYS2 and GCC, 
- so is not compatible with the Visual Studio linker. However, dynamic linking 
- does work  but a separate function pointer for each libpari function used has 
- to be set up.
+ Dynamic linking does work  but a separate function pointer for each libpari 
+ function used has  to be set up.
  So far this has been used to calculate the Hurwitz-Kronecker class number.
  The PARI function is very fast, although the algorithm used is a bit mind-blowing.
  A fast method to calculate R3 based on this has also been developed. (The original
  method is desparately slow for numbers of any significant size)
+
+ Now also uses Pari library to calculate the class number, Ramanujan's tau function,
+ and Stirling numbers (first & second kind)
+
+ As an experiment, a feature was added to use Parilib's factor function to factorise
+ larger numbers. It turns out to be generally somewhat slower than the built-in 
+ ECM and SIQS factorisation.
+
+ Similarly to using YAFU or Msieve for factorisation, Pari factorisation is turned 
+ on by PARI ON and off by PARI OFF commands. The pari stack is initialised if it
+ is required but is NOT closed except by a PARI CLOSE command. (There is no need
+ for a PARI OPEN command; it's done automatically if required)

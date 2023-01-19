@@ -20,6 +20,14 @@ struct factorsS {
 	__int64 factorlist[19][2]; // prime factor, exponent
 };
 
+struct sFactors
+{
+	int *ptrFactor;
+	int multiplicity;
+	int upperBound;
+	int Type;
+};
+
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
@@ -82,6 +90,7 @@ private:
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
+	int pari = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int power = 0;		   // perfect power
@@ -93,11 +102,12 @@ public:
 	friend bool factor(const Znum &toFactor, fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 
-	friend bool ecm(Znum &zN, fList &Factors, Znum &Zfactor);
+	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend int classify(Znum n);
+	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
 	/* methods that are in the class */
 
@@ -113,6 +123,27 @@ public:
 			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
 			term = term * (i.Factor - 1);	                        // (p^(e-1)-1)*(p-1)
 			result *= term;
+		}
+		return result;
+	}
+
+/* find  Carmichael function λ(n) See Wikpedia
+https://en.wikipedia.org/wiki/Carmichael_function#Computing_%CE%BB(n)_with_Carmichael's_theorem
+AKA reduced totient function. 
+See also https://oeis.org/A002322 */
+	Znum carmichael() const {
+		// this only works if factorisation is complete!
+		if (this->f.empty())
+			return 0;  /* unable to calculate */
+		Znum result = 1, term;
+		for (auto i : this->f) {
+			if (i.Factor == 2 && i.exponent > 2)
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2
+			else {
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+				term = term * (i.Factor - 1);	                     // (p^(e-1)-1)*(p-1)
+			}
+			mpz_lcm(ZT(result), ZT(result), ZT(term));
 		}
 		return result;
 	}
@@ -191,6 +222,8 @@ for factors found by YAFU or Msieve */
 			std::cout << " Msieve: " << this->msieve;
 		if (this->yafu > 0)
 			std::cout << " YAFU:   " << this->yafu;
+		if (this->pari > 0)
+			std::cout << " PARI:   " << this->pari;
 		if (this->carm > 0)
 			std::cout << " Carmichael: " << this->carm;
 		if (this->leh > 0)
@@ -283,7 +316,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			return (b / 2);
 		//else return (b + 1) / 2;
 		else {
-		/* if b is odd the the exponents of ALL (4k+1) prime factors of n are even,
+		/* if b is odd the the exponents of ALL prime factors of n other than 2 are even,
 		therefore n is a perfect square, or 2*perfect square */
 			if ((a0 & 1) == 0)
 				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
@@ -465,8 +498,9 @@ Repeated factors: No or Yes
 //void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
 
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
 
-extern int ElipCurvNo;            // Elliptic Curve Number
+//extern int ElipCurvNo;            // Elliptic Curve Number
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
@@ -475,6 +509,7 @@ long long int PollardRho(long long int n, int depth = 0);
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
 bool callMsieve(const Znum& num, fList& Factors);
 bool callYafu(const Znum& num, fList& Factors);
+void parifactor(const Znum& n, fList& factors);
 
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
 
@@ -515,7 +550,7 @@ enum class retCode
 	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
 	//EXPR_BASE_MUST_BE_POSITIVE,
 	//EXPR_POWER_MUST_BE_POSITIVE,
-	//EXPR_MODULUS_MUST_BE_NONNEGATIVE,
+	EXPR_MODULUS_MUST_BE_NONNEGATIVE,
 	//EXPR_VAR_OR_COUNTER_REQUIRED,
 	EXPR_OK = 0,
 	EXPR_FAIL = 1

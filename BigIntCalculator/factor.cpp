@@ -17,8 +17,10 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <intrin.h>
 #include "showtime.h"
-#include "factor.h"
 #include "bignbr.h"
+#include "bigint.h"
+#include "factor.h"
+
 #undef min                 // use std::min
 
 static long long Gamma[386];
@@ -706,7 +708,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 		}
 	} while (restart);  // keep looping until no more factors found.
 
-	if (verbose > 0) {
+	if (verbose > 1) {
 		if (lang)
 			std::cout << "fin de la división de prueba. " << Factors.f.size() - 1
 			<< " factores encontrados hasta ahora \n";
@@ -802,11 +804,11 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 		int nooflimbs = numLimbs(Zpower);
 		// get approximate size (1 limb = 64 bits)
-		if (nooflimbs <=3 || (!msieve && !yafu)) {
+		if (nooflimbs <=3 || (!msieve && !yafu && !Pari)) {
 			/* use built-in ECM & SIQS if number to factor <= 192 bits (58 digits)
 			   because this is fastest for smaller numbers,
 			   or if both YAFU and Msieve are turned off */
-			ElipCurvNo = 1;  // start with 1st curve
+			//ElipCurvNo = 1;  // start with 1st curve
 			auto rv = ecm(Zpower, Factors, Zfactor);          
 			// get a factor of number. result in Zfactor
 			if (!rv)
@@ -841,15 +843,21 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 			should be set. */
 			if (msieve)  
 				rv = callMsieve(Zpower, Factors);
-			else
+			else if (yafu)
 				rv = callYafu(Zpower, Factors);
+			else {
+				parifactor(Zpower, Factors);
+				rv = true;
+			}
 			if (rv) {
 				i = -1;   // success; restart loop at beginning to tidy up!
 				// record any increase in number of factors
 				if (msieve)
 					Factors.msieve += (int)(Factors.f.size() - fsave); 
-				else
+				else if (yafu)
 					Factors.yafu += (int)(Factors.f.size() - fsave); 
+				else 
+					Factors.pari += (int)(Factors.f.size() - fsave);
 			}
 			else {
 				msieve = false;   // failed once, don't try again
@@ -886,7 +894,7 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 
 	// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
 	Tmp1 = -1 - Mult[0] * Mult[0];
-	roots = ModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+	roots = ModSqrtQE(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
 	assert(!roots.empty());
 	Mult[1] = roots[0];
 	/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/

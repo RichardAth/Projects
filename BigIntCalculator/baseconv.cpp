@@ -1,4 +1,4 @@
-/*
+﻿/*
 This file is part of Alpertron Calculators.
 Copyright 2015 Dario Alejandro Alpern
 Alpertron Calculators is free software: you can redistribute it and/or modify
@@ -55,6 +55,160 @@ void int2dec(char **pOutput, long long nbr)
 	}
 	*ptrOutput = '\0';   // null terminate O/P
 	*pOutput = ptrOutput;
+}
+
+
+static void Bin2DecLoop(char** ppDest, int digit[], bool* pSignificantZero,
+	int valueGrp, int grpLen, int* pGroupCtr, int* pDigits)
+{
+	int digits = *pDigits;
+	int count;
+	int value = valueGrp;
+	char* ptrDest = *ppDest;
+	int groupCtr = *pGroupCtr;
+	bool significantZero = *pSignificantZero;
+	for (count = 0; count < DIGITS_PER_LIMB; count++)
+	{
+		digit[count] = value % 10;
+		value /= 10;
+	}
+	for (count = DIGITS_PER_LIMB - 1; count >= 0; count--)
+	{
+		if ((digit[count] != 0) || significantZero)
+		{
+			digits++;
+			*ptrDest = (char)(digit[count] + '0');
+			ptrDest++;
+			if (groupCtr == 1)
+			{
+				*ptrDest = ' ';
+				ptrDest++;
+			}
+			significantZero = true;
+		}
+		groupCtr--;
+		if (groupCtr == 0)
+		{
+			groupCtr = grpLen;
+		}
+	}
+	*ppDest = ptrDest;
+	*pGroupCtr = groupCtr;
+	*pSignificantZero = significantZero;
+	*pDigits = digits;
+}
+
+
+// Convert little-endian number to a string with space every groupLen digits.
+  // In order to perform a faster conversion, use groups of DIGITS_PER_LIMB digits.
+void Bin2Dec(char** ppDecimal, const limb* binary, int nbrLimbs, int groupLength)
+{
+	int grpLen = groupLength;
+	int len;
+	int index;
+	int index2;
+	const limb* ptrSrc = binary + nbrLimbs - 1;
+	char* ptrDest;
+	bool significantZero = false;
+	int groupCtr;
+	int digit[DIGITS_PER_LIMB];
+	int digits = 0;
+	bool showDigitsText = true;
+	unsigned int firstMult;
+	unsigned int secondMult;
+	firstMult = (unsigned int)BITS_PER_GROUP / 2U;
+	firstMult = 1U << firstMult;
+	secondMult = LIMB_RANGE / firstMult;
+
+	if (grpLen <= 0)
+	{
+		grpLen = -grpLen;
+		showDigitsText = false;
+	}
+	power10000[0] = *ptrSrc % MAX_LIMB_CONVERSION;
+	power10000[1] = *ptrSrc / MAX_LIMB_CONVERSION;
+	len = ((power10000[1] == 0) ? 1 : 2); // Initialize array length.
+	for (index = nbrLimbs - 2; index >= 0; index--)
+	{
+		double dCarry;
+		double dQuotient;
+		limb* ptrPower;
+
+		// Multiply by firstMult and then by secondMult, so there is never
+		// more than 53 bits in the product.
+
+		ptrPower = power10000;
+		dQuotient = 0;
+		for (index2 = 0; index2 < len; index2++)
+		{
+			dCarry = dQuotient + ((double)*ptrPower * (double)firstMult);
+			dQuotient = floor(dCarry / (double)MAX_LIMB_CONVERSION);
+			*ptrPower = (int)(dCarry - (dQuotient * (double)MAX_LIMB_CONVERSION));
+			ptrPower++;
+		}
+		if (dQuotient != 0.0)
+		{
+			*ptrPower = (int)dQuotient;
+			len++;
+		}
+		ptrPower = power10000;
+		ptrSrc--;
+		dQuotient = *ptrSrc;
+		for (index2 = 0; index2 < len; index2++)
+		{
+			dCarry = dQuotient + ((double)*ptrPower * (double)secondMult);
+			dQuotient = floor(dCarry / (double)MAX_LIMB_CONVERSION);
+			*ptrPower = (int)(dCarry - (dQuotient * (double)MAX_LIMB_CONVERSION));
+			ptrPower++;
+		}
+		if (dQuotient != 0.0)
+		{
+			*ptrPower = (int)dQuotient;
+			ptrPower++;
+			len++;
+		}
+	}
+	// At this moment the array power10000 has the representation
+	// of the number in base 10000 in little-endian. Convert to
+	// ASCII separating every groupLength characters.
+	ptrDest = *ppDecimal;
+	ptrSrc = &power10000[len - 1];
+	groupCtr = len * DIGITS_PER_LIMB;
+	if (grpLen != 0)
+	{
+		groupCtr %= grpLen;
+		if (groupCtr == 0)
+		{
+			groupCtr = grpLen;
+		}
+	}
+	for (index = len; index > 0; index--)
+	{
+		int value = *ptrSrc;
+		ptrSrc--;
+		Bin2DecLoop(&ptrDest, digit, &significantZero, value, grpLen, &groupCtr, &digits);
+	}
+	if (!significantZero)
+	{     // Number is zero.
+		*ptrDest = '0';
+		ptrDest++;
+	}
+	else if ((digits > 30) && showDigitsText)
+	{
+		*ptrDest = '(';
+		ptrDest++;
+		int2dec(&ptrDest, digits);
+		copyStr(&ptrDest, (lang ? " dígitos)" : " digits)"));
+	}
+	else
+	{
+		if (ptrDest > *ppDecimal)
+		{
+			ptrDest--;               // Delete trailing space.
+		}
+	}
+	*ptrDest = '\0';             // Add terminator.
+	*ppDecimal = ptrDest;
 }
 
 // Convert little-endian number to a string with space every groupLen digits.
@@ -181,6 +335,19 @@ void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength) {
 	Bin2Dec(BigInt.limbs, decimal, BigInt.nbrLimbs, groupLength);
 }
 
+
+void BigInteger2Dec(char** ppDecimal, const BigInteger* pBigInt, int groupLength)
+{
+	char* ptrDecimal = *ppDecimal;
+	if (pBigInt->sign == SIGN_NEGATIVE)
+	{
+		*ptrDecimal = '-';
+		ptrDecimal++;
+	}
+	Bin2Dec(&ptrDecimal, pBigInt->limbs, pBigInt->nbrLimbs, groupLength);
+	*ppDecimal = ptrDecimal;
+}
+
 /* << definitions for output streams (std::cout etc)
 definitions below are crude but they work. Only decimal output
 is supported for direct output */
@@ -197,4 +364,26 @@ std::ostream  &operator<<(std::ostream  &s, const BigInteger  &n) {
 	auto sLen = strnlen_s(&buffer[0], (size_t)buflen);
 	buffer.resize(sLen);
 	return s << buffer;
+}
+
+/* instant print */
+void PrintBigInteger(const BigInteger* pBigInt, int groupLength) {
+	char buffer[5000] = { 0 };
+	char* pbuffer = buffer;
+	BigInteger2Dec(&pbuffer, pBigInt, groupLength);
+	printf("%s", buffer);
+}
+
+void copyStr(char** pptrString, const char* stringToCopy)
+{
+	char* ptrString = *pptrString;
+	const char* ptrStringToCopy = stringToCopy;
+	while (*ptrStringToCopy != '\0')
+	{
+		*ptrString = *ptrStringToCopy;
+		ptrString++;
+		ptrStringToCopy++;
+	}
+	*ptrString = '\0';
+	*pptrString = ptrString;
 }

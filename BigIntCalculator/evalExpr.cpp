@@ -15,6 +15,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include "bignbr.h"   /* access PrimalityTest function*/
+#include "bigint.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include "factor.h"
@@ -88,6 +89,7 @@ enum class opCode {
 	fn_modpow,
 	fn_modinv,
 	fn_totient,
+	fn_carmichael,
 	fn_numdivs,
 	fn_sumdivs,
 	fn_sumdigits,
@@ -122,6 +124,7 @@ enum class opCode {
 	fn_maxfact,           /* largest factor */
 	fn_ispow,             /* check if perfect power */
 	fn_modsqrt,           /* modular square root */
+	fn_modsqrtOld,        /* modular square root using Tonelli-Shanks */
 	fn_invtot,            /* inverse totient */
 	fn_divisors,          /* list of divisors */
 	fn_primroot,          /* lowest primitive root */
@@ -145,6 +148,7 @@ const static struct functions functionList[]{
 	"MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
 	"MODINV",    2,  opCode::fn_modinv,
 	"TOTIENT",   1,  opCode::fn_totient,
+	"CARMICHAEL",1,  opCode::fn_carmichael,
 	"SUMDIVS",   1,  opCode::fn_sumdivs,
 	"SUMDIGITS", 2,  opCode::fn_sumdigits,
 	"SQRT",      1,  opCode::fn_sqrt,
@@ -156,7 +160,8 @@ const static struct functions functionList[]{
 	"NUMFACT",   1,  opCode::fn_numfact,
 	"MINFACT",   1,  opCode::fn_minfact,
 	"MAXFACT",   1,  opCode::fn_maxfact,
-	"MODSQRT",   2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"MODSQRTNEW",2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
+	"MODSQRT",   2,  opCode::fn_modsqrtOld, // find x such that x^2 = a mod p
 	"DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
 	"FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
 	"InvTot",    1,  opCode::fn_invtot,         // inverse totient
@@ -270,6 +275,20 @@ static Znum ComputeTotient(const Znum &n) {
 	if (rv) {
 		auto tot = factorlist.totient();
 		return tot;
+	}
+	else return 0;
+}
+
+/* Calculate Carmichael Function AKA reduced totient */
+static Znum ComputeCarmichael(const Znum& n) {
+	fList factorlist;
+
+	if (n == 1)
+		return 1;
+	auto rv = factorise(n, factorlist, nullptr);
+	if (rv) {
+		auto car = factorlist.carmichael();
+		return car;
 	}
 	else return 0;
 }
@@ -932,6 +951,12 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		result = ComputeTotient(p[0]);
 		break;
 	}
+	case opCode::fn_carmichael: {			// reduced totient
+		if (p[0] < 1)
+			return retCode::NUMBER_TOO_LOW;;
+		result = ComputeCarmichael(p[0]);
+		break;
+	}
 	case opCode::fn_numdivs: {		// NUMDIVS
 		if (p[0] < 1) {
 			return retCode::NUMBER_TOO_LOW;
@@ -1061,13 +1086,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 		if (p[0] < 0) {
 			return retCode::INVALID_PARAM;  // parameter out of range
 		}
-		if (mpz_sizeinbase(ZT(p[0]), 10) > 28)
+		if (mpz_sizeinbase(ZT(p[0]), 10) > 35)
 			return retCode::NUMBER_TOO_HIGH;  /* very large numbers cause pari stack overflow */
 		result = R3h((p[0]));
 		break;
 	}
 	case opCode::fn_hurwitz: {
-		if (mpz_sizeinbase(ZT(p[0]), 10) >28)
+		if (mpz_sizeinbase(ZT(p[0]), 10) >35)
 			return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
 		result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
 		break;
@@ -1080,7 +1105,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 			return retCode::INVALID_PARAM;
 		if (isPerfectSquare(p[0]))
 			return retCode::INVALID_PARAM;
-		if  (p[0] > 730000000)
+		if  (p[0] > 7300000000)
 			return retCode::NUMBER_TOO_HIGH;  /* avoid pari-stack overflow */
 		result = classno(p[0], 0);  /* returns class number */
 		break;
@@ -1224,8 +1249,33 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	case opCode::fn_modsqrt: /* modular square root */ {
 		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
 		if (p[1] <= 0)
-			return retCode::NUMBER_TOO_LOW;  /* modulus must be +ve */
-		roots = ModSqrt(p[0], p[1]);
+			return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
+		roots = ModSqrtQE(p[0], p[1]);
+		if (verbose > 0) {
+			if (roots.empty())
+				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
+			else {
+				gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
+				for (Znum r : roots)
+					gmp_printf("%Zd, ", r);
+				putchar('\n');
+			}
+		}
+		/* the result can be: no solution: roots is empty
+							  or one  or more solutions */
+		if (roots.empty())
+			return retCode::INVALID_PARAM;  /* no solution exists */
+
+		result = roots[0];     /* ignore 2nd solution, if any */
+		multiValue = true;     /* indicate multiple return values */
+
+		break;
+	}
+	case opCode::fn_modsqrtOld: /* modular square root */ {
+		/* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
+		if (p[1] <= 0)
+			return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
+		roots = ModSqrt(p[0], p[1]);  /* uses Tonelli-Shanks algorithm */
 		if (verbose > 0) {
 			if (roots.empty())
 				gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);

@@ -132,6 +132,8 @@ long long dobenchmark(void) {
 	long long ctr = 0;
 
 	srand(474644141);
+	x = 22;
+	x = -x;
 
 	do {
 		std::cout << "select operator (e to exit) \n";
