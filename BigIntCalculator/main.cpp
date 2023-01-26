@@ -34,7 +34,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 extern Znum zR, zR2, zNI, zN;
 #endif
 
-typedef unsigned __int32 uint32;
+//typedef unsigned __int32 uint32;
 
 /* external function declaration */
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);

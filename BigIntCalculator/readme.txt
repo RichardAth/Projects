@@ -537,6 +537,10 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
 
    Factorisation for 60 or more digits uses YAFU. These are 'worst case' 
    figures. Random nubers of these sizes would be factorised much faster.
+   The conclusion is that increasing the number size by 16 bits (approx 5 
+   decimal digits) increates the factorisation time bay a factor of about 3.
+   Also, for larger numbers with no small factors, using "YAFU PLAN NOECM"
+   saves a significant amount of time.
 
  Added 5/6/2021
 
