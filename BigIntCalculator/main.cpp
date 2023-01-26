@@ -1255,11 +1255,14 @@ static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 }
 
 /* test factorisation using pseudo-random numbers of a specified size.
-Command format is TEST2 [num1[,num[,num3]]] where 
-num1 is the number of tests, 
-num2 is the size of the numbers to be factored in bits,
-if num3  NE 0 the number to be factored consists of 2 approximately same-sized prime
-factors, otherwise it is a random number that can contain any number of factors. */
+Command format is TEST2 [p1[,p2[,p3]]] where 
+p1 is the number of tests, 
+p2 is the size of the numbers to be factored in bits,
+if p3  NE 0 the number to be factored consists of 2 approximately same-sized prime
+factors, otherwise it is a random number that can contain any number of factors. 
+if p3 <= 1 use fixed random seed value
+if p3 = 2 use truly random seed value
+if p3 > 2  use p3 as the seed value */
 static void doTests2(const std::string &params) {
 	long long p1;  // number of tests; must be greater than 0
 	long long p2;  // size of numbers to be factored in bits (>= 48)
@@ -1279,9 +1282,19 @@ static void doTests2(const std::string &params) {
 	if (p2 >= 500)
 		std::cout << "**warning: factoring such large numbers could take weeks! \n";
 	gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
-	gmp_randseed_ui(state, 756128234);
+	if (p3 <= 1)
+		gmp_randseed_ui(state, 756128234);
 	/* fixed seed means that the exact same tests can be repeated provided
 	   that the same size of number is used each time */
+	if (p3 == 2) {
+		std::random_device rd;   // non-deterministic generator
+		unsigned long long seedval = rd();
+		std::cout << "random generator seed value = " << seedval << '\n';
+		gmp_randseed_ui(state, seedval);
+	}
+	else 
+		gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
+	
 
 	auto start = clock();	// used to measure execution time
 
