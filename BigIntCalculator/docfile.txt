@@ -238,9 +238,13 @@ TEST2   test factorisation using pseudo-random numbers of a specified size.
         tests,  num2 is the size of the numbers to be factored in bits. If num3  
         NE 0 the number to be factored consists of 2 approximately same-sized 
         'strong' prime factors, otherwise it is a random number that can contain 
-        any number of factors. If the values for num2 and num3 are the same in 
-        two TEST2 commands the same sequence of numbers to be factored is 
-        generated. This command is useful for benchmarking factorisation.
+        any number of factors. If num3 = 1 a fixed 'seed' for the random number
+        generator is used. If num3 = 2 a truly random seed value is used. If 
+        num3 > 2 the value of num3 is used as the 'seed' value. 
+		
+        If the value for num2 is the same and num3 ≠ 2 in two TEST2 
+        commands the same sequence of numbers to be factored is generated. This 
+        is useful for benchmarking factorisation.
 
 TEST3   Tests for the built-in bigintegers. These are based on DA's biginteger 
         functions but made into a C++ class with arithmetic , shift, compare 

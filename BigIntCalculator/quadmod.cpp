@@ -443,7 +443,8 @@ int quadModEqn(const std::string &command) {
     return 0;
 }
 
-/* find modular square root */
+/* find modular square root. Solve the equation given aa and m.
+	x^2 ≡ aa mod m */
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
     roots.clear();

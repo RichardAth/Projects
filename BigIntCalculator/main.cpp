@@ -1706,7 +1706,7 @@ static void doTests3(void) {
 /* see http://oeis.org/A002102 */
 
 extern unsigned __int64 R2(const unsigned __int64 n);
-extern void squareFree(__int64& n, __int64& sq, factorsS& sqf);
+
 //static void doTests4(void) {
 //	generatePrimes(2000);
 //	for (int i = 0; i <= 9992; i++) {
