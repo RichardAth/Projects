@@ -426,7 +426,8 @@ static Znum ComputeSumDigits(const Znum &n, const Znum &radix) {
 	return result;
 }
 
-/* RevDigits(n,r): finds the value obtained by writing backwards the digits of n in base r */
+/* RevDigits(n,r): finds the value obtained by writing backwards the digits of n 
+in base r. r should be > 1  */
 static Znum ComputeRevDigits(const Znum &n, const Znum &radix) {
 
 	Znum argum = n, Temp;
@@ -970,14 +971,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 
 	case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+		if (p[1] <= 1)
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeSumDigits(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_numdigits: /* number of digits of p[0] in base p[1] */ {
+		if (p[1] <= 1)
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeNumDigits(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_revdigits: {	// revdigits
+		if (p[1] <=1 )
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeRevDigits(p[0], p[1]);
 		break;
 	}

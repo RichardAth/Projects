@@ -565,10 +565,10 @@ void textError(retCode rc) {
 			std::cout << "Expression #\n";
 		}
 		break;*/
-	//case retCode::EXPR_BASE_MUST_BE_POSITIVE:
-	//	std::cout << (lang ? "La base debe ser mayor que cero\n" :
-	//		"Base must be greater than zero\n");
-	//	break;
+	case retCode::EXPR_BASE_MUST_BE_POSITIVE:
+		std::cout << (lang ? "La base debe ser mayor que un\n" :
+			"Base must be greater than one\n");
+		break;
 	//case retCode::EXPR_POWER_MUST_BE_POSITIVE:
 	//	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
 	//		"Power must be greater than zero\n");
