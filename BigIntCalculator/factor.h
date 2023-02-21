@@ -28,6 +28,12 @@ struct sFactors
 	int Type;
 };
 
+extern int lang;    // 0 English, 1 = Spanish
+void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hex);
+/* ComputeNumDigits(n,r): Number of digits of n in base r. */
+long long ComputeNumDigits(const Znum& n, const Znum& radix);
+
+
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */

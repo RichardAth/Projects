@@ -1,8 +1,5 @@
 #include "pch.h"
-#include <windows.h>
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
+
 //#include "pari.h"
 extern std::string PariPath;
 extern HWND handConsole;      /* handle to console window */

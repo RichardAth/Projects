@@ -30,11 +30,7 @@ the results would look completely different.
 **************************************************************** */
 
 #include "pch.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
+
 #include "showtime.h"
 
 #pragma warning(disable : 4996)

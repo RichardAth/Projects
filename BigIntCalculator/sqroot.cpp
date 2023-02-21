@@ -14,9 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
+
 
 static limb approxInvSqrt[MAX_LEN];
 limb approxInv[MAX_LEN];

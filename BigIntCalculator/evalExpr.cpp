@@ -14,13 +14,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "bignbr.h"   /* access PrimalityTest function*/
-#include "bigint.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include "factor.h"
 #include <stack>
-
 
 // declarations for external function
 
@@ -1831,7 +1825,7 @@ Added 5/6/2021
 		one number on the stack at the end, or at any time there are not enough
 		numbers on the stack to perform an operation an error is reported.
 		(this would indicate a syntax error not detected earlier)*/
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;

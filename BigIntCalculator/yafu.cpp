@@ -1,8 +1,5 @@
 #include "pch.h"
-#include <windows.h>
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
+
 #include "showtime.h"
 
 extern HWND handConsole;      /* handle to console window */

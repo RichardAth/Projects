@@ -18,28 +18,17 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <io.h>
 
-//#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <Mmsystem.h >   // for sound effects
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
-
 #include "diagnostic.h"
 
 #define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
-#include "bignbr.h"
-#include "bigint.h"
 extern Znum zR, zR2, zNI, zN;
 #endif
-
-//typedef unsigned __int32 uint32;
 
 /* external function declaration */
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 char* getFileName(const char* filter, HWND owner);
-retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
 int lang = 0;             // 0 English, 1 = Spanish
 
@@ -73,7 +62,6 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* function declarations, only for functions that have forward references */
-void textError(retCode rc);
 
 
 /* get time in format hh:mm:ss */

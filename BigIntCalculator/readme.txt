@@ -90,7 +90,7 @@ B. Test whether the number is prime:
    If it is prime mark it as such. 
    Otherwise either:
       factorise it using built-in ECM, SIQS and Lehman algorithms. SIQS is only
-      used for numbers between 30 and 95 digits. This method is alway used for 
+      used for numbers between 30 and 95 digits. These methods are alway used for 
       numbers less than 2^192 (58 digits)
   OR
       factorise it using Msieve. Using modified Msieve that makes more use of

@@ -17,23 +17,14 @@
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
-
 
 #include "main.h"
 #include "expression.h"
-#include "factor.h"
 #include "quadmodLL.h"
 
 int groupLen;
 
 char output[300000];
-
-/* external functions */
-void textError(retCode rc);
-retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, 
-    bool* multiV = nullptr);
 
 static BigInteger discriminant;
 static BigInteger sqrtDiscriminant;

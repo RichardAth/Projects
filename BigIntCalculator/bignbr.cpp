@@ -14,10 +14,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
-
 
 /* nbr = - nbr */
 void ChSignBigNbr(int nbr[], int length)

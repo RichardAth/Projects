@@ -23,6 +23,15 @@
 #else
 #include "mpir.h"
 #endif
+
+#include <Windows.h>
+
+#include "boost/multiprecision/gmp.hpp" 
+typedef boost::multiprecision::mpz_int Znum;
+
+#include "bignbr.h"
+#include "bigint.h"
+#include "factor.h"
 #include "main.h"
 
 #define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1

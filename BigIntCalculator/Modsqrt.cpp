@@ -1,8 +1,4 @@
 ﻿#include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
-void textError(retCode rc);
 
 static std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 
@@ -183,7 +179,7 @@ std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda)
 	Znum mod = power(prime, lambda);
 
 	std::vector <Znum> rx;
-
+#undef min  /* remove min defined in windows.h */
 	/* this part was derived from Wikipedia
 	see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#Tonelli's_algorithm_will_work_on_mod_p^k
 	The explanation there is not very clear but I got working code out of it. */
