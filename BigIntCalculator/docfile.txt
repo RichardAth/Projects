@@ -24,7 +24,7 @@ the result will be:
 $P = 211
 $X = 3291009114642412084309938365114701009965471731267159726697218047
 
-You can get help on the following topics by entering "HELP <topic>";
+You can get further help by selecting from the following topics:
 expression  function  yafu  msieve  other  test  loop   background qmes pari
 
 [EXPRESSION]
@@ -180,11 +180,10 @@ The YAFU command controls factorisation using YAFU:
    YAFU PATH Displays or changes path used when starting YAFU
    YAFU LOG  Displays path & file name for YAFU output file
    YAFU PLAN <name> 
-             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP.
-             These correspond to the -plan options documented in YAFU's
-             docfile.txt file. The default is NORMAL. This is a convenient way
-             to control the amount of testing using ECM before switching to SIQS 
-             or NFS.
+             where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP. These 
+             correspond to the -plan options documented in YAFU's docfile.txt 
+             file. The default is NORMAL. This is a convenient way to control 
+             the amount of testing using ECM before switching to SIQS or NFS.
 
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
 back on by the YAFU ON command (which also turns Msieve off). The default path to 
@@ -573,5 +572,10 @@ linkage is not set up, and the libpari file need not exist)
 The name of the libpari file is obtained from the paripath parameter in the 
 BigIntCalculator.ini file, e.g. 
     paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
+
+Facorisation using PARI is turned on by "PARI ON" command, off by "PARI OFF"
+The "PARI CLOSE" command frees the memory used by the pari stack. 
+"PARI PATH" displays the current path to the libpari.dll file, and 
+"PARI PATH SET" can change the path to access the .dll file.
 
 To install libpari go to https://pari.math.u-bordeaux.fr/download.html
