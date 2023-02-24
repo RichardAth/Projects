@@ -329,6 +329,7 @@
     <None Include="..\..\..\..\..\Documents\my word docs\inverse_totient.docx">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
     </None>
+    <None Include="main_men.bin" />
     <None Include="Modular square root.docx" />
     <None Include="x64\Release\BigIntCalculator.ini" />
   </ItemGroup>

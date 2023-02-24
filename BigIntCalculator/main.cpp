@@ -20,6 +20,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <Mmsystem.h >   // for sound effects
 #include "diagnostic.h"
+#include "resource.h"
 
 #define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
@@ -61,7 +62,44 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 /* name of sound file played when prompt for input is displayed */
 std::string attsound = "c:/Windows/Media/chimes.wav";
 
-/* function declarations, only for functions that have forward references */
+#include <windows.h>
+#include <strsafe.h>
+
+
+/* display last error in a message box. lpszFunction should be a pointer to text 
+containing the function name. */
+void ErrorDisp(char *lpszFunction)
+{
+	// Retrieve the system error message for the last-error code
+
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	DWORD dw = GetLastError();
+
+	FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		dw,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&lpMsgBuf,
+		0, NULL);
+
+	// Display the error message
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
+		(lstrlen((LPCTSTR)lpMsgBuf) + strlen(lpszFunction) + 40) * sizeof(TCHAR));
+	StringCchPrintf((LPTSTR)lpDisplayBuf,
+		LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+		TEXT("%S failed with error %d: %s"),
+		lpszFunction, dw, lpMsgBuf);
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
+	// ExitProcess(dw);
+}
 
 
 /* get time in format hh:mm:ss */
@@ -1803,7 +1841,7 @@ static void doTests5(void) {
 }
 
 /* tests using Msieve for factorisation. Factorise selected Mersenne numbers 
-if useMsieve = false use only YAFU. Normal yafu & msieve flags are ignored. */
+if useMsieve = FALSE use only YAFU. Normal yafu & msieve flags are ignored. */
 static void doTests6(bool useMsieve = true) {
 	bool yafusave = yafu;
 	bool msievesave = msieve;
@@ -2044,21 +2082,272 @@ static void processIni(const char * arg) {
 }
 
 
-//search the docfile for the right entry specified by helpTopic
-//just search for the heading, and print everything until
-//the next heading is found
-static void helpfunc(const std::string &helpTopic)
+struct HelpDiqalogResp {
+	int radiobutton;
+	int Ok_Cancel;
+};
+
+HelpDiqalogResp hResp;
+
+INT_PTR helpDialogAct(HWND DiBoxHandle,
+	UINT message,
+	WPARAM additionalInfo1,
+	LPARAM additionalInfo2) {
+
+	int wpHi = additionalInfo1 >> 32;
+	int wpLo = additionalInfo1 & 0xffffffff;
+
+	int button = 0;  /* set according to radio button selected */
+	char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+			"YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
+			"PARI", };
+
+	switch (message) { 
+
+	case WM_DESTROY:  /* 0x02 */
+		return FALSE;
+
+	case  WM_MOVE:  /* 0x03 */
+		return FALSE;
+
+	case WM_ACTIVATE:     /* 0x06 */
+		/*std::cout << "HelpDialog WM_ACTIVATE  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_SETFOCUS:   /* 0x07 */
+		return FALSE;
+
+	case WM_KILLFOCUS: /* 0x08 */
+		return FALSE;
+
+	case WM_PAINT:   /* 0x0f */
+		return FALSE;
+
+	case WM_ERASEBKGND:   /* 0x14 */
+		/*std::cout << "HelpDialog WM_ERASEBKGRND  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_SHOWWINDOW:  /* 0x18 */
+		/*std::cout << "HelpDialog WM_SHOWWINDOW  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_ACTIVATEAPP: /* ox1c */
+		/*std::cout << "HelpDialog WM_ACTIVATEAPP  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+		
+	case WM_SETCURSOR:  /* 0x20 */
+		/*std::cout << "HelpDialog WM_SETCURSOR  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_MOUSEACTIVATE:  /* 0x21 */
+		return FALSE;
+
+	case WM_GETMINMAXINFO:      /* 0x24 */
+		return FALSE;
+
+	case WM_SETFONT:  /* 0x30 */
+		/*std::cout << "HelpDialog WM_SETFONT  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_WINDOWPOSCHANGING:  /* 0x46 */
+		/*std::cout << "HelpDialog WM_WINDOWPOSCHANGING  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_WINDOWPOSCHANGED:  /* 0x47 */
+		/*std::cout << "HelpDialog WM_WINDOWPOSCHANGED  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_NCDESTROY:   /* 0x82 */
+		return FALSE;
+
+	case WM_NCHITTEST: /* 0x84 */
+		/*std::cout << "HelpDialog WM_NCHITEST  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_NCPAINT:   /* 0x85 */
+		/*std::cout << "HelpDialog WM_NCPAINT  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_NCACTIVATE:  /* 0x86 */
+		/*std::cout << "HelpDialog WM_INACTIVATE  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case 0x90:     /* can't find any documentation for this */
+		return FALSE;
+
+	case WM_NCMOUSEMOVE: /* 0xa0 */
+		/*std::cout << "HelpDialog WM_NCMOUSEMOVE  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_NCLBUTTONDOWN:  /* 0xa1 */
+		return FALSE;
+
+	case WM_INITDIALOG:  /* 0x110 */
+		/*std::cout << "HelpDialog WM_INITDIALOG  info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		/* return true so system sets focus to 1st control */
+		return true;
+
+	case WM_COMMAND: /* 0x111 control selected by user */
+		switch (wpLo) {  /* switch according to control selected */
+		case general:
+		case function:
+		case expression:
+		case Other:
+		case YAFU:
+		case Test:
+		case Msieve:
+		case Background:
+		case Loop:
+		case QMES:
+		case pari:
+			button = wpLo - general;  /* general -> 0, function -> 1 etc. */
+			hResp.radiobutton = button;
+			if (verbose >0)
+				std::cout << "button = " << butttext[button] << '\n';
+			return FALSE;
+
+		case IDOK:       /* OK */
+		case IDCANCEL:   /* cancel */
+			hResp.Ok_Cancel = wpLo;
+			EndDialog(DiBoxHandle, TRUE);
+			return TRUE;
+
+		default:  /* unknown control*/
+			std::cout << "HelpDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
+				<< " info2 = " << additionalInfo2 << '\n';
+		}
+		return FALSE;
+
+	case WM_SYSCOMMAND:      /* 0x112 */
+		return FALSE;
+
+	case WM_CHANGEUISTATE:  /* 0x127 */
+		//std::cout << "HelpDialog WM_CHANGEUISTATE  info1 = " << additionalInfo1
+		//	<< " info2 = " << additionalInfo2 << '\n';
+		return FALSE;
+
+	case WM_UPDATEUISTATE:  /* 0x128 */
+		return FALSE;
+
+	case WM_CTLCOLORBTN:    /* 0x135 */
+		/*std::cout << "HelpDialog WM_CTLCOLORBTN info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_CTLCOLORDLG:  /* 0x136 */
+		/*std::cout << "HelpDialog WM_CTLCOLORDLG info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_CTLCOLORSTATIC:  /* 0x138 */
+		/*std::cout << "HelpDialog WM_CTLCOLORSTATIC info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_MOUSEFIRST:    /* 0x200 */
+		return FALSE;
+
+	case WM_LBUTTONDOWN:  /* 0x201 */
+		return FALSE;
+
+	case WM_LBUTTONUP:  /* 0x202 */
+		return FALSE;
+
+	case WM_CAPTURECHANGED:  /* 0x215 */
+		return FALSE;
+
+	case WM_MOVING:       /* 0x216 */
+		return FALSE;
+
+	case WM_ENTERSIZEMOVE:  /* 0x231*/
+		return FALSE;
+
+	case WM_EXITSIZEMOVE:  /* 0x232 */
+		return FALSE;
+
+	case WM_IME_SETCONTEXT:   /* 0x281 */
+		return FALSE; 
+
+	case WM_IME_NOTIFY:     /* 0x282 */
+		return FALSE;
+
+	case WM_NCMOUSELEAVE: /* 0x2a2 */
+		/*std::cout << "HelpDialog WM_NCMOUSELEAVE info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
+		/*std::cout << "HelpDialog WM_DWMNCRENDERINGCHANGED info1 = " << additionalInfo1
+			<< " info2 = " << additionalInfo2 << '\n';*/
+		return FALSE;
+
+	case WM_USER:         /* 0x400 */
+		return FALSE;
+
+	default:
+		printf_s ("HelpDialog msg = %x Info1 = %lld info2 =%lld \n", message, additionalInfo1,
+			additionalInfo2);
+		return FALSE;
+	}
+
+	return 0;
+}
+
+static int helpdiag(void) {
+
+	auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(help_dialog), 
+		handConsole, helpDialogAct, (LPARAM)  99L);
+	if (rv > 1) {
+		std::cout << "rv = " << rv << '\n';
+		ErrorDisp(__FUNCTION__);
+	}
+	
+	return 0;
+}
+
+
+/*search the docfile for the right entry specified by helpTopic. just search 
+for the heading, and print everything until the next heading is found */
+static void helpfunc(void)
 {
-	FILE *doc;
+	FILE* doc;
 	char str[1024];
 	bool printtopic = false;
 	bool line1 = true;
 	std::string expr = "";
-	char * newpathC;
+	char* newpathC;
 	std::string newpath;
 	const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
 	bool UTF8 = false;          /* set true if UTF8 BOM found */
 
+	char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+			"YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
+			"PARI", "AYUDA"};
+	if (lang == 0) {  /* if English select one from multiple topics  */
+		helpdiag();  /* result saved in global hResp */
+		if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
+			std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
+		}
+		if (hResp.Ok_Cancel == IDCANCEL) {
+			std::cout << "help cancelled \n";
+			return;
+		}
+	}
+	else   /* español */
+		hResp.radiobutton = 11;  /* AYUDA */
 retry:
 	//open the doc file and search for a matching topic
 	errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
@@ -2093,7 +2382,7 @@ retry:
 	fflush(stdout);
 	int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
 	if (verbose > 0)
-		wprintf_s(L"searching for help on '%S'\n", helpTopic.data());
+		wprintf_s(L"searching for help on '%S'\n", butttext[hResp.radiobutton]);
 
 	/* exit this loop when reached EOF or the next topic after the one required 
 	is reached */
@@ -2131,7 +2420,7 @@ retry:
 
 			//does it match our topic?
 			str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-			if (strstr(helpTopic.data(), str + 1) != NULL)
+			if (strstr(butttext[hResp.radiobutton], str + 1) != NULL)
 				/* we get a match if the topic between [ and ] is contained 
 				anywhere in helptopic */
 				printtopic = true;   /* we have found the required topic*/
@@ -2148,9 +2437,9 @@ retry:
 							may not end with newline */
 		else
 			if (lang)
-				wprintf_s(L"Ayuda para %S no encontrado \n", helpTopic.data());
+				wprintf_s(L"Ayuda para %S no encontrado \n", butttext[hResp.radiobutton]);
 			else
-				wprintf_s(L"Help for %S not found \n", helpTopic.data());
+				wprintf_s(L"Help for %S not found \n", butttext[hResp.radiobutton]);
 	}
 	/* change stdout back to normal */
 	fflush(stdout);
@@ -3086,17 +3375,11 @@ static int processCmd(const std::string &command) {
 	case 1:  /* salida */
 		return 2;  /* same command in 2 languages */
 	case 2: /* Help */ {
-			if (command.size() > 4)
-				helpfunc(command.substr(5));
-			else
-				helpfunc("HELP");
+			helpfunc();
 			return 1;
 		}
 	case 3: /* ayuda */ {
-			if (command.size() > 5)
-				helpfunc(command.substr(6));
-			else
-				helpfunc("AYUDA");
+				helpfunc();
 			return 1;
 		}
 	case 4: /* E */ {

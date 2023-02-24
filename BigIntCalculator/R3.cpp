@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include <map>
 #include "showtime.h"
+#undef min  /* undefine min defined in windows.h */
 
 extern int verbose;
 

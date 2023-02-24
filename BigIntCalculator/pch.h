@@ -28,7 +28,7 @@
 
 #include "boost/multiprecision/gmp.hpp" 
 typedef boost::multiprecision::mpz_int Znum;
-
+/* following 4 includes must be in this order; */
 #include "bignbr.h"
 #include "bigint.h"
 #include "factor.h"

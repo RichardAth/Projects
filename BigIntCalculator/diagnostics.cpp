@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include <Windows.h>
 #include <setjmp.h>
 #include <signal.h>
 

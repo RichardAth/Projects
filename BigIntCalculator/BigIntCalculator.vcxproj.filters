@@ -186,5 +186,8 @@
     <None Include="Modular square root.docx">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="main_men.bin">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
