@@ -246,6 +246,7 @@ void yafuParam(const std::string &command) {
 	case 0: /* YAFU ON   */ {   
 			yafu = true;
 			msieve = false;
+			Pari = false;
 			break;
 		}
 	case 1: /* YAFU OFF  */ {    
@@ -284,7 +285,7 @@ void yafuParam(const std::string &command) {
 		else if (param == "NOECM")   pvalue = 2;
 		else if (param == "LIGHT")   pvalue = 3;
 		else if (param == "NORMAL")  pvalue = 4;
-		else if (param == "DEEP")    pvalue = 4;
+		else if (param == "DEEP")    pvalue = 5;
 		else std::cout
 			<< "YAFU PLAN value invalid; use NONE, NOECM, LIGHT, NORMAL, or DEEP\n";
 		break;

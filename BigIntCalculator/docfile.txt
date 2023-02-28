@@ -152,6 +152,8 @@ HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
 
 [OTHER]
 other commands: 
+SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI,
+       X, D, F and V commands
 X    : hexadecimal o/p, 
 D    : decimal o/p
 F n  : control factorisation, 
@@ -573,7 +575,7 @@ The name of the libpari file is obtained from the paripath parameter in the
 BigIntCalculator.ini file, e.g. 
     paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
 
-Facorisation using PARI is turned on by "PARI ON" command, off by "PARI OFF"
+Factorisation using PARI is turned on by "PARI ON" command, off by "PARI OFF"
 The "PARI CLOSE" command frees the memory used by the pari stack. 
 "PARI PATH" displays the current path to the libpari.dll file, and 
 "PARI PATH SET" can change the path to access the .dll file.

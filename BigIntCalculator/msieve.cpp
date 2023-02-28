@@ -147,6 +147,7 @@ void msieveParam(const std::string &command) {
 	if (param == "ON") {
 		msieve = true;
 		yafu = false;
+		Pari = false;
 	}
 	else if (param == "OFF")
 		msieve = false;

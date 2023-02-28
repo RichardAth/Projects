@@ -33,7 +33,7 @@ char* getFileName(const char* filter, HWND owner);
 
 int lang = 0;             // 0 English, 1 = Spanish
 
-bool hex = false;		// set true if output is in hex
+bool hexPrFlag = false;		// set true if output is in hex
 int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
                            2 = get totient, number of divisors etc after factorisation */
 /* verbose value is used to turn off or on optional messages; 
@@ -172,12 +172,12 @@ static char* getHex(Znum Bi_Nbr) {
 }
 
 /* output value of Nbr as ascii text to stdout */
-void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex) {
+void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag) {
     std::string nbrOutput = "";
     char* buffer = NULL;
     size_t msglen, index = 0;
 
-    if (!hex) {
+    if (!hexPrFlag) {
         // convert to null-terminated ascii string, base 10, with sign if -ve
         // corrrectly-sized buffer is allocated automatically.
         buffer = mpz_get_str(NULL, 10, ZT(Bi_Nbr));
@@ -190,7 +190,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hex)
         nbrOutput = "-";
         index = 1;
     }
-    if (hex) nbrOutput += "0x";
+    if (hexPrFlag) nbrOutput += "0x";
     for (; index < msglen; index++) {
         if ((msglen - index) % digitsInGroup == 0) {
             // divide digits into groups, if there are more than 6 digits
@@ -1842,12 +1842,14 @@ static void doTests5(void) {
 
 /* tests using Msieve for factorisation. Factorise selected Mersenne numbers 
 if useMsieve = FALSE use only YAFU. Normal yafu & msieve flags are ignored. */
-static void doTests6(bool useMsieve = true) {
+static void doTests6(bool usesMsieve = true) {
     bool yafusave = yafu;
     bool msievesave = msieve;
+    bool Parisave = Pari;
     Znum m;
-    msieve = useMsieve;
-    yafu = !useMsieve;
+    msieve = usesMsieve;
+    yafu = !usesMsieve;
+    Pari = false;
     int testcnt = 1;
 
     results.clear();
@@ -1897,6 +1899,7 @@ static void doTests6(bool useMsieve = true) {
     
     yafu = yafusave;
     msieve = msievesave;
+    Pari = Parisave;
 
     auto end = clock();              // measure amount of time used
     auto elapsed = (double)end - start;
@@ -2087,15 +2090,15 @@ struct HelpDiqalogResp {
     int Ok_Cancel;
 };
 
-HelpDiqalogResp hResp;
+HelpDiqalogResp hResp;  /* user choices in the help dialog box are saved here */
 
 INT_PTR helpDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
     LPARAM additionalInfo2) {
 
-    int wpHi = additionalInfo1 >> 32;
-    int wpLo = additionalInfo1 & 0xffffffff;
+    int wpHi = HIWORD(additionalInfo1);
+    int wpLo = LOWORD(additionalInfo1);
 
     int button = 0;  /* set according to radio button selected */
     char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
@@ -2104,97 +2107,31 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
 
     switch (message) { 
 
-    case WM_DESTROY:  /* 0x02 */
-        return FALSE;
-
-    case  WM_MOVE:  /* 0x03 */
-        return FALSE;
-
-    case WM_ACTIVATE:     /* 0x06 */
-        /*std::cout << "HelpDialog WM_ACTIVATE  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_SETFOCUS:   /* 0x07 */
-        return FALSE;
-
-    case WM_KILLFOCUS: /* 0x08 */
-        return FALSE;
-
-    case WM_PAINT:   /* 0x0f */
-        return FALSE;
-
-    case WM_ERASEBKGND:   /* 0x14 */
-        /*std::cout << "HelpDialog WM_ERASEBKGRND  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_SHOWWINDOW:  /* 0x18 */
-        /*std::cout << "HelpDialog WM_SHOWWINDOW  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_ACTIVATEAPP: /* ox1c */
-        /*std::cout << "HelpDialog WM_ACTIVATEAPP  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-        
-    case WM_SETCURSOR:  /* 0x20 */
-        /*std::cout << "HelpDialog WM_SETCURSOR  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
+    case WM_DESTROY:       /* 0x02 */
+    case  WM_MOVE:         /* 0x03 */
+    case WM_ACTIVATE:      /* 0x06 */
+    case WM_SETFOCUS:      /* 0x07 */
+    case WM_KILLFOCUS:     /* 0x08 */
+    case WM_PAINT:         /* 0x0f */
+    case WM_ERASEBKGND:    /* 0x14 */
+    case WM_SHOWWINDOW:    /* 0x18 */
+    case WM_ACTIVATEAPP:   /* ox1c */
+    case WM_SETCURSOR:     /* 0x20 */
     case WM_MOUSEACTIVATE:  /* 0x21 */
-        return FALSE;
-
-    case WM_GETMINMAXINFO:      /* 0x24 */
-        return FALSE;
-
-    case WM_SETFONT:  /* 0x30 */
-        /*std::cout << "HelpDialog WM_SETFONT  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
+    case WM_GETMINMAXINFO:  /* 0x24 */
+    case WM_SETFONT:       /* 0x30 */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
-        /*std::cout << "HelpDialog WM_WINDOWPOSCHANGING  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
     case WM_WINDOWPOSCHANGED:  /* 0x47 */
-        /*std::cout << "HelpDialog WM_WINDOWPOSCHANGED  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
+    case WM_NCDESTROY:     /* 0x82 */
+    case WM_NCHITTEST:     /* 0x84 */
+    case WM_NCPAINT:       /* 0x85 */
+    case WM_NCACTIVATE:    /* 0x86 */
+    case 0x90:             /* can't find any documentation for this */
+    case WM_NCMOUSEMOVE:   /* 0xa0 */
+    case WM_NCLBUTTONDOWN: /* 0xa1 */
+        return false;
 
-    case WM_NCDESTROY:   /* 0x82 */
-        return FALSE;
-
-    case WM_NCHITTEST: /* 0x84 */
-        /*std::cout << "HelpDialog WM_NCHITEST  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_NCPAINT:   /* 0x85 */
-        /*std::cout << "HelpDialog WM_NCPAINT  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_NCACTIVATE:  /* 0x86 */
-        /*std::cout << "HelpDialog WM_INACTIVATE  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case 0x90:     /* can't find any documentation for this */
-        return FALSE;
-
-    case WM_NCMOUSEMOVE: /* 0xa0 */
-        /*std::cout << "HelpDialog WM_NCMOUSEMOVE  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_NCLBUTTONDOWN:  /* 0xa1 */
-        return FALSE;
-
-    case WM_INITDIALOG:  /* 0x110 */
+    case WM_INITDIALOG:    /* 0x110 */
         /*std::cout << "HelpDialog WM_INITDIALOG  info1 = " << additionalInfo1
             << " info2 = " << additionalInfo2 << '\n';*/
         /* return true so system sets focus to 1st control */
@@ -2219,10 +2156,10 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
                 std::cout << "button = " << butttext[button] << '\n';
             return FALSE;
 
-        case IDOK:       /* OK */
+        case IDOK:       /* OK         */
         case IDCANCEL:   /* cancel */
             hResp.Ok_Cancel = wpLo;
-            EndDialog(DiBoxHandle, TRUE);
+            EndDialog(DiBoxHandle, wpLo);
             return TRUE;
 
         default:  /* unknown control*/
@@ -2231,91 +2168,47 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
         }
         return FALSE;
 
-    case WM_SYSCOMMAND:      /* 0x112 */
-        return FALSE;
-
-    case WM_CHANGEUISTATE:  /* 0x127 */
-        //std::cout << "HelpDialog WM_CHANGEUISTATE  info1 = " << additionalInfo1
-        //	<< " info2 = " << additionalInfo2 << '\n';
-        return FALSE;
-
-    case WM_UPDATEUISTATE:  /* 0x128 */
-        return FALSE;
-
-    case WM_CTLCOLORBTN:    /* 0x135 */
-        /*std::cout << "HelpDialog WM_CTLCOLORBTN info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_CTLCOLORDLG:  /* 0x136 */
-        /*std::cout << "HelpDialog WM_CTLCOLORDLG info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_CTLCOLORSTATIC:  /* 0x138 */
-        /*std::cout << "HelpDialog WM_CTLCOLORSTATIC info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
-    case WM_MOUSEFIRST:    /* 0x200 */
-        return FALSE;
-
-    case WM_LBUTTONDOWN:  /* 0x201 */
-        return FALSE;
-
-    case WM_LBUTTONUP:  /* 0x202 */
-        return FALSE;
-
-    case WM_CAPTURECHANGED:  /* 0x215 */
-        return FALSE;
-
-    case WM_MOVING:       /* 0x216 */
-        return FALSE;
-
-    case WM_ENTERSIZEMOVE:  /* 0x231*/
-        return FALSE;
-
-    case WM_EXITSIZEMOVE:  /* 0x232 */
-        return FALSE;
-
-    case WM_IME_SETCONTEXT:   /* 0x281 */
-        return FALSE; 
-
-    case WM_IME_NOTIFY:     /* 0x282 */
-        return FALSE;
-
-    case WM_NCMOUSELEAVE: /* 0x2a2 */
-        /*std::cout << "HelpDialog WM_NCMOUSELEAVE info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-        return FALSE;
-
+    case WM_SYSCOMMAND:             /* 0x112 */
+    case WM_CHANGEUISTATE:          /* 0x127 */
+    case WM_UPDATEUISTATE:          /* 0x128 */
+    case WM_CTLCOLORBTN:            /* 0x135 */
+    case WM_CTLCOLORDLG:            /* 0x136 */
+    case WM_CTLCOLORSTATIC:         /* 0x138 */
+    case WM_MOUSEFIRST:             /* 0x200 */
+    case WM_LBUTTONDOWN:            /* 0x201 */
+    case WM_LBUTTONUP:              /* 0x202 */
+    case WM_CAPTURECHANGED:         /* 0x215 */
+    case WM_MOVING:                 /* 0x216 */
+    case WM_ENTERSIZEMOVE:          /* 0x231*/
+    case WM_EXITSIZEMOVE:           /* 0x232 */
+    case WM_IME_SETCONTEXT:         /* 0x281 */
+    case WM_IME_NOTIFY:             /* 0x282 */
+    case WM_NCMOUSELEAVE:           /* 0x2a2 */
     case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
-        /*std::cout << "HelpDialog WM_DWMNCRENDERINGCHANGED info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
+    case WM_USER:                   /* 0x400 */
         return FALSE;
 
-    case WM_USER:         /* 0x400 */
-        return FALSE;
-
-    default:
+    default:  /* unexpected message type */
         printf_s ("HelpDialog msg = %x Info1 = %lld info2 =%lld \n", message, additionalInfo1,
             additionalInfo2);
         return FALSE;
     }
 
-    return 0;
+    return FALSE;
 }
 
-static int helpdiag(void) {
+/* display a dialog box so that the user can select a help topic */
+static long long helpdiag(void) {
 
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(help_dialog), 
         handConsole, helpDialogAct, (LPARAM)  99L);
-    if (rv > 1) {
+    if (rv != IDOK && rv != IDCANCEL) {
         std::cout << "rv = " << rv << '\n';
         ErrorDisp(__FUNCTION__);
+        return rv;
     }
     
-    return 0;
+    return rv;
 }
 
 
@@ -3195,7 +3088,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
                 }
             }
 
-            ShowLargeNumber(result, 6, true, hex);   // print value of expression
+            ShowLargeNumber(result, 6, true, hexPrFlag);   // print value of expression
             std::cout << '\n';
 
         }
@@ -3346,6 +3239,233 @@ static int ifCommand(const std::string &command) {
     return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
+/* message e.g. WM_COMMAND, WM_INITDIALOG,
+* additionalInfo1 = Menu identifier, or control notification code + control identifier
+additionalInfo2 = 0 or handle to control window */
+static INT_PTR SetDialogAct(HWND DiBoxHandle,
+    UINT message,
+    WPARAM additionalInfo1,
+    LPARAM additionalInfo2) {
+
+    int wpHi = HIWORD(additionalInfo1);   /* 0 or control notification code */
+    int wpLo = LOWORD(additionalInfo1);   /* menu or control identifier */
+    // plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
+    char planText[][7] = { "none", "noECM", "light", "normal", "deep" };
+    int planTextSize = sizeof(planText) / sizeof(planText[0]);
+    extern int pvalue;
+    extern bool eopt;
+    int good;
+    int temp;
+
+    switch (message) {
+    case WM_DESTROY:       /* 0x02 */
+    case  WM_MOVE:         /* 0x03 */
+    case WM_ACTIVATE:      /* 0x06 */
+    case WM_SETFOCUS:      /* 0x07 */
+    case WM_KILLFOCUS:     /* 0x08 */
+    case WM_PAINT:         /* 0x0f */
+    case WM_ERASEBKGND:    /* 0x14 */
+    case WM_SHOWWINDOW:    /* 0x18 */
+    case WM_ACTIVATEAPP:   /* ox1c */
+    case WM_SETCURSOR:     /* 0x20 */
+    case WM_MOUSEACTIVATE:  /* 0x21 */
+    case WM_GETMINMAXINFO:  /* 0x24 */
+    case WM_SETFONT:       /* 0x30 */
+    case WM_WINDOWPOSCHANGING:  /* 0x46 */
+    case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_NCDESTROY:     /* 0x82 */
+    case WM_NCHITTEST:     /* 0x84 */
+    case WM_NCPAINT:       /* 0x85 */
+    case WM_NCACTIVATE:    /* 0x86 */
+    case 0x90:             /* can't find any documentation for this */
+    case WM_NCMOUSEMOVE:   /* 0xa0 */
+    case WM_NCLBUTTONDOWN: /* 0xa1 */
+        return false;
+
+    case WM_INITDIALOG:    /* 0x110 */ {
+        /*std::cout << "HelpDialog WM_INITDIALOG  info1 = " << additionalInfo1
+            << " info2 = " << additionalInfo2 << '\n';*/
+
+        /* initialise combi box */
+        HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
+        for (int i = 0; i < planTextSize; i++)
+            SendMessageA(hwYafuPlan, (UINT)CB_ADDSTRING, (WPARAM)0, 
+                (LPARAM)planText[i]);
+        /* highlight value currently selected */
+        SendMessageA(hwYafuPlan, (UINT)CB_SETCURSEL, (WPARAM)pvalue-1, (LPARAM)0);
+
+        /* set tick boxes to current values */
+        SetDlgItemInt(DiBoxHandle, verboseValue, verbose, FALSE);
+        SetDlgItemInt(DiBoxHandle, post_eval_process, factorFlag, FALSE);
+
+        /* set other controls to current values */
+        CheckDlgButton(DiBoxHandle, Msieve_E_option, eopt);
+        CheckDlgButton(DiBoxHandle, hexPrint, hexPrFlag);
+
+        /* return true so system sets focus to 1st control */
+        return true;
+        }
+
+    case WM_COMMAND: /* 0x111 control selected by user */
+  
+        switch (wpLo) {  /* switch according to control selected */
+            int b_ck;    /* button status: checked, indeterminate or unchecked */
+
+        case IDOK:       /* OK         */
+        case IDCANCEL:   /* cancel */
+            EndDialog(DiBoxHandle, wpLo);
+            return TRUE;
+
+        case Builtin:  /* Dont't use YAFU, Msieve or Pari for factoring */
+            yafu = false;
+            msieve = false;
+            Pari = false;
+            return false;
+
+        case useYAFU:
+            yafu = true;
+            msieve = false;
+            Pari = false;
+            return false;
+
+        case useMsieve:
+            yafu = false;
+            msieve = true;
+            Pari = false;
+            return false;
+
+        case pari:
+            yafu = false;
+            msieve = false;
+            Pari = true;
+            return false;
+
+         case IDC_BUTTON1:   /* check YAFU path */
+            yafuParam("YAFU PATH");
+            return false;
+
+        case setYAFUpath:
+            yafuParam("YAFU PATH SET");
+            return false;
+
+        case YafuPlan:  /* change YAFU plan*/
+            switch (wpHi) {
+            case CBN_SELCHANGE: {
+                int itemIndex = (int)SendMessageA(GetDlgItem(DiBoxHandle, YafuPlan),
+                    (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+                pvalue = itemIndex + 1;
+                break;
+            }
+            case CBN_DBLCLK:
+            case CBN_SETFOCUS:
+            case CBN_KILLFOCUS:
+            case CBN_EDITCHANGE:
+            case CBN_EDITUPDATE:
+            case CBN_DROPDOWN:
+            case CBN_CLOSEUP:
+            case CBN_SELENDOK:
+            case CBN_SELENDCANCEL:
+                break;
+             }
+            return false;
+
+        case Yafulog:
+            yafuParam("YAFU LOG");
+            return false;
+
+        case Yafu_GGNFS:
+            yafuParam("YAFU INI");
+            return false;
+
+        case YAFU_GGNFS_change:
+            yafuParam("YAFU INI I");
+            return false;
+
+        case MSievePath:
+            msieveParam("MSIEVE PATH");
+            return false;
+
+        case Msieve_path_set:
+            msieveParam("MSIEVE PATH SET");
+            return false;
+
+        case Msieve_E_option:   /* set/unset eopt*/
+            b_ck = IsDlgButtonChecked(DiBoxHandle, Msieve_E_option);
+            if (b_ck == BST_CHECKED)
+                eopt = true;
+            if (b_ck == BST_UNCHECKED)
+                eopt = false;
+            return false;
+
+        case Pari_path:
+            pariParam("PARI PATH");
+            return false;
+
+        case Set_Pari_path:
+            pariParam("PARI PATH SET");
+            return false;
+
+        case verboseValue:   /* set verbose */
+            switch (wpHi) {
+            case EN_SETFOCUS:
+            case EN_KILLFOCUS:
+            default:
+                return false;
+
+            case EN_CHANGE:
+            case EN_UPDATE:
+                temp = GetDlgItemInt(DiBoxHandle, verboseValue, &good, FALSE);
+                if (good == TRUE)
+                    verbose = temp;
+                 return false;
+            }
+            return false;
+
+        case post_eval_process:  /* set factorflag */
+            switch (wpHi) {
+            case EN_SETFOCUS:
+            case EN_KILLFOCUS:
+            default:
+                return false;
+
+            case EN_CHANGE:
+            case EN_UPDATE:
+                temp = GetDlgItemInt(DiBoxHandle, post_eval_process, &good, FALSE);
+                if (good == TRUE)
+                    factorFlag = temp;
+                return false;
+            }
+            return false;
+
+        case hexPrint:       /* set/unset hex*/
+            b_ck = IsDlgButtonChecked(DiBoxHandle, hexPrint);
+            if (b_ck == BST_CHECKED)
+                hexPrFlag = true;
+            if (b_ck == BST_UNCHECKED)
+                hexPrFlag = false;
+            return false;
+
+        default:  /* unknown control*/
+            std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
+                << " info2 = " << additionalInfo2 << '\n';
+        }
+        return false;
+    }
+    return FALSE;
+}
+
+static long long setdiag(void) {
+    auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
+        handConsole, SetDialogAct, (LPARAM)99L);
+    if (rv != IDOK && rv != IDCANCEL) {
+        std::cout << "rv = " << rv << '\n';
+        ErrorDisp(__FUNCTION__);
+        return rv;
+    }
+
+    return rv;
+}
+
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command */
 static int processCmd(const std::string &command) {
 
@@ -3354,7 +3474,7 @@ static int processCmd(const std::string &command) {
     { "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
        "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
        "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF",
-       "PARI", "QMES"};
+       "PARI", "QMES", "SET"};
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -3393,9 +3513,9 @@ static int processCmd(const std::string &command) {
         std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
         return 1; }  
     case 7: /* X */ { 
-        hex = true; return 1; }         // hexadecimal output
+        hexPrFlag = true; return 1; }         // hexadecimal output
     case 8: /* D */ { 
-        hex = false; return 1; }        // decimal output
+        hexPrFlag = false; return 1; }        // decimal output
     case 9: /* TEST */ {
             /* there are a number of commands that begin with TEST */
             if (command == "TEST") {
@@ -3575,6 +3695,11 @@ static int processCmd(const std::string &command) {
     case 19: /* QMES */
     {
         quadModEqn(command);  /* Quadratic Modular Equation Solver */
+        return 1;
+    }
+    case 20:  /* SET */
+    {
+        setdiag();
         return 1;
     }
     default:
@@ -3767,7 +3892,7 @@ int main(int argc, char *argv[]) {
                 exprList.push_back(expr);  /* save text of expression */
                 if (asgCt == 0 && !multiV) {
                     std::cout << " = ";
-                    ShowLargeNumber(Result, 6, true, hex);   // print value of expression
+                    ShowLargeNumber(Result, 6, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {
                         doFactors(Result, false); /* factorise Result, calculate number of divisors etc */

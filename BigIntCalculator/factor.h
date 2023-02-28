@@ -29,7 +29,7 @@ struct sFactors
 };
 
 extern int lang;    // 0 English, 1 = Spanish
-void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hex);
+void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
 
