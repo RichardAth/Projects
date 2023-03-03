@@ -35,9 +35,11 @@
 #define useMsieve                       1033
 #define Pari_path                       1036
 #define Set_Pari_path                   1038
-#define Verbosity                       1039
 #define post_eval_process               1039
 #define Factorise_control               1040
+#define group_size_int                  1041
+#define IDC_CHECK1                      1042
+#define sel_language                    1043
 
 // Next default values for new objects
 // 
@@ -45,7 +47,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        114
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1041
+#define _APS_NEXT_CONTROL_VALUE         1044
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

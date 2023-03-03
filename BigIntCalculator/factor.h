@@ -29,6 +29,7 @@ struct sFactors
 };
 
 extern int lang;    // 0 English, 1 = Spanish
+extern int groupSize;
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
@@ -51,6 +52,7 @@ struct counters {
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
+	int pari = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int power = 0;		   // perfect power
@@ -199,7 +201,7 @@ It has values in {−1, 0, 1} depending on the factorization of n into prime fac
 			for (size_t i = 0; i < this->fsize(); i++) {
 				if (i > 0)
 					std::cout << " * ";
-				ShowLargeNumber(this->f[i].Factor, 6, false, false);
+				ShowLargeNumber(this->f[i].Factor, groupSize, false, false);
 				if (this->f[i].exponent > 1)
 					std::cout << "^" << this->f[i].exponent;
 			}
@@ -496,6 +498,7 @@ Repeated factors: No or Yes
 		temp.siqs   = this->siqs;    // SIQS
 		temp.tdiv   = this->tdiv;    // trial division
 		temp.yafu   = this->yafu;    // YAFU
+		temp.pari = this->pari;      // PARI
 		return temp;
 	}
 

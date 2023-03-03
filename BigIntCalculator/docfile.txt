@@ -179,7 +179,8 @@ The YAFU command controls factorisation using YAFU:
 
    YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
    YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
-   YAFU PATH Displays or changes path used when starting YAFU
+   YAFU PATH Displays or changes path used when starting YAFU. The path is saved 
+             in the .ini file so only needs to be set once.
    YAFU LOG  Displays path & file name for YAFU output file
    YAFU PLAN <name> 
              where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP. These 

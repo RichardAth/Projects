@@ -12,7 +12,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
-#pragma fenv_access (on)
+#pragma fenv_access (on)  /* allow access to floating point environment */
 
 #include "pch.h"
 #include <fcntl.h>
@@ -36,6 +36,7 @@ int lang = 0;             // 0 English, 1 = Spanish
 bool hexPrFlag = false;		// set true if output is in hex
 int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
                            2 = get totient, number of divisors etc after factorisation */
+int groupSize = 6;      /* for large numbers, insert space between 6 digit groups */
 /* verbose value is used to turn off or on optional messages; 
 higher value = more messages */
 #ifdef _DEBUG
@@ -171,7 +172,9 @@ static char* getHex(Znum Bi_Nbr) {
     return hexbuffer;  // hexbuffer must be a static variable
 }
 
-/* output value of Nbr as ascii text to stdout */
+/* output value of Nbr as ascii text to stdout. DigitsInGroup controls the spacing
+between groups of digits. If size = true and the number is large show the number 
+of digits. If hexPrFlag is true output in hex instead of decimal. */
 void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag) {
     std::string nbrOutput = "";
     char* buffer = NULL;
@@ -190,9 +193,10 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
         nbrOutput = "-";
         index = 1;
     }
-    if (hexPrFlag) nbrOutput += "0x";
+    if (hexPrFlag) 
+        nbrOutput += "0x";
     for (; index < msglen; index++) {
-        if ((msglen - index) % digitsInGroup == 0) {
+        if (digitsInGroup > 0 && (msglen - index) % digitsInGroup == 0) {
             // divide digits into groups, if there are more than 6 digits
             if ((index > 0 && buffer[0] != '-') || (index > 1)) {
                 nbrOutput += " ";  // put space after group of digits 
@@ -204,7 +208,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
         msglen--;
     free(buffer);		// avoid memory leakage
     std::cout << nbrOutput;
-    if (msglen > 6 && size)
+    if (msglen > 24 && size)
         if (lang) std::cout << " (" << msglen << " dígitos)";
         else std::cout << " (" << msglen << " digits)";
 }
@@ -737,14 +741,14 @@ static void doFactors(const Znum &Result, bool test) {
         if (factorFlag > 1) {
             auto divisors = factorlist.NoOfDivs();
             std::cout << (lang? "Cantidad de Divisores = " : "Number of Divisors = ");
-            ShowLargeNumber(divisors, 6, false, false);
+            ShowLargeNumber(divisors, groupSize, false, false);
 
             divisors = factorlist.DivisorSum();
             std::cout << (lang? "\nSuma de divisores     = " : "\nSum of Divisors    = ");
-            ShowLargeNumber(divisors, 6, false, false);
+            ShowLargeNumber(divisors, groupSize, false, false);
             divisors = factorlist.totient();
             std::cout << (lang ? "\nPhi de Euler          = " : "\nTotient            = ");
-            ShowLargeNumber(divisors, 6, false, false);
+            ShowLargeNumber(divisors, groupSize, false, false);
             if (Result > 0) {
                 auto mob = factorlist.mob();  // mobius only defined for +ve integers
                 std::cout << "\nMöbius             = " << mob;
@@ -845,7 +849,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
         std::cout << "\nPrueba " << testnum << ": factoriza ";
     else
         std::cout << "\nTest " << testnum << ": factorise ";
-    ShowLargeNumber(x3, 6, true, false);
+    ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
         factorise(x3, factorlist, Quad);  // get factors
@@ -1332,7 +1336,7 @@ static void doTests2(const std::string &params) {
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
             get_RSA(x, state, p2);  // get RSA type number size p2 bits
-        ShowLargeNumber(x, 6, true, false);
+        ShowLargeNumber(x, groupSize, true, false);
         std::cout << '\n';
         doFactors(x, true); /* factorise x, calculate number of divisors etc */
         results.back().testNum = i;
@@ -1960,7 +1964,6 @@ static void doTests7(const std::string &params) {
 }
 
 
-
 std::vector<std::string> inifile;  // copy contents of .ini here
 std::string iniPath;          // path to .ini file
 
@@ -2092,6 +2095,7 @@ struct HelpDiqalogResp {
 
 HelpDiqalogResp hResp;  /* user choices in the help dialog box are saved here */
 
+/* process messages from dialog box for Help topics */
 INT_PTR helpDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
@@ -2212,8 +2216,8 @@ static long long helpdiag(void) {
 }
 
 
-/*search the docfile for the right entry specified by helpTopic. just search 
-for the heading, and print everything until the next heading is found */
+/*search the docfile for the right entry specified by hResp.radiobutton. Just 
+search for the heading, and print everything until the next heading is found */
 static void helpfunc(void)
 {
     FILE* doc;
@@ -2564,7 +2568,8 @@ const char* szFeatures[] =
 
 
 /* return cpuid , cache size, etc  */
-int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, int do_print)
+int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, 
+    int do_print)
 {
     char CPUString[0x20];
     char CPUBrandString[0x40] = { 0 };
@@ -3003,7 +3008,6 @@ int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, i
 // function containing system commands to get the computer name, CPU speed, etc
 static void get_computer_info(char* CPUidstr)
 {
-    //int ret;
 
     //figure out cpu freq. 0.1 seconds won't be very accurate 
     MEAS_CPU_FREQUENCY = measure_processor_speed() / 1.0e5;
@@ -3048,7 +3052,6 @@ static void get_computer_info(char* CPUidstr)
 }
 
 
-
 /* evaluate 1 or more expressions, separated by commas */
 static retCode ComputeMultiExpr(std::string expr, Znum result) {
     std::string subExpr;
@@ -3088,7 +3091,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
                 }
             }
 
-            ShowLargeNumber(result, 6, true, hexPrFlag);   // print value of expression
+            ShowLargeNumber(result, groupSize, true, hexPrFlag);   // print value of expression
             std::cout << '\n';
 
         }
@@ -3239,7 +3242,7 @@ static int ifCommand(const std::string &command) {
     return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
-/* message e.g. WM_COMMAND, WM_INITDIALOG,
+/* process message from dialog box e.g. WM_COMMAND, WM_INITDIALOG,
 * additionalInfo1 = Menu identifier, or control notification code + control identifier
 additionalInfo2 = 0 or handle to control window */
 static INT_PTR SetDialogAct(HWND DiBoxHandle,
@@ -3252,8 +3255,8 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     // plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
     char planText[][7] = { "none", "noECM", "light", "normal", "deep" };
     int planTextSize = sizeof(planText) / sizeof(planText[0]);
-    extern int pvalue;
-    extern bool eopt;
+    extern int pvalue;  // YAFU PLAN parameter value 4 = PLAN NORMAL (default)
+    extern bool eopt;   // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
     int good;
     int temp;
 
@@ -3294,47 +3297,50 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         /* highlight value currently selected */
         SendMessageA(hwYafuPlan, (UINT)CB_SETCURSEL, (WPARAM)pvalue-1, (LPARAM)0);
 
-        /* set tick boxes to current values */
+         /* set other controls to current values */       
         SetDlgItemInt(DiBoxHandle, verboseValue, verbose, FALSE);
         SetDlgItemInt(DiBoxHandle, post_eval_process, factorFlag, FALSE);
+        SetDlgItemInt(DiBoxHandle, group_size_int, groupSize, FALSE);
 
-        /* set other controls to current values */
+        /* set tick boxes to current values */
         CheckDlgButton(DiBoxHandle, Msieve_E_option, eopt);
         CheckDlgButton(DiBoxHandle, hexPrint, hexPrFlag);
+        CheckDlgButton(DiBoxHandle, sel_language, lang);
 
         /* return true so system sets focus to 1st control */
         return true;
         }
 
-    case WM_COMMAND: /* 0x111 control selected by user */
+    case WM_COMMAND:      /* 0x111 control selected by user */
   
         switch (wpLo) {  /* switch according to control selected */
             int b_ck;    /* button status: checked, indeterminate or unchecked */
 
-        case IDOK:       /* OK         */
+        case IDOK:       /* OK     */
         case IDCANCEL:   /* cancel */
-            EndDialog(DiBoxHandle, wpLo);
+            EndDialog(DiBoxHandle, wpLo);    /* close dialog box */
             return TRUE;
 
-        case Builtin:  /* Dont't use YAFU, Msieve or Pari for factoring */
+        case Builtin:  /* 'builtin' radio button. wpHi contains code (BN_CLICKED, etc)*/
+            /* Dont't use YAFU, Msieve or Pari for factoring */
             yafu = false;
             msieve = false;
             Pari = false;
             return false;
 
-        case useYAFU:
+        case useYAFU:     /* yafu radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = true;
             msieve = false;
             Pari = false;
             return false;
 
-        case useMsieve:
+        case useMsieve:   /* Msieve radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = true;
             Pari = false;
             return false;
 
-        case pari:
+        case pari:  /* pari radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = false;
             Pari = true;
@@ -3445,6 +3451,31 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 hexPrFlag = false;
             return false;
 
+        case sel_language:
+            b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
+            if (b_ck == BST_CHECKED)
+                lang = TRUE;
+            if (b_ck == BST_UNCHECKED)
+                lang = FALSE;
+            return false;
+
+        case group_size_int:
+            switch (wpHi) {
+            case EN_SETFOCUS:
+            case EN_KILLFOCUS:
+            default:
+                return false;
+
+            case EN_CHANGE:
+            case EN_UPDATE:
+                temp = GetDlgItemInt(DiBoxHandle, group_size_int, &good, FALSE);
+                if (good == TRUE)
+                    groupSize = temp;
+                return false;
+            }
+            return false;
+
+
         default:  /* unknown control*/
             std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
@@ -3454,6 +3485,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     return FALSE;
 }
 
+/* set up dialog box for SET command */
 static long long setdiag(void) {
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
         handConsole, SetDialogAct, (LPARAM)99L);
@@ -3790,7 +3822,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     get_computer_info(CPU_ID_STR);
 
     printf_s("detected %s\n", CPU_ID_STR);
-    printf_s("measured cpu frequency ~= %f\n", 	MEAS_CPU_FREQUENCY);
+    printf_s("measured cpu frequency ~= %.0f\n", 	MEAS_CPU_FREQUENCY);
 
     return;
 }
@@ -3848,10 +3880,10 @@ int main(int argc, char *argv[]) {
         /* start of main loop. Normal exit is via EXIT command */
         while (true) {
             if (lang == 0) {
-                printf_s("enter expression to be processed, or HELP, or EXIT\n");
+                printf_s("enter expression to be processed, or HELP, EXIT, or SET\n");
             }
             else
-                printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA\n");
+                printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA o SET\n");
 
             PlaySoundA(attsound.c_str(), NULL,
                 SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
@@ -3892,7 +3924,7 @@ int main(int argc, char *argv[]) {
                 exprList.push_back(expr);  /* save text of expression */
                 if (asgCt == 0 && !multiV) {
                     std::cout << " = ";
-                    ShowLargeNumber(Result, 6, true, hexPrFlag);   // print value of expression
+                    ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {
                         doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
