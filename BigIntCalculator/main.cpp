@@ -2101,8 +2101,8 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     WPARAM additionalInfo1,
     LPARAM additionalInfo2) {
 
-    int wpHi = HIWORD(additionalInfo1);
-    int wpLo = LOWORD(additionalInfo1);
+    int wpHi = HIWORD(additionalInfo1);     /* 0 or control notification code */
+    int wpLo = LOWORD(additionalInfo1);     /* menu or control identifier */
 
     int button = 0;  /* set according to radio button selected */
     char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
@@ -2111,35 +2111,41 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
 
     switch (message) { 
 
-    case WM_DESTROY:       /* 0x02 */
-    case  WM_MOVE:         /* 0x03 */
-    case WM_ACTIVATE:      /* 0x06 */
-    case WM_SETFOCUS:      /* 0x07 */
-    case WM_KILLFOCUS:     /* 0x08 */
-    case WM_PAINT:         /* 0x0f */
-    case WM_ERASEBKGND:    /* 0x14 */
-    case WM_SHOWWINDOW:    /* 0x18 */
-    case WM_ACTIVATEAPP:   /* ox1c */
-    case WM_SETCURSOR:     /* 0x20 */
+    case WM_DESTROY:        /* 0x02 */
+    case  WM_MOVE:          /* 0x03 */
+    case WM_ACTIVATE:       /* 0x06 */
+    case WM_SETFOCUS:       /* 0x07 */
+    case WM_KILLFOCUS:      /* 0x08 */
+    case WM_PAINT:          /* 0x0f */
+    case WM_ERASEBKGND:     /* 0x14 */
+    case WM_SHOWWINDOW:     /* 0x18 */
+    case WM_ACTIVATEAPP:    /* ox1c */
+    case WM_SETCURSOR:      /* 0x20 */
     case WM_MOUSEACTIVATE:  /* 0x21 */
     case WM_GETMINMAXINFO:  /* 0x24 */
-    case WM_SETFONT:       /* 0x30 */
+    case WM_SETFONT:        /* 0x30 */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
     case WM_WINDOWPOSCHANGED:  /* 0x47 */
-    case WM_NCDESTROY:     /* 0x82 */
+    case WM_GETICON:           /* 0x7f */
+    case WM_NCDESTROY:         /* 0x82 */
     case WM_NCHITTEST:     /* 0x84 */
     case WM_NCPAINT:       /* 0x85 */
     case WM_NCACTIVATE:    /* 0x86 */
     case 0x90:             /* can't find any documentation for this */
     case WM_NCMOUSEMOVE:   /* 0xa0 */
     case WM_NCLBUTTONDOWN: /* 0xa1 */
+    case 0xae:             /* can't find any documentation for this */
         return false;
 
-    case WM_INITDIALOG:    /* 0x110 */
-        /*std::cout << "HelpDialog WM_INITDIALOG  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
+    case WM_INITDIALOG:    /* 0x110 */ {
+        /* select 1st radio button */
+        BOOL rv = CheckRadioButton(DiBoxHandle, general, QMES, general);
+        if (rv == FALSE) {
+            ErrorDisp(__FUNCTION__);
+        }
         /* return true so system sets focus to 1st control */
         return true;
+    }
 
     case WM_COMMAND: /* 0x111 control selected by user */
         switch (wpLo) {  /* switch according to control selected */
@@ -3286,9 +3292,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         return false;
 
     case WM_INITDIALOG:    /* 0x110 */ {
-        /*std::cout << "HelpDialog WM_INITDIALOG  info1 = " << additionalInfo1
-            << " info2 = " << additionalInfo2 << '\n';*/
-
+        BOOL rv = TRUE;
         /* initialise combi box */
         HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
         for (int i = 0; i < planTextSize; i++)
@@ -3307,6 +3311,17 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         CheckDlgButton(DiBoxHandle, hexPrint, hexPrFlag);
         CheckDlgButton(DiBoxHandle, sel_language, lang);
 
+        if (yafu)
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, useYAFU);
+        if (msieve)
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, useMsieve);
+        if (Pari)
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, pari);
+        if (!yafu && !msieve && !Pari)
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, Builtin);
+        if (rv == FALSE) {
+            ErrorDisp(__FUNCTION__);
+        }
         /* return true so system sets focus to 1st control */
         return true;
         }

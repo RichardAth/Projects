@@ -14,9 +14,9 @@
 #define Background                      1008
 #define Loop                            1009
 #define QMES                            1010
-#define pari                            1011
-#define Headingg                        1014
-#define Builtin                         1017
+#define pari                            1035
+#define Headingg                        1011
+#define Builtin                         1034
 #define IDC_BUTTON1                     1019
 #define IDC_BUTTON2                     1020
 #define setYAFUpath                     1020
@@ -33,7 +33,7 @@
 #define verboseValue                    1031
 #define useYAFU                         1032
 #define useMsieve                       1033
-#define Pari_path                       1036
+#define Pari_path                       1012
 #define Set_Pari_path                   1038
 #define post_eval_process               1039
 #define Factorise_control               1040

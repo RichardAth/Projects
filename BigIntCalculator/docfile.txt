@@ -153,7 +153,7 @@ HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
 [OTHER]
 other commands: 
 SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI,
-       X, D, F and V commands
+       X, D, F, V, S and E commands
 X    : hexadecimal o/p, 
 D    : decimal o/p
 F n  : control factorisation, 
