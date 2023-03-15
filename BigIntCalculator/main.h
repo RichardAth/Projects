@@ -42,6 +42,7 @@ void doTestsA(const std::string& params);   /* quadratic modular equation solver
 void PrintTimeUsed(double elapsed, const std::string& msg = "");
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 char* getFileName(const char* filter, HWND owner);
+DWORD getComCtlVer(void);
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
 // calculate a^n%mod   

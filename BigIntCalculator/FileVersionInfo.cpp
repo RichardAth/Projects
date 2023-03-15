@@ -7,6 +7,10 @@
 add to Project Properties->Linker->Input->Additional Dependencies -> Add Version.lib
 */
 
+#include <windef.h>
+#include <winbase.h>
+#include <shlwapi.h>
+
 /* returns version info from .exe file, also date & time file last modified */
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	DWORD handle;
@@ -74,4 +78,67 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	}
 	else
 		std::cout << path << " not found \n";
+}
+
+#define PACKVERSION(major,minor) MAKELONG(minor,major)
+typedef HRESULT(CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO*);
+
+void GetVersion(LPCTSTR lpszDllName, int * Major, int * Minor, int * Build) {
+	HINSTANCE hinstDll;
+	DWORD dwVersion = 0;
+	DLLVERSIONINFO dvi1;
+	DLLVERSIONINFO2 dvi;
+	HRESULT hr;
+
+	// For security purposes, LoadLibrary should be provided with a fully qualified 
+	// path to the DLL. The lpszDllName variable should be tested to ensure that it 
+	// is a fully qualified path before it is used. 
+	hinstDll = LoadLibrary(lpszDllName);
+
+	if (hinstDll)
+	{
+		DLLGETVERSIONPROC pDllGetVersion;
+		pDllGetVersion = (DLLGETVERSIONPROC)GetProcAddress(hinstDll, "DllGetVersion");
+
+		// Because some DLLs might not implement this function, you must test for 
+		// it explicitly. Depending on the particular DLL, the lack of a DllGetVersion 
+		// function can be a useful indicator of the version. 
+
+		if (pDllGetVersion)
+		{
+
+			ZeroMemory(&dvi, sizeof(dvi));
+			dvi.info1.cbSize = sizeof(dvi);
+			ZeroMemory(&dvi1, sizeof(dvi1));
+			dvi1.cbSize = sizeof(dvi1);
+
+			hr = (*pDllGetVersion)(&dvi1);
+			memcpy(&dvi, &dvi1, sizeof(dvi));
+
+			if (SUCCEEDED(hr))
+			{
+				dwVersion = PACKVERSION(dvi1.dwMajorVersion, dvi1.dwMajorVersion);
+				*Major = dvi1.dwMajorVersion;
+				*Minor = dvi1.dwMajorVersion;
+				*Build = dvi1.dwBuildNumber;
+			}
+		}
+		FreeLibrary(hinstDll);
+	}
+	return;
+}
+
+
+/* get version of ComCtl32.dll */
+const LPCTSTR lpszDllName = L"C:\\Windows\\System32\\ComCtl32.dll";
+
+DWORD getComCtlVer(void) {
+	int Major, Minor, build;
+	DWORD version;
+	GetVersion(lpszDllName, &Major, &Minor, &build);
+	if (verbose >= 1)
+		std::cout << "ComCtl32.dll version = " << Major << '.' << Minor 
+		<< '.' << build << '\n';
+	version = PACKVERSION(Major, Minor);
+	return version;
 }

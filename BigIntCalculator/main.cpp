@@ -21,15 +21,19 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include <Mmsystem.h >   // for sound effects
 #include "diagnostic.h"
 #include "resource.h"
+#include <commctrl.h>  /* requires Comctl32.lib. In visual studio:
+ project -> properties -> linker -> input -> additional dependencies*/
 
 #define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 extern Znum zR, zR2, zNI, zN;
 #endif
 
-/* external function declaration */
-void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
-char* getFileName(const char* filter, HWND owner);
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
+HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program */
+HINSTANCE cH2 = GetModuleHandle(NULL);  /* should conain same value */
+
 
 int lang = 0;             // 0 English, 1 = Spanish
 
@@ -76,6 +80,8 @@ void ErrorDisp(char *lpszFunction)
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
     DWORD dw = GetLastError();
+    if (dw == 0)
+        return;   /* no error so just return */
 
     FormatMessage(
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -2126,6 +2132,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_SETFONT:        /* 0x30 */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
     case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_HELP:              /* ox53 */
     case WM_GETICON:           /* 0x7f */
     case WM_NCDESTROY:         /* 0x82 */
     case WM_NCHITTEST:     /* 0x84 */
@@ -2139,7 +2146,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
 
     case WM_INITDIALOG:    /* 0x110 */ {
         /* select 1st radio button */
-        BOOL rv = CheckRadioButton(DiBoxHandle, general, QMES, general);
+        BOOL rv = CheckRadioButton(DiBoxHandle, general, pari, general);
         if (rv == FALSE) {
             ErrorDisp(__FUNCTION__);
         }
@@ -3248,6 +3255,69 @@ static int ifCommand(const std::string &command) {
     return -1;  /* neither STOP nor REPEAT nor THEN found */
 }
 
+// Description:
+//   Creates a tooltip for an item in a dialog box. 
+// Parameters:
+//   idTool - identifier of an dialog box item.
+//   hDlg - window handle of the dialog box.
+//   pszText - string to use as the tooltip text.
+//   hParnt = parent instance handle
+// Returns:
+//   The handle to the tooltip.
+//
+HWND CreateToolTip(int toolID, HWND hDlg, PTSTR pszText, HINSTANCE hParnt)
+{
+    if (!toolID || !hDlg || !pszText)
+    {
+        return FALSE;
+    }
+    // Get the window of the tool.
+    HWND hwndTool = GetDlgItem(hDlg, toolID);
+
+    // Create the tooltip. 
+    HWND hwndTip = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL,
+        WS_POPUP | TTS_ALWAYSTIP /* | TTS_BALLOON  */ ,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        hDlg, NULL,
+        hParnt, NULL);
+
+    if (!hwndTool || !hwndTip)
+    {
+        return (HWND)NULL;
+    }
+
+    auto rv = SendMessage(hwndTip, TTM_ACTIVATE, TRUE, 0);
+    if (rv != TRUE)
+        ErrorDisp(__FUNCTION__ " TTM ACTIVATE");
+
+    /* typedef struct tagTOOLINFOA {
+  UINT      cbSize;  // size in bytes 
+  UINT      uFlags;
+  HWND      hwnd;   // handle to the window that contains the tool
+  UINT_PTR  uId;    // tool identifier or handle 
+  RECT      rect;   // ignored if TTF_IDISHWND is set
+  HINSTANCE hinst;  // Handle to the instance that contains the string 
+                    // resource for the tool.
+  LPSTR     lpszText;  // text for the  tooltip
+  LPARAM    lParam;    // application defined
+  void      *lpReserved;
+} TTTOOLINFOA, *PTOOLINFOA, *LPTTTOOLINFOA;  */
+
+    // Associate the tooltip with the tool.
+    TOOLINFO toolInfo = { 0 };
+    toolInfo.cbSize = sizeof(toolInfo);
+    toolInfo.hwnd = hDlg;  // handle to the window that contains the tool
+    /* indicate that uId is the tool handle */
+    toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+    toolInfo.uId = (UINT_PTR)hwndTool;
+    toolInfo.lpszText = pszText;  /* text for the  tooltip */
+    rv = SendMessage(hwndTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+    if (rv != TRUE)
+        ErrorDisp(__FUNCTION__ " TTM_ADDTOOL");
+    return hwndTip;
+}
+
 /* process message from dialog box e.g. WM_COMMAND, WM_INITDIALOG,
 * additionalInfo1 = Menu identifier, or control notification code + control identifier
 additionalInfo2 = 0 or handle to control window */
@@ -3256,6 +3326,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     WPARAM additionalInfo1,
     LPARAM additionalInfo2) {
 
+    static HWND hh;  /* tooltip handle */
     int wpHi = HIWORD(additionalInfo1);   /* 0 or control notification code */
     int wpLo = LOWORD(additionalInfo1);   /* menu or control identifier */
     // plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
@@ -3268,11 +3339,12 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
     switch (message) {
     case WM_DESTROY:       /* 0x02 */
-    case  WM_MOVE:         /* 0x03 */
+    case WM_MOVE:          /* 0x03 */
     case WM_ACTIVATE:      /* 0x06 */
     case WM_SETFOCUS:      /* 0x07 */
     case WM_KILLFOCUS:     /* 0x08 */
     case WM_PAINT:         /* 0x0f */
+    case WM_CLOSE:         /* 0x10 */
     case WM_ERASEBKGND:    /* 0x14 */
     case WM_SHOWWINDOW:    /* 0x18 */
     case WM_ACTIVATEAPP:   /* ox1c */
@@ -3282,6 +3354,10 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_SETFONT:       /* 0x30 */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
     case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_NOTIFY:        /* 0x4e */
+    case WM_HELP:          /* 0x53  (F1 key pressed) */
+    case WM_NOTIFYFORMAT:  /* 0x55 */
+    case WM_GETICON:       /* 0x75 */
     case WM_NCDESTROY:     /* 0x82 */
     case WM_NCHITTEST:     /* 0x84 */
     case WM_NCPAINT:       /* 0x85 */
@@ -3289,10 +3365,44 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case 0x90:             /* can't find any documentation for this */
     case WM_NCMOUSEMOVE:   /* 0xa0 */
     case WM_NCLBUTTONDOWN: /* 0xa1 */
+    case 0xae:             /* can't find any documentation for this */
+    case WM_SYSCOMMAND:    /* 0x112 */
+    case WM_CHANGEUISTATE: /* 0x127 */
+    case WM_UPDATEUISTATE: /* 0x128 */
+    case WM_QUERYUISTATE:  /* 0x129*/
+    case WM_CTLCOLOREDIT:  /* 0x133 */
+    case WM_CTLCOLORLISTBOX: /* 0x134 */
+    case WM_CTLCOLORBTN:   /* 0x135 */
+    case WM_CTLCOLORDLG:   /* ox136 */
+    case WM_CTLCOLORSTATIC: /* 0x138 */
+    case WM_MOUSEFIRST:     /* 0x200 */
+    case WM_LBUTTONDOWN:    /* 0x201 */
+    case WM_LBUTTONUP:      /* 0x202 */
+    case WM_LBUTTONDBLCLK:  /* 0x203 */
+    case WM_CAPTURECHANGED: /* 0x215 */
+    case WM_MOVING:         /* 0x216 */
+    case WM_ENTERSIZEMOVE:  /* 0x231 */
+    case WM_EXITSIZEMOVE:   /* 0x232 */
+    case WM_IME_SETCONTEXT:  /* 0x281 */
+    case WM_IME_NOTIFY:      /* 0x282 */
+    case WM_NCMOUSELEAVE:    /* 0x2a2 */
+    case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
+    case WM_USER:            /* 0x400 */
+        return false;
+
+    default:
+        printf_s("SetDialogAct: unkown message %x wpHi = %x, wpLo = %x"
+            " additionalinfo2 = %llx \n", 
+            message, wpHi, wpLo, additionalInfo2);
         return false;
 
     case WM_INITDIALOG:    /* 0x110 */ {
         BOOL rv = TRUE;
+        LRESULT rr;
+
+        /* tooltip help message */
+        static WCHAR grouphelp[] = L"help message \n";
+
         /* initialise combi box */
         HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
         for (int i = 0; i < planTextSize; i++)
@@ -3312,16 +3422,31 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         CheckDlgButton(DiBoxHandle, sel_language, lang);
 
         if (yafu)
-            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, useYAFU);
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, useYAFU);
         if (msieve)
-            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, useMsieve);
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, useMsieve);
         if (Pari)
-            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, pari);
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, usepari);
         if (!yafu && !msieve && !Pari)
-            rv = CheckRadioButton(DiBoxHandle, useYAFU, pari, Builtin);
+            rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, Builtin);
         if (rv == FALSE) {
             ErrorDisp(__FUNCTION__);
         }
+
+        hh = CreateToolTip(group_size_int, DiBoxHandle, grouphelp, 
+            (HINSTANCE) DiBoxHandle /*calcHandle*/);
+        /* the amount of time the tooltip window remains visible */
+        auto poptime = SendMessage(hh, TTM_GETDELAYTIME, TTDT_AUTOPOP, 0);
+        /*  the amount of time the pointer must remain stationary within a tool's 
+        bounding rectangle before the tooltip window appears.*/
+        auto initTime = SendMessage(hh, TTM_GETDELAYTIME, TTDT_INITIAL, 0);
+        /* the amount of time it takes for subsequent tooltip windows to appear 
+        as the pointer moves from one tool to another*/
+        auto rstime = SendMessage(hh, TTM_GETDELAYTIME, TTDT_RESHOW, 0);
+        rr = SendMessage(hh, TTM_ACTIVATE, TRUE, 0);
+        if (rr != TRUE)
+            ErrorDisp(__FUNCTION__ " TTM ACTIVATE");
+
         /* return true so system sets focus to 1st control */
         return true;
         }
@@ -3330,6 +3455,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
   
         switch (wpLo) {  /* switch according to control selected */
             int b_ck;    /* button status: checked, indeterminate or unchecked */
+            LRESULT rr;
 
         case IDOK:       /* OK     */
         case IDCANCEL:   /* cancel */
@@ -3355,7 +3481,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             Pari = false;
             return false;
 
-        case pari:  /* pari radio button. wpHi contains code (BN_CLICKED, etc)*/
+        case usepari:  /* pari radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = false;
             Pari = true;
@@ -3477,6 +3603,14 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         case group_size_int:
             switch (wpHi) {
             case EN_SETFOCUS:
+                rr = SendMessage(hh, TTM_ACTIVATE, TRUE, 0);
+                if (rr != TRUE)
+                    ErrorDisp(__FUNCTION__ " TTM_ACTIVATE");
+                rr = SendMessage(hh, TTM_POPUP, 0, 0);
+                if (rr != TRUE)
+                    ErrorDisp(__FUNCTION__ " TTM_POPUP");
+                return false;
+
             case EN_KILLFOCUS:
             default:
                 return false;
@@ -3831,6 +3965,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 #endif
     std::cout << "Boost version: " << BOOST_VERSION << '\n';
 
+    getComCtlVer();  /* get version of ComCtl32.dll */
+
     processIni(argv[0]); // read .ini file if it exists
 
     //get the computer name, cache sizes, etc.  store in globals
@@ -3839,6 +3975,12 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     printf_s("detected %s\n", CPU_ID_STR);
     printf_s("measured cpu frequency ~= %.0f\n", 	MEAS_CPU_FREQUENCY);
 
+    INITCOMMONCONTROLSEX ccset = { 0, ICC_WIN95_CLASSES };
+    ccset.dwSize = sizeof(ccset);
+
+    BOOL iccRV = InitCommonControlsEx(&ccset);
+    if (iccRV == FALSE)
+        ErrorDisp(__FUNCTION__);
     return;
 }
 

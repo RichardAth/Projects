@@ -152,8 +152,10 @@ HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
 
 [OTHER]
 other commands: 
-SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI,
-       X, D, F, V, S and E commands
+SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI, X, 
+       D, F, V, S and E commands. This dialog box also has a control to set the 
+       'group size'. This controls the number of digits displayed in each group 
+       for large numbers. Use 0 for no space between groups.
 X    : hexadecimal o/p, 
 D    : decimal o/p
 F n  : control factorisation, 
@@ -453,10 +455,10 @@ used in trial division, check if the number is a perfect power +/- 1 and if so
 attempt to factorise it. This step may return factors that are not prime factors.
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
-using a list of primes. If a factor is found that is: 
+using a list of primes. If a residue after trial division is found that is: 
     less than the cube of the largest prime in the trial division prime list, 
-    and has no factors in that list, and the factor is not prime 
-then the factor can only have two prime factors. In this case factorise it using 
+    and has no factors in that list, and the residue is not prime 
+then the residue can only have two prime factors. In this case factorise it using 
 Pollard's Rho algorithm. 
 
 Step 3: For each factor that is not already known to be prime:
