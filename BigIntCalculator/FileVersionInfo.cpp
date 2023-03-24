@@ -1,4 +1,3 @@
-
 #include "pch.h"
 #include <wtypes.h>
 #include <winver.h>
@@ -81,64 +80,63 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 }
 
 #define PACKVERSION(major,minor) MAKELONG(minor,major)
-typedef HRESULT(CALLBACK* DLLGETVERSIONPROC)(DLLVERSIONINFO*);
+typedef HRESULT(CALLBACK* DLLGETVERSIONPROC2)(DLLVERSIONINFO2*);
 
-void GetVersion(LPCTSTR lpszDllName, int * Major, int * Minor, int * Build) {
+/* get the version number of the dll specified in DllName */
+bool GetVersion(LPCTSTR lpszDllName, DWORD * Major, DWORD * Minor, 
+	DWORD * Build, DWORD * platform) {
 	HINSTANCE hinstDll;
 	DWORD dwVersion = 0;
-	DLLVERSIONINFO dvi1;
 	DLLVERSIONINFO2 dvi;
 	HRESULT hr;
+	DLLGETVERSIONPROC2 pDllGetVersion = nullptr;
 
 	// For security purposes, LoadLibrary should be provided with a fully qualified 
 	// path to the DLL. The lpszDllName variable should be tested to ensure that it 
 	// is a fully qualified path before it is used. 
 	hinstDll = LoadLibrary(lpszDllName);
 
-	if (hinstDll)
-	{
-		DLLGETVERSIONPROC pDllGetVersion;
-		pDllGetVersion = (DLLGETVERSIONPROC)GetProcAddress(hinstDll, "DllGetVersion");
+	if (hinstDll) {
+		pDllGetVersion = (DLLGETVERSIONPROC2)GetProcAddress(hinstDll, "DllGetVersion");
 
 		// Because some DLLs might not implement this function, you must test for 
 		// it explicitly. Depending on the particular DLL, the lack of a DllGetVersion 
 		// function can be a useful indicator of the version. 
 
-		if (pDllGetVersion)
-		{
-
+		if (pDllGetVersion) {
 			ZeroMemory(&dvi, sizeof(dvi));
 			dvi.info1.cbSize = sizeof(dvi);
-			ZeroMemory(&dvi1, sizeof(dvi1));
-			dvi1.cbSize = sizeof(dvi1);
-
-			hr = (*pDllGetVersion)(&dvi1);
-			memcpy(&dvi, &dvi1, sizeof(dvi));
-
-			if (SUCCEEDED(hr))
-			{
-				dwVersion = PACKVERSION(dvi1.dwMajorVersion, dvi1.dwMajorVersion);
-				*Major = dvi1.dwMajorVersion;
-				*Minor = dvi1.dwMajorVersion;
-				*Build = dvi1.dwBuildNumber;
+			hr = (*pDllGetVersion)(&dvi);
+			if (SUCCEEDED(hr)) 	{
+				dwVersion = PACKVERSION(dvi.info1.dwMajorVersion, dvi.info1.dwMinorVersion);
+				*Major = dvi.info1.dwMajorVersion;
+				*Minor = dvi.info1.dwMinorVersion;
+				*Build = dvi.info1.dwBuildNumber;
+				*platform = dvi.info1.dwPlatformID;
 			}
 		}
 		FreeLibrary(hinstDll);
 	}
-	return;
+	return (pDllGetVersion != nullptr);
 }
 
 
 /* get version of ComCtl32.dll */
-const LPCTSTR lpszDllName = L"C:\\Windows\\System32\\ComCtl32.dll";
-
+/* specifying just the file name, not the full path, ensures that the version 
+from the manifest is used. */
+const LPCTSTR lpszDllName = L"ComCtl32.dll";
+// const LPCTSTR lpszDllName = L"C:\\Windows\\System32\\ComCtl32.dll";
+// const LPCTSTR lpszDllName = L"C:/Windows/WinSxS/x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.19041.1110_none_a8625c1886757984/comctl32.dll";
+/*                           "C:\Windows\WinSxS\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.19041.1110_none_a8625c1886757984\comctl32.dll" */
 DWORD getComCtlVer(void) {
-	int Major, Minor, build;
+	DWORD Major, Minor, build, platform;
 	DWORD version;
-	GetVersion(lpszDllName, &Major, &Minor, &build);
-	if (verbose >= 1)
-		std::cout << "ComCtl32.dll version = " << Major << '.' << Minor 
-		<< '.' << build << '\n';
-	version = PACKVERSION(Major, Minor);
-	return version;
+	if (GetVersion(lpszDllName, &Major, &Minor, &build, &platform)) {
+		if (verbose >= 1)
+			printf_s("ComCtl32.dll version = %u.%u.%u \n", Major, Minor, build);
+
+		version = PACKVERSION(Major, Minor);
+		return version;
+	}
+	else return 0;
 }

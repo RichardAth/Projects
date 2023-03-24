@@ -23,6 +23,11 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "resource.h"
 #include <commctrl.h>  /* requires Comctl32.lib. In visual studio:
  project -> properties -> linker -> input -> additional dependencies*/
+/* use manifest to ensure that latest Comctl32.dll is used, otherwise the old 
+dll for Windows 7 would be used */
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 #define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
@@ -3365,6 +3370,8 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case 0x90:             /* can't find any documentation for this */
     case WM_NCMOUSEMOVE:   /* 0xa0 */
     case WM_NCLBUTTONDOWN: /* 0xa1 */
+    case WM_NCLBUTTONUP:   /* 0xa2 */
+    case WM_NCLBUTTONDBLCLK: /* 0xa3 */
     case 0xae:             /* can't find any documentation for this */
     case WM_SYSCOMMAND:    /* 0x112 */
     case WM_CHANGEUISTATE: /* 0x127 */
@@ -3386,6 +3393,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_IME_SETCONTEXT:  /* 0x281 */
     case WM_IME_NOTIFY:      /* 0x282 */
     case WM_NCMOUSELEAVE:    /* 0x2a2 */
+    case WM_PRINTCLIENT:     /* 0x318 */
     case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
     case WM_USER:            /* 0x400 */
         return false;
@@ -3965,7 +3973,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 #endif
     std::cout << "Boost version: " << BOOST_VERSION << '\n';
 
-    getComCtlVer();  /* get version of ComCtl32.dll */
+    unsigned long long comCtlVer = getComCtlVer();  /* get version of ComCtl32.dll */
 
     processIni(argv[0]); // read .ini file if it exists
 

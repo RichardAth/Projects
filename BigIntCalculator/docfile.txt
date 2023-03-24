@@ -59,8 +59,6 @@ Assign values to variables using the assignment operator =
 Assignment statements are also expressions which return the value to the right of the =
 operator.
 
-for a list of functions enter HELP FUNCTION
-
 [FUNCTION]
 B(n)            : Previous probable prime before n
 F(n)            : Fibonacci number Fn
