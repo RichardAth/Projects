@@ -13,8 +13,8 @@ You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "pch.h"
+#include <map>
 #include <intrin.h>
 #include "showtime.h"
 
@@ -23,6 +23,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 static long long Gamma[386];
 static long long Delta[386];
 static long long AurifQ[386];
+static int AurifCount = 0;
 static Znum Zfactor;
 double originalTenthSecond;
 int oldTimeElapsed;
@@ -146,10 +147,12 @@ static void GetAurifeuilleFactor(fList &Factors, int L, const Znum &Base,
 	Nbr1 = Nbr1 * Dsal;       // Nbr1 <- Dsal * base^((L+1)/2)
 	Dsal = Csal + Nbr1; 
  
-	insertBigFactor(Factors, Dsal);
+	if (insertBigFactor(Factors, Dsal))
+		AurifCount++;
 	Dsal = Csal - Nbr1; 
 
-	insertBigFactor(Factors, Dsal);
+	if (insertBigFactor(Factors, Dsal))
+		AurifCount++;
 	return;
 }
 
@@ -253,6 +256,7 @@ static void Cunningham(fList &Factors, const Znum &Base, int Expon,
 	Znum Nbr1, Nbr2; 
 
 	Expon2 = Expon;
+	AurifCount = 0;
 
 	while (Expon2 % 2 == 0 && increment == -1) {
 		Expon2 /= 2;
@@ -269,10 +273,11 @@ static void Cunningham(fList &Factors, const Znum &Base, int Expon,
 				BigIntPowerIntExp(Base, Expon / k, Nbr1); /* nbr1 = base^(expon/k) */
 				Nbr1 += increment;      
 				Nbr2 = gcd(Nbr1, Original);   // Nbr2 <- gcd(Base^(Expon/k)+incre, original)
-				insertBigFactor(Factors, Nbr2);
-
-				Nbr1 = Original / Nbr2; 
-				insertBigFactor(Factors, Nbr1);
+				if (Nbr2 != Original && Nbr2 != 1) 
+					insertBigFactor(Factors, Nbr2);
+				Nbr1 = Original / Nbr2;
+				if (Nbr1 != Original && Nbr1 != 1)
+					insertBigFactor(Factors, Nbr1);
 				InsertAurifFactors(Factors, Base, Expon / k, increment);
 			}
 
@@ -289,6 +294,8 @@ static void Cunningham(fList &Factors, const Znum &Base, int Expon,
 		}
 		k++;
 	}
+	if (verbose > 0 && AurifCount > 0)
+		std::cout << "AurifCount =" << AurifCount << '\n';
 	return;
 }
 
@@ -401,12 +408,14 @@ static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix)
 
 /* Insert new factor found into factor array. Every current factor is checked 
 against the divisor. If their gcd is not 1 the existing factor is divided by 
-the gcd and a new factor equal to the gcd is created. */
-void insertBigFactor(fList &Factors, const Znum &divisor) {
+the gcd and a new factor equal to the gcd is created. Return false if divisor
+is not a factor of any existing factor */
+bool insertBigFactor(fList &Factors, const Znum &divisor) {
 	auto lastfactor = Factors.f.size();
 	auto ipoint = lastfactor;
-	zFactors temp;
+	bool success = false;
 	Znum g;
+
 	if (verbose > 1) {
 		std::cout << "InsertBigFactor Divisor =" << divisor << '\n';
 		Factors.Xprint();
@@ -427,13 +436,21 @@ void insertBigFactor(fList &Factors, const Znum &divisor) {
 			Factors.f[ipoint].upperBound = Factors.f[i].upperBound;
 			ipoint++;
 			lastfactor++;
+			success = true;
 		}
 	}
-	if (verbose > 1) {
-		std::cout << "result before sort" << '\n';
-		Factors.Xprint();
+	if (success) {
+		if (verbose > 1) {
+			std::cout << "result before sort" << '\n';
+			Factors.Xprint();
+		}
+		SortFactors(Factors);
 	}
-	SortFactors(Factors);
+	else if (verbose > 1) {
+		std::cout << "insertBigFactor: could not add factor " << divisor << '\n';
+	}
+
+	return success;
 }
 
 /* called for Carmichael numbers that have no small factors. 
@@ -477,8 +494,8 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 					Temp4 = gcd(pValue, Aux4);
 					if ((Temp4 > 1) && (Temp4 != pValue))
 					{          // Non-trivial factor found.
-						insertBigFactor(Factors, Temp4);
-						factorsFound = true;
+						if (insertBigFactor(Factors, Temp4))
+							factorsFound = true;
 					}
 				}
 
@@ -488,8 +505,8 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 				Temp4 = gcd(pValue, Aux4);  // Temp4 = gcd(p, Aux4)
 				if ((Temp4 > 1) && (Temp4 != pValue))
 				{          // Non-trivial factor found.
-					insertBigFactor(Factors, Temp4);
-					factorsFound = true;
+					if (insertBigFactor(Factors, Temp4))
+						factorsFound = true;
 				}
 
 				i = ctr;   // break out of inner for loop
@@ -510,8 +527,8 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 					Temp4 = gcd(pValue, Aux4);  // Temp4 = gcd(p, Aux4)
 					if ((Temp4 > 1) && (Temp4 != pValue))
 					{          // Non-trivial factor found.
-						insertBigFactor(Factors, Temp4);
-						factorsFound = true;
+						if (insertBigFactor(Factors, Temp4))
+							factorsFound = true;
 					}
 				}
 
@@ -742,7 +759,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 	if (toFactor >= MaxP* MaxP) {
 		/* may not be able to factorise entirely by trial division, so try this first */
-		PowerPM1Check(Factors, toFactor, MaxP/2);  // check if toFactor is a perfect power +/- 1
+		PowerPM1Check(Factors, toFactor, 2);  // check if toFactor is a perfect power +/- 1
 		Factors.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
 		if (Factors.f.size() > 1 && verbose > 0) {
 			std::cout << "PowerPM1Check result: ";
@@ -1236,7 +1253,6 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
 	/* if 2 values are equal, ensure that they are 2nd and 3rd */
 	if (Mult[0] == Mult[1])
 		Mult[0].swap(Mult[2]);
-
 }
 
 
@@ -1509,6 +1525,12 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 	return;
 }
 
+/* store factors for larger numbers */
+std::map<Znum, fList> savedFactors;
+//std::_Tree_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const Znum, fList>>>> ref;
+long long SFhitcount = 0;
+long long SFmisscount = 0;
+
 /********************************************************************************
 code below is to interface between DA's code
 and the new code that uses Znums, which are really mpz_t integers from MPIR or GMP
@@ -1516,21 +1538,40 @@ multiprecision library, with a c++ class wrapped around them that allows them
 to be used pretty much like normal integers. 
 **********************************************************************************/
 
-/* factorise number. Returns false if unable to factorise it */
+/* factorise number. Returns false if unable to factorise it. If the number is 
+more than 1 limb (64 bits) the factor list is memoised, so if the same number is
+factorised again the saved value is used instead of repeating the factorisation. */
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 
 	try {
 		bool pos = true;
+		bool hit = false;
+
 		if (numberZ == 0)
 			return false;  // function factor can't factorize zero
 		if (numberZ < 0) {
 			pos = false;
 			numberZ = -numberZ;
 		}
-		auto rv = factor(numberZ, vfactors);
-		if (!rv)
-			return false;  // failed to factorise number
-		
+		if (numLimbs(numberZ) > 1) {
+			/* see whether the number has already been factorised */
+			auto ref = savedFactors.find(numberZ);
+			if (ref != savedFactors.end()) {
+				vfactors = ref->second;  /* use factor list obtained earlier */
+				SFhitcount++;
+				hit = true;
+			}
+		}
+		if (!hit) {
+			auto rv = factor(numberZ, vfactors);
+			if (!rv)
+				return false;  // failed to factorise number
+			if (numLimbs(numberZ) > 1) {
+				savedFactors[numberZ] = vfactors;  /* save factors just found */
+				SFmisscount++;
+			}
+		}
+
 		if (quads != nullptr) {
 			ComputeFourSquares(vfactors, quads, numberZ); 
 			// get a, b, c, d such that sum of their squares = numberZ
