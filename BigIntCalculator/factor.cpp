@@ -17,9 +17,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <intrin.h>
 #include "showtime.h"
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
 
 #undef min                 // use std::min
 
@@ -894,7 +891,7 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 
 	// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
 	Tmp1 = -1 - Mult[0] * Mult[0];
-	roots = ModSqrtQE(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+	roots = ModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
 	assert(!roots.empty());
 	Mult[1] = roots[0];
 	/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/
@@ -1243,7 +1240,7 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
 }
 
 
-/* compute 3 values the squares of which add up to s * 2^2r, return values in quads */
+/* compute 3 values the squares of which add up to s * 2^r, return values in quads */
 static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 	Znum s2, s3, r2, Tmp1, Tmp2;
 	int m = 0;
@@ -1324,7 +1321,11 @@ static void compute3squares(int r, const Znum &s, Znum quads[4]) {
 			if (quads[1] < quads[2]) {
 				quads[1].swap(quads[2]);  // quads[1] < quads[2], so exchange them.
 			}
-
+			if (verbose > 1) {
+				std::cout << "compute3squares(" << r << ", " << s << ")\n"
+					<< "quads = " << quads[0] << ", " << quads[1] 
+					<< ", " << quads[2] << '\n';
+			}
 			return;
 		}
 	}

@@ -17,9 +17,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #pragma warning(disable : 4996)
 
-#include "bignbr.h"
-#include "bigint.h"
-
 #define DIGITS_PER_LIMB 9
 #define MAX_LIMB_CONVERSION 1000000000
 #define FIRST_MULT  (1 << (BITS_PER_GROUP/2))

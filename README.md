@@ -1,4 +1,4 @@
-This is a calculator and factorisation program based on Dario Alpert's program.
+This is a calculator and factorisation program based on Dario Alpern's program.
 See https://www.alpertron.com.ar/ECM.HTM
 
 It factorises numbers or numeric expressions using fast algorithms ECM and SIQS.

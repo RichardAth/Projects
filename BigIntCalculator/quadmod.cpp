@@ -17,23 +17,14 @@
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
-
 
 #include "main.h"
 #include "expression.h"
-#include "factor.h"
 #include "quadmodLL.h"
 
 int groupLen;
 
 char output[300000];
-
-/* external functions */
-void textError(retCode rc);
-retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, 
-    bool* multiV = nullptr);
 
 static BigInteger discriminant;
 static BigInteger sqrtDiscriminant;
@@ -443,7 +434,8 @@ int quadModEqn(const std::string &command) {
     return 0;
 }
 
-/* find modular square root */
+/* find modular square root. Solve the equation given aa and m.
+	x^2 ≡ aa mod m */
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
     roots.clear();

@@ -1,8 +1,5 @@
 #include "pch.h"
 
-#include "bignbr.h"
-#include "bigint.h"
-#include "factor.h"
 #include "showtime.h"
 bool changepath(std::string &path, std::string &prog);
 
@@ -150,6 +147,7 @@ void msieveParam(const std::string &command) {
 	if (param == "ON") {
 		msieve = true;
 		yafu = false;
+		Pari = false;
 	}
 	else if (param == "OFF")
 		msieve = false;

@@ -7590,8 +7590,8 @@ static mpz_t aiJ1[PWmax];
 static mpz_t aiJ2[PWmax];
 static mpz_t aiJ00[PWmax];
 static mpz_t aiJ01[PWmax];
-long long int NumberLength; /* Length of multiple precision nbrs */
-mpz_t TestNbr;
+long long int NumberLngth; /* Length of multiple precision nbrs */
+mpz_t TestNmbr;
 
 /* ============================================================================================== */
 
@@ -7610,7 +7610,7 @@ static void allocate_vars()
 		mpz_init(aiJ01[i]);
 	}
 
-	mpz_init(TestNbr);
+	mpz_init(TestNmbr);
 	mpz_init(biN);
 	mpz_init(biR);
 	mpz_init(biS);
@@ -7637,7 +7637,7 @@ static void free_vars()
 	}
 
 
-	mpz_clear(TestNbr);
+	mpz_clear(TestNmbr);
 	mpz_clear(biN);
 	mpz_clear(biR);
 	mpz_clear(biS);
@@ -7682,9 +7682,9 @@ static void NormalizeJS(int PK, int PL, int PM, int P)
 			mpz_set(biT, aiJS[I]);
 			for (J = 1; J < P; J++)
 			{
-				/* SubtractBigNbrModN(aiJS[I - J * PM], biT, aiJS[I - J * PM], TestNbr, NumberLength); */
+				/* SubtractBigNbrModN(aiJS[I - J * PM], biT, aiJS[I - J * PM], TestNmbr, NumberLngth); */
 				mpz_sub(aiJS[I - J * PM], aiJS[I - J * PM], biT);
-				mpz_mod(aiJS[I - J * PM], aiJS[I - J * PM], TestNbr);
+				mpz_mod(aiJS[I - J * PM], aiJS[I - J * PM], TestNmbr);
 			}
 			/* aiJS[I] = 0; */
 			mpz_set_ui(aiJS[I], 0);
@@ -7707,9 +7707,9 @@ static void NormalizeJW(int PK, int PL, int PM, int P)
 
 			for (J = 1; J < P; J++)
 			{
-				/* SubtractBigNbrModN(aiJW[I - J * PM], biT, aiJW[I - J * PM], TestNbr, NumberLength); */
+				/* SubtractBigNbrModN(aiJW[I - J * PM], biT, aiJW[I - J * PM], TestNmbr, NumberLngth); */
 				mpz_sub(aiJW[I - J * PM], aiJW[I - J * PM], biT);
-				mpz_mod(aiJW[I - J * PM], aiJW[I - J * PM], TestNbr);
+				mpz_mod(aiJW[I - J * PM], aiJW[I - J * PM], TestNmbr);
 			}
 			/* aiJW[I] = 0; */
 			mpz_set_ui(aiJW[I], 0);
@@ -7730,10 +7730,10 @@ static void JS_JW(int PK, int PL, int PM, int P)
 		{
 			K = (I + J) % PK;
 			/* MontgomeryMult(aiJS[I], aiJW[J], biTmp); */
-			/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNbr, NumberLength); */
+			/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNmbr, NumberLngth); */
 			mpz_mul(biTmp, aiJS[I], aiJW[J]);
 			mpz_add(aiJX[K], aiJX[K], biTmp);
-			mpz_mod(aiJX[K], aiJX[K], TestNbr);
+			mpz_mod(aiJX[K], aiJX[K], TestNmbr);
 		}
 	}
 	for (I = 0; I < PK; I++)
@@ -7757,21 +7757,21 @@ static void JS_2(int PK, int PL, int PM, int P)
 	{
 		K = 2 * I % PK;
 		/* MontgomeryMult(aiJS[I], aiJS[I], biTmp); */
-		/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNbr, NumberLength); */
-		/* AddBigNbrModN(aiJS[I], aiJS[I], biT, TestNbr, NumberLength); */
+		/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNmbr, NumberLngth); */
+		/* AddBigNbrModN(aiJS[I], aiJS[I], biT, TestNmbr, NumberLngth); */
 		mpz_mul(biTmp, aiJS[I], aiJS[I]);
 		mpz_add(aiJX[K], aiJX[K], biTmp);
-		mpz_mod(aiJX[K], aiJX[K], TestNbr);
+		mpz_mod(aiJX[K], aiJX[K], TestNmbr);
 		mpz_add(biT, aiJS[I], aiJS[I]);
-		mpz_mod(biT, biT, TestNbr);
+		mpz_mod(biT, biT, TestNmbr);
 		for (J = I + 1; J < PL; J++)
 		{
 			K = (I + J) % PK;
 			/* MontgomeryMult(biT, aiJS[J], biTmp); */
-			/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNbr, NumberLength); */
+			/* AddBigNbrModN(aiJX[K], biTmp, aiJX[K], TestNmbr, NumberLngth); */
 			mpz_mul(biTmp, biT, aiJS[J]);
 			mpz_add(aiJX[K], aiJX[K], biTmp);
-			mpz_mod(aiJX[K], aiJX[K], TestNbr);
+			mpz_mod(aiJX[K], aiJX[K], TestNmbr);
 		}
 	}
 	for (I = 0; I < PK; I++)
@@ -7844,7 +7844,7 @@ static void JacobiSum(int mode, int A, int B, int P, int PK, int PL, int PM, int
 	{
 		mpz_set_si(aiJ0[I], sls[jpqs[a].index + I]);
 		/* do we need the next line? */
-		mpz_mod(aiJ0[I], aiJ0[I], TestNbr);
+		mpz_mod(aiJ0[I], aiJ0[I], TestNmbr);
 	}
 }
 /* ============================================================================================== */
@@ -7888,8 +7888,8 @@ int mpz_aprtcle(const mpz_t N, const int verbose)
 
 	/* If the input number is larger than 6021 decimal digits
 	   we will just return whether it is a BPSW (probable) prime */
-	NumberLength = mpz_sizeinbase(N, 10);
-	if (NumberLength > 6021)
+	NumberLngth = mpz_sizeinbase(N, 10);
+	if (NumberLngth > 6021)
 	{
 		if (verbose >= APRTCLE_VERBOSE2)
 			printf(" Info: Number too large, returning BPSW(N)\n");
@@ -7898,7 +7898,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose)
 
 	allocate_vars();
 
-	mpz_set(TestNbr, N);
+	mpz_set(TestNmbr, N);
 	mpz_set_si(biS, 0);
 
 	j = PK = PL = PM = 0;
@@ -7926,7 +7926,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose)
 			} while (U % Q == 0);
 
 			// Exit loop if S^2 > N.
-			if (CompareSquare(biS, TestNbr) > 0)
+			if (CompareSquare(biS, TestNmbr) > 0)
 			{
 				/* break GetPrimes2Test; */
 				break_this = 1;
@@ -7958,8 +7958,8 @@ MainStart:
 			}
 
 			SW = TestedQs = 0;
-			/* Q = W = (int) BigNbrModLong(TestNbr, P * P); */
-			Q = W = (int)mpz_fdiv_ui(TestNbr, P * P);
+			/* Q = W = (int) BigNbrModLong(TestNmbr, P * P); */
+			Q = W = (int)mpz_fdiv_ui(TestNmbr, P * P);
 			for (J = P - 2; J > 0; J--)
 			{
 				W = (W * Q) % (P * P);
@@ -8070,8 +8070,8 @@ MainStart:
 						mpz_set_ui(aiJ00[I], 0);
 						mpz_set_ui(aiJ01[I], 0);
 					}
-					/* VK = (int) BigNbrModLong(TestNbr, PK); */
-					VK = (int)mpz_fdiv_ui(TestNbr, PK);
+					/* VK = (int) BigNbrModLong(TestNmbr, PK); */
+					VK = (int)mpz_fdiv_ui(TestNmbr, PK);
 					for (I = 1; I < PK; I++)
 					{
 						if (I % P != 0)
@@ -8114,12 +8114,12 @@ MainStart:
 								}
 								if (IV == 0)
 								{
-									/* LongToBigNbr(X, biExp, NumberLength); */
+									/* LongToBigNbr(X, biExp, NumberLngth); */
 									mpz_set_ui(biExp, X);
 								}
 								else
 								{
-									/* LongToBigNbr(VK * X / PK, biExp, NumberLength); */
+									/* LongToBigNbr(VK * X / PK, biExp, NumberLngth); */
 									mpz_set_ui(biExp, (VK * X) / PK);
 									if ((VK * X) / PK == 0)
 									{
@@ -8136,9 +8136,9 @@ MainStart:
 								for (I = 0; I < PK; I++)
 								{
 									J = (I * InvX) % PK;
-									/* AddBigNbrModN(aiJW[J], aiJS[I], aiJW[J], TestNbr, NumberLength); */
+									/* AddBigNbrModN(aiJW[J], aiJS[I], aiJW[J], TestNmbr, NumberLngth); */
 									mpz_add(aiJW[J], aiJW[J], aiJS[I]);
-									mpz_mod(aiJW[J], aiJW[J], TestNbr);
+									mpz_mod(aiJW[J], aiJW[J], TestNmbr);
 								}
 								NormalizeJW(PK, PL, PM, P);
 								if (IV == 0)
@@ -8181,7 +8181,7 @@ MainStart:
 					{
 						if (K == 1)
 						{
-							/* MultBigNbrByLongModN(1, Q, aiJ00[0], TestNbr, NumberLength); */
+							/* MultBigNbrByLongModN(1, Q, aiJ00[0], TestNmbr, NumberLngth); */
 							mpz_set_ui(aiJ00[0], Q);
 							/* aiJ01[0] = 1; */
 							mpz_set_ui(aiJ01[0], 1);
@@ -8207,12 +8207,12 @@ MainStart:
 									mpz_set(aiJ01[0], aiJS[0]);
 									mpz_set(aiJ01[1], aiJS[1]);
 								}
-								/* MultBigNbrByLongModN(aiJS[0], Q, aiJ00[0], TestNbr, NumberLength); */
+								/* MultBigNbrByLongModN(aiJS[0], Q, aiJ00[0], TestNmbr, NumberLngth); */
 								mpz_mul_ui(aiJ00[0], aiJS[0], Q);
-								mpz_mod(aiJ00[0], aiJ00[0], TestNbr);
-								/* MultBigNbrByLongModN(aiJS[1], Q, aiJ00[1], TestNbr, NumberLength); */
+								mpz_mod(aiJ00[0], aiJ00[0], TestNmbr);
+								/* MultBigNbrByLongModN(aiJS[1], Q, aiJ00[1], TestNmbr, NumberLngth); */
 								mpz_mul_ui(aiJ00[1], aiJS[1], Q);
-								mpz_mod(aiJ00[1], aiJ00[1], TestNbr);
+								mpz_mod(aiJ00[1], aiJ00[1], TestNmbr);
 							}
 							else
 							{
@@ -8231,12 +8231,12 @@ MainStart:
 										}
 										if (IV == 0)
 										{
-											/* LongToBigNbr(X, biExp, NumberLength); */
+											/* LongToBigNbr(X, biExp, NumberLngth); */
 											mpz_set_ui(biExp, X);
 										}
 										else
 										{
-											/* LongToBigNbr(VK * X / PK, biExp, NumberLength); */
+											/* LongToBigNbr(VK * X / PK, biExp, NumberLngth); */
 											mpz_set_ui(biExp, VK * X / PK);
 											if (VK * X / PK == 0)
 											{
@@ -8253,9 +8253,9 @@ MainStart:
 										for (I = 0; I < PK; I++)
 										{
 											J = I * InvX % PK;
-											/* AddBigNbrModN(aiJW[J], aiJS[I], aiJW[J], TestNbr, NumberLength); */
+											/* AddBigNbrModN(aiJW[J], aiJS[I], aiJW[J], TestNmbr, NumberLngth); */
 											mpz_add(aiJW[J], aiJW[J], aiJS[I]);
-											mpz_mod(aiJW[J], aiJW[J], TestNbr);
+											mpz_mod(aiJW[J], aiJW[J], TestNmbr);
 										}
 										NormalizeJW(PK, PL, PM, P);
 										if (IV == 0)
@@ -8330,8 +8330,8 @@ MainStart:
 						/* aiJS[I] = 0; */
 						mpz_set_ui(aiJS[I], 0);
 					}
-					/* DivBigNbrByLong(TestNbr, PK, biExp, NumberLength); */
-					mpz_fdiv_q_ui(biExp, TestNbr, PK);
+					/* DivBigNbrByLong(TestNmbr, PK, biExp, NumberLngth); */
+					mpz_fdiv_q_ui(biExp, TestNmbr, PK);
 					JS_E(PK, PL, PM, P);
 					for (I = 0; I < PK; I++)
 					{
@@ -8343,10 +8343,10 @@ MainStart:
 						for (J = 0; J < PL; J++)
 						{
 							/* MontgomeryMult(aiJS[I], aiJ01[J], biTmp); */
-							/* AddBigNbrModN(biTmp, aiJW[(I + J) % PK], aiJW[(I + J) % PK], TestNbr, NumberLength); */
+							/* AddBigNbrModN(biTmp, aiJW[(I + J) % PK], aiJW[(I + J) % PK], TestNmbr, NumberLngth); */
 							mpz_mul(biTmp, aiJS[I], aiJ01[J]);
 							mpz_add(aiJW[(I + J) % PK], biTmp, aiJW[(I + J) % PK]);
-							mpz_mod(aiJW[(I + J) % PK], aiJW[(I + J) % PK], TestNbr);
+							mpz_mod(aiJW[(I + J) % PK], aiJW[(I + J) % PK], TestNmbr);
 						}
 					}
 					NormalizeJW(PK, PL, PM, P);
@@ -8367,9 +8367,9 @@ MainStart:
 								else
 								{
 									H = -2;
-									/* AddBigNbrModN(aiJW[I], MontgomeryMultR1, biTmp, TestNbr, NumberLength); */
+									/* AddBigNbrModN(aiJW[I], MontgomeryMultR1, biTmp, TestNmbr, NumberLngth); */
 									mpz_add_ui(biTmp, aiJW[I], 1);
-									mpz_mod(biTmp, biTmp, TestNbr);
+									mpz_mod(biTmp, biTmp, TestNmbr);
 									if (mpz_cmp_ui(biTmp, 0) == 0) /* (BigNbrIsZero(biTmp)) */
 									{
 										W++;
@@ -8394,9 +8394,9 @@ MainStart:
 						}
 						for (I = 0; I < PM; I++)
 						{
-							/* AddBigNbrModN(aiJW[I], 1, biTmp, TestNbr, NumberLength); */
+							/* AddBigNbrModN(aiJW[I], 1, biTmp, TestNmbr, NumberLngth); */
 							mpz_add_ui(biTmp, aiJW[I], 1);
-							mpz_mod(biTmp, biTmp, TestNbr);
+							mpz_mod(biTmp, biTmp, TestNmbr);
 							if (mpz_cmp_ui(biTmp, 0) == 0) /* (BigNbrIsZero(biTmp)) */
 							{
 								break;
@@ -8414,9 +8414,9 @@ MainStart:
 						}
 						for (J = 1; J <= P - 2; J++)
 						{
-							/* AddBigNbrModN(aiJW[I + J * PM], 1, biTmp, TestNbr, NumberLength); */
+							/* AddBigNbrModN(aiJW[I + J * PM], 1, biTmp, TestNmbr, NumberLngth); */
 							mpz_add_ui(biTmp, aiJW[I + J * PM], 1);
-							mpz_mod(biTmp, biTmp, TestNbr);
+							mpz_mod(biTmp, biTmp, TestNmbr);
 							if (mpz_cmp_ui(biTmp, 0) != 0)/* (!BigNbrIsZero(biTmp)) */
 							{
 								/* Not prime */
@@ -8443,7 +8443,7 @@ MainStart:
 					}
 					if (K == 1)
 					{
-						if ((mpz_get_ui(TestNbr) & 3) == 1)
+						if ((mpz_get_ui(TestNmbr) & 3) == 1)
 						{
 							SW = 1;
 						}
@@ -8452,15 +8452,15 @@ MainStart:
 
 					// if (Q^((N-1)/2) mod N != N-1), N is not prime.
 
-					/* MultBigNbrByLongModN(1, Q, biTmp, TestNbr, NumberLength); */
+					/* MultBigNbrByLongModN(1, Q, biTmp, TestNmbr, NumberLngth); */
 					mpz_set_ui(biTmp, Q);
-					mpz_mod(biTmp, biTmp, TestNbr);
+					mpz_mod(biTmp, biTmp, TestNmbr);
 
-					mpz_sub_ui(biT, TestNbr, 1); /* biT = n-1 */
+					mpz_sub_ui(biT, TestNmbr, 1); /* biT = n-1 */
 					mpz_divexact_ui(biT, biT, 2); /* biT = (n-1)/2 */
-					mpz_powm(biR, biTmp, biT, TestNbr); /* biR = Q^((n-1)/2) mod n */
+					mpz_powm(biR, biTmp, biT, TestNmbr); /* biR = Q^((n-1)/2) mod n */
 					mpz_add_ui(biTmp, biR, 1);
-					mpz_mod(biTmp, biTmp, TestNbr);
+					mpz_mod(biTmp, biTmp, TestNmbr);
 
 					if (mpz_cmp_ui(biTmp, 0) != 0)/* (!BigNbrIsZero(biTmp)) */
 					{
@@ -8485,7 +8485,7 @@ MainStart:
 						U = T * Q;
 						do
 						{
-							/* MultBigNbrByLong(biS, Q, biS, NumberLength); */
+							/* MultBigNbrByLong(biS, Q, biS, NumberLngth); */
 							mpz_mul_ui(biS, biS, Q);
 							U /= Q;
 						} while (U % Q == 0);
@@ -8513,11 +8513,11 @@ MainStart:
 						U = T * Q;
 						do
 						{
-							/* MultBigNbrByLong(biS, Q, biS, NumberLength); */
+							/* MultBigNbrByLong(biS, Q, biS, NumberLngth); */
 							mpz_mul_ui(biS, biS, Q);
 							U /= Q;
 						} while (U % Q == 0);
-						if (CompareSquare(biS, TestNbr) > 0)
+						if (CompareSquare(biS, TestNmbr) > 0)
 						{
 							TestingQs = J;
 							/* continue MainStart; */ /* Retry from the beginning */
@@ -8537,22 +8537,22 @@ MainStart:
 
 		// Final Test
 
-		/* biN = TestNbr; */
-		/* TestNbr = biS; */
+		/* biN = TestNmbr; */
+		/* TestNmbr = biS; */
 		/* biR = 0; */
-		mpz_set(biN, TestNbr);
-		mpz_set(TestNbr, biS);
+		mpz_set(biN, TestNmbr);
+		mpz_set(TestNmbr, biS);
 		mpz_set_ui(biR, 0);
 
 		/* biR = 1; */
 		mpz_set_ui(biR, 1);
 		/* BigNbrModN(biN, LengthN, biT); */ /* Compute N mod S */
-		mpz_fdiv_r(biT, biN, TestNbr);
+		mpz_fdiv_r(biT, biN, TestNmbr);
 		for (J = 1; J <= T; J++)
 		{
-			/* MultBigNbrModN(biR, biT, biTmp, TestNbr, NumberLength); */
+			/* MultBigNbrModN(biR, biT, biTmp, TestNmbr, NumberLngth); */
 			mpz_mul(biTmp, biR, biT);
-			mpz_mod(biTmp, biTmp, TestNbr);
+			mpz_mod(biTmp, biTmp, TestNmbr);
 			if (mpz_cmp_ui(biTmp, 1) > 0)/* (biTmp != 0) */
 			{
 				break;
@@ -8563,12 +8563,12 @@ MainStart:
 				free_vars();
 				return APRTCLE_PRIME;
 			}
-			/* TestNbr = biTmp; */
-			mpz_set(TestNbr, biTmp);
-			if (mpz_cmp(TestNbr, biTmp) > 0) /* (TestNbr > biTmp) */
+			/* TestNmbr = biTmp; */
+			mpz_set(TestNmbr, biTmp);
+			if (mpz_cmp(TestNmbr, biTmp) > 0) /* (TestNmbr > biTmp) */
 			{
 				/* BigNbrModN(biN, LengthN, biTmp); */ /* Compute N mod R */
-				mpz_fdiv_q(biTmp, biN, TestNbr);
+				mpz_fdiv_q(biTmp, biN, TestNmbr);
 				if (mpz_cmp_ui(biTmp, 0) == 0) /* (BigNbrIsZero(biTmp)) */
 				{ /* If N is multiple of R.. */
 				  /* Number is composite */
@@ -8576,10 +8576,10 @@ MainStart:
 					return APRTCLE_COMPOSITE;
 				}
 			}
-			/* biR = TestNbr; */
-			/* TestNbr = biS; */
-			mpz_set(biR, TestNbr);
-			mpz_set(TestNbr, biS);
+			/* biR = TestNmbr; */
+			/* TestNmbr = biS; */
+			mpz_set(biR, TestNmbr);
+			mpz_set(TestNmbr, biS);
 		} /* End for J */
 		/* Number is prime */
 		free_vars();

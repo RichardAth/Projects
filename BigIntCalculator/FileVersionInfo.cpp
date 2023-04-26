@@ -1,4 +1,3 @@
-
 #include "pch.h"
 #include <wtypes.h>
 #include <winver.h>
@@ -6,6 +5,10 @@
 *** Don't forget! *****
 add to Project Properties->Linker->Input->Additional Dependencies -> Add Version.lib
 */
+
+#include <windef.h>
+#include <winbase.h>
+#include <shlwapi.h>
 
 /* returns version info from .exe file, also date & time file last modified */
 void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
@@ -74,4 +77,66 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	}
 	else
 		std::cout << path << " not found \n";
+}
+
+#define PACKVERSION(major,minor) MAKELONG(minor,major)
+typedef HRESULT(CALLBACK* DLLGETVERSIONPROC2)(DLLVERSIONINFO2*);
+
+/* get the version number of the dll specified in DllName */
+bool GetVersion(LPCTSTR lpszDllName, DWORD * Major, DWORD * Minor, 
+	DWORD * Build, DWORD * platform) {
+	HINSTANCE hinstDll;
+	DWORD dwVersion = 0;
+	DLLVERSIONINFO2 dvi;
+	HRESULT hr;
+	DLLGETVERSIONPROC2 pDllGetVersion = nullptr;
+
+	// For security purposes, LoadLibrary should be provided with a fully qualified 
+	// path to the DLL. The lpszDllName variable should be tested to ensure that it 
+	// is a fully qualified path before it is used. 
+	hinstDll = LoadLibrary(lpszDllName);
+
+	if (hinstDll) {
+		pDllGetVersion = (DLLGETVERSIONPROC2)GetProcAddress(hinstDll, "DllGetVersion");
+
+		// Because some DLLs might not implement this function, you must test for 
+		// it explicitly. Depending on the particular DLL, the lack of a DllGetVersion 
+		// function can be a useful indicator of the version. 
+
+		if (pDllGetVersion) {
+			ZeroMemory(&dvi, sizeof(dvi));
+			dvi.info1.cbSize = sizeof(dvi);
+			hr = (*pDllGetVersion)(&dvi);
+			if (SUCCEEDED(hr)) 	{
+				dwVersion = PACKVERSION(dvi.info1.dwMajorVersion, dvi.info1.dwMinorVersion);
+				*Major = dvi.info1.dwMajorVersion;
+				*Minor = dvi.info1.dwMinorVersion;
+				*Build = dvi.info1.dwBuildNumber;
+				*platform = dvi.info1.dwPlatformID;
+			}
+		}
+		FreeLibrary(hinstDll);
+	}
+	return (pDllGetVersion != nullptr);
+}
+
+
+/* get version of ComCtl32.dll */
+/* specifying just the file name, not the full path, ensures that the version 
+from the manifest is used. */
+const LPCTSTR lpszDllName = L"ComCtl32.dll";
+// const LPCTSTR lpszDllName = L"C:\\Windows\\System32\\ComCtl32.dll";
+// const LPCTSTR lpszDllName = L"C:/Windows/WinSxS/x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.19041.1110_none_a8625c1886757984/comctl32.dll";
+/*                           "C:\Windows\WinSxS\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.19041.1110_none_a8625c1886757984\comctl32.dll" */
+DWORD getComCtlVer(void) {
+	DWORD Major, Minor, build, platform;
+	DWORD version;
+	if (GetVersion(lpszDllName, &Major, &Minor, &build, &platform)) {
+		if (verbose >= 1)
+			printf_s("ComCtl32.dll version = %u.%u.%u \n", Major, Minor, build);
+
+		version = PACKVERSION(Major, Minor);
+		return version;
+	}
+	else return 0;
 }

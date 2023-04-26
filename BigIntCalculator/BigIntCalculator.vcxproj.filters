@@ -161,6 +161,9 @@
     <ClInclude Include="expression.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt">
@@ -185,6 +188,12 @@
     </None>
     <None Include="Modular square root.docx">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="main_men.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resource.hm">
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

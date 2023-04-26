@@ -1,18 +1,16 @@
 #pragma once
 
-#include "boost/multiprecision/gmp.hpp" 
-typedef boost::multiprecision::mpz_int Znum;
 
 /* defined in main.cpp */
 long long MulPrToLong(const Znum& x);
 
-/* ComputeNumDigits(n,r): Number of digits of n in base r. */
-long long ComputeNumDigits(const Znum& n, const Znum& radix);
-void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hex);
+
 void writeIni(void);
 void generatePrimes(unsigned long long int max_val);
 unsigned long long llSqrt(const unsigned long long n);
 bool getBit(const unsigned long long int x, const bool array[]);
+void textError(retCode rc);
+
 
 
 extern bool* primeFlags;
@@ -20,7 +18,6 @@ extern unsigned long long* primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 extern int verbose;
-extern int lang;    // 0 English, 1 = Spanish
 
 /* defined in various places: not in main.cpp */
 extern std::string YafuPath;
@@ -43,6 +40,10 @@ void printvars(std::string name);
 void doTests9(const std::string& params);  /* modular square root test */
 void doTestsA(const std::string& params);   /* quadratic modular equation solver */
 void PrintTimeUsed(double elapsed, const std::string& msg = "");
+void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
+char* getFileName(const char* filter, HWND owner);
+DWORD getComCtlVer(void);
+retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,

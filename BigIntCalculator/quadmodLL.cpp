@@ -18,10 +18,8 @@
 //
 #include <cassert>
 #include "pch.h"
-#include "bignbr.h"
-#include "bigint.h"
+
 #include "quadmodLL.h"
-#include "factor.h"
 //#include "commonstruc.h"
 
 extern BigInteger MontgomeryMultR1BI, MontgomeryMultR2BI;
@@ -79,6 +77,8 @@ extern char* ptrOutput;
 extern int SolNbr;
 
 struct stQuad quad;
+
+#undef min  /* remove min defined in windows.h */
 
 /* mainly for debugging */
 void printFactors(sFactors flist[]) {

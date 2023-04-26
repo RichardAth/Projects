@@ -14,13 +14,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "bignbr.h"   /* access PrimalityTest function*/
-#include "bigint.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include "factor.h"
 #include <stack>
-
 
 // declarations for external function
 
@@ -426,7 +420,8 @@ static Znum ComputeSumDigits(const Znum &n, const Znum &radix) {
 	return result;
 }
 
-/* RevDigits(n,r): finds the value obtained by writing backwards the digits of n in base r */
+/* RevDigits(n,r): finds the value obtained by writing backwards the digits of n 
+in base r. r should be > 1  */
 static Znum ComputeRevDigits(const Znum &n, const Znum &radix) {
 
 	Znum argum = n, Temp;
@@ -970,14 +965,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 	}
 
 	case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+		if (p[1] <= 1)
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeSumDigits(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_numdigits: /* number of digits of p[0] in base p[1] */ {
+		if (p[1] <= 1)
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeNumDigits(p[0], p[1]);
 		break;
 	}
 	case opCode::fn_revdigits: {	// revdigits
+		if (p[1] <=1 )
+			return retCode::EXPR_BASE_MUST_BE_POSITIVE;
 		result = ComputeRevDigits(p[0], p[1]);
 		break;
 	}
@@ -1824,7 +1825,7 @@ Added 5/6/2021
 		one number on the stack at the end, or at any time there are not enough
 		numbers on the stack to perform an operation an error is reported.
 		(this would indicate a syntax error not detected earlier)*/
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV = nullptr) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {
 	retCode rv;
 	std::vector <token> tokens;
 	std::vector <token> rPolish;
