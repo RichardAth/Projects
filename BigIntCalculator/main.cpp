@@ -862,9 +862,9 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
     sum.numsize = (int)ComputeNumDigits(x3, 10);
 
     if (lang)
-        std::cout << "\nPrueba " << testnum << ": factoriza ";
+        std::cout << '\n' << myTime() << "Prueba " << testnum << ": factoriza ";
     else
-        std::cout << "\nTest " << testnum << ": factorise ";
+        std::cout << '\n' << myTime() << " Test " << testnum << ": factorise ";
     ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
@@ -1348,7 +1348,7 @@ static void doTests2(const std::string &params) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        std::cout << "\nTest # " << i << " of " << p1 << '\n';
+        std::cout << '\n' << myTime() << "  Test " << i << " of " << p1 << '\n';
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
@@ -1782,7 +1782,7 @@ static void doTests4(void) {
             std::cout << "remaining tests skipped \n";
             break;
         }
-        std::cout << "\ntest " << px + 1 << " of " << pmax+1 ;
+        std::cout << '\n' << myTime() << " test " << px + 1 << " of " << pmax + 1;
         mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
         m--;                // get 2^p -1
         if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
@@ -1981,7 +1981,7 @@ static void doTests7(const std::string &params) {
 }
 
 
-std::vector<std::string> inifile;  // copy contents of .ini here
+std::vector<std::string> inifile;  // copy some contents of .ini here
 std::string iniPath;          // path to .ini file
 
   /* can be overwritten from the .ini file */
@@ -2002,12 +2002,13 @@ void writeIni(void) {
         std::cerr << "cannot open BigIntCalculator.new \n";
         return;
     }
-    /* copy from current ini file to new one */
+    /* copy comments etc from current ini file to new one */
     for (auto text : inifile) {
         newStr << text << '\n';
     }
     newStr << "yafu-path=" << YafuPath << '\n';
     newStr << "yafu-prog=" << yafuprog << '\n';
+    newStr << "yafu-out=" << outPath << '\n';
     newStr << "msieve-path=" << MsievePath << '\n';
     newStr << "msieve-prog=" << MsieveProg << '\n';
     newStr << "helpfile=" << helpFilePath << '\n';
@@ -2080,6 +2081,9 @@ static void processIni(const char * arg) {
             else if (_strnicmp("yafu-prog=", buffer.c_str(), 10) == 0) {
                 yafuprog = buffer.substr(10); // copy path following '=' character
             }
+            else if (_strnicmp("yafu-out=", buffer.c_str(), 9) == 0) {
+                outPath = buffer.substr(9); // copy path following '=' character
+            }
             else if (_strnicmp("msieve-path=", buffer.c_str(), 12) == 0) {
                 MsievePath = buffer.substr(12); // copy path following '=' character
             }
@@ -2105,12 +2109,12 @@ static void processIni(const char * arg) {
 }
 
 
-struct HelpDiqalogResp {
+struct HelpDialogResp {
     int radiobutton;
     int Ok_Cancel;
 };
 
-HelpDiqalogResp hResp;  /* user choices in the help dialog box are saved here */
+HelpDialogResp hResp;  /* user choices in the help dialog box are saved here */
 
 /* process messages from dialog box for Help topics */
 INT_PTR helpDialogAct(HWND DiBoxHandle,
@@ -2193,7 +2197,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
             return TRUE;
 
         default:  /* unknown control*/
-            std::cout << "HelpDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
+            std::cout << "HelpDialog WM_COMMAND  wpHi = " << wpHi << " wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
         }
         return FALSE;
@@ -3362,7 +3366,8 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_CLOSE:         /* 0x10 */
     case WM_ERASEBKGND:    /* 0x14 */
     case WM_SHOWWINDOW:    /* 0x18 */
-    case WM_ACTIVATEAPP:   /* ox1c */
+    case WM_ACTIVATEAPP:   /* 0x1c */
+    case WM_CANCELMODE:    /* 0x1f */
     case WM_SETCURSOR:     /* 0x20 */
     case WM_MOUSEACTIVATE:  /* 0x21 */
     case WM_GETMINMAXINFO:  /* 0x24 */
@@ -3384,6 +3389,9 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_NCLBUTTONDBLCLK: /* 0xa3 */
     case 0xae:             /* can't find any documentation for this */
     case WM_SYSCOMMAND:    /* 0x112 */
+    case WM_INITMENU:      /* 0x116 */
+    case WM_MENUSELECT:    /* 0x11f */
+    case WM_ENTERIDLE:     /* 0x121 */
     case WM_CHANGEUISTATE: /* 0x127 */
     case WM_UPDATEUISTATE: /* 0x128 */
     case WM_QUERYUISTATE:  /* 0x129*/
@@ -3396,6 +3404,8 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_LBUTTONDOWN:    /* 0x201 */
     case WM_LBUTTONUP:      /* 0x202 */
     case WM_LBUTTONDBLCLK:  /* 0x203 */
+    case WM_ENTERMENULOOP:  /* 0x211 */
+    case WM_EXITMENULOOP:   /* 0x212 */
     case WM_CAPTURECHANGED: /* 0x215 */
     case WM_MOVING:         /* 0x216 */
     case WM_ENTERSIZEMOVE:  /* 0x231 */
@@ -3409,7 +3419,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         return false;
 
     default:
-        printf_s("SetDialogAct: unkown message %x wpHi = %x, wpLo = %x"
+        printf_s("SetDialogAct: unknown message %x wpHi = %x, wpLo = %x"
             " additionalinfo2 = %llx \n", 
             message, wpHi, wpLo, additionalInfo2);
         return false;
@@ -3534,8 +3544,12 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             return false;
 
         case Yafulog:
-            yafuParam("YAFU LOG");
+            yafuParam("YAFU OUT");
             return false;
+
+        case YAFU_out_path:
+            yafuParam("YAFU OUT SET");
+            return FALSE;
 
         case Yafu_GGNFS:
             yafuParam("YAFU INI");

@@ -17,10 +17,8 @@
 #define pari                            1011
 #define Headingg                        1012
 #define IDC_BUTTON1                     1019
-//#define IDC_BUTTON2                     1020
 #define setYAFUpath                     1020
 #define YafuPlan                        1021
-//#define IDC_STATIC2                     1023
 #define setYAFUplan                     1023
 #define Yafulog                         1024
 #define Yafu_GGNFS                      1025
@@ -41,6 +39,8 @@
 #define group_size_int                  1041
 #define IDC_CHECK1                      1042
 #define sel_language                    1043
+#define IDC_BUTTON2                     1045
+#define YAFU_out_path                   1045
 
 // Next default values for new objects
 // 
@@ -48,7 +48,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        114
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

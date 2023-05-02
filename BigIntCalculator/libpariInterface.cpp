@@ -3,9 +3,7 @@
 //#include "pari.h"
 extern std::string PariPath;
 extern HWND handConsole;      /* handle to console window */
-/* check file status */
-void fileStatus(const std::string& progname);
-char* getFileName(const char* filter, HWND owner);
+
 
 /* stuff below copied from pari headers, to avoid including humungous pari.h etc*/
 typedef long long* GEN;
