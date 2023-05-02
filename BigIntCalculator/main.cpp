@@ -17,6 +17,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <fcntl.h>
 #include <io.h>
+#include <windows.h>
+#include <strsafe.h>
 
 #include <Mmsystem.h >   // for sound effects
 #include "diagnostic.h"
@@ -34,11 +36,12 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 extern Znum zR, zR2, zNI, zN;
 #endif
 
+extern long long SFhitcount, SFmisscount;
+
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program */
-HINSTANCE cH2 = GetModuleHandle(NULL);  /* should conain same value */
-
+HINSTANCE cH2 = GetModuleHandle(NULL);  /* should contain the same value */
 
 int lang = 0;             // 0 English, 1 = Spanish
 
@@ -71,9 +74,6 @@ std::string endsound = "c:/Windows/Media/Alarm09.wav";
 
 /* name of sound file played when prompt for input is displayed */
 std::string attsound = "c:/Windows/Media/chimes.wav";
-
-#include <windows.h>
-#include <strsafe.h>
 
 
 /* display last error in a message box. lpszFunction should be a pointer to text 
@@ -728,6 +728,11 @@ static void printSummary(void) {
         printf_s("%3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
             res.ctrs.msieve);
     }
+
+    if (verbose > 0) {
+        std::cout << "saved Factors list hit  count = " << SFhitcount << '\n'
+                  << "saved Factors list miss count = " << SFmisscount << '\n';;
+    }
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
@@ -1120,12 +1125,13 @@ static void doTests(void) {
     testcnt++;
     factortest(x3, testcnt);
 
-    x3 += 2;
+    x3 += 2;  // x3 = 10^20+1
     testcnt++;
     factortest(x3, testcnt);
 
     testcnt++;
     ComputeExpr("n(10^10)^2-1", x3, asgCt);  // test power of large number-1
+    /* x3 = 10000000019^2 -1 */
     factortest(x3, testcnt);
 
     testcnt++;
@@ -2137,7 +2143,9 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_SETFONT:        /* 0x30 */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
     case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_NOTIFY:            /* 0x4e */
     case WM_HELP:              /* ox53 */
+    case WM_NOTIFYFORMAT:      /* 0x55 */
     case WM_GETICON:           /* 0x7f */
     case WM_NCDESTROY:         /* 0x82 */
     case WM_NCHITTEST:     /* 0x84 */
@@ -2193,6 +2201,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_SYSCOMMAND:             /* 0x112 */
     case WM_CHANGEUISTATE:          /* 0x127 */
     case WM_UPDATEUISTATE:          /* 0x128 */
+    case WM_QUERYUISTATE:           /* 0x129*/
     case WM_CTLCOLORBTN:            /* 0x135 */
     case WM_CTLCOLORDLG:            /* 0x136 */
     case WM_CTLCOLORSTATIC:         /* 0x138 */
@@ -2206,6 +2215,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_IME_SETCONTEXT:         /* 0x281 */
     case WM_IME_NOTIFY:             /* 0x282 */
     case WM_NCMOUSELEAVE:           /* 0x2a2 */
+    case WM_PRINTCLIENT:            /* 0x318 */
     case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
     case WM_USER:                   /* 0x400 */
         return FALSE;
@@ -3270,7 +3280,7 @@ static int ifCommand(const std::string &command) {
 // Returns:
 //   The handle to the tooltip.
 //
-HWND CreateToolTip(int toolID, HWND hDlg, PTSTR pszText, HINSTANCE hParnt)
+HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParnt)
 {
     if (!toolID || !hDlg || !pszText)
     {
@@ -3409,7 +3419,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         LRESULT rr;
 
         /* tooltip help message */
-        static WCHAR grouphelp[] = L"help message \n";
+        static LPWSTR grouphelp = L"help message \n";
 
         /* initialise combi box */
         HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
@@ -3441,8 +3451,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             ErrorDisp(__FUNCTION__);
         }
 
-        hh = CreateToolTip(group_size_int, DiBoxHandle, grouphelp, 
-            (HINSTANCE) DiBoxHandle /*calcHandle*/);
+        hh = CreateToolTip(group_size_int, DiBoxHandle, grouphelp, calcHandle);
         /* the amount of time the tooltip window remains visible */
         auto poptime = SendMessage(hh, TTM_GETDELAYTIME, TTDT_AUTOPOP, 0);
         /*  the amount of time the pointer must remain stationary within a tool's 
@@ -3614,6 +3623,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 rr = SendMessage(hh, TTM_ACTIVATE, TRUE, 0);
                 if (rr != TRUE)
                     ErrorDisp(__FUNCTION__ " TTM_ACTIVATE");
+                /* TTM_POPUP requires Comclt32.dll version 6.0. */
                 rr = SendMessage(hh, TTM_POPUP, 0, 0);
                 if (rr != TRUE)
                     ErrorDisp(__FUNCTION__ " TTM_POPUP");

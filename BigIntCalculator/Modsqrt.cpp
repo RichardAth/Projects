@@ -77,7 +77,8 @@ void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
 	}
 }
 
-/* c is an even power of 2, prime = 2, c < 2^lambda */
+/* Find modular square root of c, modulus = prime^lambda.
+c is an even power of 2, prime = 2, c < 2^lambda */
 std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) {
 	Znum increment, r1, sqrtc;
 	Znum mod = power(prime, lambda);
@@ -104,7 +105,8 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 }
 
 
-/* special for prime =2, c is odd*/
+/* Find modular square root of c, modulus = prime^lambda.
+special for prime =2, c is odd*/
 std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	Znum r1, r2, root, x, x2, gcdv, increment, sqrtc;
 	Znum mod = power(prime, lambda);
@@ -152,7 +154,8 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	return roots;
 }
 
-/* c is a perfect square and an even power of of prime, prime > 2( */
+/* Find modular square root of c, modulus = prime^lambda.
+c is a perfect square and an even power of of prime, prime > 2( */
 std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda) {
 	Znum mod = power(prime, lambda);
 	Znum r1, r2, sqrtc, increment;
@@ -172,7 +175,8 @@ std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda
 	return roots;
 }
 
-/* c is not a multiple of prime, prime != 2 */
+/* Find modular square root of c, modulus = prime^lambda.
+c is not a multiple of prime, prime != 2 */
 std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda) {
 	std::vector <Znum> roots;
 	Znum r1, r2, root, x;

@@ -104,7 +104,7 @@ private:
 	int power = 0;		   // perfect power
 public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
-	friend void insertBigFactor(fList &Factors, const Znum &divisor);
+	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
 	friend void TrialDiv(fList &Factors, long long LehmanLimit);
 	friend bool factor(const Znum &toFactor, fList &Factors);
