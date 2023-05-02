@@ -62,10 +62,14 @@ bool isPerfectSquare(__int64 x) {
 	return (s * s == x);
 }
 
+/* if x >= 0, returns floor(sqrt(x)) in ss */
 bool isPerfectSquare(__int64 x, __int64 &ss) {
 	long long s;
 	if (x < 0) return false;
-	if (x == 0) return true;
+    if (x == 0) {
+        ss = 0;
+        return true;
+    }
 	//while ((x & 0x3) == 0) 
 	//	x >>= 2;   // divide by largest possible power of 4
 

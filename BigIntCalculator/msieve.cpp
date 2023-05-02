@@ -1,7 +1,6 @@
 #include "pch.h"
 
 #include "showtime.h"
-bool changepath(std::string &path, std::string &prog);
 
 /* output from Msieve -h option:
 
@@ -99,8 +98,6 @@ options:
 
 */
 
-/* check file status */
-void fileStatus(const std::string &progname);
 
 bool msieve = false;  // true: use Msieve. false: use YAFU or built-in ECM and SIQS
 bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
@@ -160,7 +157,7 @@ void msieveParam(const std::string &command) {
 			std::cout << "path = " << MsievePath << '\n';
 		}
 		else {
-			if (changepath(MsievePath, MsieveProg))
+			if (changepathPP(MsievePath, MsieveProg))
 				writeIni();  // rewrite .ini file
 		}
 		fileStatus(MsievePath + '\\' + MsieveProg);

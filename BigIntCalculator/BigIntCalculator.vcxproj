@@ -103,6 +103,7 @@
       <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0;C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_77_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +142,7 @@
       <AdditionalIncludeDirectories>C:\Users\admin99\Documents\Downloads_long_term_storage\boost_1_77_0;C:\Users\admin99\Documents\Downloads_long_term_storage\mpir-3.0.0</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>/utf-8</AdditionalOptions>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -14,7 +14,7 @@ std::string YafuPath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\
 #endif
 
 std::string yafuprog = "yafu-x64.exe";
-static std::string logPath = "C:/users/admin99/factors.txt";
+std::string outPath = "C:/users/admin99/factors.txt";
 
 static std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
@@ -45,7 +45,7 @@ void delfile(const std::string &path,  const char * FileName) {
 }
 
 /* use windows explorer-type dialogue box to select file */
-char * getFileName(const char *filter, HWND owner) {
+char * getFileName(const char *filter, HWND owner, bool MustExist) {
 
 	OPENFILENAMEA ofn;
 	static char * fileNameStr = NULL;
@@ -63,7 +63,9 @@ char * getFileName(const char *filter, HWND owner) {
 	ofn.lpstrFileTitle = NULL;					// file name and extension (without path) of selected file
 	ofn.lpstrInitialDir = NULL;					// initial directory
 	ofn.nFilterIndex = 1;						// do not use the custom filter
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_EXPLORER;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_EXPLORER;
+	if (MustExist)
+		ofn.Flags |= OFN_FILEMUSTEXIST;
 	ofn.lpstrDefExt = "";						// default file extension
 
 
@@ -76,9 +78,8 @@ char * getFileName(const char *filter, HWND owner) {
 }
 
 /* replace path and/or program name, 
-return true if change actually made. 
-otherwise return false */
-bool changepath(std::string &path, std::string &prog) {
+return true if change actually made. otherwise return false */
+bool changepathPP(std::string &path, std::string &prog) {
 	bool rewrite = false;
 	char * newpathC;
 	std::string newpath;
@@ -117,22 +118,55 @@ bool changepath(std::string &path, std::string &prog) {
 	return rewrite;
 }
 
-/* check file status. Print date & time modified */
-void fileStatus(const std::string &progname) {
+/* replace path, return true if change actually made, otherwise return false */
+static bool changepath2(std::string& path) {
+	bool rewrite = false;
+	char* newpathC;
+	std::string newpath;
+	std::string newprog;
+	std::string::size_type n;
+
+	newpathC = getFileName("Text Files\0*.txt\0\0", handConsole, false);
+	if (newpathC == NULL) {
+		std::cout << "command cancelled \n";
+		return false;
+	}
+	newpath = newpathC;  // copy C-style string to std::string
+	n = newpath.rfind('\\');   // look for '\'
+	if (n == std::string::npos) {
+		std::cout << "command cancelled \n";
+		return false;
+	}
+	else {
+		if (newpath != path) {
+			std::cout << "old path: " << path << '\n';
+			std::cout << "new path: " << newpath << '\n';
+			path = newpath;
+			rewrite = true;
+		}
+	}
+	return rewrite;
+}
+
+/* check file status. Print date & time modified, return false if file not found */
+bool fileStatus(const std::string &fileName) {
 	struct __stat64 fileStat;
 	struct tm ftimetm;
 	char timestamp[23];   // date & time in format "dd/mm/yyyy at hh:mm:ss"
-	int err = _stat64(progname.data(), &fileStat);
+	int err = _stat64(fileName.data(), &fileStat);
 	if (err == 0) {
 		auto ftime = fileStat.st_mtime;  // time last modified in time_t format
 		localtime_s(&ftimetm, &ftime);   // convert to tm format
 		/* convert to dd/mm/yyyy hh:mm:ss */
 		strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &ftimetm);
-		std::cout << progname << "  modified on ";
+		std::cout << fileName << "  modified on ";
 		std::cout << timestamp << '\n';
+		return true;
 	}
-	else
-		std::cout << progname << " not found \n";
+	else {
+		std::cout << fileName << " not found \n";
+		return false;
+	}
 }
 
 /* check or replace yafu.ini file */
@@ -190,7 +224,7 @@ static void inifile(std::string &param) {
 
 		/* replace the ggnfs_dir parameter */
 		std::string newprog;
-		if (!changepath(ggnfsPath, newprog))
+		if (!changepathPP(ggnfsPath, newprog))
 			return;  // bail out if change path cancelled
 
 		buffer = "ggnfs_dir=" + ggnfsPath + '/' + '\n';
@@ -225,11 +259,10 @@ static void inifile(std::string &param) {
 
 /*process YAFU commands */
 void yafuParam(const std::string &command) {
-	std::string param = command.substr(4);  /* remove "YAFU" */
 	const std::vector<std::string> paramList = {
-		"ON", "OFF", "PATH", "LOG", "PLAN", "TIDY", "INI"
+		"ON", "OFF", "PATH", "OUT", "PLAN", "TIDY", "INI"
 	};
-
+	std::string param = command.substr(4);  /* remove "YAFU" */
 	size_t ix = 0;
 
 	while (param[0] == ' ')
@@ -259,7 +292,7 @@ void yafuParam(const std::string &command) {
 			param.erase(0, 1);              /* remove leading space(s) */
 
 		if (param   == "SET") {
-			if (changepath(YafuPath, yafuprog))
+			if (changepathPP(YafuPath, yafuprog))
 				writeIni();  // rewrite .ini file
 		}
 		else {
@@ -270,11 +303,20 @@ void yafuParam(const std::string &command) {
 		break;
 
 	}
-	case 3: /* YAFU LOG  */ {  
-			std::cout << "log file = " << logPath << '\n';
-			/* todo; allow command to change log file name */
-			break;
+	case 3: /* YAFU OUT  */ {  
+		param.erase(0, 3);  // get rid of "OUT"
+		while (param[0] == ' ')
+			param.erase(0, 1);              /* remove leading space(s) */
+		if (param == "SET") {
+			if (changepath2(outPath))
+				writeIni();  // rewrite .ini file
 		}
+		else {
+			std::cout << "YAFU output file = " << outPath << '\n';
+		}
+		fileStatus(outPath);
+		break;
+	}
 	case 4: /* YAFU PLAN */ { 
 		// plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
 		// CUSTOM is not supported, NORMAL is default
@@ -296,8 +338,12 @@ void yafuParam(const std::string &command) {
 		delfile(YafuPath, "siqs.dat");
 		delfile(YafuPath, "nfs.log");
 		delfile(YafuPath, "nfs.job");
+		delfile(YafuPath, "nfs.dat");
+		delfile(YafuPath, "nfs.dat.mat");
+		delfile(YafuPath, "nfs.fb");
 		delfile(YafuPath, "ggnfs.log");
 		delfile(YafuPath, "YAFU_get_poly_score.out");
+		delfile(YafuPath, "factor.json");
 		break;
 	}
 	case 6: /* YAFU INI  */ {
@@ -310,7 +356,7 @@ void yafuParam(const std::string &command) {
 	}
 
 	default: {
-			std::cout << "invalid YAFU command (use ON, OFF, PATH, LOG, PLAN, TIDY or INI \n";
+			std::cout << "invalid YAFU command (use ON, OFF, PATH, OUT, PLAN, TIDY or INI \n";
 			break;
 		}
 	}
@@ -349,7 +395,7 @@ static void genfile(const std::string &numStr) {
 		default: break;  // ignore invalid pvalue
 		}
 	}
-	buffer += " -of " + logPath + '\n';   
+	buffer += " -of " + outPath + '\n';   
 
 	if (verbose > 0) {
 		//static char time[10];
@@ -371,7 +417,7 @@ bool callYafu(const Znum &num, fList &Factors) {
 	std::string command = YafuPath + yafuprog;
 	std::string numStr;
 	std::string buffer;
-	std::string logfile = logPath;
+	std::string logfile = outPath;
 	//FILE *log;
 	int fcount = 0;
 
@@ -386,7 +432,7 @@ bool callYafu(const Znum &num, fList &Factors) {
 	if (rc != 0 && errno != ENOENT) {
 		perror("could not remove old YAFU log file ");
 	}
-
+	delfile(YafuPath, "nfs.dat");
 	rv = system(batfilename.data());             // start YAFU;
 
 	/* get control back when YAFU has finished */

@@ -181,12 +181,14 @@ The YAFU command controls factorisation using YAFU:
    YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
    YAFU PATH Displays or changes path used when starting YAFU. The path is saved 
              in the .ini file so only needs to be set once.
-   YAFU LOG  Displays path & file name for YAFU output file
+   YAFU OUT  Displays path & file name for YAFU output file
    YAFU PLAN <name> 
              where <name> is NONE, NOECM, LIGHT, NORMAL, or DEEP. These 
              correspond to the -plan options documented in YAFU's docfile.txt 
              file. The default is NORMAL. This is a convenient way to control 
              the amount of testing using ECM before switching to SIQS or NFS.
+  YAFU TIDY  Deletes a number of files left behind by YAFU. If never deleted, 
+             the log and json files seem to grow larger indefinately.
 
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
 back on by the YAFU ON command (which also turns Msieve off). The default path to 

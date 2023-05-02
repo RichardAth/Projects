@@ -22,6 +22,7 @@ extern int verbose;
 /* defined in various places: not in main.cpp */
 extern std::string YafuPath;
 extern std::string yafuprog;
+extern std::string outPath;
 extern std::string MsievePath;
 extern std::string MsieveProg;
 extern bool breakSignal;
@@ -41,7 +42,10 @@ void doTests9(const std::string& params);  /* modular square root test */
 void doTestsA(const std::string& params);   /* quadratic modular equation solver */
 void PrintTimeUsed(double elapsed, const std::string& msg = "");
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
-char* getFileName(const char* filter, HWND owner);
+char* getFileName(const char* filter, HWND owner, bool MustExist = true);
+/* check file status. Print date & time modified, return false if file not found */
+bool fileStatus(const std::string& fileName);
+bool changepathPP(std::string& path, std::string& prog);
 DWORD getComCtlVer(void);
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 
