@@ -1,6 +1,11 @@
 #include "pch.h"
 
 #include "showtime.h"
+#include "json.h"
+
+/* forward declarations */
+static void process_value_s(json_value* value, int depth, const char* name,
+	const int index);
 
 extern HWND handConsole;      /* handle to console window */
 
@@ -18,6 +23,7 @@ std::string outPath = "C:/users/admin99/factors.txt";
 
 static std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
+bool useOldYafu = false;
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
 /* delete file specified by path + FileName */
@@ -25,8 +31,11 @@ void delfile(const std::string &path,  const char * FileName) {
 	std::string fname;
 	struct __stat64 fileStat;
 
-	if (!path.empty())
-		fname = path + "\\" + FileName;
+	if (!path.empty()) {
+		fname = path;
+		fname.append("\\") ;
+		fname.append(FileName);
+	}
 	else
 		fname = FileName;
 
@@ -39,7 +48,10 @@ void delfile(const std::string &path,  const char * FileName) {
 
 	int rc = remove(fname.data());
 	if (rc != 0 && errno != ENOENT) {
-		perror("could not remove file ");
+		std::cout << "could not remove file " << fname.data() << ' ' 
+#pragma warning(suppress : 4996)
+			<< strerror(errno) << '\n';
+
 	}
 	else std::cout << "removed file: " << FileName << '\n';
 }
@@ -172,25 +184,43 @@ bool fileStatus(const std::string &fileName) {
 /* check or replace yafu.ini file */
 static void inifile(std::string &param) {
 	std::string yafuini = "yafu.ini";
-	std::string iniFname = YafuPath + "\\" + yafuini;
+	std::string iniFname;
+
 	std::string buffer;
 	std::string ggnfsPath;
 	int lineNo = 1;
 	int ggnfsLine = -1;
 	std::vector<std::string> inifile;  // copy contents of yafu.ini here
+	std::string curPath(MAX_PATH, 0);
+	std::string newFname;
+	std::string oldFname;
+
+	if (useOldYafu)
+		iniFname = YafuPath + "\\" + yafuini;
+	else {
+		DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, (LPSTR)curPath.data());
+		assert(rv2 != 0);
+		while (curPath.back() == 0)
+			curPath.pop_back();  /* remove trailing null(s) */
+		iniFname = curPath + "\\" + yafuini;
+	}
 
 	std::ifstream iniStr(iniFname, std::ios::in);  // open yafu.ini file
 	if (!iniStr.is_open()) {
-		std::cout << " cannot open yafu.ini \n";
+		std::cout << " cannot open " << iniFname <<  '\n';
 	}
+
 	else {    /* read in yafu.ini file */
+		if (verbose > 0) {
+			std::cout << iniFname << " opened \n";
+		}
 		while (std::getline(iniStr, buffer)) {
 			if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
 				ggnfsLine = lineNo;
 				ggnfsPath = buffer.substr(10); // copy path following '=' character
 			}
 
-			if (_strnicmp("%print", buffer.c_str(), 6) == 0)
+			if ((_strnicmp("%print", buffer.c_str(), 6) == 0) || (verbose > 0))
 				std::cout << lineNo << ": " << buffer << '\n';
 
 			inifile.push_back(buffer);
@@ -215,49 +245,56 @@ static void inifile(std::string &param) {
 		}
 		else
 			std::cout << "ggnfs_dir parameter not found \n";
-	}
 
-	/* should we change/add the ggnfs_dir parameter?*/
-	if (!param.empty() && toupper(param[0]) == 'I') {
-		std::string newFname = YafuPath + "\\" + "yafu.new";
-		std::string oldFname = YafuPath + "\\" + "yafu.old";
 
-		/* replace the ggnfs_dir parameter */
-		std::string newprog;
-		if (!changepathPP(ggnfsPath, newprog))
-			return;  // bail out if change path cancelled
+		/* should we change/add the ggnfs_dir parameter?*/
+		if (!param.empty() && toupper(param[0]) == 'I') {
+			if (useOldYafu) {
+				newFname = YafuPath + "\\" + "yafu.new";
+				oldFname = YafuPath + "\\" + "yafu.old";
+			}
+			else {
+				newFname = curPath + "\\" + "yafu.new";
+				oldFname = curPath + "\\" + "yafu.old";
+			}
 
-		buffer = "ggnfs_dir=" + ggnfsPath + '/' + '\n';
+			/* replace the ggnfs_dir parameter */
+			std::string newprog;
+			if (!changepathPP(ggnfsPath, newprog))
+				return;  // bail out if change path cancelled
 
-		std::ofstream newStr(newFname, std::ios::out);  // open yafu.new file for output
-		if (!newStr.is_open()) {
-			std::cout << "cannot open yafu.new \n";
-			return;
-		}
-		/* copy everything from the yafu.ini to the yafu.new file except 
-		   ggnfs_dir= parameter */
-		for (size_t ix = 0; ix < (lineNo - 1); ix++) {
-			if (ix != (ggnfsLine - 1))
-				newStr << inifile[ix] << '\n';
+			buffer = "ggnfs_dir=" + ggnfsPath + '/' + '\n';
+
+			std::ofstream newStr(newFname, std::ios::out);  // open yafu.new file for output
+			if (!newStr.is_open()) {
+				std::cout << "cannot open " << newFname << '\n';
+				return;
+			}
+			/* copy everything from the yafu.ini to the yafu.new file except
+			   ggnfs_dir= parameter */
+			for (size_t ix = 0; ix < (lineNo - 1); ix++) {
+				if (ix != (ggnfsLine - 1))
+					newStr << inifile[ix] << '\n';
+				else
+					newStr << buffer;   // replace ggnfs_dir parameter with new value
+			}
+
+			if (ggnfsLine <= 0)
+				newStr << buffer;    // append ggnfs_dir parameter at end of file
+
+			newStr.close();
+
+			delfile(YafuPath, oldFname.c_str());  // delete any previous yafu.old
+			int rv = rename(iniFname.c_str(), oldFname.c_str());   // yafu.ini -> yafu.old
+			if (rv == 0)
+				rename(newFname.c_str(), iniFname.c_str());   // yafu.new -> yafu.ini
 			else
-				newStr << buffer;   // replace ggnfs_dir parameter with new value
+				perror("unable to rename yafu.ini as yafu.old");
 		}
-
-		if (ggnfsLine <= 0)
-			newStr << buffer;    // append ggnfs_dir parameter at end of file
-
-		newStr.close();
-
-		delfile(YafuPath, oldFname.c_str());  // delete any previous yafu.old
-		int rv = rename(iniFname.c_str(), oldFname.c_str());   // yafu.ini -> yafu.old
-		if (rv == 0)
-			rename(newFname.c_str(), iniFname.c_str());   // yafu.new -> yafu.ini
-		else
-			perror("unable to rename yafu.ini as yafu.old");
 	}
 }
 
-/*process YAFU commands */
+/*process YAFU commands */ 
 void yafuParam(const std::string &command) {
 	const std::vector<std::string> paramList = {
 		"ON", "OFF", "PATH", "OUT", "PLAN", "TIDY", "INI"
@@ -333,8 +370,21 @@ void yafuParam(const std::string &command) {
 		break;
 	}
 	case 5: /* YAFU TIDY */ {
-		delfile(YafuPath, "factor.log");
-		delfile(YafuPath, "session.log");
+		if (useOldYafu) {
+			delfile(YafuPath, "factor.log");
+			delfile(YafuPath, "session.log");
+			delfile(YafuPath, "factor.json");
+		}
+		else {
+			std::string curPath(MAX_PATH, 0);
+			DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, (LPSTR)curPath.data());
+			assert(rv2 != 0);
+			while (curPath.back() == 0)
+				curPath.pop_back();  /* remove trailing null(s) */
+			delfile(curPath, "factor.log");
+			delfile(curPath, "session.log");
+			delfile(curPath, "factor.json");
+		}
 		delfile(YafuPath, "siqs.dat");
 		delfile(YafuPath, "nfs.log");
 		delfile(YafuPath, "nfs.job");
@@ -343,7 +393,7 @@ void yafuParam(const std::string &command) {
 		delfile(YafuPath, "nfs.fb");
 		delfile(YafuPath, "ggnfs.log");
 		delfile(YafuPath, "YAFU_get_poly_score.out");
-		delfile(YafuPath, "factor.json");
+
 		break;
 	}
 	case 6: /* YAFU INI  */ {
@@ -398,8 +448,6 @@ static void genfile(const std::string &numStr) {
 	buffer += " -of " + outPath + '\n';   
 
 	if (verbose > 0) {
-		//static char time[10];
-		//_strtime_s(time, sizeof(time));  // get current time as "hh:mm:ss"
 		std::cout << myTime() << " command is: \n" << buffer ;  
 	}
 
@@ -412,7 +460,7 @@ static void genfile(const std::string &numStr) {
 	fclose(batfile);
 }
 
-bool callYafu(const Znum &num, fList &Factors) {
+bool callYafuOld(const Znum &num, fList &Factors) {
 	int rv;
 	std::string command = YafuPath + yafuprog;
 	std::string numStr;
@@ -432,7 +480,8 @@ bool callYafu(const Znum &num, fList &Factors) {
 	if (rc != 0 && errno != ENOENT) {
 		perror("could not remove old YAFU log file ");
 	}
-	delfile(YafuPath, "nfs.dat");
+	delfile(YafuPath, "nfs.dat");  /* if earlier run leaves this file undeleted
+	                               it would cause problems */
 	rv = system(batfilename.data());             // start YAFU;
 
 	/* get control back when YAFU has finished */
@@ -500,4 +549,259 @@ bool callYafu(const Znum &num, fList &Factors) {
 		return true;    // success
 	else
 		return false;   // failure
+}
+
+Znum ToBeFactored;
+std::vector <Znum> factors;
+
+/* check whether the product of all the factors is equal to the number to be
+factored */
+bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors) {
+	Znum residue = ToBeFactored;
+	Znum remainder;
+
+	for (auto f : factors) {
+		/* divide by each of the factors in turn, checking the remainder each time */
+		mpz_fdiv_qr(ZT(residue), ZT(remainder), ZT(residue), ZT(f));
+		assert(remainder == 0);
+	}
+	if (residue != 1) {
+		gmp_printf("YAFU: factors OK but residue after removing factors  = %Zd \n",
+			ZT(residue));
+		return false;
+	}
+	else {
+		if (verbose > 0)
+			printf("YAFU: all factors found \n");
+		return true;
+	}
+}
+
+/* save specified values. At the moment, we are only looking for the number
+to be factored and the factors found. These are decimal mumbers saved as text
+strings */
+static void save_value(json_value* value, const int index, int depth) {
+	json_type t = value->type;
+	char* sp;
+	Znum numValue;
+	int rv;
+
+	assert(t == json_string); /* at the moment, only strings can be processed. */
+	sp = value->u.string.ptr;
+	rv = mpz_set_str(ZT(numValue), sp, 10); /* convert ascii decimal to binary */
+	if (rv != 0) {
+		fprintf(stderr, "YAFU: json: invalid value: not a decimal number: %s \n", sp);
+		return;
+	}
+	switch (index) {
+	case 0:
+		if (verbose > 0)
+			gmp_printf("YAFU: json: number to be factored = %Zd \n", ZT(numValue));
+		ToBeFactored = numValue;
+		break;
+	case 1:
+		if (verbose > 0)
+			gmp_printf("YAFU: json: factor = %Zd \n", ZT(numValue));
+		factors.push_back(numValue);
+		break;
+
+	default:
+		abort();   /* WTF? */
+	}
+}
+
+static void process_object_s(json_value* value, int depth, const char* name,
+	const int index)
+{
+	int length, x;
+	if (value == NULL) {
+		return;
+	}
+	length = value->u.object.length;
+	for (x = 0; x < length; x++) {
+		if (strcmp(value->u.object.values[x].name, name) != 0)
+			continue;  /* ignore object unless name matches */
+		//print_depth_shift(depth);
+		//printf("object[%d].name = %s\n", x, value->u.object.values[x].name);
+		process_value_s(value->u.object.values[x].value, depth + 1, name, index);
+	}
+}
+
+static void process_array_s(json_value* value, int depth, const char* name,
+	const int index)
+{
+	int length, x;
+	if (value == NULL) {
+		return;
+	}
+	length = value->u.array.length;
+	//printf("array\n");
+	for (x = 0; x < length; x++) {
+		process_value_s(value->u.array.values[x], depth, name, index);
+	}
+}
+
+static void process_value_s(json_value* value, int depth, const char* name,
+	const int index) {
+	if (value == NULL) {
+		return;
+	}
+	switch (value->type) {
+	case json_none:
+	case json_null:
+		break;
+	case json_integer:
+	case json_double:
+	case json_string:
+	case json_boolean:
+		save_value(value, index, depth);
+		break;
+
+	case json_object:
+		process_object_s(value, depth + 1, name, index);
+		break;
+	case json_array:
+		process_array_s(value, depth + 1, name, index);
+		break;
+
+	default:
+		printf("YAFU: invalid json type\n");
+		break;
+	}
+}
+
+/* returns -1 for read error, +1 for parsing error, otherwise
+treats each line as a separate json record; parses it and stores
+selected fields of last record in a decoded form. */
+int process_file_s(FILE* fp, int* counter,
+	const char* name_list[], const int name_list_size) {
+	char* string_p = NULL;
+	char buffer[4096] = "";
+	json_char* json = NULL;
+	json_value* value = NULL;
+
+	*counter = 0;  /* counts number of records in file */
+	for (;;) {
+		string_p = fgets(buffer, sizeof(buffer), fp); /* get 1 record */
+		if (string_p != NULL) {
+			//printf("%s \n", buffer);  /* print raw data */
+			json = (json_char*)buffer;
+			json_value_free(value);  /* avoid memory leakage */
+			value = json_parse(json, strlen(buffer));
+			if (value == NULL) {
+				fprintf(stderr, "Unable to parse data\n");
+				return(1);
+			}
+			(*counter)++;  /* count number of records */
+		}
+		else {   /* error or end-of-file */
+			if (feof(fp)) {
+				/* process last record read */
+				factors.clear();
+				for (int index = 0; index < name_list_size; index++)
+					process_value_s(value, 0, name_list[index], index);
+				json_value_free(value);  /* avoid memory leakage */
+				if (!factors.empty())
+					sanityCheck(ToBeFactored, factors);
+				break;    /* normal exit */
+			}
+			else {
+				perror("YAFU: fgets error");
+				return(-1);
+			}
+		}
+	}
+	return(0);  /* normal exit */
+}
+
+/* returns -1 for read error, +1 for parsing error, 0 for succcess*/
+int process_json_file_main(void) {
+	FILE* fp;
+	char filename[MAX_PATH] = "";
+	struct stat filestatus;
+	int file_size;
+	int counter = 0;
+	int rv;
+	const char* name_list[] = { "input-decimal", "factors-prime" };
+	DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, filename);
+	assert(rv2 != 0);
+
+	rv = strcat_s(filename, "\\factor.json");
+	if (stat(filename, &filestatus) != 0) {
+		fprintf(stderr, "File %s not found\n", filename);
+		return -1;
+	}
+	file_size = filestatus.st_size;
+	errno_t errNo = fopen_s(&fp, filename, "rt");
+	if (fp == NULL) {
+		perror(NULL);
+		fprintf(stderr, "Unable to open %s\n", filename);
+		fclose(fp);
+		return -1;
+	}
+	rv = process_file_s(fp, &counter, name_list, 2); /* read & process file */
+	if (counter > 20 || verbose > 0)
+		printf("file contains %d records, size = %.1f Kb\n", counter,
+		(double)file_size / 1024.0);
+	fclose(fp);
+	return rv;
+}
+
+bool callYafu(const Znum& num, fList& Factors) {
+	int rv;
+	std::string numStr;
+	std::string buffer;
+	int fcount = 0;
+
+	if (useOldYafu) {
+		return callYafuOld(num, Factors);
+	}
+
+	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
+	numStr.resize(numdigits + 5);             // resize buffer
+	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
+	numStr.resize(strlen(&numStr[0]));        // get exact size of string in buffer
+
+	buffer = YafuPath + "\\" + yafuprog;
+	buffer += " factor(" + numStr + ")";
+	buffer += " -p";                // set batch priority
+	for (int i = 1; i <= verbose; i++)
+		buffer += " -v";                    // set verbose mode for YAFU
+	if (pvalue != 4) {
+		switch (pvalue) {
+		case 1: buffer += " -plan none"; break;
+		case 2: buffer += " -plan noecm"; break;
+		case 3: buffer += " -plan light"; break;
+		case 4: buffer += " -plan normal"; break;
+		case 5: buffer += " -plan deep"; break;
+		default: break;  // ignore invalid pvalue
+		}
+	}
+	buffer += '\n';
+	if (verbose > 0) {
+		std::cout << myTime() << " command is: \n" << buffer;
+	}
+
+	delfile(YafuPath, "nfs.dat");
+	rv = system(buffer.data());             // start YAFU;
+
+	/* get control back when YAFU has finished */
+	if (rv == -1) {
+#pragma warning(suppress : 4996)
+		std::cout << "cannot start YAFU: " << strerror(errno) << '\n';
+		return false;
+	}
+	else if (rv != 0) {
+		std::cout << "cannot start YAFU return code = " << rv << '\n';
+		return false;
+	}
+
+	rv = process_json_file_main();
+	if (rv != 0)
+		return false;
+	for (auto f : factors) {
+		insertBigFactor(Factors, f);
+		fcount++;
+	}
+	return (fcount > 0);
 }
