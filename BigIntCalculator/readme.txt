@@ -95,7 +95,7 @@ B. Test whether the number is prime:
   OR
       factorise it using Msieve. Using modified Msieve that makes more use of
    elliptic curve factorisation than the standard version (even with the e option)
-   does, this is nearly always the fastest for larger numbers that would use SIQS 
+   does, this is nearly always faster for larger numbers that would use SIQS 
    for factorisation.
    OR
       factorise it using YAFU
@@ -159,21 +159,21 @@ The dll and lib files for pthreads were downloaded from SourceForge.
 In addition I modified the function choose_max_digits within the source file gmp_ecm.c 
 to increase the use of ECM still further. The code change is:
 
-	if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
-		if (bits > 200) {           // 200 bits = about 60 digits
-			if (bits < 240)         // 240 bits = about 72 digits
-				max_digits = 20;    // increased from 15
-			else if (bits < 280)    // 280 bits = about 84 digits 
-				max_digits = 25;    // increased from 20
-			else if (bits < 320)    // 320 bits = about 96 digits
-				max_digits = 30;    // increased from 25
-			else if (bits < 360)    // 360 bits = about 108 digits
-				max_digits = 30;
-			else if (bits < 400)    // 400 bits = about 120 digits
-				max_digits = 35;
-			else
-				max_digits = 40;
-		}
+    if (obj->flags & MSIEVE_FLAG_DEEP_ECM) {
+        if (bits > 200) {           // 200 bits = about 60 digits
+            if (bits < 240)         // 240 bits = about 72 digits
+                max_digits = 20;    // increased from 15
+            else if (bits < 280)    // 280 bits = about 84 digits 
+                max_digits = 25;    // increased from 20
+            else if (bits < 320)    // 320 bits = about 96 digits
+                max_digits = 30;    // increased from 25
+            else if (bits < 360)    // 360 bits = about 108 digits
+                max_digits = 30;
+            else if (bits < 400)    // 400 bits = about 120 digits
+                max_digits = 35;
+            else
+                max_digits = 40;
+        }
 
 Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
 also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
@@ -275,7 +275,7 @@ A typical BigIntCalculator.ini file looks like:
                  about 5 mins vs 1 hour using DA's code. 
  Disadvantage:   Build is tricky & Calculator is basic, and result isn't sent to
                  console window. default is that input & output are from/to files, 
-				 not console window.
+                 not console window.
 
 Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number 
                  2^311-1 it took about 80 sec.
@@ -336,53 +336,53 @@ The normal rules for operator precedence and use of brackets to over-ride the de
 of evaluation apply.
 
 the following functions and operators are only in the calculator
-n!                                  factorial
-n!..!                               multi-factorial, not to be confused with (n!)!
-n#                                  primorial. 
-B(n)                                Previous probable prime before n
-F(n)                                Fibonacci number Fn
-L(n)                                Lucas number Ln = F(n-1) + F(n+1)
-N(n)                                Next probable prime after n
-PI(n)                               the number of prime numbers less than or equal to n
-P(n)                                Unrestricted Partition Number (number of 
-                                    decompositions of n into sums of integers without 
-                                    regard to order).
-Gcd(m,n)                            Greatest common divisor of m and n.
-Modinv(m,n)                         inverse of m modulo n, only valid when gcd(m,n)=1.
-Modpow(m,n,r)                       finds m^n modulo r. more efficient than (m^n)%r
-                                    NB. If n is -ve, the value is only defined if the 
-                                    inverse of m with respect to r exists, i.e. only 
-                                    if gcd(m, r) is 1
-Totient(n)                          finds the number of positive integers less than n 
-                                    which are relatively prime to n.
-Carmichael(n)                     : λ(n) of a positive integer n is the smallest positive integer 
-                                    m such that a^m ≡ 1   (mod n) for every integer a between 1 
-                                    and n that is coprime to n. Also known as the reduced totient
-                                    function.
-IsPrime(n)                          returns zero if n is not probable prime, -1 if it is.
-NumDivs(n)                          Number of positive divisors of n either prime or composite.
-SumDivs(n)                          Sum of all positive divisors of n both prime and composite.
-NumDigits(n,r)                      Number of digits of n in base r.
-SumDigits(n,r)                      Sum of digits of n in base r.
-RevDigits(n,r)                      finds the value obtained by writing backwards 
-                                    the digits of n in base r. 
-R2(n)                               The number of ways n can be formed as the sum of x^2 + y^2
-                                    where x and y are negative, zero, or positive. The order is 
-									significant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
-									(-1)^2 + 0)
-R3(n)                               The number of ways n can be formed as the sum of x^2 + y^2 + z^2
-                                    where x, y and z are negative, zero, or positive.
-									WARNING: for large n this is very slow
-R3H(n)                              Same as R3(n) but using the Hurwitz class number to get
-                                    the result. Much faster but requires PARI-GP to have been
-                                    installed.
-llt(n)                              Do Lucas-Lehmer primality test on 2^n-1.
-                                    Return 0 if 2^n-1 is composite, 1 if prime
-sqrt(n)                             Calculate floor(sqrt(n))
-nroot(x, n)                         Calculate nth root of x
-numfact(n)                          returns the number of uniqe factors in n
-minfact(n)                          returns the value of the smallest factor of n
-maxfact(n)                          returns the value of the largest factor of n
+n!                factorial
+n!..!             multi-factorial, not to be confused with (n!)!
+n#                primorial. 
+B(n)              Previous probable prime before n
+F(n)              Fibonacci number Fn
+L(n)              Lucas number Ln = F(n-1) + F(n+1)
+N(n)              Next probable prime after n
+PI(n)             the number of prime numbers less than or equal to n
+P(n)              Unrestricted Partition Number (number of 
+                  decompositions of n into sums of integers without 
+                  regard to order).
+Gcd(m,n)          Greatest common divisor of m and n.
+Modinv(m,n)       inverse of m modulo n, only valid when gcd(m,n)=1.
+Modpow(m,n,r)     finds m^n modulo r. more efficient than (m^n)%r
+                  NB. If n is -ve, the value is only defined if the 
+                  inverse of m with respect to r exists, i.e. only 
+                  if gcd(m, r) is 1
+Totient(n)        finds the number of positive integers less than n 
+                  which are relatively prime to n.
+Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
+                  m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                  and n that is coprime to n. Also known as the reduced totient
+                  function.
+IsPrime(n)        returns zero if n is not probable prime, -1 if it is.
+NumDivs(n)        Number of positive divisors of n either prime or composite.
+SumDivs(n)        Sum of all positive divisors of n both prime and composite.
+NumDigits(n,r)    Number of digits of n in base r.
+SumDigits(n,r)    Sum of digits of n in base r.
+RevDigits(n,r)    finds the value obtained by writing backwards 
+                  the digits of n in base r. 
+R2(n)             The number of ways n can be formed as the sum of x^2 + y^2
+                  where x and y are negative, zero, or positive. The order is 
+                  significant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
+                  (-1)^2 + 0)
+R3(n)             The number of ways n can be formed as the sum of x^2 + y^2 + z^2
+                  where x, y and z are negative, zero, or positive.
+                  WARNING: for large n this is very slow
+R3H(n)            Same as R3(n) but using the Hurwitz class number to get
+                  the result. Much faster but requires PARI-GP to have been
+                  installed.
+llt(n)            Do Lucas-Lehmer primality test on 2^n-1.
+                  Return 0 if 2^n-1 is composite, 1 if prime
+sqrt(n)           Calculate floor(sqrt(n))
+nroot(x, n)       Calculate nth root of x
+numfact(n)        returns the number of uniqe factors in n
+minfact(n)        returns the value of the smallest factor of n
+maxfact(n)        returns the value of the largest factor of n
 FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the mode m
                   mode    Order of factors    Repeated factors
                   0       Ascending           No
@@ -412,7 +412,7 @@ Some functions and operators limit the range of their parameters:
 # (primorial)                       0 < number <= 46340 (limits result to 20,000 digits)
 nCk (binomial coefficient)          (-2^31 <= k <= 2^31-1)	
 << and >> (shift operators)         -2^63 <= bitshift value <= 2^63-1
-									result is estimated before calculation and if it 
+                                    result is estimated before calculation and if it 
                                     appears to be > 20,000 digits an error will be reported.
 totient(n)                          n >= 1 (mathematically undefined for n < 1)
 PI(n)                               n <= 10^9 (this is because this calculation can be 
@@ -538,7 +538,7 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
    Factorisation for 60 or more digits uses YAFU. These are 'worst case' 
    figures. Random nubers of these sizes would be factorised much faster.
    The conclusion is that increasing the number size by 16 bits (approx 5 
-   decimal digits) increates the factorisation time bay a factor of about 3.
+   decimal digits) increases the factorisation time by a factor of about 3.
    Also, for larger numbers with no small factors, using "YAFU PLAN NOECM"
    saves a significant amount of time.
 
@@ -589,3 +589,12 @@ used.
  on by PARI ON and off by PARI OFF commands. The pari stack is initialised if it
  is required but is NOT closed except by a PARI CLOSE command. (There is no need
  for a PARI OPEN command; it's done automatically if required)
+
+ Added 2023
+
+ A later version of YAFU (version 2.11) was obtained, which is faster in general 
+ than the earlier version. This version outputs the results to a json file and
+ this file is now used to extract the factors obtained by YAFU. A slight design 
+ change was made in that YAFU now runs using the same current working directory
+ as the bigint calculator, and a number of files created by YAFU will appear in 
+ this directory.
