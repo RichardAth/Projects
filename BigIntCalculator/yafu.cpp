@@ -27,31 +27,38 @@ bool useOldYafu = false;
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
 /* delete file specified by path + FileName */
-void delfile(const std::string &path,  const char * FileName) {
+void delfile(const std::string& path, const char* FileName) {
 	std::string fname;
 	struct __stat64 fileStat;
 
 	if (!path.empty()) {
 		fname = path;
-		fname.append("\\") ;
+		fname.append("\\");
 		fname.append(FileName);
 	}
 	else
 		fname = FileName;
 
 	int err = _stat64(fname.data(), &fileStat);
-	if (0 != err) 
+	if (0 != err) {
+		if (errno != ENOENT) {
+			std::cout << "could not remove file " << fname.data() << ' '
+#pragma warning(suppress : 4996)
+				<< strerror(errno) << '\n';
+		}
 		return;
+	}
 
 	auto  fsize = fileStat.st_size/1024 ;
 	std::cout << FileName << " size is " << fsize << " KB \n";
 
 	int rc = remove(fname.data());
-	if (rc != 0 && errno != ENOENT) {
-		std::cout << "could not remove file " << fname.data() << ' ' 
+	if (rc != 0) {
+		if (errno != ENOENT) {
+			std::cout << "could not remove file " << fname.data() << ' '
 #pragma warning(suppress : 4996)
-			<< strerror(errno) << '\n';
-
+				<< strerror(errno) << '\n';
+		}
 	}
 	else std::cout << "removed file: " << FileName << '\n';
 }
@@ -176,7 +183,9 @@ bool fileStatus(const std::string &fileName) {
 		return true;
 	}
 	else {
-		std::cout << fileName << " not found \n";
+		std::cout << "could not access " << fileName << " "
+#pragma warning(suppress : 4996)
+			<< strerror(errno)<<  "\n";
 		return false;
 	}
 }
@@ -284,7 +293,7 @@ static void inifile(std::string &param) {
 
 			newStr.close();
 
-			delfile(YafuPath, oldFname.c_str());  // delete any previous yafu.old
+			delfile("", oldFname.c_str());  // delete any previous yafu.old
 			int rv = rename(iniFname.c_str(), oldFname.c_str());   // yafu.ini -> yafu.old
 			if (rv == 0)
 				rename(newFname.c_str(), iniFname.c_str());   // yafu.new -> yafu.ini
@@ -301,6 +310,7 @@ void yafuParam(const std::string &command) {
 	};
 	std::string param = command.substr(4);  /* remove "YAFU" */
 	size_t ix = 0;
+	std::string curPath(MAX_PATH, 0);  /* path to current directory*/
 
 	while (param[0] == ' ')
 		param.erase(0, 1);              /* remove leading space(s) */
@@ -374,9 +384,16 @@ void yafuParam(const std::string &command) {
 			delfile(YafuPath, "factor.log");
 			delfile(YafuPath, "session.log");
 			delfile(YafuPath, "factor.json");
+			delfile(YafuPath, "siqs.dat");
+			delfile(YafuPath, "nfs.job");
+			delfile(YafuPath, "ggnfs.log");
+			delfile(YafuPath, "nfs.dat");
+			delfile(YafuPath, "nfs.fb");
+			delfile(YafuPath, "nfs.log");
+			delfile(YafuPath, "nfs.dat.mat");
+			delfile(YafuPath, "YAFU_get_poly_score.out");
 		}
 		else {
-			std::string curPath(MAX_PATH, 0);
 			DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, (LPSTR)curPath.data());
 			assert(rv2 != 0);
 			while (curPath.back() == 0)
@@ -384,15 +401,16 @@ void yafuParam(const std::string &command) {
 			delfile(curPath, "factor.log");
 			delfile(curPath, "session.log");
 			delfile(curPath, "factor.json");
+			delfile(curPath, "siqs.dat");
+			delfile(curPath, "nfs.job");
+			delfile(curPath, "ggnfs.log");
+			delfile(curPath, "nfs.dat");
+			delfile(curPath, "nfs.fb");
+			delfile(curPath, "nfs.log");
+			delfile(curPath, "nfs.dat.mat");
+			delfile(curPath, "YAFU_get_poly_score.out");
 		}
-		delfile(YafuPath, "siqs.dat");
-		delfile(YafuPath, "nfs.log");
-		delfile(YafuPath, "nfs.job");
-		delfile(YafuPath, "nfs.dat");
-		delfile(YafuPath, "nfs.dat.mat");
-		delfile(YafuPath, "nfs.fb");
-		delfile(YafuPath, "ggnfs.log");
-		delfile(YafuPath, "YAFU_get_poly_score.out");
+		
 
 		break;
 	}
@@ -556,9 +574,17 @@ std::vector <Znum> factors;
 
 /* check whether the product of all the factors is equal to the number to be
 factored */
-bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors) {
+bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors, 
+	const Znum &num) {
 	Znum residue = ToBeFactored;
 	Znum remainder;
+
+	if (ToBeFactored != num) {
+		gmp_printf("number to be factored from json record = %Zd\n"
+			"original number to be factored        = %Zd\n"
+			"We appear to be processing the wrong json record \n",
+			ToBeFactored, num);
+	}
 
 	for (auto f : factors) {
 		/* divide by each of the factors in turn, checking the remainder each time */
@@ -673,8 +699,8 @@ static void process_value_s(json_value* value, int depth, const char* name,
 /* returns -1 for read error, +1 for parsing error, otherwise
 treats each line as a separate json record; parses it and stores
 selected fields of last record in a decoded form. */
-int process_file_s(FILE* fp, int* counter,
-	const char* name_list[], const int name_list_size) {
+int process_file_s(FILE* fp, int* counter, const char* name_list[],
+	const int name_list_size, const Znum& num) {
 	char* string_p = NULL;
 	char buffer[4096] = "";
 	json_char* json = NULL;
@@ -702,7 +728,7 @@ int process_file_s(FILE* fp, int* counter,
 					process_value_s(value, 0, name_list[index], index);
 				json_value_free(value);  /* avoid memory leakage */
 				if (!factors.empty())
-					sanityCheck(ToBeFactored, factors);
+					sanityCheck(ToBeFactored, factors, num);
 				break;    /* normal exit */
 			}
 			else {
@@ -715,7 +741,7 @@ int process_file_s(FILE* fp, int* counter,
 }
 
 /* returns -1 for read error, +1 for parsing error, 0 for succcess*/
-int process_json_file_main(void) {
+int process_json_file_main(const Znum& num) {
 	FILE* fp;
 	char filename[MAX_PATH] = "";
 	struct stat filestatus;
@@ -739,9 +765,9 @@ int process_json_file_main(void) {
 		fclose(fp);
 		return -1;
 	}
-	rv = process_file_s(fp, &counter, name_list, 2); /* read & process file */
+	rv = process_file_s(fp, &counter, name_list, 2, num); /* read & process file */
 	if (counter > 20 || verbose > 0)
-		printf("file contains %d records, size = %.1f Kb\n", counter,
+		printf("YAFU: factor.json file contains %d records, size = %.1f Kb\n", counter,
 		(double)file_size / 1024.0);
 	fclose(fp);
 	return rv;
@@ -781,8 +807,8 @@ bool callYafu(const Znum& num, fList& Factors) {
 	if (verbose > 0) {
 		std::cout << myTime() << " command is: \n" << buffer;
 	}
-
-	delfile(YafuPath, "nfs.dat");
+	delfile("", "nfs.dat"); /* if earlier run leaves this file undeleted
+	                               it would cause problems */
 	rv = system(buffer.data());             // start YAFU;
 
 	/* get control back when YAFU has finished */
@@ -796,7 +822,7 @@ bool callYafu(const Znum& num, fList& Factors) {
 		return false;
 	}
 
-	rv = process_json_file_main();
+	rv = process_json_file_main(num);
 	if (rv != 0)
 		return false;
 	for (auto f : factors) {

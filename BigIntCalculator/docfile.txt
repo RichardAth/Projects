@@ -147,6 +147,8 @@ POPCNT(x)       : for x >= 0, counts the number of 1-bits, also known as the
                   Hamming weight.
 HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
                   y must have the same sign.
+GF(x)           : Gauss Factorial of x, defined as the product of all positive 
+                  numbers < x  that are relatively prime to x.
 
 [OTHER]
 other commands: 

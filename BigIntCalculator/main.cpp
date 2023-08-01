@@ -1078,6 +1078,7 @@ static void doTests(void) {
         "primroot(761)",                   6,   /* primitive root */
         "hclass(999)",                   384,   /* hurwitz class number*/
         "classno(1000001)",               94,   /* class number */
+        "gf(21)",                47297536000,   /* gauss factorial */
     };
 
     results.clear();
