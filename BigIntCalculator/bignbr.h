@@ -58,7 +58,6 @@ extern limb * const TestNbr;
 extern limb *const MontgomeryMultR2;
 extern limb *const MontgomeryMultR1;
 
-//extern int groupLen;
 
 void ModInvZnum(const Znum &num, Znum &inv, const Znum &mod);
 

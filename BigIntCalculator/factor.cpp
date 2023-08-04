@@ -1528,8 +1528,8 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 /* store factors for larger numbers */
 std::map<Znum, fList> savedFactors;
 //std::_Tree_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const Znum, fList>>>> ref;
-long long SFhitcount = 0;
-long long SFmisscount = 0;
+long long SFhitcount = 0;     /* number of 'hits' searching savedFactors */
+long long SFmisscount = 0;   /* number of 'misses' searching savedFactors */
 
 /********************************************************************************
 code below is to interface between DA's code

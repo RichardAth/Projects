@@ -214,7 +214,8 @@ will display a windows explorer style window where you can navigate to the corre
 folder then click on any file. The new path to the ggnfs files will then be saved
 in the ggnfs_dir parameter of the YAFU.ini file.
 
-
+Equivalents to all YAFU commands are available in the dialog box entered via the 
+'SET' command.
 [MSIEVE]
 Msieve is off by default but can be turned on by the "MSIEVE ON" command (which 
 also turns YAFU off) and turned back off by the MSIEVE OFF command. The path to 
@@ -232,6 +233,8 @@ MSIEVE E off turns off the E option
 MSIEVE N ON turns on the N option to use the Number Field sieve for factorisation.
 MSIEVE N OFF turns off the N option.
 
+Equivalents to all MSIEVE commands are available in the dialog box entered via the 
+'SET' command.
 [TEST]
 There are a number of built-in test commands. In all tests the results are
 checked for correctness and a summary of the factorisation results is printed
@@ -490,6 +493,33 @@ sample timing:
 YAFU on             10 min 
 MSIEVE on           30 min
 builtin ECM & SIQS 57 min
+
+Bigint Calculator uses a .ini file to save setup parameter values, rather than 
+using the registry.
+
+Sample file:
+    %file originally created on 26/07/2020 at 19:53:52
+    yafu-path=C:\Users\admin99\Downloads\yafu-master\bin\x64\Release
+    yafu-prog=yafu-x64.exe
+    msieve-path=C:\Users\admin99\Source\Repos\RichardAth\Projects\bin\x64\Release
+    msieve-prog=msieve.exe
+    helpfile=C:\Users\admin99\Source\Repos\RichardAth\Projects\BigIntCalculator\docfile.txt
+    paripath=c:/Program Files (x86)/Pari64-2-13-2/libpari.dll
+    endsound=c:/Windows/Media/Alarm09.wav
+    attsound=c:/Windows/Media/chimes.wav
+
+Lines beginning with % are comments.
+yafu-path    Path to access YAFU program
+yafu-prog    name of YAFU executable file
+msieve-path  Path to access Msieve program
+msieve-prog  name of msieve executable file
+helpfile     path and name of help file containing all the text displayed by the 
+             HELP command
+paripath     path to access the libpari.dll file
+endsound     path and file name for 'end' sound played when an operation
+             that lasts more than 10 seconds is completed.
+attsound     path and file name for sound played when prompting for input.
+
 [LOOP]
 Simple lists of expressions can be executed repeatedly using the REPEAT n
 command e.g.

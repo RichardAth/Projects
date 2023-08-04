@@ -1257,7 +1257,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
 
-    case opCode::fn_llt: /* lucas-lehmer primality test */ {
+    case opCode::fn_llt:      /* lucas-lehmer primality test */ {
         /* see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test */
         if (p[0] > INT_MAX)
             return retCode::NUMBER_TOO_HIGH;
@@ -1303,7 +1303,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         mpz_root(ZT(result), ZT(p[0]), temp);  /* result = nth root of p[0]*/
         break;
     }
-    case opCode::fn_bpsw: /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
+    case opCode::fn_bpsw:    /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
         primality test */ {
         if (p[0] <= 1) 
             return retCode::NUMBER_TOO_LOW;
@@ -1319,7 +1319,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         break;
     }
-    case opCode::fn_aprcl: /* Adleman–Pomerance–Rumely primality test  */ {
+    case opCode::fn_aprcl:    /* Adleman–Pomerance–Rumely primality test  */ {
 
         /*  the Adleman–Pomerance–Rumely primality test is an algorithm for 
         determining whether a number is prime. Unlike other, more efficient 
@@ -1342,19 +1342,19 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         break;
     }
-    case opCode::fn_numfact: /* number of factors */ {
+    case opCode::fn_numfact:  /* number of factors */ {
         result = ComputeNumFact(p[0]);
         break;
     }
-    case opCode::fn_minfact: /* smallest factor*/ {
+    case opCode::fn_minfact:  /* smallest factor*/ {
         result = ComputeMinFact(p[0]);
         break;
     }
-    case opCode::fn_maxfact: /* largest factor */ {
+    case opCode::fn_maxfact:  /* largest factor */ {
         result = ComputeMaxFact(p[0]);
         break;
     }
-    case opCode::fn_ispow: /* check whether or not p[0] is a perfect power */ {
+    case opCode::fn_ispow:    /* check whether or not p[0] is a perfect power */ {
         /* return -1 if p[0] is a perfect power, otherwise 0 */
         long long MaxP = 393'203;  // use 1st  33333 primes
         if ((long long)primeListMax < MaxP) {  // get primes
@@ -1372,7 +1372,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         break;
     }
-    case opCode::fn_modsqrt: /* modular square root */ {
+    case opCode::fn_modsqrt:  /* modular square root */ {
         /* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
         if (p[1] <= 0)
             return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
@@ -1422,7 +1422,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         break;
     }
-    case opCode::fn_invtot: /* inverse totient */ {
+    case opCode::fn_invtot:   /* inverse totient */ {
         std::vector<unsigned long long> *resultsP;
 
         /* have to limit p[0] to small values, otherwise risk running out of memory.
@@ -1461,14 +1461,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::INVALID_PARAM;
         else break;
     }
-    case opCode::fn_popcnt:  /* population count */ {
+    case opCode::fn_popcnt:   /* population count */ {
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;  /* for -ve number, no of 1-bits is infinite */
         unsigned long long bitcnt = mpz_popcount(ZT(p[0]));
         result = bitcnt;
         break;
     }
-    case opCode::fn_hamdist: /* hamming distance */ {
+    case opCode::fn_hamdist:  /* hamming distance */ {
         if ((p[0] < 0 && p[1] >= 0) || (p[0] >= 0 && p[1] < 0))
             return retCode::INVALID_PARAM;  /* p0 and p1 must have same sign, 
                                       otherwise the distance is infinite */
@@ -1476,7 +1476,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = bitcnt;
         break;
     }
-    case opCode::fn_gf: /* Gauss factorial*/ {
+    case opCode::fn_gf:       /* Gauss factorial*/ {
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;
         return GaussFact(p[0], result);
