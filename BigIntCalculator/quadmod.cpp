@@ -18,11 +18,16 @@
 //
 #include "pch.h"
 
+#include <windows.h>
+#include <Mmsystem.h >   // for sound effects
+
 #include "main.h"
 #include "expression.h"
 #include "quadmodLL.h"
 
-int groupLen;
+extern std::string attsound;   // for sound effects
+
+extern int groupSize;
 
 char output[300000];
 
@@ -69,7 +74,7 @@ static int Show(const BigInteger* num, const char* str, int t)
         {    // num is not 1 or -1.
             *ptrOutput = ' ';
             ptrOutput++;
-            Bin2Dec(&ptrOutput, num->limbs, num->nbrLimbs, groupLen);
+            Bin2Dec(&ptrOutput, num->limbs, num->nbrLimbs, groupSize);
         }
         copyStr(&ptrOutput, str);
         return t | 1;
@@ -78,7 +83,7 @@ static int Show(const BigInteger* num, const char* str, int t)
 }
 
 /* uses global variable Aux1 */
-void Show1(const BigInteger* num, int t)
+static void Show1(const BigInteger* num, int t)
 {
     int u = Show(num, "", t);
     if (((u & 1) == 0) || ((num->nbrLimbs == 1) && (num->limbs[0] == 1)))
@@ -87,7 +92,7 @@ void Show1(const BigInteger* num, int t)
         ptrOutput++;
         Aux1 = *num; // CopyBigInt(&Aux1, num);
         Aux1.sign = SIGN_POSITIVE;
-        BigInteger2Dec(&ptrOutput, &Aux1, groupLen);
+        BigInteger2Dec(&ptrOutput, &Aux1, groupSize);
     }
 }
 
@@ -115,13 +120,13 @@ bool checkSolution(const BigInteger* sol, const BigInteger* pValA,
 #endif
 
 /* store solution in output buffer*/
-void Solution(const BigInteger* value, const BigInteger * pValA, 
+static void Solution(const BigInteger* value, const BigInteger * pValA, 
     const BigInteger * pValB, const BigInteger * pValC, const BigInteger * pValN)
 {
     SolNbr++;
     int2dec(&ptrOutput, SolNbr);  /* copy solution to output buffer */
     copyStr(&ptrOutput, " x = ");
-    BigInteger2Dec(&ptrOutput, value, groupLen);
+    BigInteger2Dec(&ptrOutput, value, groupSize);
     copyStr(&ptrOutput, "\n");
 
     if (verbose > 1) {
@@ -143,7 +148,7 @@ void Solution(const BigInteger* value, const BigInteger * pValA,
 }
 
 /* store solution in roots vector */
-void solms(const BigInteger* value, const BigInteger* pValA,
+static void solms(const BigInteger* value, const BigInteger* pValA,
     const BigInteger* pValB, const BigInteger* pValC, const BigInteger* pValN) {
     Znum vZ;
 
@@ -153,13 +158,13 @@ void solms(const BigInteger* value, const BigInteger* pValA,
         SolNbr++;
         gmp_printf("solution nbr %4d %Zd ", SolNbr, vZ);
         printf("\na = ");
-        PrintBigInteger(pValA, 0);
+        PrintBigInteger(pValA, groupSize);
         printf(", b= ");
-        PrintBigInteger(pValB, 0);
+        PrintBigInteger(pValB, groupSize);
         printf(", c= ");
-        PrintBigInteger(pValC, 0);
+        PrintBigInteger(pValC, groupSize);
         printf(", n= ");
-        PrintBigInteger(pValN, 0);
+        PrintBigInteger(pValN, groupSize);
         putchar('\n');
     }
 #ifdef _DEBUG
@@ -240,7 +245,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
     SolNbr = 1;
 }
 
-void textErrorQuadMod(retCode rc){
+static void textErrorQuadMod(retCode rc){
     textError(rc);
 }
 
@@ -285,7 +290,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
         {
             copyStr(&ptrOutput, "All values of x between 0 and ");
             GcdAll--;    //addbigint(&GcdAll, -1);
-            BigInteger2Dec(&ptrOutput, &GcdAll, groupLen);
+            BigInteger2Dec(&ptrOutput, &GcdAll, groupSize);
             copyStr(&ptrOutput, " are solutions.\n");
         }
         else
@@ -314,7 +319,7 @@ the factorisation can take an excessive length of time */
 void quadmodText(const char* aText, const char* bText, const char* cText,
     const char* modText, int groupLength)
 {
-    groupLen = groupLength; /* used for formatting the output */
+    groupSize = groupLength; /* used for formatting the output */
     char* ptrBeginSol;
     retCode rc;     /* return code*/
     ptrOutput = output;   /* buffer for output */
@@ -356,10 +361,10 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
         //  values of a, b , c and n are displayed in decimal with appropriate signs 
 
         int u = Show(&ValA, "x²", 2);  /* send a as text to output, then "x²" */
-        u = Show(&ValB, " x", u);      /* send +b or -b as text, then "x" */
+        u = Show(&ValB, "x", u);      /* send +b or -b as text, then "x" */
         Show1(&ValC, u);               /* send +c or -c as text */
         copyStr(&ptrOutput, " = 0 (mod ");
-        BigInteger2Dec(&ptrOutput, &ValN, groupLen);
+        BigInteger2Dec(&ptrOutput, &ValN, groupSize);
         copyStr(&ptrOutput, ")\n");
 
         SolNbr = 0;
@@ -413,22 +418,30 @@ int quadModEqn(const std::string &command) {
 
         printf("Enter value for A: ");
     }
+    PlaySoundA(attsound.c_str(), NULL,
+        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
     fgets(A, sizeof(A), stdin);
     if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
 
     printf((lang)?  "ingrese el valor para B: " : "Enter value for B: ");
+    PlaySoundA(attsound.c_str(), NULL,
+        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
     fgets(B, sizeof(B), stdin);
     if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
 
     printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
+    PlaySoundA(attsound.c_str(), NULL,
+        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
     fgets(C, sizeof(C), stdin);
     if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
 
     printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
+    PlaySoundA(attsound.c_str(), NULL,
+        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
     fgets(N, sizeof(N), stdin);
     if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
 
-    quadmodText(A, B, C, N, 6);
+    quadmodText(A, B, C, N, groupSize);
     printf("%s\n", output);
     //system("PAUSE");   /* press any key to continue */
     return 0;

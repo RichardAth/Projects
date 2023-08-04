@@ -97,7 +97,7 @@ void printFactors(sFactors flist[]) {
     putchar('\n');
 }
 
-/* the same factor list is returned in both factorsMod and astfactorsMod,
+/* the same factor list is returned in both factorsMod and astFactorsMod,
 in different formats 
 Uses global variable Aux0 */
 void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
@@ -1189,7 +1189,7 @@ void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
         //BigInteger2IntArray(nbrToFactor, pValN);  /* copy N to nbrToFactor */
         //factor(pValN, nbrToFactor, factorsMod, astFactorsMod);  /* get factors of N */
         factor(pValN, factorsMod, astFactorsMod);
-        /* the same factor list is returned in both factorsMod and astfactorsMod,
+        /* the same factor list is returned in both factorsMod and astFactorsMod,
            in different formats */
 
         if (verbose > 1)

@@ -22,10 +22,10 @@ struct factorsS {
 
 struct sFactors
 {
-	int *ptrFactor;
-	int multiplicity;
-	int upperBound;
-	int Type;
+	int *ptrFactor;       /* pointer to factor value */
+	int multiplicity;     /* factor exponent */
+	int upperBound;       /* not used? */
+	int Type;             /* not used? */
 };
 
 extern int lang;    // 0 English, 1 = Spanish

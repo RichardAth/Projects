@@ -4070,10 +4070,10 @@ int main(int argc, char *argv[]) {
         /* start of main loop. Normal exit is via EXIT command */
         while (true) {
             if (lang == 0) {
-                printf_s("enter expression to be processed, or HELP, EXIT, or SET\n");
+                printf_s("enter expression to be processed, or HELP, EXIT, SET or QMES\n");
             }
             else
-                printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA o SET\n");
+                printf_s("ingrese la expresión para ser procesada, o AYUDA o SALIDA o SET o QMES\n");
 
             PlaySoundA(attsound.c_str(), NULL,
                 SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
