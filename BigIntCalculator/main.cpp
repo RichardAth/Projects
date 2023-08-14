@@ -2117,7 +2117,8 @@ struct HelpDialogResp {
 
 HelpDialogResp hResp;  /* user choices in the help dialog box are saved here */
 
-/* process messages from dialog box for Help topics */
+/* process messages from dialog box for Help topics 
+returns TRUE(1) or FALSE(0) */
 INT_PTR helpDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
@@ -2127,9 +2128,9 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     int wpLo = LOWORD(additionalInfo1);     /* menu or control identifier */
 
     int button = 0;  /* set according to radio button selected */
-    char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
-            "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
-            "PARI", };
+    //char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+    //        "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
+    //        "PARI", };
 
     switch (message) { 
 
@@ -2160,7 +2161,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_NCMOUSEMOVE:   /* 0xa0 */
     case WM_NCLBUTTONDOWN: /* 0xa1 */
     case 0xae:             /* can't find any documentation for this */
-        return false;
+        return FALSE;
 
     case WM_INITDIALOG:    /* 0x110 */ {
         /* select 1st radio button */
@@ -2169,7 +2170,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
             ErrorDisp(__FUNCTION__);
         }
         /* return true so system sets focus to 1st control */
-        return true;
+        return TRUE;
     }
 
     case WM_COMMAND: /* 0x111 control selected by user */
@@ -2187,14 +2188,14 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
         case pari:
             button = wpLo - general;  /* general -> 0, function -> 1 etc. */
             hResp.radiobutton = button;
-            if (verbose >0)
-                std::cout << "button = " << butttext[button] << '\n';
+            //if (verbose >0)
+            //    std::cout << "button = " << butttext[button] << '\n';
             return FALSE;
 
         case IDOK:       /* OK         */
         case IDCANCEL:   /* cancel */
             hResp.Ok_Cancel = wpLo;
-            EndDialog(DiBoxHandle, wpLo);
+            EndDialog(DiBoxHandle, wpLo);  /* close dialog box */
             return TRUE;
 
         default:  /* unknown control*/
@@ -2249,35 +2250,53 @@ static long long helpdiag(void) {
 }
 
 
-/*search the docfile for the right entry specified by hResp.radiobutton. Just 
-search for the heading, and print everything until the next heading is found */
-static void helpfunc(void)
+/*search the docfile for the required help topic. The topic can be specified in 
+the command parameter. If this is empty the topic can be selected via a dialog box;
+the required entry is specified by hResp.radiobutton. 
+Just search the file for the heading, and print everything until the next 
+heading is found.
+If the help file is not found it is possible to change the path to access the file.
+This change is retained in the BigIntCalculator.ini file. 
+The help file is not limited to ASCII characters. Most UTF-8 characters can be printed. */
+static void helpfunc(const std::string& command)
 {
     FILE* doc;
     char str[1024];
     bool printtopic = false;
     bool line1 = true;
-    std::string expr = "";
+    std::string expr = " ";
     char* newpathC;
     std::string newpath;
     const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
     bool UTF8 = false;          /* set true if UTF8 BOM found */
+    std::string helptopic;
+
+    if (!command.empty()) {
+        helptopic = command;
+        while (helptopic[0] == ' ')
+            helptopic.erase(0, 1);  /* remove leading spaces */
+    }
+    else
+        helptopic.clear();
 
     char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
             "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
             "PARI", "AYUDA"};
-    if (lang == 0) {  /* if English select one from multiple topics  */
-        helpdiag();  /* result saved in global hResp */
-        if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
-            std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
-        }
-        if (hResp.Ok_Cancel == IDCANCEL) {
-            std::cout << "help cancelled \n";
-            return;
+    if (lang == 0){     /* if English select one from multiple topics  */
+        if (helptopic.empty()) {  
+            helpdiag();  /* result saved in global hResp */
+            if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
+                std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
+            }
+            if (hResp.Ok_Cancel == IDCANCEL) {
+                std::cout << "help cancelled \n";
+                return;
+            }
+            helptopic = butttext[hResp.radiobutton];
         }
     }
-    else   /* español */
-        hResp.radiobutton = 11;  /* AYUDA */
+    else   /* español. Spanish language help is not divided into topics. */
+        helptopic = butttext[11];  /* AYUDA */
 retry:
     //open the doc file and search for a matching topic
     errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
@@ -2312,7 +2331,7 @@ retry:
     fflush(stdout);
     int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
     if (verbose > 0)
-        wprintf_s(L"searching for help on '%S'\n", butttext[hResp.radiobutton]);
+        wprintf_s(L"searching for help on '%S'\n", helptopic.c_str());
 
     /* exit this loop when reached EOF or the next topic after the one required 
     is reached */
@@ -2350,7 +2369,7 @@ retry:
 
             //does it match our topic?
             str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-            if (strstr(butttext[hResp.radiobutton], str + 1) != NULL)
+            if (strstr(helptopic.c_str(), str + 1) != NULL)
                 /* we get a match if the topic between [ and ] is contained 
                 anywhere in helptopic */
                 printtopic = true;   /* we have found the required topic*/
@@ -2367,9 +2386,9 @@ retry:
                             may not end with newline */
         else
             if (lang)
-                wprintf_s(L"Ayuda para %S no encontrado \n", butttext[hResp.radiobutton]);
+                wprintf_s(L"Ayuda para %S no encontrado \n", helptopic.c_str());
             else
-                wprintf_s(L"Help for %S not found \n", butttext[hResp.radiobutton]);
+                wprintf_s(L"Help for %S not found \n", helptopic.c_str());
     }
     /* change stdout back to normal */
     fflush(stdout);
@@ -3709,11 +3728,11 @@ static int processCmd(const std::string &command) {
     case 1:  /* salida */
         return 2;  /* same command in 2 languages */
     case 2: /* Help */ {
-            helpfunc();
+            helpfunc(command.substr(4));
             return 1;
         }
     case 3: /* ayuda */ {
-                helpfunc();
+                helpfunc(command.substr(5));
             return 1;
         }
     case 4: /* E */ {

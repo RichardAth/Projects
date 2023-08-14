@@ -596,6 +596,9 @@ Greek
 accents etc
 «áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿?
 
+others
+¦§¨©ª«¬­­®¯°±²³´¹º»¼½¾ ❶❿
+
 [PARI]
 
 PARI/GP is a widely used computer algebra system designed for fast computations 
