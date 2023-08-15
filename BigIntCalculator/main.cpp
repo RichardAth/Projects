@@ -3359,7 +3359,10 @@ HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParnt)
 
 /* process message from dialog box e.g. WM_COMMAND, WM_INITDIALOG,
 * additionalInfo1 = Menu identifier, or control notification code + control identifier
-additionalInfo2 = 0 or handle to control window */
+additionalInfo2 = 0 or handle to control window.
+returns TRUE or FALSE. 
+Note that TRUE and FALSE are macros  used with C-stye BOOL variables, but true and false
+are C++ language words used with C++ bool variables. */
 static INT_PTR SetDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
@@ -3436,13 +3439,13 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_PRINTCLIENT:     /* 0x318 */
     case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
     case WM_USER:            /* 0x400 */
-        return false;
+        return FALSE;
 
     default:
         printf_s("SetDialogAct: unknown message %x wpHi = %x, wpLo = %x"
             " additionalinfo2 = %llx \n", 
             message, wpHi, wpLo, additionalInfo2);
-        return false;
+        return FALSE;
 
     case WM_INITDIALOG:    /* 0x110 */ {
         BOOL rv = TRUE;
@@ -3495,7 +3498,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             ErrorDisp(__FUNCTION__ " TTM ACTIVATE");
 
         /* return true so system sets focus to 1st control */
-        return true;
+        return TRUE;
         }
 
     case WM_COMMAND:      /* 0x111 control selected by user */
@@ -3514,33 +3517,33 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             yafu = false;
             msieve = false;
             Pari = false;
-            return false;
+            return FALSE;
 
         case useYAFU:     /* yafu radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = true;
             msieve = false;
             Pari = false;
-            return false;
+            return FALSE;
 
         case useMsieve:   /* Msieve radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = true;
             Pari = false;
-            return false;
+            return FALSE;
 
         case usepari:  /* pari radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = false;
             Pari = true;
-            return false;
+            return FALSE;
 
          case IDC_BUTTON1:   /* check YAFU path */
             yafuParam("YAFU PATH");
-            return false;
+            return FALSE;
 
         case setYAFUpath:
             yafuParam("YAFU PATH SET");
-            return false;
+            return FALSE;
 
         case YafuPlan:  /* change YAFU plan*/
             switch (wpHi) {
@@ -3561,11 +3564,11 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             case CBN_SELENDCANCEL:
                 break;
              }
-            return false;
+            return FALSE;
 
         case Yafulog:
             yafuParam("YAFU OUT");
-            return false;
+            return FALSE;
 
         case YAFU_out_path:
             yafuParam("YAFU OUT SET");
@@ -3573,19 +3576,19 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
         case Yafu_GGNFS:
             yafuParam("YAFU INI");
-            return false;
+            return FALSE;
 
         case YAFU_GGNFS_change:
             yafuParam("YAFU INI I");
-            return false;
+            return FALSE;
 
         case MSievePath:
             msieveParam("MSIEVE PATH");
-            return false;
+            return FALSE;
 
         case Msieve_path_set:
             msieveParam("MSIEVE PATH SET");
-            return false;
+            return FALSE;
 
         case Msieve_E_option:   /* set/unset eopt*/
             b_ck = IsDlgButtonChecked(DiBoxHandle, Msieve_E_option);
@@ -3593,47 +3596,47 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 eopt = true;
             if (b_ck == BST_UNCHECKED)
                 eopt = false;
-            return false;
+            return FALSE;
 
         case Pari_path:
             pariParam("PARI PATH");
-            return false;
+            return FALSE;
 
         case Set_Pari_path:
             pariParam("PARI PATH SET");
-            return false;
+            return FALSE;
 
         case verboseValue:   /* set verbose */
             switch (wpHi) {
             case EN_SETFOCUS:
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, verboseValue, &good, FALSE);
                 if (good == TRUE)
                     verbose = temp;
-                 return false;
+                 return FALSE;
             }
-            return false;
+            return FALSE;
 
         case post_eval_process:  /* set factorflag */
             switch (wpHi) {
             case EN_SETFOCUS:
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, post_eval_process, &good, FALSE);
                 if (good == TRUE)
                     factorFlag = temp;
-                return false;
+                return FALSE;
             }
-            return false;
+            return FALSE;
 
         case hexPrint:       /* set/unset hex*/
             b_ck = IsDlgButtonChecked(DiBoxHandle, hexPrint);
@@ -3641,7 +3644,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 hexPrFlag = true;
             if (b_ck == BST_UNCHECKED)
                 hexPrFlag = false;
-            return false;
+            return FALSE;
 
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
@@ -3649,7 +3652,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 lang = TRUE;
             if (b_ck == BST_UNCHECKED)
                 lang = FALSE;
-            return false;
+            return FALSE;
 
         case group_size_int:
             switch (wpHi) {
@@ -3665,31 +3668,51 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, group_size_int, &good, FALSE);
                 if (good == TRUE)
                     groupSize = temp;
-                return false;
+                return FALSE;
             }
-            return false;
+            return FALSE;
 
+        case help_file_path_check:
+            std::cout << "path = " << helpFilePath << '\n';
+            fileStatus(helpFilePath);
+            return FALSE;
+
+        case help_file_path_set:
+            char* newpathC;
+            newpathC = getFileName("Text\0*.TXT\0\0", handConsole);
+            if (newpathC == NULL) {
+                std::cout << "command cancelled \n";
+            }
+            else {
+                helpFilePath = newpathC; /* copy new path for doc file to permanent storage */
+                writeIni();       /* update the .ini file*/
+                std::cout << "new path = " << helpFilePath << '\n';
+                fileStatus(helpFilePath);
+            }
+            return FALSE;
 
         default:  /* unknown control*/
             std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
         }
-        return false;
+        return FALSE;
     }
     return FALSE;
 }
 
-/* set up dialog box for SET command */
+/* set up dialog box for SET command. When the user select an action it is processed
+in the SetDialogAct function. */
 static long long setdiag(void) {
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
         handConsole, SetDialogAct, (LPARAM)99L);
+    /* control is returned here when the dialog box is closed. */
     if (rv != IDOK && rv != IDCANCEL) {
         std::cout << "rv = " << rv << '\n';
         ErrorDisp(__FUNCTION__);
@@ -3932,7 +3955,7 @@ static int processCmd(const std::string &command) {
     }
     case 20:  /* SET */
     {
-        setdiag();
+        setdiag();   /* change settings using a dialog box */
         return 1;
     }
     default:
