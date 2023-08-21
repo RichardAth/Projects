@@ -117,8 +117,8 @@ enum class opCode {
     fn_minfact,           /* smallest factor */
     fn_maxfact,           /* largest factor */
     fn_ispow,             /* check if perfect power */
-    fn_modsqrt,           /* modular square root */
-    fn_modsqrtOld,        /* modular square root using Tonelli-Shanks */
+    fn_modsqrtNew,           /* modular square root */
+    fn_modsqrt,        /* modular square root using Tonelli-Shanks */
     fn_invtot,            /* inverse totient */
     fn_divisors,          /* list of divisors */
     fn_primroot,          /* lowest primitive root */
@@ -155,8 +155,8 @@ const static struct functions functionList[]{
     "NUMFACT",   1,  opCode::fn_numfact,
     "MINFACT",   1,  opCode::fn_minfact,
     "MAXFACT",   1,  opCode::fn_maxfact,
-    "MODSQRTNEW",2,  opCode::fn_modsqrt,    // find x such that x^2 = a mod p
-    "MODSQRT",   2,  opCode::fn_modsqrtOld, // find x such that x^2 = a mod p
+    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
+    "MODSQRT",   2,  opCode::fn_modsqrt, // find x such that x^2 = a mod p
     "DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
@@ -1372,7 +1372,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         break;
     }
-    case opCode::fn_modsqrt:  /* modular square root */ {
+    case opCode::fn_modsqrtNew:  /* modular square root */ {
         /* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
         if (p[1] <= 0)
             return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */
@@ -1397,7 +1397,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         break;
     }
-    case opCode::fn_modsqrtOld: /* modular square root */ {
+    case opCode::fn_modsqrt: /* modular square root */ {
         /* Solve the equation given p[0] and p[1].  x^2 ≡ p[0] (mod p[1]) */
         if (p[1] <= 0)
             return retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;  /* modulus must be +ve */

@@ -187,6 +187,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
 	while (numberZ > 0) {
 		if (i >= MAX_LEN || NumLen > MAX_LEN) {
 			// number too big to convert.
+			StackTrace2();
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "number too big : cannot convert to limbs: ";
 			mesg += __func__;
@@ -335,6 +336,7 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
 
 	maxPrime = 2 * maxExpon + 3;
 	if (maxPrime > primeListMax) {
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot generate prime list. function : ";
 		mesg += __func__;

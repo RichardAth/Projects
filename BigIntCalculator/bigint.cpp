@@ -160,7 +160,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	int nbrLimbsFactor1 = Factor1.nbrLimbs;
 	int nbrLimbsFactor2 = Factor2.nbrLimbs;
 	int nbrLimbs;
-	BigInteger Product;                  // temporary variable 
+	BigInteger Product = 0;                  // temporary variable 
 	limb Prodl[MAX_LEN * 2] = { 0 };    // temporary variable 
 
 	if (Factor1 == 0 || Factor2 == 0) {    // one or both factors are zero.
@@ -168,9 +168,10 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 		return Product;
 	}
 
-	if (Factor1.nbrLimbs + Factor2.nbrLimbs > 66438 / BITS_PER_GROUP + 1)  // 2^66438 ~ 10^20000
+	if (Factor1.nbrLimbs + Factor2.nbrLimbs > MAX_LEN )  // approx 23000 digits
 	{
 		// product out of range; throw exception
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot multiply: product out of range ";
 		mesg += __func__;
@@ -192,8 +193,12 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 
 	multiply(&Factor1.limbs[0], &Factor2.limbs[0], Prodl, nbrLimbs, NULL);
 	nbrLimbs = nbrLimbsFactor1 + nbrLimbsFactor2;
+	while (Prodl[nbrLimbs - 1] == 0)
+		nbrLimbs--;     // remove leading zeros
+
 	if (nbrLimbs > MAX_LEN)  // limit applied earlier is probably lower, this is just insurance
 	{
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot multiply: product out of range ";
 		mesg += __func__;
@@ -203,7 +208,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 	}
 	LimbsToBigInteger(Prodl, Product, nbrLimbs);
 	if (Product.limbs[nbrLimbs - 1] == 0) {
-		nbrLimbs--;  // remove leading zeros
+		nbrLimbs--;  
 	}
 	Product.nbrLimbs = nbrLimbs;
 
@@ -411,6 +416,7 @@ static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 			ptrLimbs[ctr] = (int)carry;
 			nbrLimbs++;
 			if (nbrLimbs > MAX_LEN) {
+				StackTrace2();
 				std::string line = std::to_string(__LINE__);
 				std::string mesg = "number too big : cannot do multiplication : ";
 				mesg += __func__;
@@ -779,6 +785,7 @@ values that follow. Also uses global value NumberLength for number of ints. */
 void LimbsToBigInteger(/*@in@*/const limb *ptrValues, 
 	/*@out@*/BigInteger &bigint, int NumLen) {
 	if (NumLen > MAX_LEN || NumLen < 0 ) {
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot convert to BigInteger: ";
 		mesg += __func__;
@@ -786,6 +793,7 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
 		mesg += " in file "; mesg += __FILE__;
 		throw std::range_error(mesg);
 	}
+	memset(bigint.limbs, 0, MAX_LEN * sizeof(limb));  /* ensure unused limbs are zero */
 	if (NumLen == 1) {
 		bigint.limbs[0] = ptrValues[0];
 		bigint.nbrLimbs = 1;
@@ -986,6 +994,7 @@ void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
 
 		if ((first.nbrLimbs + delta) >= MAX_LEN) {
 			// Shift too much to the left; would cause overflow
+			StackTrace2();
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "cannot shift left: result out of range ";
 			mesg += __func__;
@@ -1109,6 +1118,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 
 	// Check whether the divisor is zero.
 	if (Divisor == 0) {  // Indicate error if divisor is zero.
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "cannot divide by zero: ";
 		mesg += __func__;

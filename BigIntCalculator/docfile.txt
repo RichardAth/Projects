@@ -408,9 +408,10 @@ or https://en.wikipedia.org/wiki/Quadratic_sieve
 HISTORY
 
 the program was converted from browser-based to a console window. The advantage
-is that it is somewhat faster, and the calculator part has been carefully tested.
-The disadvantage is that you have to download and build it. In order to do that
-you need GMP or MPIR multi-precision library and the Boost multi-precision library.
+is that it is somewhat faster, and the calculator part contains some additional 
+functions. The disadvantage is that you have to download and build it. In order 
+to do that you need GMP or MPIR multi-precision library and the Boost multi-precision 
+library.
 
 the following changes were made:
 
@@ -551,10 +552,10 @@ format is IF (expression) REPEAT
 
 The IF command is processed as follows:
 1.  The expression in brackets after IF is evaluated. 
-2.  If the value is not zero the specified action is performed, otherwise no 
-    action is taken. The action can be REPEAT  which goes back to the start 
-    of the loop, or STOP which terminates the loop, or a series of expressions
-    separated by commas.
+2.  If the value is not zero the action specified after THEN is performed, 
+    otherwise the ELSE action is taken. The action can be REPEAT  which goes 
+	back to the start of the loop, or STOP which terminates the loop, or a series 
+	of expressions separated by commas.
 3   If the value is zero any expressions following the ELSE are evaluated.
   
     Remember that assignment statements are also expressions, so mini-programs

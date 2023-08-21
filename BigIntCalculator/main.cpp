@@ -1693,56 +1693,56 @@ static void doTests3(void) {
     elapsed = (double)end - start;
     std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
-    largeRand(mod);				     // get large random number  b
-    mod |= 1;                         /* make sure b is odd */
-    std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
-    GetMontgomeryParms(mod);      /* set up zR, zR1, zR2, zNI */
-    numLen = MAX_LEN - 2;
-    ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-    while (modL[numLen - 1] == 0)
-        numLen--;                    // adjust length i.e. remove leading zeros
-    memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-    NumberLength = numLen;
-    GetMontgomeryParms(numLen);
-
-    a %= mod;
-    modmult(a, zR2, am);      // convert a to montgomery
-    ZtoLimbs(aL, a, numLen);
-
-    largeRand(b);
-    b %= mod;
-    modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
-    numLen = MAX_LEN - 2;
-    ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
-    
-    while (bL[numLen - 1] == 0)
-        numLen--;                    // adjust length i.e. remove leading zeros
+    //largeRand(mod);				     // get large random number  b
+    //mod |= 1;                         /* make sure b is odd */
+    //std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
+    //GetMontgomeryParms(mod);      /* set up zR, zR1, zR2, zNI */
+    //numLen = MAX_LEN - 2;
+    //ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+    //while (modL[numLen - 1] == 0)
+    //    numLen--;                    // adjust length i.e. remove leading zeros
+    //memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     //NumberLength = numLen;
-
-    //memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     //GetMontgomeryParms(numLen);
-    modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
-    for (int i = 1; i < 200000000; i++) {
-        modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
-        memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-        modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
-        am = pm;						          //a = p (Znum)
-        REDC(p, pm);					 // convert p from montgomery (Znum)
-        modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-        LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-        assert(p2 == p);
-        if (i % 20000000 == 0) {
-            std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
-        }
-        if (p == 0)
-            break;
-    }
+    //a %= mod;
+    //modmult(a, zR2, am);      // convert a to montgomery
+    //ZtoLimbs(aL, a, numLen);
 
-    //REDC(p, pm);					 // convert p from montgomery (Znum)
-    //modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-    //LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-    //assert(p2 == p);
+    //largeRand(b);
+    //b %= mod;
+    //modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
+    //numLen = MAX_LEN - 2;
+    //ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+    //
+    //while (bL[numLen - 1] == 0)
+    //    numLen--;                    // adjust length i.e. remove leading zeros
+    ////NumberLength = numLen;
+
+    ////memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+    ////GetMontgomeryParms(numLen);
+    //modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
+
+    //for (int i = 1; i < 200000000; i++) {
+    //    modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
+    //    memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
+    //    modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
+    //    am = pm;						          //a = p (Znum)
+    //    REDC(p, pm);					 // convert p from montgomery (Znum)
+    //    modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+    //    LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+    //    assert(p2 == p);
+    //    if (i % 20000000 == 0) {
+    //        std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
+    //    }
+    //    if (p == 0)
+    //        break;
+    //}
+
+    ////REDC(p, pm);					 // convert p from montgomery (Znum)
+    ////modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+    ////LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+    ////assert(p2 == p);
 
     end = clock();              // measure amount of time used
     elapsed = (double)end - start;

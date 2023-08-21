@@ -84,6 +84,7 @@ public:
 		}
 		auto c = fpclassify(rv);
 		if (c == FP_INFINITE) {
+			StackTrace2();
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "floating point overflow ";
 			mesg += __func__;
@@ -146,6 +147,7 @@ public:
 	BigInteger & operator = (Znum x) {
 		auto rv = ZtoBig(*this, x);
 		if (!rv) {
+			StackTrace2();
 			std::string line = std::to_string(__LINE__);
 			std::string mesg = "Number too big to convert ";
 			mesg += __func__;

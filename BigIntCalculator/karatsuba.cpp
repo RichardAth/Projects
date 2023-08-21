@@ -78,6 +78,7 @@ void multiply(const limb factor1[], const limb factor2[], limb result[], const i
 		length *= div;
 	}
 	if (length > MAX_LEN) {
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot perform multiplication: ";
 		mesg += __func__;
