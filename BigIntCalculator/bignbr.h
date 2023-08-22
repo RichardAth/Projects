@@ -23,7 +23,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 bool isPrime2(unsigned __int64 num);
 
-#define MAX_LEN 2500        // approximately 20000 digits
+/* MAX_LEN increased from 2500 to 2560 so that Karatsuba multiplication
+can handle maximum length numbers */
+#define MAX_LEN 2560        // approximately 23890 digits
 #define BITS_PER_GROUP 31
 #define BITS_PER_GROUP_MINUS_1 30
 #define BITS_PER_INT_GROUP 31

@@ -146,12 +146,13 @@ static void specinit() {
 
     if (!fRunTimeLinkSuccess) {
         // Get a handle to the pari DLL module.
-        //hinstLib = LoadLibraryA("C:/Program Files (x86)/Pari64-2-13-2/libpari.dll");
         hinstLib = LoadLibraryA(PariPath.c_str());
 
         // If the handle is valid, try to get the function addresses.
         if (hinstLib == nullptr) {
             std::cerr << "could not access dll for PARI \n";
+            std::cerr << "To install libpari go to"
+                " https ://pari.math.u-bordeaux.fr/download.html \n";
             system("PAUSE");
             abort();
         }

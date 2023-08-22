@@ -1693,56 +1693,56 @@ static void doTests3(void) {
     elapsed = (double)end - start;
     std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
-    largeRand(mod);				     // get large random number  b
-    mod |= 1;                         /* make sure b is odd */
-    std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
-    GetMontgomeryParms(mod);      /* set up zR, zR1, zR2, zNI */
-    numLen = MAX_LEN - 2;
-    ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
-    while (modL[numLen - 1] == 0)
-        numLen--;                    // adjust length i.e. remove leading zeros
-    memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
-    NumberLength = numLen;
-    GetMontgomeryParms(numLen);
-
-    a %= mod;
-    modmult(a, zR2, am);      // convert a to montgomery
-    ZtoLimbs(aL, a, numLen);
-
-    largeRand(b);
-    b %= mod;
-    modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
-    numLen = MAX_LEN - 2;
-    ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
-    
-    while (bL[numLen - 1] == 0)
-        numLen--;                    // adjust length i.e. remove leading zeros
+    //largeRand(mod);				     // get large random number  b
+    //mod |= 1;                         /* make sure b is odd */
+    //std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
+    //GetMontgomeryParms(mod);      /* set up zR, zR1, zR2, zNI */
+    //numLen = MAX_LEN - 2;
+    //ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
+    //while (modL[numLen - 1] == 0)
+    //    numLen--;                    // adjust length i.e. remove leading zeros
+    //memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     //NumberLength = numLen;
-
-    //memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     //GetMontgomeryParms(numLen);
-    modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
-    for (int i = 1; i < 200000000; i++) {
-        modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
-        memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-        modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
-        am = pm;						          //a = p (Znum)
-        REDC(p, pm);					 // convert p from montgomery (Znum)
-        modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-        LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-        assert(p2 == p);
-        if (i % 20000000 == 0) {
-            std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
-        }
-        if (p == 0)
-            break;
-    }
+    //a %= mod;
+    //modmult(a, zR2, am);      // convert a to montgomery
+    //ZtoLimbs(aL, a, numLen);
 
-    //REDC(p, pm);					 // convert p from montgomery (Znum)
-    //modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-    //LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-    //assert(p2 == p);
+    //largeRand(b);
+    //b %= mod;
+    //modmult(b, zR2, bm);             // convert b to Montgomery (Znum)
+    //numLen = MAX_LEN - 2;
+    //ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
+    //
+    //while (bL[numLen - 1] == 0)
+    //    numLen--;                    // adjust length i.e. remove leading zeros
+    ////NumberLength = numLen;
+
+    ////memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+    ////GetMontgomeryParms(numLen);
+    //modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
+
+    //for (int i = 1; i < 200000000; i++) {
+    //    modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
+    //    memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
+    //    modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
+    //    am = pm;						          //a = p (Znum)
+    //    REDC(p, pm);					 // convert p from montgomery (Znum)
+    //    modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+    //    LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+    //    assert(p2 == p);
+    //    if (i % 20000000 == 0) {
+    //        std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
+    //    }
+    //    if (p == 0)
+    //        break;
+    //}
+
+    ////REDC(p, pm);					 // convert p from montgomery (Znum)
+    ////modmult(plm, one, pl);           // convert p from Mongomery (limbs)
+    ////LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
+    ////assert(p2 == p);
 
     end = clock();              // measure amount of time used
     elapsed = (double)end - start;
@@ -2117,7 +2117,8 @@ struct HelpDialogResp {
 
 HelpDialogResp hResp;  /* user choices in the help dialog box are saved here */
 
-/* process messages from dialog box for Help topics */
+/* process messages from dialog box for Help topics 
+returns TRUE(1) or FALSE(0) */
 INT_PTR helpDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
@@ -2127,9 +2128,9 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     int wpLo = LOWORD(additionalInfo1);     /* menu or control identifier */
 
     int button = 0;  /* set according to radio button selected */
-    char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
-            "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
-            "PARI", };
+    //char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+    //        "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
+    //        "PARI", };
 
     switch (message) { 
 
@@ -2160,7 +2161,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_NCMOUSEMOVE:   /* 0xa0 */
     case WM_NCLBUTTONDOWN: /* 0xa1 */
     case 0xae:             /* can't find any documentation for this */
-        return false;
+        return FALSE;
 
     case WM_INITDIALOG:    /* 0x110 */ {
         /* select 1st radio button */
@@ -2169,7 +2170,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
             ErrorDisp(__FUNCTION__);
         }
         /* return true so system sets focus to 1st control */
-        return true;
+        return TRUE;
     }
 
     case WM_COMMAND: /* 0x111 control selected by user */
@@ -2187,14 +2188,14 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
         case pari:
             button = wpLo - general;  /* general -> 0, function -> 1 etc. */
             hResp.radiobutton = button;
-            if (verbose >0)
-                std::cout << "button = " << butttext[button] << '\n';
+            //if (verbose >0)
+            //    std::cout << "button = " << butttext[button] << '\n';
             return FALSE;
 
         case IDOK:       /* OK         */
         case IDCANCEL:   /* cancel */
             hResp.Ok_Cancel = wpLo;
-            EndDialog(DiBoxHandle, wpLo);
+            EndDialog(DiBoxHandle, wpLo);  /* close dialog box */
             return TRUE;
 
         default:  /* unknown control*/
@@ -2249,35 +2250,53 @@ static long long helpdiag(void) {
 }
 
 
-/*search the docfile for the right entry specified by hResp.radiobutton. Just 
-search for the heading, and print everything until the next heading is found */
-static void helpfunc(void)
+/*search the docfile for the required help topic. The topic can be specified in 
+the command parameter. If this is empty the topic can be selected via a dialog box;
+the required entry is specified by hResp.radiobutton. 
+Just search the file for the heading, and print everything until the next 
+heading is found.
+If the help file is not found it is possible to change the path to access the file.
+This change is retained in the BigIntCalculator.ini file. 
+The help file is not limited to ASCII characters. Most UTF-8 characters can be printed. */
+static void helpfunc(const std::string& command)
 {
     FILE* doc;
     char str[1024];
     bool printtopic = false;
     bool line1 = true;
-    std::string expr = "";
+    std::string expr = " ";
     char* newpathC;
     std::string newpath;
     const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
     bool UTF8 = false;          /* set true if UTF8 BOM found */
+    std::string helptopic;
+
+    if (!command.empty()) {
+        helptopic = command;
+        while (helptopic[0] == ' ')
+            helptopic.erase(0, 1);  /* remove leading spaces */
+    }
+    else
+        helptopic.clear();
 
     char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
             "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
             "PARI", "AYUDA"};
-    if (lang == 0) {  /* if English select one from multiple topics  */
-        helpdiag();  /* result saved in global hResp */
-        if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
-            std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
-        }
-        if (hResp.Ok_Cancel == IDCANCEL) {
-            std::cout << "help cancelled \n";
-            return;
+    if (lang == 0){     /* if English select one from multiple topics  */
+        if (helptopic.empty()) {  
+            helpdiag();  /* result saved in global hResp */
+            if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
+                std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
+            }
+            if (hResp.Ok_Cancel == IDCANCEL) {
+                std::cout << "help cancelled \n";
+                return;
+            }
+            helptopic = butttext[hResp.radiobutton];
         }
     }
-    else   /* español */
-        hResp.radiobutton = 11;  /* AYUDA */
+    else   /* español. Spanish language help is not divided into topics. */
+        helptopic = butttext[11];  /* AYUDA */
 retry:
     //open the doc file and search for a matching topic
     errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
@@ -2312,7 +2331,7 @@ retry:
     fflush(stdout);
     int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
     if (verbose > 0)
-        wprintf_s(L"searching for help on '%S'\n", butttext[hResp.radiobutton]);
+        wprintf_s(L"searching for help on '%S'\n", helptopic.c_str());
 
     /* exit this loop when reached EOF or the next topic after the one required 
     is reached */
@@ -2350,7 +2369,7 @@ retry:
 
             //does it match our topic?
             str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-            if (strstr(butttext[hResp.radiobutton], str + 1) != NULL)
+            if (strstr(helptopic.c_str(), str + 1) != NULL)
                 /* we get a match if the topic between [ and ] is contained 
                 anywhere in helptopic */
                 printtopic = true;   /* we have found the required topic*/
@@ -2367,9 +2386,9 @@ retry:
                             may not end with newline */
         else
             if (lang)
-                wprintf_s(L"Ayuda para %S no encontrado \n", butttext[hResp.radiobutton]);
+                wprintf_s(L"Ayuda para %S no encontrado \n", helptopic.c_str());
             else
-                wprintf_s(L"Help for %S not found \n", butttext[hResp.radiobutton]);
+                wprintf_s(L"Help for %S not found \n", helptopic.c_str());
     }
     /* change stdout back to normal */
     fflush(stdout);
@@ -3340,7 +3359,10 @@ HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParnt)
 
 /* process message from dialog box e.g. WM_COMMAND, WM_INITDIALOG,
 * additionalInfo1 = Menu identifier, or control notification code + control identifier
-additionalInfo2 = 0 or handle to control window */
+additionalInfo2 = 0 or handle to control window.
+returns TRUE or FALSE. 
+Note that TRUE and FALSE are macros  used with C-stye BOOL variables, but true and false
+are C++ language words used with C++ bool variables. */
 static INT_PTR SetDialogAct(HWND DiBoxHandle,
     UINT message,
     WPARAM additionalInfo1,
@@ -3417,13 +3439,13 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_PRINTCLIENT:     /* 0x318 */
     case WM_DWMNCRENDERINGCHANGED:  /* 0x31f */
     case WM_USER:            /* 0x400 */
-        return false;
+        return FALSE;
 
     default:
         printf_s("SetDialogAct: unknown message %x wpHi = %x, wpLo = %x"
             " additionalinfo2 = %llx \n", 
             message, wpHi, wpLo, additionalInfo2);
-        return false;
+        return FALSE;
 
     case WM_INITDIALOG:    /* 0x110 */ {
         BOOL rv = TRUE;
@@ -3476,7 +3498,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             ErrorDisp(__FUNCTION__ " TTM ACTIVATE");
 
         /* return true so system sets focus to 1st control */
-        return true;
+        return TRUE;
         }
 
     case WM_COMMAND:      /* 0x111 control selected by user */
@@ -3495,33 +3517,33 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             yafu = false;
             msieve = false;
             Pari = false;
-            return false;
+            return FALSE;
 
         case useYAFU:     /* yafu radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = true;
             msieve = false;
             Pari = false;
-            return false;
+            return FALSE;
 
         case useMsieve:   /* Msieve radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = true;
             Pari = false;
-            return false;
+            return FALSE;
 
         case usepari:  /* pari radio button. wpHi contains code (BN_CLICKED, etc)*/
             yafu = false;
             msieve = false;
             Pari = true;
-            return false;
+            return FALSE;
 
          case IDC_BUTTON1:   /* check YAFU path */
             yafuParam("YAFU PATH");
-            return false;
+            return FALSE;
 
         case setYAFUpath:
             yafuParam("YAFU PATH SET");
-            return false;
+            return FALSE;
 
         case YafuPlan:  /* change YAFU plan*/
             switch (wpHi) {
@@ -3542,11 +3564,11 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             case CBN_SELENDCANCEL:
                 break;
              }
-            return false;
+            return FALSE;
 
         case Yafulog:
             yafuParam("YAFU OUT");
-            return false;
+            return FALSE;
 
         case YAFU_out_path:
             yafuParam("YAFU OUT SET");
@@ -3554,19 +3576,19 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
         case Yafu_GGNFS:
             yafuParam("YAFU INI");
-            return false;
+            return FALSE;
 
         case YAFU_GGNFS_change:
             yafuParam("YAFU INI I");
-            return false;
+            return FALSE;
 
         case MSievePath:
             msieveParam("MSIEVE PATH");
-            return false;
+            return FALSE;
 
         case Msieve_path_set:
             msieveParam("MSIEVE PATH SET");
-            return false;
+            return FALSE;
 
         case Msieve_E_option:   /* set/unset eopt*/
             b_ck = IsDlgButtonChecked(DiBoxHandle, Msieve_E_option);
@@ -3574,47 +3596,47 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 eopt = true;
             if (b_ck == BST_UNCHECKED)
                 eopt = false;
-            return false;
+            return FALSE;
 
         case Pari_path:
             pariParam("PARI PATH");
-            return false;
+            return FALSE;
 
         case Set_Pari_path:
             pariParam("PARI PATH SET");
-            return false;
+            return FALSE;
 
         case verboseValue:   /* set verbose */
             switch (wpHi) {
             case EN_SETFOCUS:
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, verboseValue, &good, FALSE);
                 if (good == TRUE)
                     verbose = temp;
-                 return false;
+                 return FALSE;
             }
-            return false;
+            return FALSE;
 
         case post_eval_process:  /* set factorflag */
             switch (wpHi) {
             case EN_SETFOCUS:
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, post_eval_process, &good, FALSE);
                 if (good == TRUE)
                     factorFlag = temp;
-                return false;
+                return FALSE;
             }
-            return false;
+            return FALSE;
 
         case hexPrint:       /* set/unset hex*/
             b_ck = IsDlgButtonChecked(DiBoxHandle, hexPrint);
@@ -3622,7 +3644,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 hexPrFlag = true;
             if (b_ck == BST_UNCHECKED)
                 hexPrFlag = false;
-            return false;
+            return FALSE;
 
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
@@ -3630,7 +3652,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 lang = TRUE;
             if (b_ck == BST_UNCHECKED)
                 lang = FALSE;
-            return false;
+            return FALSE;
 
         case group_size_int:
             switch (wpHi) {
@@ -3646,31 +3668,51 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
             case EN_KILLFOCUS:
             default:
-                return false;
+                return FALSE;
 
             case EN_CHANGE:
             case EN_UPDATE:
                 temp = GetDlgItemInt(DiBoxHandle, group_size_int, &good, FALSE);
                 if (good == TRUE)
                     groupSize = temp;
-                return false;
+                return FALSE;
             }
-            return false;
+            return FALSE;
 
+        case help_file_path_check:
+            std::cout << "path = " << helpFilePath << '\n';
+            fileStatus(helpFilePath);
+            return FALSE;
+
+        case help_file_path_set:
+            char* newpathC;
+            newpathC = getFileName("Text\0*.TXT\0\0", handConsole);
+            if (newpathC == NULL) {
+                std::cout << "command cancelled \n";
+            }
+            else {
+                helpFilePath = newpathC; /* copy new path for doc file to permanent storage */
+                writeIni();       /* update the .ini file*/
+                std::cout << "new path = " << helpFilePath << '\n';
+                fileStatus(helpFilePath);
+            }
+            return FALSE;
 
         default:  /* unknown control*/
             std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
         }
-        return false;
+        return FALSE;
     }
     return FALSE;
 }
 
-/* set up dialog box for SET command */
+/* set up dialog box for SET command. When the user select an action it is processed
+in the SetDialogAct function. */
 static long long setdiag(void) {
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
         handConsole, SetDialogAct, (LPARAM)99L);
+    /* control is returned here when the dialog box is closed. */
     if (rv != IDOK && rv != IDCANCEL) {
         std::cout << "rv = " << rv << '\n';
         ErrorDisp(__FUNCTION__);
@@ -3709,11 +3751,11 @@ static int processCmd(const std::string &command) {
     case 1:  /* salida */
         return 2;  /* same command in 2 languages */
     case 2: /* Help */ {
-            helpfunc();
+            helpfunc(command.substr(4));
             return 1;
         }
     case 3: /* ayuda */ {
-                helpfunc();
+                helpfunc(command.substr(5));
             return 1;
         }
     case 4: /* E */ {
@@ -3913,7 +3955,7 @@ static int processCmd(const std::string &command) {
     }
     case 20:  /* SET */
     {
-        setdiag();
+        setdiag();   /* change settings using a dialog box */
         return 1;
     }
     default:

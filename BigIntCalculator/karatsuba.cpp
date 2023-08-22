@@ -62,11 +62,12 @@ static void Karatsuba(int idxFactor1, const int length, int diffIndex);
 
 
 /* this the entry point for external calls 
-result = factor1 * factor2 */
+result = factor1 * factor2.  */
 void multiply(const limb factor1[], const limb factor2[], limb result[], const int len, int* pResultLen)
 {
 	int length = len;
-	// Compute length of numbers for each recursion.
+	// Compute length of numbers for each recursion. length is derived from len
+	// such that length >= len and length = 2^x * y where y is <= KARATSUBA_CUTOFF
 	if (length > KARATSUBA_CUTOFF)
 	{
 		int div = 1;
@@ -78,6 +79,7 @@ void multiply(const limb factor1[], const limb factor2[], limb result[], const i
 		length *= div;
 	}
 	if (length > MAX_LEN) {
+		StackTrace2();
 		std::string line = std::to_string(__LINE__);
 		std::string mesg = "number too big : cannot perform multiplication: ";
 		mesg += __func__;

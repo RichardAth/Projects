@@ -574,6 +574,7 @@ a is a text string e.g. "integer overflow". The message generated includes
 the text string a, function name, line number and source file name */
 #define ThrowExc(a)                              \
 {                                                \
+    StackTrace2();                               \
 	std::string line = std::to_string(__LINE__); \
 	std::string mesg = a;                        \
     mesg += " " ;                                \
@@ -586,7 +587,8 @@ the text string a, function name, line number and source file name */
 #define ThrowExs(a)                              \
 {												 \
 	char mesg[180] = { 0 };					     \
-	sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
+    StackTrace2();                               \
+    sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
 	throw std::range_error(mesg);                \
 }
 
