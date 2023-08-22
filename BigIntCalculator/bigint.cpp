@@ -903,16 +903,15 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
 	}
 	int i = 0;
 	while (numberZ > 0) {
+		if (i >= MAX_LEN) 
+			return false;   // number too big to convert.
 		//mpz_fdiv_qr_ui(ZT(quot), ZT(remainder), ZT(numberZ), LIMB_RANGE);
 		/* calculating quotient and remainder separately turns
 		out to be faster */
 		mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
 		number.limbs[i] = (int)MulPrToLong(remainder);
 		mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
-		i++;
-		if (i >= MAX_LEN) {
-			return false;   // number too big to convert.
-		}
+   		i++;
 	}
 	number.nbrLimbs = i;
 	if (neg) {
