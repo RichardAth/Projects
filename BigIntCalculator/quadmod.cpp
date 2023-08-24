@@ -48,14 +48,18 @@ char* ptrOutput;
 static std::vector <Znum> roots;
 
 /* interfac matcher between DA's code and expression evaluation function */
-retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
+static retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
     std::string exp = exprA;
     Znum value;
     int asgct;
     bool multiv;
     retCode rc = ComputeExpr(exp, value, asgct, &multiv);
-    *result = value;  /* copy value of expression */
-    return rc;  /* pass back return code too */
+    //*result = value;  /* copy value of expression */
+    auto rv = ZtoBig(*result, value);   /* convert to BigInteger */
+    if (rv)
+        return rc;  /* pass back return code too */
+    else
+        return retCode::INTERM_TOO_HIGH;
 }
 
 static int Show(const BigInteger* num, const char* str, int t)
@@ -315,8 +319,9 @@ the integer unknown x is in the range 0 ≤ x < n. In particular, it can find
 modular square roots by setting a = -1, b = 0, c = number whose root we want to find
 and n = modulus. The parameters are supplied as text, which can be numbers or
 numerical expressions. The modulus has to be factored, so if it is too large
-the factorisation can take an excessive length of time */
-void quadmodText(const char* aText, const char* bText, const char* cText,
+the factorisation can take an excessive length of time. The results are placed in 
+the output buffer */
+static void quadmodText(const char* aText, const char* bText, const char* cText,
     const char* modText, int groupLength)
 {
     groupSize = groupLength; /* used for formatting the output */
@@ -396,55 +401,68 @@ void quadmodText(const char* aText, const char* bText, const char* cText,
 
 /* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
 expressions for a, b, c, and n are entered as text and converted to numbers,
-then the equation is solved. */
+then the equation is solved. Returns 0 for success, 1 if an exception is thrown. */
 int quadModEqn(const std::string &command) {
     char A[50], B[50], C[50], N[50];
-    if (lang) {
-        printf("Resolución de ecuaciones cuadráticas modulares \n");
-        printf("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
-            " (mod n) donde la incógnita entera x se encuentra en el rango"
-            " 0 ≤ x < n.\n");
-         printf("En particular, puede hallar raíces cuadradasmodulares si ingresa "
-            " a = -1, b = 0, c = número cuya raíz se desea hallar y n = módulo.\n");
+    try {
+        if (lang) {
+            printf("Resolución de ecuaciones cuadráticas modulares \n");
+            printf("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
+                " (mod n) donde la incógnita entera x se encuentra en el rango"
+                " 0 ≤ x < n.\n");
+            printf("En particular, puede hallar raíces cuadradasmodulares si ingresa "
+                " a = -1, b = 0, c = número cuya raíz se desea hallar y n = módulo.\n");
 
-         printf("ingrese el valor para A: ");
+            printf("ingrese el valor para A: ");
+        }
+        else { /* english */
+            printf("Quadratic Modular Equation Solver\n");
+            printf("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
+                " the unknown integer x is in the range 0 <= x < N. \n");
+            printf("In particular, it can find modular square roots by setting "
+                "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
+
+            printf("Enter value for A: ");
+        }
+        PlaySoundA(attsound.c_str(), NULL,
+            SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+        fgets(A, sizeof(A), stdin);
+        if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
+
+        printf((lang) ? "ingrese el valor para B: " : "Enter value for B: ");
+        PlaySoundA(attsound.c_str(), NULL,
+            SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+        fgets(B, sizeof(B), stdin);
+        if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
+
+        printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
+        PlaySoundA(attsound.c_str(), NULL,
+            SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+        fgets(C, sizeof(C), stdin);
+        if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
+
+        printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
+        PlaySoundA(attsound.c_str(), NULL,
+            SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
+        fgets(N, sizeof(N), stdin);
+        if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
+
+        quadmodText(A, B, C, N, groupSize);
+        printf("%s\n", output);   /* print output buffer, which contains the input 
+                                  parameters as well as the solutions */
+        return EXIT_SUCCESS;
     }
-    else { /* english */
-        printf("Quadratic Modular Equation Solver\n");
-         printf("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
-            " the unknown integer x is in the range 0 <= x < N. \n");
-        printf("In particular, it can find modular square roots by setting "
-            "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
-
-        printf("Enter value for A: ");
+    /* code below catches C++ 'throw' type exceptions */
+    catch (const std::exception& e) {
+        printf_s("\n*** standard exception caught, message '%s'\n", e.what());
+        Beep(1200, 1000);              // sound at 1200 Hz for 1 second
+        return EXIT_FAILURE;
     }
-    PlaySoundA(attsound.c_str(), NULL,
-        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-    fgets(A, sizeof(A), stdin);
-    if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
-
-    printf((lang)?  "ingrese el valor para B: " : "Enter value for B: ");
-    PlaySoundA(attsound.c_str(), NULL,
-        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-    fgets(B, sizeof(B), stdin);
-    if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
-
-    printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
-    PlaySoundA(attsound.c_str(), NULL,
-        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-    fgets(C, sizeof(C), stdin);
-    if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
-
-    printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
-    PlaySoundA(attsound.c_str(), NULL,
-        SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-    fgets(N, sizeof(N), stdin);
-    if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
-
-    quadmodText(A, B, C, N, groupSize);
-    printf("%s\n", output);
-    //system("PAUSE");   /* press any key to continue */
-    return 0;
+    catch (...) {
+        printf_s("\n*** unknown exception ocurred\n");
+        Beep(1200, 1000);              // sound at 1200 Hz for 1 second
+        return EXIT_FAILURE;
+    }
 }
 
 /* find modular square root. Solve the equation given aa and m.
