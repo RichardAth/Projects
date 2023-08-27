@@ -2237,7 +2237,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
 
 /* display a dialog box so that the user can select a help topic */
 static long long helpdiag(void) {
-
+    hResp.radiobutton = 0;  /* set default value */
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(help_dialog), 
         handConsole, helpDialogAct, (LPARAM)  99L);
     if (rv != IDOK && rv != IDCANCEL) {
