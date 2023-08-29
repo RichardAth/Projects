@@ -4154,7 +4154,7 @@ int main(int argc, char *argv[]) {
             }
             else {
                 exprList.push_back(expr);  /* save text of expression */
-                if (asgCt == 0 && !multiV) {
+                if (!multiV) {
                     std::cout << " = ";
                     ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
@@ -4164,29 +4164,27 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 else {
-                    if (multiV) {
-                        /* expression returned multiple values */
-                        std::cout << " = ";
-                        if (roots.size() <= 31 ) 
-                            /* print all results if <= 31 values */
-                            for (auto r : roots) {
-                                std::cout << r << ", ";
-                            }
-                        else { /* print 1st 20 and last 10 results */
-                            for (int i = 0; i < 20; i++) {
-                                std::cout << roots[i] << ", " ;
-                            }
-                            std::cout << "\n ... \n";
-                            for (size_t i = roots.size()-10; i < roots.size(); i++) {
-                                std::cout << roots[i] << ", ";
-                            }
+                    /* expression returned multiple values */
+                    std::cout << " = ";
+                    if (roots.size() <= 31)
+                        /* print all results if <= 31 values */
+                        for (auto r : roots) {
+                            std::cout << r << ", ";
                         }
-                        putchar('\n');
-                        std::cout << "found " << roots.size() << " results \n";
+                    else { /* print 1st 20 and last 10 results */
+                        for (int i = 0; i < 20; i++) {
+                            std::cout << roots[i] << ", ";
+                        }
+                        std::cout << "\n ... \n";
+                        for (size_t i = roots.size() - 10; i < roots.size(); i++) {
+                            std::cout << roots[i] << ", ";
+                        }
                     }
-                    if (asgCt != 0)
-                    printvars(""); /* print variables names & values */
+                    putchar('\n');
+                    std::cout << "found " << roots.size() << " results \n";
                 }
+                if (asgCt != 0)
+                    printvars(""); /* print variables names & values */
             }
 
             auto end = clock();   // measure amount of time used
