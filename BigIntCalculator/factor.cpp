@@ -1032,8 +1032,9 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 	assert(Mult[3] == 0);
 }
 
-/* compute 4 or less values the squares of which add up to prime p,  
+/* compute 4 or less values the squares of which add up to prime p.   
 return values in Mult[0] to Mult[3] 
+For odd p:
 if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
 If p = 7 (mod 8) it cannot be expressed as the sum of 3 squares, otherwise it can.
 If it can, at least two of the 3 squares will be equal (ignoring sign). */

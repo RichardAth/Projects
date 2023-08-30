@@ -78,7 +78,7 @@ std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* display last error in a message box. lpszFunction should be a pointer to text 
 containing the function name. */
-void ErrorDisp(char *lpszFunction)
+void ErrorDisp(const char *lpszFunction)
 {
     // Retrieve the system error message for the last-error code
 
@@ -3452,7 +3452,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         LRESULT rr;
 
         /* tooltip help message */
-        static LPWSTR grouphelp = L"help message \n";
+        static wchar_t grouphelp[] = L"help message \n";
 
         /* initialise combi box */
         HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
@@ -3537,7 +3537,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             Pari = true;
             return FALSE;
 
-         case IDC_BUTTON1:   /* check YAFU path */
+        case IDC_BUTTON1:   /* check YAFU path */
             yafuParam("YAFU PATH");
             return FALSE;
 
@@ -3563,7 +3563,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             case CBN_SELENDOK:
             case CBN_SELENDCANCEL:
                 break;
-             }
+            }
             return FALSE;
 
         case Yafulog:
@@ -3618,7 +3618,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 temp = GetDlgItemInt(DiBoxHandle, verboseValue, &good, FALSE);
                 if (good == TRUE)
                     verbose = temp;
-                 return FALSE;
+                return FALSE;
             }
             return FALSE;
 
@@ -4155,7 +4155,7 @@ int main(int argc, char *argv[]) {
             else {
                 exprList.push_back(expr);  /* save text of expression */
                 if (!multiV) {
-                    std::cout << " = ";
+                    std::cout << "result = ";
                     ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {

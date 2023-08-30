@@ -55,7 +55,7 @@ enum class opCode {
     fact        = 21,	// !   factorial 
     prim        = 23,	// #   primorial
     unary_minus = 1,    // C and Python put unary minus above multiply, divide & modulus
-    not         = 16,   // C and Python put bitwise not with unary minus
+    notfn       = 16,   // C and Python put bitwise not with unary minus
     power       = 0,
     multiply    = 2,
     divide      = 3,
@@ -71,9 +71,9 @@ enum class opCode {
     less        = 13,
     not_equal   = 14,
     equal       = 15,
-    and         = 17,      // C and Python put AND before XOR before OR
-    xor         = 18,
-    or          = 19,
+    andfn       = 17,      // C and Python put AND before XOR before OR
+    xorfn       = 18,
+    orfn        = 19,
     leftb       = 20,
     assign      = 24,       /* assignment operator */
     rightb      = 25,       // right bracket 
@@ -227,10 +227,10 @@ const static struct oper_list operators[]{
         { "<",   opCode::less,        7,  true,  false, 2},
         { "!=",  opCode::not_equal,   8,  true,  false, 2},
         { "==",  opCode::equal,       8,  true,  false, 2},
-        { "NOT", opCode::not,         1,  false, true,  1},      // bitwise NOT
-        { "AND", opCode::and,         9,  true,  false, 2},      // bitwise AND
-        { "OR",  opCode:: or,        11,  true,  false, 2},      // bitwise OR
-        { "XOR", opCode::xor,        10,  true,  false, 2},      // bitwise exclusive or
+        { "NOT", opCode::notfn,       1,  false, true,  1},      // bitwise NOT
+        { "AND", opCode::andfn,       9,  true,  false, 2},      // bitwise AND
+        { "OR",  opCode:: orfn,      11,  true,  false, 2},      // bitwise OR
+        { "XOR", opCode::xorfn,      10,  true,  false, 2},      // bitwise exclusive or
       //{ "!!",  opCode::dfact,       0,  true,  false, 1},      // double factorial
         { "!",   opCode::fact,        0,  true,  false, 1},      // multi-factorial
         { "#",   opCode::prim,        0,  true,  false, 1},      // primorial
@@ -977,20 +977,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         // invert sign of shift
         return ShiftLeft(p[0], -p[1], result);
     }
-    case opCode::not: /* Perform binary NOT */ {   
+    case opCode::notfn: /* Perform binary NOT */ {   
         //result = -1 - p[0];  // assumes 2s complement binary numbers
         mpz_com(ZT(result), ZT(p[0]));
         return retCode::EXPR_OK;
     }
-    case opCode::and: /* Perform binary AND. */ {  
+    case opCode::andfn: /* Perform binary AND. */ {  
         mpz_and(ZT(result), ZT(p[0]), ZT(p[1]));
         return retCode::EXPR_OK;
     }
-    case opCode::or:  /* Perform binary OR. */ {   
+    case opCode::orfn:  /* Perform binary OR. */ {   
         mpz_ior(ZT(result), ZT(p[0]), ZT(p[1]));
         return retCode::EXPR_OK;
     }
-    case opCode::xor: /*  Perform binary XOR. */ {   
+    case opCode::xorfn: /*  Perform binary XOR. */ {   
         mpz_xor(ZT(result), ZT(p[0]), ZT(p[1]));
         return retCode::EXPR_OK;
     }

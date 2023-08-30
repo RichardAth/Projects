@@ -508,6 +508,7 @@ Repeated factors: No or Yes
 
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
+std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
 
 //extern int ElipCurvNo;            // Elliptic Curve Number
 
