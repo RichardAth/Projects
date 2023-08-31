@@ -687,6 +687,18 @@ static void removeInitTrail(std::string &msg) {
     }
 }
 
+/* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
+static void removeIntSpace(std::string& msg) {
+    for (int i = 1; i < (msg.size() - 1);) {
+        if (isdigit(msg[i - 1]) && isspace(msg[i]) && 
+            (isdigit(msg[i + 1]) || isspace(msg[i+1]))) {
+            msg.erase(i, 1);  /* remove space between 2 digits*/
+        }
+        else
+            i++;  /* advance to next char if no space */
+    }
+}
+
 struct summary {
     int numsize;		// number of decimal digits in number
     double time;		// time used in seconds
@@ -1392,7 +1404,6 @@ static void XlargeRand(Znum& a, int size) {
 static void doTests3(void) {
     Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
     limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
-    limb bL[MAX_LEN], blM[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
     limb one[MAX_LEN];
     int numLen = MAX_LEN-2, l2;
 
@@ -3126,6 +3137,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
             return retCode::PAREN_MISMATCH;
         subExpr = expr.substr(subStart, subEnd - subStart);
         removeInitTrail(subExpr);  /* remove initial & trailing blanks */
+        removeIntSpace(subExpr);   /* remove spaces between digits */
         rv = ComputeExpr(subExpr, result, asgCt);
         if (rv != retCode::EXPR_OK) {
             textError(rv);   // invalid expression; print error message
@@ -3818,10 +3830,18 @@ static int processCmd(const std::string &command) {
                     return 1;
                 }
             case '8': {
-                testerrors();
+                testerrors();  /* test error handling */
                 return 1;
             }
-            case '9': {  /* test modular square root */
+            case '9': {  /* test modular square root. command format is:
+                            TEST9
+                            or
+                            TEST9 new
+                            or
+                            TEST9 time x y
+                            where x is the size in bits of the numbers number 
+                            to test (default =10)
+	                        y is the number of tests (default = 5) */
                 if (command.size() > 5)
                     doTests9(command.substr(6));         
                 else
@@ -4072,6 +4092,7 @@ retry:
     }
     strToUpper(expr, expr);		// convert to UPPER CASE 
     removeInitTrail(expr);       // remove initial & trailing spaces
+    removeIntSpace(expr);       /* remove spaces between digits*/
 
     if (expr.empty()) {
         Beep(3000, 250);     /* audible alarm instead of error msg */
@@ -4087,6 +4108,7 @@ retry:
         while (!cont.empty() && isspace(cont.back())) {
             cont.resize(cont.size() - 1);   /* remove trailing space */
         }
+        removeIntSpace(cont);  /* remove spaces between digits*/
         expr.resize(expr.size() - 1); /* remove trailing \ char */
         expr += cont;    /* append continuation line to previous input */
     }
