@@ -44,6 +44,7 @@ HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program
 HINSTANCE cH2 = GetModuleHandle(NULL);  /* should contain the same value */
 
 int lang = 0;             // 0 English, 1 = Spanish
+bool VSrun = false;       /* set to true if program started from Visual Studio */
 
 bool hexPrFlag = false;		// set true if output is in hex
 int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
@@ -689,6 +690,8 @@ static void removeInitTrail(std::string &msg) {
 
 /* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
 static void removeIntSpace(std::string& msg) {
+    if (msg.empty())
+        return;
     for (int i = 1; i < (msg.size() - 1);) {
         if (isdigit(msg[i - 1]) && isspace(msg[i]) && 
             (isdigit(msg[i + 1]) || isspace(msg[i+1]))) {
@@ -3985,6 +3988,8 @@ static int processCmd(const std::string &command) {
 
 /* initialisation code, executed once at start of program execution */
 static void initialise(int argc, char *argv[]) {
+    char VSversion[100] = { 0 };  /* visual studio version*/
+    size_t vslen = 0;             /* no of chars in visual studio version */
     flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
 #ifndef BIGNBR
     unsigned int control_word; /* save current state of fp control word here */
@@ -4062,6 +4067,13 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
     unsigned long long comCtlVer = getComCtlVer();  /* get version of ComCtl32.dll */
 
+    getenv_s(&vslen, VSversion, "VisualStudioEdition");
+    if (vslen != 0) {
+        VSrun = true;      /* program started from visual studio */
+        if (verbose > 0) {
+            std::cout << "Visual Studio version: " << VSversion << '\n';
+        }
+    }
     processIni(argv[0]); // read .ini file if it exists
 
     //get the computer name, cache sizes, etc.  store in globals
@@ -4082,12 +4094,17 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 /* get input from stdin. Any continuation lines are appended to 1st line.
 Initial & trailing spaces are removed. Letters are converted to upper case. 
 ctrl-c or ctrl-break will force the function to return, with or without input, 
-but only after a 10 sec delay.*/
+but only after a 5 sec delay.*/
 static void myGetline(std::string &expr) {
 retry:
     getline(std::cin, expr);    // expression may include spaces
+    if (std::cin.fail() || std::cin.bad()) {
+        expr.erase();
+        return;   /* error reading from stdin */
+    }
+
     if (breakSignal) {
-        Sleep(10000);   /* wait 10 seconds */
+        Sleep(5000);   /* wait 5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
     strToUpper(expr, expr);		// convert to UPPER CASE 
@@ -4095,7 +4112,7 @@ retry:
     removeIntSpace(expr);       /* remove spaces between digits*/
 
     if (expr.empty()) {
-        Beep(3000, 250);     /* audible alarm instead of error msg */
+        Sleep(250);
         goto retry;          /* input is zero-length; go back*/
     }
 
@@ -4104,6 +4121,10 @@ retry:
         std::string cont;
         std::cout << (lang ? "continuar: " : "continue: ");
         getline(std::cin, cont);   /* get continuation line */
+        if (std::cin.fail() || std::cin.bad()) {
+            expr.erase();
+            return;
+        }
         strToUpper(cont, cont);   // convert to UPPER CASE 
         while (!cont.empty() && isspace(cont.back())) {
             cont.resize(cont.size() - 1);   /* remove trailing space */
@@ -4114,7 +4135,7 @@ retry:
     }
 
     if (breakSignal) {
-        Sleep(10000);   /* wait 10 seconds */
+        Sleep(5000);   /* wait 5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
 
@@ -4145,6 +4166,11 @@ int main(int argc, char *argv[]) {
             myGetline(expr);  /* get input from stdin */
             if (breakSignal)
                 break;    /* Program interrupted: ctrl-c or ctrl-break */
+
+            if (expr.empty()) {
+                Sleep(1000);       
+                continue;            /* no input */
+            }
 
             // prevent the sleep idle time-out.
             SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -4225,6 +4251,9 @@ int main(int argc, char *argv[]) {
 
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
+        std::cout << "Goodbye \n";
+        if (!VSrun)
+            system("PAUSE");
 
         return EXIT_SUCCESS;  // EXIT command entered
     }
