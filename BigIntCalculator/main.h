@@ -38,8 +38,8 @@ void yafuParam(const std::string& command);      /*process YAFU commands */
 void pariParam(const std::string& command);      /*process YAFU commands */
 int quadModEqn(const std::string& command);  /* Quadratic Modular Equation Solver */
 void printvars(std::string name);
-void doTests9(const std::string& params);  /* modular square root test */
-void doTestsA(const std::string& params);   /* quadratic modular equation solver */
+void doTests9(const std::vector<std::string> & p);  /* modular square root test */
+void doTestsA(const std::vector<std::string> & params);   /* quadratic modular equation solver */
 void PrintTimeUsed(double elapsed, const std::string& msg = "");
 void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 char* getFileName(const char* filter, HWND owner, bool MustExist = true);

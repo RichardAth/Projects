@@ -507,7 +507,8 @@ bool checkSolution(const Znum &sol, const Znum &A, const Znum &B, const Znum &C,
     result = A *sol * sol;
     result += sol * B;
     result += C;
-    result %= N;   /*ValNn = (a*sol^2 +b*sol +c) modulo n */
+    if (N != 0)
+        result %= N;   /*ValNn = (a*sol^2 +b*sol +c) modulo n */
     if (result != 0) {
         std::cout << "invalid solution: a= " << A
             << "\n    b = " << B
@@ -520,18 +521,23 @@ bool checkSolution(const Znum &sol, const Znum &A, const Znum &B, const Znum &C,
     else return true;
 }
 
-void doTestsA(const std::string& params) {
-    long long p1;  // number of tests; must be greater than 0
-    long long p2;  // size of numbers to be factored in bits (>= 48)
+/* test quadratic modular equation solver. Command format is:
+TEST A [p1[,p2]] where p1 is the number of tests and p2 is the number size in bits  */
+void doTestsA(const std::vector<std::string> &p) {
+    long long p1=0;  // number of tests; must be greater than 0
+    long long p2=0;  // size of numbers to be factored in bits (>= 48)
     gmp_randstate_t state;
-    Znum a, b, c, n;
+    Znum a, b, c, n=0;
 
-    auto numParams = sscanf_s(params.data(), "%lld,%lld", &p1, &p2);
-    if (p1 <= 0 || numParams < 1) {
+    if (p.size() >= 3)
+        p1 = atoi(p[2].data());
+    if (p.size() >= 4)
+        p2 = atoi(p[3].data());
+    if (p1 <= 0) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
     }
-    if (p2 < 20 || numParams < 2) {
+    if (p2 < 20) {
         std::cout << "Use default 20 for number size in bits \n";
         p2 = 20;
     }
@@ -569,6 +575,7 @@ void doTestsA(const std::string& params) {
         else {
             while (true) {
                 roots.clear();
+                c %= n;
                 std::cout << "solve: " << a << "x² + "
                     << b << "x + " << c << " = 0 (mod " << n << ") \n";
                 ValA = a;
@@ -589,8 +596,7 @@ void doTestsA(const std::string& params) {
                 if (roots.size() > 0 || i > p1)
                     break;
                 i++;
-                c++;       /* try again, wth only c changed */
-                c %= n;
+                c++;       /* try again, with only c changed */
             }
         }
     }
