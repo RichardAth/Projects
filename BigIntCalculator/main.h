@@ -25,6 +25,7 @@ extern std::string yafuprog;
 extern std::string outPath;
 extern std::string MsievePath;
 extern std::string MsieveProg;
+extern std::string MsieveLogPath;
 extern bool breakSignal;
 extern std::vector <Znum> roots;   /* used by functions that return multiple values */
 extern bool msieve;
@@ -46,6 +47,7 @@ char* getFileName(const char* filter, HWND owner, bool MustExist = true);
 /* check file status. Print date & time modified, return false if file not found */
 bool fileStatus(const std::string& fileName);
 bool changepathPP(std::string& path, std::string& prog);
+bool changepath2(std::string& path);
 DWORD getComCtlVer(void);
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 

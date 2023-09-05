@@ -2036,6 +2036,7 @@ void writeIni(void) {
     newStr << "yafu-out=" << outPath << '\n';
     newStr << "msieve-path=" << MsievePath << '\n';
     newStr << "msieve-prog=" << MsieveProg << '\n';
+    newStr << "msieve-log=" << MsieveLogPath << '\n';
     newStr << "helpfile=" << helpFilePath << '\n';
     newStr << "paripath=" << PariPath << '\n';
     newStr << "endsound=" << endsound << '\n';
@@ -2114,6 +2115,9 @@ static void processIni(const char * arg) {
             }
             else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
                 MsieveProg = buffer.substr(12); // copy path following '=' character
+            }
+            else if (_strnicmp("msieve-log=", buffer.c_str(), 11) == 0) {
+                MsieveLogPath = buffer.substr(11); // copy path following '=' character
             }
             else if (_strnicmp("helpfile=", buffer.c_str(), 9) == 0) {
                 helpFilePath = buffer.substr(9);
@@ -3745,7 +3749,9 @@ static long long setdiag(void) {
     return rv;
 }
 
-/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command */
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command.
+Note: command syntax checking is not rigorous; typing errors may produce unexpected 
+results. */
 static int processCmd(const std::string &command) {
 
     /* list of commands (static for efficiency) */
@@ -3755,7 +3761,8 @@ static int processCmd(const std::string &command) {
        "V",   "PRINT",  "LIST", "LOOP", "REPEAT",  "IF",
        "PARI", "QMES",  "SET"};
 
-    std::vector<std::string> p;   /* each parameter is stored separately in p */
+    std::vector<std::string> p;   /* each parameter is stored separately in an element of p */
+    int p1 = INT_MIN;             /* if 1st parameter is numeric, store its value here */
     const char seps[] = ", \n";   /* separators between parameters; either , or space */
     char* token = nullptr;
     char* next = nullptr;         /* used by strtok_s */
@@ -3767,6 +3774,8 @@ static int processCmd(const std::string &command) {
         p.push_back(token);
         token = strtok_s(nullptr, seps, &next);
     }
+    if (p.size() >= 2 && isdigit(p[1][0]))
+        p1 = std::atoi(p[1].data());  /* if p[1] is a decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -3795,10 +3804,8 @@ static int processCmd(const std::string &command) {
     case 5: /* S */ { 
         lang = 1; return 1; }	          // spanish (Español)
     case 6: /* F */ { 
-        /* will not throw an exception if input has fat finger syndrome.
-            If no valid digits found, sets factorFlag to 0 */
-        if (p.size() >= 2)
-            factorFlag = atoi(p[1].data());
+         if (p.size() >= 2)
+            factorFlag = p1;
          std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
         return 1; }  
     case 7: /* X */ { 
@@ -3812,13 +3819,31 @@ static int processCmd(const std::string &command) {
              return 1;
          }
 
-         char ttype = toupper(p[1][0]);  /* for TEST 2 ttype = 2, etc*/
-         switch (ttype) {
-         case '2': {
+         char ttype = toupper(p[1][0]);  /* print help message? */
+         if (ttype == 'H') {
+             std::cout << "Test command format: \n"
+                 << "      Test    (with no parameters) do basic tests of calculator and factorisation \n"
+                 << "      Test 2 [p1[,p2[,p3]]]        test factorisation, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 3                       tests for builtin BigIntegers \n"
+                 << "      Test 4                       test factorisation of mersenne numbers. \n"
+                 << "      Test 5                       test using YAFU for factorisation \n"
+                 << "      Test 6                       test using Msieve for factorisation \n"
+                 << "      Test 7  [p1]                 tests the Lucas-Lehmer function for Mersenne \n"
+                 << "                                   numbers up to 2^p1 -1 \n"
+                 << "      Test 8                       test error handling \n"
+                 << "      Test 9                       test modular square root (use \"TEST 9 H\" for more info.\n"
+                 << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
+                 << "                   where p1 is the number of tests and p2 is the number size in bits \n";
+             return 1;
+         }
+
+         switch (p1)  {
+         case 2: /* test factorisation */ {
              doTests2(p);
              return 1;
          }
-         case '3':
+         case 3:
     #ifdef BIGNBR
              {
                 doTests3();         // do basic tests 
@@ -3827,42 +3852,40 @@ static int processCmd(const std::string &command) {
     #else
              return 0;  /* Bignbr tests omitted */
     #endif
-         case '4': {
-             doTests4();         // factorise Mersenne numbers 
+         case 4: /* factorise Mersenne numbers*/ {
+             doTests4(); 
              return 1;
          }
-         case '5': {
-             doTests6(false);         // do YAFU tests 
+         case 5: /* do YAFU tests*/ {
+             doTests6(false);  
              return 1;
          }
-         case '6': {
-             doTests6(true);         // do Msieve tests 
+         case 6: /* do Msieve tests*/ {
+             doTests6(true);    
              return 1;
          }
-         case '7': {
-             /* Lucas-Lehmer test */
+         case 7: /* Lucas-Lehmer test */ {
              doTests7(p);
              return 1;
          }
-         case '8': {
-             testerrors();  /* test error handling */
+         case 8: /* test error handling */ {
+             testerrors();  
              return 1;
          }
-         case '9': {  /* test modular square root. command format is:
-                       TEST 9
-                       or
-                       TEST 9 new
-                       or
-                       TEST 9 time x y
-                       where x is the size in bits of the numbers to test 
-                               (default =10)
-                               y is the number of tests (default = 5) */
+         case 9: /* test modular square root*/ {  /* command format is:
+                    TEST 9
+                    or
+                    TEST 9 new
+                    or
+                    TEST 9 time x y
+                    where x is the size in bits of the numbers to test (default =10)
+                          y is the number of tests (default = 5) */
             doTests9(p);   
             return 1;
          }
-         case 'A': { /* test quadratic modular equation solver */
+         case 10: /* test quadratic modular equation solver */ {
        
-            doTestsA(p);   /* test modular square root */
+            doTestsA(p);   /* test quadratic modular equation solver  */
             return 1;
          }
 
@@ -3879,9 +3902,8 @@ static int processCmd(const std::string &command) {
             return 1;
         }
     case 12: /* V */ {
-            /* will not throw an exception if input has fat finger syndrome.
-            If no valid digits found, sets verbose to 0 */
-            verbose = atoi(p[1].data());
+            if (p.size() >= 2)
+                verbose = p1;
             std::cout << "verbose set to " << verbose << '\n';
             return 1;
         }
@@ -3911,7 +3933,7 @@ static int processCmd(const std::string &command) {
             Znum result;
             retCode rv;
             if (p.size() >=2)
-                repeat = atoi(p[1].data());
+                repeat = p1;
             else
                 repeat = 1;  /* repeat once if no count specified */
 

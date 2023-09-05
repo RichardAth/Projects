@@ -19,9 +19,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 extern int lang;
 
-//double originalTenthSecond;
-//int oldTimeElapsed;
-
 /* get clock time in 1/10th of a second */
 double tenths(void) {
 	clock_t now = clock();

@@ -466,7 +466,7 @@ int quadModEqn(const std::string &command) {
 }
 
 /* find modular square root. Solve the equation given aa and m.
-	x^2 ≡ aa mod m */
+    x^2 ≡ aa mod m */
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
     roots.clear();
@@ -522,7 +522,7 @@ bool checkSolution(const Znum &sol, const Znum &A, const Znum &B, const Znum &C,
 }
 
 /* test quadratic modular equation solver. Command format is:
-TEST A [p1[,p2]] where p1 is the number of tests and p2 is the number size in bits  */
+TEST 10 [p1[,p2]] where p1 is the number of tests and p2 is the number size in bits  */
 void doTestsA(const std::vector<std::string> &p) {
     long long p1=0;  // number of tests; must be greater than 0
     long long p2=0;  // size of numbers to be factored in bits (>= 48)

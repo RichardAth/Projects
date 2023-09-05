@@ -138,14 +138,14 @@ bool changepathPP(std::string &path, std::string &prog) {
 }
 
 /* replace path, return true if change actually made, otherwise return false */
-static bool changepath2(std::string& path) {
+bool changepath2(std::string& path) {
 	bool rewrite = false;
 	char* newpathC;
 	std::string newpath;
 	std::string newprog;
 	std::string::size_type n;
 
-	newpathC = getFileName("Text Files\0*.txt\0\0", handConsole, false);
+	newpathC = getFileName("Text Files\0*.TXT\0log files\0*.LOG\0All\0*.*\0", handConsole, false);
 	if (newpathC == NULL) {
 		std::cout << "command cancelled \n";
 		return false;
@@ -410,8 +410,6 @@ void yafuParam(const std::string &command) {
 			delfile(curPath, "nfs.dat.mat");
 			delfile(curPath, "YAFU_get_poly_score.out");
 		}
-		
-
 		break;
 	}
 	case 6: /* YAFU INI  */ {
