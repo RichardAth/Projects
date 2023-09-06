@@ -402,7 +402,7 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
 /* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
 expressions for a, b, c, and n are entered as text and converted to numbers,
 then the equation is solved. Returns 0 for success, 1 if an exception is thrown. */
-int quadModEqn(const std::string &command) {
+int quadModEqn(const std::vector<std::string>& p) {
     char A[50], B[50], C[50], N[50];
     try {
         if (lang) {

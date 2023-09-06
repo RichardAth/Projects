@@ -34,10 +34,10 @@ extern bool Pari;
 
 void delfile(const std::string& path, const char* FileName);
 bool isPerfectSquare(const Znum &num);
-void msieveParam(const std::string& expupper);   /*process Msieve commands */
-void yafuParam(const std::string& command);      /*process YAFU commands */
-void pariParam(const std::string& command);      /*process YAFU commands */
-int quadModEqn(const std::string& command);  /* Quadratic Modular Equation Solver */
+void msieveParam(const std::vector<std::string>& p);   /*process Msieve commands */
+void yafuParam(const std::vector<std::string>& p);      /*process YAFU commands */
+void pariParam(const std::vector<std::string>& p);      /*process YAFU commands */
+int quadModEqn(const std::vector<std::string>& p);  /* Quadratic Modular Equation Solver */
 void printvars(std::string name);
 void doTests9(const std::vector<std::string> & p);  /* modular square root test */
 void doTestsA(const std::vector<std::string> & params);   /* quadratic modular equation solver */

@@ -3529,6 +3529,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         }
 
     case WM_COMMAND:      /* 0x111 control selected by user */
+        std::vector<std::string> p;
   
         switch (wpLo) {  /* switch according to control selected */
             int b_ck;    /* button status: checked, indeterminate or unchecked */
@@ -3565,11 +3566,18 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             return FALSE;
 
         case IDC_BUTTON1:   /* check YAFU path */
-            yafuParam("YAFU PATH");
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "PATH";
+            yafuParam(p);
             return FALSE;
 
         case setYAFUpath:
-            yafuParam("YAFU PATH SET");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "PATH";
+            p[2] = "SET";
+            yafuParam(p);
             return FALSE;
 
         case YafuPlan:  /* change YAFU plan*/
@@ -3594,27 +3602,48 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             return FALSE;
 
         case Yafulog:
-            yafuParam("YAFU OUT");
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "OUT";
+            yafuParam(p);
             return FALSE;
 
         case YAFU_out_path:
-            yafuParam("YAFU OUT SET");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "OUT";
+            p[2] = "SET";
+            yafuParam(p);
             return FALSE;
 
         case Yafu_GGNFS:
-            yafuParam("YAFU INI");
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "INI";
+            yafuParam(p);
             return FALSE;
 
         case YAFU_GGNFS_change:
-            yafuParam("YAFU INI I");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "INI";
+            p[2] = "I";
+            yafuParam(p);
             return FALSE;
 
         case MSievePath:
-            msieveParam("MSIEVE PATH");
+            p.resize(2);
+            p[0] = "MSIEVE";
+            p[1] = "PATH";
+            msieveParam(p);
             return FALSE;
 
         case Msieve_path_set:
-            msieveParam("MSIEVE PATH SET");
+            p.resize(3);
+            p[0] = "MSIEVE";
+            p[1] = "PATH";
+            p[2] = "SET";
+            msieveParam(p);
             return FALSE;
 
         case Msieve_E_option:   /* set/unset eopt*/
@@ -3625,12 +3654,34 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 eopt = false;
             return FALSE;
 
+        case Check_Msieve_Log:
+            p.resize(2);
+            p[0] = "MSIEVE";
+            p[1] = "LOG";
+            msieveParam(p);
+            return FALSE;
+
+        case Set_Msieve_Log:
+            p.resize(3);
+            p[0] = "MSIEVE";
+            p[1] = "LOG";
+            p[2] = "SET";
+            msieveParam(p);
+            return FALSE;
+
         case Pari_path:
-            pariParam("PARI PATH");
+            p.resize(2);
+            p[0] = "PARI";
+            p[1] = "PATH";
+            pariParam(p);
             return FALSE;
 
         case Set_Pari_path:
-            pariParam("PARI PATH SET");
+            p.resize(3);
+            p[0] = "PARI";
+            p[1] = "PATH";
+            p[2] = "SET";
+            pariParam(p);
             return FALSE;
 
         case verboseValue:   /* set verbose */
@@ -3726,7 +3777,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             return FALSE;
 
         default:  /* unknown control*/
-            std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
+            std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << " wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
         }
         return FALSE;
@@ -3894,11 +3945,11 @@ static int processCmd(const std::string &command) {
          }
         }
     case 10: /* MSIEVE */ {
-            msieveParam(command);
+            msieveParam(p);
             return 1;
         }
     case 11: /* YAFU */ {
-            yafuParam(command);
+            yafuParam(p);
             return 1;
         }
     case 12: /* V */ {
@@ -3998,12 +4049,11 @@ static int processCmd(const std::string &command) {
             return 1;
         }
     case 18: /* PARI */ {
-            pariParam(command);
+            pariParam(p);
             return 1;
         }
-    case 19: /* QMES */
-        {
-            quadModEqn(command);  /* Quadratic Modular Equation Solver */
+    case 19: /* QMES */ {
+            quadModEqn(p);  /* Quadratic Modular Equation Solver */
             return 1;
         }
     case 20:  /* SET */

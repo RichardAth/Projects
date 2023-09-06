@@ -553,20 +553,20 @@ static bool changepath(std::string& path) {
 }
 
 /* process "PARI ... " command */
-void pariParam(const std::string& command) {
-    std::string param = command.substr(4);  /* remove "PARI */
+void pariParam(const std::vector<std::string>& p) {
+    if (p.size() < 2) {
+        std::cout << "Invalid Pari command; use PARI ON, OFF, CLOSE or PATH \n";
+        return;
+    }
 
-    while (param[0] == ' ')
-        param.erase(0, 1);              /* remove leading space(s) */
-
-    if (param == "ON" || param == "on") {
+    if (p[1] == "ON") {
         Pari = true;  /* switch to using parilib for factorisation */
         yafu = false;
         msieve = false;
     }
-    else if (param == "OFF" || param == "off")
+    else if (p[1] == "OFF")
         Pari = false;
-    else if (param == "close" || param == "CLOSE") {
+    else if (p[1] == "CLOSE") {
         if (stackinit) {
             pari_close_ref();    /* free pari stack */
             stackinit = false;
@@ -574,21 +574,16 @@ void pariParam(const std::string& command) {
                 std::cout << "Pari stack closed \n";
         }
     }
-    else if (param.substr(0, 4) == "PATH")  {
-        param.erase(0, 4);  // get rid of "PATH"
-        while (param[0] == ' ')
-            param.erase(0, 1);              /* remove leading space(s) */
-        if (param != "SET") {
-            std::cout << "path = " << PariPath << '\n';
-        }
-        else {
-            if (changepath(PariPath))
+    else if (p[1] == "PATH") {
+        std::cout << "path = " << PariPath << '\n';
+        if (p.size() >= 3 && p[2] == "SET") {
+           if (changepath(PariPath))
                 writeIni();  // rewrite .ini file
         }
         fileStatus(PariPath);
     }
     else
-        std::cout << "Invalid Pari command \n";
+        std::cout << "Invalid Pari command; use PARI ON, OFF, CLOSE or PATH \n";
     return;
 }
 
