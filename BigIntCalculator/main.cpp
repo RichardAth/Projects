@@ -44,6 +44,7 @@ HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program
 HINSTANCE cH2 = GetModuleHandle(NULL);  /* should contain the same value */
 
 int lang = 0;             // 0 English, 1 = Spanish
+bool VSrun = false;       /* set to true if program started from Visual Studio */
 
 bool hexPrFlag = false;		// set true if output is in hex
 int factorFlag = 2;     /* 0 = no factorisation, 1 = factorisation but not totient etc,
@@ -78,7 +79,7 @@ std::string attsound = "c:/Windows/Media/chimes.wav";
 
 /* display last error in a message box. lpszFunction should be a pointer to text 
 containing the function name. */
-void ErrorDisp(char *lpszFunction)
+void ErrorDisp(const char *lpszFunction)
 {
     // Retrieve the system error message for the last-error code
 
@@ -684,6 +685,20 @@ static void removeInitTrail(std::string &msg) {
     }
     while (!msg.empty() && isspace(msg.back())) {
         msg.resize(msg.size() - 1);  /* remove trailing spaces */
+    }
+}
+
+/* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
+static void removeIntSpace(std::string& msg) {
+    if (msg.empty())
+        return;
+    for (int i = 1; i < (msg.size() - 1);) {
+        if (isdigit(msg[i - 1]) && isspace(msg[i]) && 
+            (isdigit(msg[i + 1]) || isspace(msg[i+1]))) {
+            msg.erase(i, 1);  /* remove space between 2 digits*/
+        }
+        else
+            i++;  /* advance to next char if no space */
     }
 }
 
@@ -1311,19 +1326,26 @@ factors, otherwise it is a random number that can contain any number of factors.
 if p3 <= 1 use fixed random seed value
 if p3 = 2 use truly random seed value
 if p3 > 2  use p3 as the seed value */
-static void doTests2(const std::string &params) {
-    long long p1;  // number of tests; must be greater than 0
-    long long p2;  // size of numbers to be factored in bits (>= 48)
+static void doTests2(const std::vector<std::string> &p) {
+    long long p1=0;  // number of tests; must be greater than 0
+    long long p2=0;  // size of numbers to be factored in bits (>= 48)
     long long p3=0;  // optional, if non-zero generate RSA-style difficult to factor number
     gmp_randstate_t state;
     Znum x;
 
-    auto numParams = sscanf_s(params.data(), "%lld,%lld,%lld", &p1, &p2, &p3);
-    if (p1 <= 0 || numParams < 1) {
+ 
+    if (p.size() >= 3)
+        p1 = atoi(p[2].data());
+    if (p.size() >= 4)
+        p2 = atoi(p[3].data());
+    if (p.size() >= 5)
+        p3 = atoi(p[4].data());
+
+    if (p1 <= 0 ) {
         std::cout << "Use default 2 for number of tests \n";
         p1 = 2;
     }
-    if (p2 < 48 || numParams < 2) {
+    if (p2 < 48) {
         std::cout << "Use default 48 for number size in bits \n";
         p2 = 48;
     }
@@ -1392,7 +1414,6 @@ static void XlargeRand(Znum& a, int size) {
 static void doTests3(void) {
     Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
     limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
-    limb bL[MAX_LEN], blM[MAX_LEN], pl[MAX_LEN], plm[MAX_LEN];
     limb one[MAX_LEN];
     int numLen = MAX_LEN-2, l2;
 
@@ -1930,9 +1951,9 @@ static void doTests6(bool usesMsieve = true) {
 }
 
 /* Lucas-Lehmer test*/
-static void doTests7(const std::string &params) {
+static void doTests7(const std::vector<std::string> &p) {
     std::vector <long long> mPrimes;
-    int p1, i=0;
+    int i=0;
     lltPriCnt = lltCmpCnt = lltTdivCnt = 0;  /* reset counters */
 #ifdef _DEBUG
     int limit = 2000;  /* find 1st 15 Mersenne  primes, test 303 primes */
@@ -1941,9 +1962,12 @@ static void doTests7(const std::string &params) {
 #endif
     auto start = clock();	// used to measure execution time
 
-    auto numParams = sscanf_s(params.data(), "%d", &p1);
-    if (numParams >= 1)
-        limit = p1;    /* replace default value with user-specified value */
+    if (p.size() >= 3)
+        limit = atoi(p[2].data());
+    if (limit < 0 || limit > 120000) {
+        std::cout << "limit out of range; use 12000 \n";
+        limit = 12000;
+    }
     generatePrimes(limit);    /* make prime list if not already done */
 
     for (i = 0; primeList[i] < limit; i++) {
@@ -2012,6 +2036,7 @@ void writeIni(void) {
     newStr << "yafu-out=" << outPath << '\n';
     newStr << "msieve-path=" << MsievePath << '\n';
     newStr << "msieve-prog=" << MsieveProg << '\n';
+    newStr << "msieve-log=" << MsieveLogPath << '\n';
     newStr << "helpfile=" << helpFilePath << '\n';
     newStr << "paripath=" << PariPath << '\n';
     newStr << "endsound=" << endsound << '\n';
@@ -2090,6 +2115,9 @@ static void processIni(const char * arg) {
             }
             else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
                 MsieveProg = buffer.substr(12); // copy path following '=' character
+            }
+            else if (_strnicmp("msieve-log=", buffer.c_str(), 11) == 0) {
+                MsieveLogPath = buffer.substr(11); // copy path following '=' character
             }
             else if (_strnicmp("helpfile=", buffer.c_str(), 9) == 0) {
                 helpFilePath = buffer.substr(9);
@@ -2237,7 +2265,7 @@ INT_PTR helpDialogAct(HWND DiBoxHandle,
 
 /* display a dialog box so that the user can select a help topic */
 static long long helpdiag(void) {
-
+    hResp.radiobutton = 0;  /* set default value */
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(help_dialog), 
         handConsole, helpDialogAct, (LPARAM)  99L);
     if (rv != IDOK && rv != IDCANCEL) {
@@ -2258,7 +2286,7 @@ heading is found.
 If the help file is not found it is possible to change the path to access the file.
 This change is retained in the BigIntCalculator.ini file. 
 The help file is not limited to ASCII characters. Most UTF-8 characters can be printed. */
-static void helpfunc(const std::string& command)
+static void helpfunc(const std::vector<std::string> &command)
 {
     FILE* doc;
     char str[1024];
@@ -2271,10 +2299,8 @@ static void helpfunc(const std::string& command)
     bool UTF8 = false;          /* set true if UTF8 BOM found */
     std::string helptopic;
 
-    if (!command.empty()) {
-        helptopic = command;
-        while (helptopic[0] == ' ')
-            helptopic.erase(0, 1);  /* remove leading spaces */
+    if (command.size() >1) {
+        helptopic = command[1];
     }
     else
         helptopic.clear();
@@ -3126,6 +3152,7 @@ static retCode ComputeMultiExpr(std::string expr, Znum result) {
             return retCode::PAREN_MISMATCH;
         subExpr = expr.substr(subStart, subEnd - subStart);
         removeInitTrail(subExpr);  /* remove initial & trailing blanks */
+        removeIntSpace(subExpr);   /* remove spaces between digits */
         rv = ComputeExpr(subExpr, result, asgCt);
         if (rv != retCode::EXPR_OK) {
             textError(rv);   // invalid expression; print error message
@@ -3452,7 +3479,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         LRESULT rr;
 
         /* tooltip help message */
-        static LPWSTR grouphelp = L"help message \n";
+        static wchar_t grouphelp[] = L"help message \n";
 
         /* initialise combi box */
         HWND hwYafuPlan = GetDlgItem(DiBoxHandle, YafuPlan);
@@ -3502,6 +3529,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         }
 
     case WM_COMMAND:      /* 0x111 control selected by user */
+        std::vector<std::string> p;
   
         switch (wpLo) {  /* switch according to control selected */
             int b_ck;    /* button status: checked, indeterminate or unchecked */
@@ -3537,12 +3565,19 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             Pari = true;
             return FALSE;
 
-         case IDC_BUTTON1:   /* check YAFU path */
-            yafuParam("YAFU PATH");
+        case IDC_BUTTON1:   /* check YAFU path */
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "PATH";
+            yafuParam(p);
             return FALSE;
 
         case setYAFUpath:
-            yafuParam("YAFU PATH SET");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "PATH";
+            p[2] = "SET";
+            yafuParam(p);
             return FALSE;
 
         case YafuPlan:  /* change YAFU plan*/
@@ -3563,31 +3598,52 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             case CBN_SELENDOK:
             case CBN_SELENDCANCEL:
                 break;
-             }
+            }
             return FALSE;
 
         case Yafulog:
-            yafuParam("YAFU OUT");
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "OUT";
+            yafuParam(p);
             return FALSE;
 
         case YAFU_out_path:
-            yafuParam("YAFU OUT SET");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "OUT";
+            p[2] = "SET";
+            yafuParam(p);
             return FALSE;
 
         case Yafu_GGNFS:
-            yafuParam("YAFU INI");
+            p.resize(2);
+            p[0] = "YAFU";
+            p[1] = "INI";
+            yafuParam(p);
             return FALSE;
 
         case YAFU_GGNFS_change:
-            yafuParam("YAFU INI I");
+            p.resize(3);
+            p[0] = "YAFU";
+            p[1] = "INI";
+            p[2] = "I";
+            yafuParam(p);
             return FALSE;
 
         case MSievePath:
-            msieveParam("MSIEVE PATH");
+            p.resize(2);
+            p[0] = "MSIEVE";
+            p[1] = "PATH";
+            msieveParam(p);
             return FALSE;
 
         case Msieve_path_set:
-            msieveParam("MSIEVE PATH SET");
+            p.resize(3);
+            p[0] = "MSIEVE";
+            p[1] = "PATH";
+            p[2] = "SET";
+            msieveParam(p);
             return FALSE;
 
         case Msieve_E_option:   /* set/unset eopt*/
@@ -3598,12 +3654,34 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 eopt = false;
             return FALSE;
 
+        case Check_Msieve_Log:
+            p.resize(2);
+            p[0] = "MSIEVE";
+            p[1] = "LOG";
+            msieveParam(p);
+            return FALSE;
+
+        case Set_Msieve_Log:
+            p.resize(3);
+            p[0] = "MSIEVE";
+            p[1] = "LOG";
+            p[2] = "SET";
+            msieveParam(p);
+            return FALSE;
+
         case Pari_path:
-            pariParam("PARI PATH");
+            p.resize(2);
+            p[0] = "PARI";
+            p[1] = "PATH";
+            pariParam(p);
             return FALSE;
 
         case Set_Pari_path:
-            pariParam("PARI PATH SET");
+            p.resize(3);
+            p[0] = "PARI";
+            p[1] = "PATH";
+            p[2] = "SET";
+            pariParam(p);
             return FALSE;
 
         case verboseValue:   /* set verbose */
@@ -3618,7 +3696,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
                 temp = GetDlgItemInt(DiBoxHandle, verboseValue, &good, FALSE);
                 if (good == TRUE)
                     verbose = temp;
-                 return FALSE;
+                return FALSE;
             }
             return FALSE;
 
@@ -3699,7 +3777,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             return FALSE;
 
         default:  /* unknown control*/
-            std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << "wpLo = " << wpLo
+            std::cout << "SetDialog WM_COMMAND  wpHi = " << wpHi << " wpLo = " << wpLo
                 << " info2 = " << additionalInfo2 << '\n';
         }
         return FALSE;
@@ -3722,25 +3800,41 @@ static long long setdiag(void) {
     return rv;
 }
 
-/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command */
-static int processCmd(const std::string &command) {
+/* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command.
+Note: command syntax checking is not rigorous; typing errors may produce unexpected 
+results. command is a copy of the input buffer, not a reference. This is intentional
+because strtok_s overwrites part of the buffer. */
+static int processCmd(std::string command) {
 
     /* list of commands (static for efficiency) */
     const static std::vector<std::string> list =
-    { "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
-       "F ",   "X",     "D",    "TEST",  "MSIEVE", "YAFU", 
-       "V ",   "PRINT", "LIST", "LOOP", "REPEAT",  "IF",
-       "PARI", "QMES", "SET"};
+    { "EXIT",  "SALIDA", "HELP", "AYUDA", "E",      "S",  
+       "F",    "X",      "D",    "TEST",  "MSIEVE", "YAFU", 
+       "V",    "PRINT",  "LIST", "LOOP",  "REPEAT", "IF",
+       "PARI", "QMES",   "SET"};
+
+    std::vector<std::string> p;   /* each parameter is stored separately in an element of p */
+    int p1 = INT_MIN;             /* if 1st parameter is numeric, store its value here */
+    const char seps[] = ", \n";   /* separators between parameters; either , or space */
+    char* token = nullptr;
+    char* next = nullptr;         /* used by strtok_s */
+
+    if (command.empty()) return 0;  /* buffer is empty; not a command */
+
+    /* separate params text into an array of tokens, by finding the separator characters */
+    token = strtok_s(&command[0], seps, &next);
+    while (token != nullptr) {
+        p.push_back(token);
+        token = strtok_s(nullptr, seps, &next);
+    }
+    if (p.size() >= 2 && isdigit(p[1][0]))
+        p1 = std::atoi(p[1].data());  /* if p[1] is a decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
     for (ix = 0; ix < list.size(); ix++) {
-        auto len = list[ix].size();  /* get length of a string in list*/
-        if (len > 1 && command.substr(0, len) == list[ix])
-            break;  /* exit loop if match found */
-        if (len == 1 && command == list[ix])
-            break;   /* 1-letter commands with no parameters only match 1-letter input.
-                     F and V commands do have parameters */
+        if (p[0] == list[ix])
+            break;
     }
 
     if (ix >= list.size())
@@ -3751,11 +3845,11 @@ static int processCmd(const std::string &command) {
     case 1:  /* salida */
         return 2;  /* same command in 2 languages */
     case 2: /* Help */ {
-            helpfunc(command.substr(4));
+            helpfunc(p);
             return 1;
         }
     case 3: /* ayuda */ {
-                helpfunc(command.substr(5));
+            helpfunc(p);
             return 1;
         }
     case 4: /* E */ {
@@ -3763,10 +3857,9 @@ static int processCmd(const std::string &command) {
     case 5: /* S */ { 
         lang = 1; return 1; }	          // spanish (Español)
     case 6: /* F */ { 
-        /* will not throw an exception if input has fat finger syndrome.
-            If no valid digits found, sets factorFlag to 0 */
-        factorFlag = atoi(command.substr(1).data());
-        std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
+         if (p.size() >= 2)
+            factorFlag = p1;
+         std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
         return 1; }  
     case 7: /* X */ { 
         hexPrFlag = true; return 1; }         // hexadecimal output
@@ -3774,190 +3867,202 @@ static int processCmd(const std::string &command) {
         hexPrFlag = false; return 1; }        // decimal output
     case 9: /* TEST */ {
             /* there are a number of commands that begin with TEST */
-            if (command == "TEST") {
-                doTests();         // do basic tests 
-                return 1;
-            }
+         if (p.size() == 1) {
+             doTests();         // do basic tests 
+             return 1;
+         }
 
-            char ttype = toupper(command.data()[4]) ;  /* for TEST2 ttype = 2, etc*/
-            switch (ttype) {
-            case '2': {
-                if (command.size() > 5)
-                    doTests2(command.substr(6));         // do basic tests 
-                else
-                    doTests2("");
-                return 1;
-            }
-            case '3':
+         char ttype = toupper(p[1][0]);  /* print help message? */
+         if (ttype == 'H') {
+             std::cout << "Test command format: \n"
+                 << "      Test    (with no parameters) do basic tests of calculator and factorisation \n"
+                 << "      Test 2 [p1[,p2[,p3]]]        test factorisation, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 3                       tests for builtin BigIntegers \n"
+                 << "      Test 4                       test factorisation of mersenne numbers. \n"
+                 << "      Test 5                       test using YAFU for factorisation \n"
+                 << "      Test 6                       test using Msieve for factorisation \n"
+                 << "      Test 7  [p1]                 tests the Lucas-Lehmer function for Mersenne \n"
+                 << "                                   numbers up to 2^p1 -1 \n"
+                 << "      Test 8                       test error handling \n"
+                 << "      Test 9                       test modular square root (use \"TEST 9 H\" for more info.\n"
+                 << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
+                 << "                   where p1 is the number of tests and p2 is the number size in bits \n";
+             return 1;
+         }
+
+         switch (p1)  {
+         case 2: /* test factorisation */ {
+             doTests2(p);
+             return 1;
+         }
+         case 3:
     #ifdef BIGNBR
-                {
-                    doTests3();         // do basic tests 
-                    return 1;
-                }
+             {
+                doTests3();         // do basic tests 
+                return 1;
+             }
     #else
-                return 0;  /* Bignbr tests omitted */
+             return 0;  /* Bignbr tests omitted */
     #endif
-            case '4': {
-                    doTests4();         // factorise Mersenne numbers 
-                    return 1;
-                }
-            case '5': {
-                    doTests6(false);         // do YAFU tests 
-                    return 1;
-                }
-            case '6': {
-                    doTests6(true);         // do Msieve tests 
-                    return 1;
-                }
-            case '7': {
-                    /* Lucas-Lehmer test */
-                    if (command.size() > 5)
-                        doTests7(command.substr(6));
-                    else
-                        doTests7("");
-                    return 1;
-                }
-            case '8': {
-                testerrors();
-                return 1;
-            }
-            case '9': {  /* test modular square root */
-                if (command.size() > 5)
-                    doTests9(command.substr(6));         
-                else
-                    doTests9("");   
-                return 1;
-            }
-            case 'A': { /* test quadratic modular equation solver */
-                if (command.size() > 5)
-                    doTestsA(command.substr(6));         // do basic tests 
-                else doTestsA("");   /* test modular square root */
-                    return 1;
-            }
+         case 4: /* factorise Mersenne numbers*/ {
+             doTests4(); 
+             return 1;
+         }
+         case 5: /* do YAFU tests*/ {
+             doTests6(false);  
+             return 1;
+         }
+         case 6: /* do Msieve tests*/ {
+             doTests6(true);    
+             return 1;
+         }
+         case 7: /* Lucas-Lehmer test */ {
+             doTests7(p);
+             return 1;
+         }
+         case 8: /* test error handling */ {
+             testerrors();  
+             return 1;
+         }
+         case 9: /* test modular square root*/ {  /* command format is:
+                    TEST 9
+                    or
+                    TEST 9 new
+                    or
+                    TEST 9 time x y
+                    where x is the size in bits of the numbers to test (default =10)
+                          y is the number of tests (default = 5) */
+            doTests9(p);   
+            return 1;
+         }
+         case 10: /* test quadratic modular equation solver */ {
+       
+            doTestsA(p);   /* test quadratic modular equation solver  */
+            return 1;
+         }
 
-            default:
-                return 0;  /* not a recognised command */
-            }
+         default:
+             return 0;  /* not a recognised command */
+         }
         }
     case 10: /* MSIEVE */ {
-            msieveParam(command);
+            msieveParam(p);
             return 1;
         }
     case 11: /* YAFU */ {
-            yafuParam(command);
+            yafuParam(p);
             return 1;
         }
     case 12: /* V */ {
-            /* will not throw an exception if input has fat finger syndrome.
-            If no valid digits found, sets verbose to 0 */
-            verbose = atoi(command.substr(1).data());
+            if (p.size() >= 2)
+                verbose = p1;
             std::cout << "verbose set to " << verbose << '\n';
             return 1;
         }
     case 13: /* PRINT */ {
-        if (command.size() > 4)
-            printvars(command.substr(5));
-        else
-            printvars("");
-        return 1;
-    }
+            if (p.size() >= 2)
+                printvars(p[1]);
+            else
+                printvars("");
+            return 1;
+        }
     case 14: /* LIST */ {
-        if (exprList.empty())
-            std::cout << "No expressions stored yet \n";
-        else
-            std::cout << exprList.size() << " expressions stored \n";
-        for (auto exp : exprList) {
-            std::cout << exp << '\n';
+            if (exprList.empty())
+                std::cout << "No expressions stored yet \n";
+            else
+                std::cout << exprList.size() << " expressions stored \n";
+            for (auto exp : exprList) {
+                std::cout << exp << '\n';
+            }
+            return 1;
         }
-        return 1;
-    }
     case 15: /* LOOP */ {
-        exprList.clear();
-        return 1;
-    }
+            exprList.clear();
+            return 1;
+        }
     case 16: /* REPEAT */ {
-        int repeat = 0;
-        Znum result;
-        retCode rv;
-        if (command.size() > 6)
-            repeat = atoi(command.substr(6).data());
-        else
-            repeat = 1;  /* repeat once if no count specified */
+            int repeat = 0;
+            Znum result;
+            retCode rv;
+            if (p.size() >=2)
+                repeat = p1;
+            else
+                repeat = 1;  /* repeat once if no count specified */
 
-        loop1:
-        for (int count = 1; count <= repeat; count++) {
-            for (auto expr : exprList) {
-                if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
-                    int rv2 = ifCommand(expr);  /* analyse stored command again */
-                    if (rv2 == 2)
-                        goto loop1;  /* repeat all stored expressions again */
-                    else if (rv2 == 0)
-                        continue;  /* expr = 0; do not perform STOP or LOOP */
-                    else if (rv2 == 1)
-                        break;     /* expression is not 0 and STOP specified */
-                    else if (rv2 == 3)
-                        continue;   /* THEN or ELSE expression has been evaluated */
-                    else
-                        throw std::logic_error("unknown return code");
-                    abort();  /* where are we? */
-                }
-                /* recalculate each stored expression */
-                rv = ComputeMultiExpr(expr, result);
-            }
-        }
-        return 1;
-    }
-    case 17: /* IF */ {
-        /*format is IF (expression) REPEAT or IF (expression) STOP 
-        or IF (expression) THEN (expression[, expression ...])
-                             ELSE (expression[, expression ...]) */
-        Znum result;
-        int rv = ifCommand(command);  /* analyse IF command */
-        if (rv == 2) {
-            /* REPEAT */
-            exprList.push_back(command);
-            loop:
-            for (auto expr : exprList) {
-                if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
-                    int rv2 = ifCommand(expr);  /* analyse stored command again */
-                    if (rv2 == 2)
-                        goto loop;  /* repeat all stored expressions again */
-                    else if (rv2 == 0)
-                        continue;  /* expr = 0; do not perform STOP or LOOP */
-                    else if (rv2 == 1)
-                        break;     /* expression is not 0 and STOP specified */
-                    else if (rv2 == 3)
-                        continue;   /* THEN or ELSE expression has been evaluated */
-                    else
-                        throw std::logic_error ("unknown return code");
+            loop1:
+            for (int count = 1; count <= repeat; count++) {
+                for (auto expr : exprList) {
+                    if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
+                        int rv2 = ifCommand(expr);  /* analyse stored command again */
+                        if (rv2 == 2)
+                            goto loop1;  /* repeat all stored expressions again */
+                        else if (rv2 == 0)
+                            continue;  /* expr = 0; do not perform STOP or LOOP */
+                        else if (rv2 == 1)
+                            break;     /* expression is not 0 and STOP specified */
+                        else if (rv2 == 3)
+                            continue;   /* THEN or ELSE expression has been evaluated */
+                        else
+                            throw std::logic_error("unknown return code");
                         abort();  /* where are we? */
+                    }
+                    /* recalculate each stored expression */
+                    rv = ComputeMultiExpr(expr, result);
                 }
-
-                /* recalculate each stored expression */
-                retCode rv = ComputeMultiExpr(expr, result);
             }
-            return 1;  /* loop completed */
+            return 1;
         }
-        if (rv == 0 || rv == 3)
-            /* if command processed, now save it for possible loop */
-            exprList.push_back(command);  
-        /* to be completed for rv =-1, rv = 1*/
-        return 1;
-    }
+    case 17: /* IF */ {
+            /*format is IF (expression) REPEAT or IF (expression) STOP 
+            or IF (expression) THEN (expression[, expression ...])
+                                 ELSE (expression[, expression ...]) */
+            Znum result;
+            int rv = ifCommand(command);  /* analyse IF command */
+            if (rv == 2) {
+                /* REPEAT */
+                exprList.push_back(command);
+                loop:
+                for (auto expr : exprList) {
+                    if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
+                        int rv2 = ifCommand(expr);  /* analyse stored command again */
+                        if (rv2 == 2)
+                            goto loop;  /* repeat all stored expressions again */
+                        else if (rv2 == 0)
+                            continue;  /* expr = 0; do not perform STOP or LOOP */
+                        else if (rv2 == 1)
+                            break;     /* expression is not 0 and STOP specified */
+                        else if (rv2 == 3)
+                            continue;   /* THEN or ELSE expression has been evaluated */
+                        else
+                            throw std::logic_error ("unknown return code");
+                            abort();  /* where are we? */
+                    }
+
+                    /* recalculate each stored expression */
+                    retCode rv = ComputeMultiExpr(expr, result);
+                }
+                return 1;  /* loop completed */
+            }
+            if (rv == 0 || rv == 3)
+                /* if command processed, now save it for possible loop */
+                exprList.push_back(command);  
+            /* to be completed for rv =-1, rv = 1*/
+            return 1;
+        }
     case 18: /* PARI */ {
-        pariParam(command);
-        return 1;
-    }
-    case 19: /* QMES */
-    {
-        quadModEqn(command);  /* Quadratic Modular Equation Solver */
-        return 1;
-    }
+            pariParam(p);
+            return 1;
+        }
+    case 19: /* QMES */ {
+            quadModEqn(p);  /* Quadratic Modular Equation Solver */
+            return 1;
+        }
     case 20:  /* SET */
-    {
-        setdiag();   /* change settings using a dialog box */
-        return 1;
-    }
+        {
+            setdiag();   /* change settings using a dialog box */
+            return 1;
+        }
     default:
         return 0;   /* not a recognised command */
     }
@@ -3965,6 +4070,8 @@ static int processCmd(const std::string &command) {
 
 /* initialisation code, executed once at start of program execution */
 static void initialise(int argc, char *argv[]) {
+    char VSversion[100] = { 0 };  /* visual studio version*/
+    size_t vslen = 0;             /* no of chars in visual studio version */
     flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
 #ifndef BIGNBR
     unsigned int control_word; /* save current state of fp control word here */
@@ -4042,6 +4149,13 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 
     unsigned long long comCtlVer = getComCtlVer();  /* get version of ComCtl32.dll */
 
+    getenv_s(&vslen, VSversion, "VisualStudioEdition");
+    if (vslen != 0) {
+        VSrun = true;      /* program started from visual studio */
+        if (verbose > 0) {
+            std::cout << "Visual Studio version: " << VSversion << '\n';
+        }
+    }
     processIni(argv[0]); // read .ini file if it exists
 
     //get the computer name, cache sizes, etc.  store in globals
@@ -4062,20 +4176,24 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 /* get input from stdin. Any continuation lines are appended to 1st line.
 Initial & trailing spaces are removed. Letters are converted to upper case. 
 ctrl-c or ctrl-break will force the function to return, with or without input, 
-but only after a 10 sec delay.*/
+but only after a 5 sec delay.*/
 static void myGetline(std::string &expr) {
-retry:
+
     getline(std::cin, expr);    // expression may include spaces
+    if (std::cin.fail() || std::cin.bad()) {
+        expr.erase();
+        return;   /* error reading from stdin */
+    }
+
     if (breakSignal) {
-        Sleep(10000);   /* wait 10 seconds */
+        Sleep(5000);   /* wait 5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
     strToUpper(expr, expr);		// convert to UPPER CASE 
     removeInitTrail(expr);       // remove initial & trailing spaces
 
     if (expr.empty()) {
-        Beep(3000, 250);     /* audible alarm instead of error msg */
-        goto retry;          /* input is zero-length; go back*/
+        return;
     }
 
     /* check for continuation character. If found get continuation line(s) */
@@ -4083,6 +4201,10 @@ retry:
         std::string cont;
         std::cout << (lang ? "continuar: " : "continue: ");
         getline(std::cin, cont);   /* get continuation line */
+        if (std::cin.fail() || std::cin.bad()) {
+            expr.erase();
+            return;
+        }
         strToUpper(cont, cont);   // convert to UPPER CASE 
         while (!cont.empty() && isspace(cont.back())) {
             cont.resize(cont.size() - 1);   /* remove trailing space */
@@ -4092,7 +4214,7 @@ retry:
     }
 
     if (breakSignal) {
-        Sleep(10000);   /* wait 10 seconds */
+        Sleep(5000);   /* wait 5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
 
@@ -4124,6 +4246,11 @@ int main(int argc, char *argv[]) {
             if (breakSignal)
                 break;    /* Program interrupted: ctrl-c or ctrl-break */
 
+            if (expr.empty()) {
+                Sleep(1000);       
+                continue;            /* no input */
+            }
+
             // prevent the sleep idle time-out.
             SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 
@@ -4146,7 +4273,7 @@ int main(int argc, char *argv[]) {
 
             /* input is not a valid command; assume it is an expression */
             auto start = clock();	// used to measure execution time
-
+            removeIntSpace(expr);   /* remove spaces between digits */
             rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 
             if (rv != retCode::EXPR_OK) {
@@ -4154,8 +4281,8 @@ int main(int argc, char *argv[]) {
             }
             else {
                 exprList.push_back(expr);  /* save text of expression */
-                if (asgCt == 0 && !multiV) {
-                    std::cout << " = ";
+                if (!multiV) {
+                    std::cout << "result = ";
                     ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {
@@ -4164,29 +4291,27 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 else {
-                    if (multiV) {
-                        /* expression returned multiple values */
-                        std::cout << " = ";
-                        if (roots.size() <= 31 ) 
-                            /* print all results if <= 31 values */
-                            for (auto r : roots) {
-                                std::cout << r << ", ";
-                            }
-                        else { /* print 1st 20 and last 10 results */
-                            for (int i = 0; i < 20; i++) {
-                                std::cout << roots[i] << ", " ;
-                            }
-                            std::cout << "\n ... \n";
-                            for (size_t i = roots.size()-10; i < roots.size(); i++) {
-                                std::cout << roots[i] << ", ";
-                            }
+                    /* expression returned multiple values */
+                    std::cout << " = ";
+                    if (roots.size() <= 31)
+                        /* print all results if <= 31 values */
+                        for (auto r : roots) {
+                            std::cout << r << ", ";
                         }
-                        putchar('\n');
-                        std::cout << "found " << roots.size() << " results \n";
+                    else { /* print 1st 20 and last 10 results */
+                        for (int i = 0; i < 20; i++) {
+                            std::cout << roots[i] << ", ";
+                        }
+                        std::cout << "\n ... \n";
+                        for (size_t i = roots.size() - 10; i < roots.size(); i++) {
+                            std::cout << roots[i] << ", ";
+                        }
                     }
-                    if (asgCt != 0)
-                    printvars(""); /* print variables names & values */
+                    putchar('\n');
+                    std::cout << "found " << roots.size() << " results \n";
                 }
+                if (asgCt != 0)
+                    printvars(""); /* print variables names & values */
             }
 
             auto end = clock();   // measure amount of time used
@@ -4205,7 +4330,13 @@ int main(int argc, char *argv[]) {
 
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
-
+        if (lang)
+            std::cout << "¡Adiós!";
+        else
+            std::cout << "Goodbye \n";
+        if (!VSrun)
+            system("PAUSE");  /* "press any key to continue ..." (unless program 
+                             started from Visual Studio) */
         return EXIT_SUCCESS;  // EXIT command entered
     }
 

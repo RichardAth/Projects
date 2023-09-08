@@ -447,8 +447,7 @@ When a CTRL+C interrupt occurs, Win32 operating systems generate a new thread to
 specifically handle that interrupt. This can cause a single-thread application 
 to become multithreaded and cause unexpected behavior. */
 void SigintHandler(int sig) {
-	breakSignal = true;     /* Main program can check this. Allows it to minimise
-							strange behaviour before it terminates */
+
 	/* use a message box so as not to mess up any output from main program which 
 	is still running. */
 	int r = MessageBoxA(handConsole, "Press YES to terminate program, NO to continue", 
@@ -463,6 +462,8 @@ void SigintHandler(int sig) {
 		/* re-register signal handler */
 		signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
 		signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+		breakSignal = true;     /* Main program can check this. Allows it to minimise
+						strange behaviour before it terminates */
 		return;  /* main program continues, but cannot get any more input from stdin */
 	}
 
@@ -937,7 +938,7 @@ void testerrors(void) {
 		}
 	case 5: /* new operator fault */ {
 			// Cause memory allocation error
-			const int BIG_NUMBER = 0x7fffffff;  /* try to allocate 1 terabyte*/
+			const int BIG_NUMBER = 0x3fffffff;  /* try to allocate 1 terabyte*/
 			size_t *pi = new size_t[BIG_NUMBER];
 			delete[]pi;
 			break;

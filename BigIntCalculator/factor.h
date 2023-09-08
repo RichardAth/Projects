@@ -62,7 +62,7 @@ struct counters {
 class zFactors {
 public:
 	Znum Factor;
-	int exponent;
+	int exponent=0;
 	int upperBound=0;    /* used during trial division to show how far we've got. 
 						-1 indicats that Factor is prime */
 	/* define all comparison operators */
@@ -508,6 +508,7 @@ Repeated factors: No or Yes
 
 std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
+std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
 
 //extern int ElipCurvNo;            // Elliptic Curve Number
 

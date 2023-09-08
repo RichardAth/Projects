@@ -37,13 +37,13 @@
 #define post_eval_process               1039
 #define Factorise_control               1040
 #define group_size_int                  1041
-
 #define help_file_path_check            1042
 #define sel_language                    1043
 #define IDC_BUTTON2                     1045
 #define YAFU_out_path                   1045
-
 #define help_file_path_set              1047
+#define Check_Msieve_Log                1048
+#define Set_Msieve_Log                  1049
 
 // Next default values for new objects
 // 
@@ -51,7 +51,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        114
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1048
+#define _APS_NEXT_CONTROL_VALUE         1050
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

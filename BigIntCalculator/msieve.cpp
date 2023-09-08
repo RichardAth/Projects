@@ -111,7 +111,7 @@ std::string MsievePath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Project
 "bin\\x64\\Debug";
 #endif
 std::string MsieveProg = "msieve.exe";
-static std::string logPath = "C:\\users\\admin99\\msieve.log ";
+std::string MsieveLogPath = "C:\\users\\admin99\\msieve.log ";
 static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 digits
 
 
@@ -136,50 +136,52 @@ static void delfile(const char * FileName)
 
 
 /* process MSIEVE commands */
-void msieveParam(const std::string &command) {
-	std::string param = command.substr(6);  /* remove "MSIEVE */
-	while (param[0] == ' ')
-		param.erase(0, 1);              /* remove leading space(s) */
-
-	if (param == "ON") {
+void msieveParam(const std::vector<std::string>& p) {
+	if (p.size() < 2) {
+		/* no parameters specified*/
+		std::cout << "invalid Msieve command (use ON.OFF, PATH, LOG, E ON/OFF or N ON/OFF \n";
+		return;
+	}
+	if (p[1] == "ON") {
 		msieve = true;
 		yafu = false;
 		Pari = false;
 	}
-	else if (param == "OFF")
+	else if (p[1] == "OFF")
 		msieve = false;
 
-	else if (param.substr(0,4) == "PATH") {
-		param.erase(0, 4);  // get rid of "PATH"
-		while (param[0] == ' ')
-			param.erase(0, 1);              /* remove leading space(s) */
-		if (param != "SET") {
-			std::cout << "path = " << MsievePath << '\n';
-		}
-		else {
+	else if (p[1] == "PATH") {
+		std::cout << "path = " << MsievePath << '\n';
+		if (p.size() >= 3 && p[2] =="SET") {
 			if (changepathPP(MsievePath, MsieveProg))
 				writeIni();  // rewrite .ini file
 		}
 		fileStatus(MsievePath + '\\' + MsieveProg);
 	}
 
-	else if (param == "LOG") {
-		std::cout << "log file = " << logPath << '\n';
-		/* todo; allow command to change log file name */
+	else if (p[1] == "LOG") {
+		std::cout << "log file = " << MsieveLogPath << '\n';
+		if (p.size() >= 3 && p[2] == "SET") {
+			if (changepath2(MsieveLogPath))
+				writeIni();  // rewrite .ini file
+		}
+		fileStatus(MsieveLogPath);
 	}
-	else if (param == "E ON")
-		eopt = true;         // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
-	else if (param == "E OFF")
-		eopt = false;
-	else if (param == "N ON")   // set -n option in Msieve: use the number field sieve 
-		nopt = true;            // (80+ digits only; performs all NFS tasks in order)
-	else if (param == "N OFF")
-		nopt = false;
+	else if (p[1] == "E") {
+		if (p.size() >= 3 && p[2] == "ON")
+			eopt = true;         // set -e option in Msieve: perform 'deep' ECM, seek factors > 15 digits
+		else if (p.size() >= 3 && p[2] == "OFF")
+			eopt = false;
+	}
+	else if (p[1] == "N") {  // set -n option in Msieve: use the number field sieve 
+		if (p.size() >= 3 && p[2] == "ON")
+			nopt = true;            // (80+ digits only; performs all NFS tasks in order)
+		else if (p.size() >= 3 && p[2] == "OFF")
+			nopt = false;
+	}
 	else {
-		std::cout << "invalid Msieve command (use PATH, LOG,  E ON/OFF or N ON/OFF \n";
+		std::cout << "invalid Msieve command (use ON, OFF, PATH, LOG, E ON/OFF or N ON/OFF \n";
 	}
-
-	/* to be completed */
 }
 
 
@@ -206,7 +208,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 		command += options;       // add -e option
 	if (nopt)
 		command += " -n ";
-	command += " -l " + logPath + " ";
+	command += " -l " + MsieveLogPath + " ";  /* specify name of log file */
 
 	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 	numStr.resize(numdigits + 5);             // resize buffer
@@ -217,7 +219,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
 	}
 
-	int rc = remove(logPath.data());
+	int rc = remove(MsieveLogPath.data());
 	if (rc != 0 && errno != ENOENT) {
 		perror("could not remove old Mseive log file ");
 	}
@@ -236,7 +238,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 		return false;
 	}
 
-	std::ifstream logStr(logPath, std::ios::in);  // open log file for input
+	std::ifstream logStr(MsieveLogPath, std::ios::in);  // open log file for input
 	if (!logStr.is_open()) {
 		std::cout << "cannot open msieve log file \n";
 		return false;

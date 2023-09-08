@@ -138,14 +138,14 @@ bool changepathPP(std::string &path, std::string &prog) {
 }
 
 /* replace path, return true if change actually made, otherwise return false */
-static bool changepath2(std::string& path) {
+bool changepath2(std::string& path) {
 	bool rewrite = false;
 	char* newpathC;
 	std::string newpath;
 	std::string newprog;
 	std::string::size_type n;
 
-	newpathC = getFileName("Text Files\0*.txt\0\0", handConsole, false);
+	newpathC = getFileName("Text Files\0*.TXT\0log files\0*.LOG\0All\0*.*\0", handConsole, false);
 	if (newpathC == NULL) {
 		std::cout << "command cancelled \n";
 		return false;
@@ -191,7 +191,7 @@ bool fileStatus(const std::string &fileName) {
 }
 
 /* check or replace yafu.ini file */
-static void inifile(std::string &param) {
+static void inifile(const std::string &param) {
 	std::string yafuini = "yafu.ini";
 	std::string iniFname;
 
@@ -304,21 +304,21 @@ static void inifile(std::string &param) {
 }
 
 /*process YAFU commands */ 
-void yafuParam(const std::string &command) {
+void yafuParam(const std::vector<std::string>& p) {
 	const std::vector<std::string> paramList = {
 		"ON", "OFF", "PATH", "OUT", "PLAN", "TIDY", "INI"
 	};
-	std::string param = command.substr(4);  /* remove "YAFU" */
 	size_t ix = 0;
 	std::string curPath(MAX_PATH, 0);  /* path to current directory*/
 
-	while (param[0] == ' ')
-		param.erase(0, 1);              /* remove leading space(s) */
+	if(p.size() < 2) {
+		std::cout << "invalid YAFU command (use ON, OFF, PATH, OUT, PLAN, TIDY or INI \n";
+		return;
+	}
 
 	/* match parameter value to a list entry */
 	for (ix = 0; ix < paramList.size(); ix++) {
-		if (param.size() < paramList[ix].size()) continue;
-		if (paramList[ix].compare(param.substr(0, paramList[ix].size())) == 0)
+		if (paramList[ix] == p[1]) 
 			break;
 	}
 
@@ -334,32 +334,20 @@ void yafuParam(const std::string &command) {
 			break;
 		}
 	case 2: /* YAFU PATH */ { 
-		param.erase(0, 4);  // get rid of "PATH"
-		while (param[0] == ' ')
-			param.erase(0, 1);              /* remove leading space(s) */
-
-		if (param   == "SET") {
+		std::cout << "path = " << YafuPath << '\n';
+		if (p.size() >= 3 && p[2] == "SET") {
 			if (changepathPP(YafuPath, yafuprog))
 				writeIni();  // rewrite .ini file
 		}
-		else {
-			std::cout << "path = " << YafuPath << '\n';
-		}
-
 		fileStatus(YafuPath + '\\' + yafuprog);
 		break;
 
 	}
 	case 3: /* YAFU OUT  */ {  
-		param.erase(0, 3);  // get rid of "OUT"
-		while (param[0] == ' ')
-			param.erase(0, 1);              /* remove leading space(s) */
-		if (param == "SET") {
+		std::cout << "YAFU output file = " << outPath << '\n';
+		if (p.size() >=3 && p[2] == "SET") {
 			if (changepath2(outPath))
 				writeIni();  // rewrite .ini file
-		}
-		else {
-			std::cout << "YAFU output file = " << outPath << '\n';
 		}
 		fileStatus(outPath);
 		break;
@@ -367,17 +355,16 @@ void yafuParam(const std::string &command) {
 	case 4: /* YAFU PLAN */ { 
 		// plan name can be NONE, NOECM, LIGHT, NORMAL, DEEP
 		// CUSTOM is not supported, NORMAL is default
-		param.erase(0, 4);  // get rid of "PLAN"
-		while (param[0] == ' ')
-			param.erase(0, 1);              /* remove leading space(s) */
-		if (param == "NONE")         pvalue = 1;
-		else if (param == "NOECM")   pvalue = 2;
-		else if (param == "LIGHT")   pvalue = 3;
-		else if (param == "NORMAL")  pvalue = 4;
-		else if (param == "DEEP")    pvalue = 5;
-		else std::cout
-			<< "YAFU PLAN value invalid; use NONE, NOECM, LIGHT, NORMAL, or DEEP\n";
-		break;
+		if (p.size() >= 3) {
+			if (p[2] == "NONE")         pvalue = 1;
+			else if (p[2] == "NOECM")   pvalue = 2;
+			else if (p[2] == "LIGHT")   pvalue = 3;
+			else if (p[2] == "NORMAL")  pvalue = 4;
+			else if (p[2] == "DEEP")    pvalue = 5;
+			else std::cout
+				<< "YAFU PLAN value invalid; use NONE, NOECM, LIGHT, NORMAL, or DEEP\n";
+			break;
+		}
 	}
 	case 5: /* YAFU TIDY */ {
 		if (useOldYafu) {
@@ -410,16 +397,13 @@ void yafuParam(const std::string &command) {
 			delfile(curPath, "nfs.dat.mat");
 			delfile(curPath, "YAFU_get_poly_score.out");
 		}
-		
-
 		break;
 	}
 	case 6: /* YAFU INI  */ {
-		param.erase(0, 3);  // get rid of "INI"
-		while (param[0] == ' ')
-			param.erase(0, 1);              /* remove leading space(s) */
-
-		inifile(param);  // process "YAFU INI .... " command
+		if (p.size() >= 3)
+			inifile(p[2]);  // process "YAFU INI .... " command
+		else
+			inifile("");
 		break;
 	}
 

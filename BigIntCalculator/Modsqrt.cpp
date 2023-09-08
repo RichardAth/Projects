@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 
+/* forward declaration */
 static std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 
 // calculate x^n. Returns a Big Integer so should be no overflow problem.
@@ -65,7 +66,7 @@ long long extract(const Znum& num, const Znum p) {
 }
 
 /* print roots only if verbose > 1 */
-void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
+static void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
 	if (verbose > 1) {
 		std::cout << "modsqrt(" << x << ", " << m << ") = ";
 		if (!roots.empty())
@@ -79,7 +80,7 @@ void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
 
 /* Find modular square root of c, modulus = prime^lambda.
 c is an even power of 2, prime = 2, c < 2^lambda */
-std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) {
+static std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) {
 	Znum increment, r1, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
@@ -107,7 +108,7 @@ std::vector<Znum>ModSqrtp2x(const Znum& c, const Znum& prime, const int lambda) 
 
 /* Find modular square root of c, modulus = prime^lambda.
 special for prime =2, c is odd*/
-std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
+static std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 	Znum r1, r2, root, x, x2, gcdv, increment, sqrtc;
 	Znum mod = power(prime, lambda);
 	std::vector <Znum> roots;
@@ -156,7 +157,7 @@ std::vector<Znum>ModSqrtp2(const Znum& c, const Znum& prime, const int lambda) {
 
 /* Find modular square root of c, modulus = prime^lambda.
 c is a perfect square and an even power of of prime, prime > 2( */
-std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda) {
+static std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda) {
 	Znum mod = power(prime, lambda);
 	Znum r1, r2, sqrtc, increment;
 	std::vector <Znum> roots;
@@ -177,7 +178,7 @@ std::vector <Znum> ModSqrt2xs(const Znum& c, const Znum& prime, const int lambda
 
 /* Find modular square root of c, modulus = prime^lambda.
 c is not a multiple of prime, prime != 2 */
-std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda) {
+static std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda) {
 	std::vector <Znum> roots;
 	Znum r1, r2, root, x;
 	Znum mod = power(prime, lambda);
@@ -221,7 +222,7 @@ std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int lambda)
   and where prime=2 are all my own work. I have not seen descriptions that cover
   these cases let alone working code that does what this does ANYWHERE and,
   believe me, I looked. */
-std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int lambda) {
+static std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int lambda) {
 	Znum mod = power(prime, lambda);
 	Znum c, r1, r2, gcdv, sqrtgcd;
 	std::vector <Znum> roots;
@@ -286,7 +287,7 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
-std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
+static std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
 	Znum c, t, R, b;
@@ -554,19 +555,21 @@ void test9timerx(int type, int p2d, int p3d) {
 	PrintTimeUsed(elapsed, msg[type]);
  }
 
+/* do timed tests of modular square root. p contains the number size and number 
+   of tests parameters */
 void test9timer(const std::vector <std::string>& p) {
 	int p2d = -1, p3d = -1;  /* save p2 and p3 as binary values */
 
 	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */
-	if (p.size() >= 2) {
-		p2d = atoi(p[1].c_str());  /* convert to binary */
+	if (p.size() >= 4) {
+		p2d = atoi(p[3].c_str());  /* convert to binary */
 	}
 	if (p2d < 10) {
 		std::cout << "Use default 10 for number size in bits \n";
 		p2d = 10;
 	}
-	if (p.size() >= 3) 
-		p3d = atoi(p[2].c_str());  /* convert to binary */
+	if (p.size() >= 5) 
+		p3d = atoi(p[4].c_str());  /* convert to binary */
 	if (p3d < 5) {
 		std::cout << "Use default 5 for number of tests \n";
 		p3d = 5;
@@ -579,7 +582,9 @@ void test9timer(const std::vector <std::string>& p) {
 }
 
 /* calculate modular square roots using 2 different methods & compare results.
-   Return true if results match, otherwise false. */
+   Return true if results match, otherwise false. Any roots found are returned
+   in r2. If newb is 'true' use modular quadratic equation method to get roots,
+   otherwise use specialised modular root solver. */
 static bool test9once(long long a, long long m, std::vector <long long> &r2,
 	bool newb) {
 	std::vector <Znum> r3;
@@ -590,12 +595,12 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 
 	r2 = ModSqrtBF(a, m);  /* brute force method */
 	if (newb)
-		r3 = ModSqrtQE(az, mz);
+		r3 = ModSqrtQE(az, mz);   /* use quadratic modular equation solver */
 	else
 		r3 = ModSqrt(az, mz);  
 	if (r3.size() != r2.size())
 		error = true;
-	else {
+	else {  /* compare roots found using 2 different methods */
 		for (int i = 0; i < r2.size(); i++) {
 			if (r2[i] != r3[i])
 				error = true;
@@ -634,33 +639,46 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 	return true;
 }
 
-/* test modular square root */
-void doTests9(const std::string& porig) {
-	std::string params = porig;  /* copy parameters to a writeable string */
+/* test modular square root. command format is:
+TEST 9               (test modular square root for a= 0 to 2000, 
+                     modulus = 2 to 2000. Uses 2 different methods to get the
+					 roots and compares the results.)
+or
+TEST 9 new           (same test as above but using QMES to get roots)
+or
+TEST 9 time [x [y]]
+    where x is the size in bits of the numbers to test (default =10)
+	      y is the number of tests (default = 5).
+    Does timed tests of modular square root.
+ */
+void doTests9(const std::vector<std::string> & p) {
+
 	bool rv = true;
 	std::vector<long long> roots;
 	std::vector<Znum> rootsZ;
 	bool newb = false;
-	std::vector<std::string> p;   /* each parameter is stored separately in p */
-	const char seps[] = " ,\n";   /* separators between parameters; either , or space */
-	char* token = nullptr;
-	char* next = nullptr;
 
-	/* separate params text into an array of tokens, by finding the separator characters */
-	token = strtok_s(&params[0], seps, &next);
-	while (token != nullptr) {
-		p.push_back(token);
-		token = strtok_s(nullptr, seps, &next);
-	}
-
-	if (p.size() >= 1) {
-		int timec = _strnicmp(p[0].c_str(), "time", 4);
+	if (p.size() >= 3) {
+		if (toupper(p[2][0] == 'H')) {
+			std::cout << "test modular square root. command format is:\n"
+				"TEST 9        (test modular square root for a = 0 to 2000,"
+				" modulus = 2 to 2000)\n"
+				"or\n"
+				"TEST 9 new    (same test as above but using QMES to get roots)\n"
+				"or\n"
+				"TEST 9 time [x [y]]\n"
+				"where x is the size in bits of the numbers to test (default = 10)\n"
+				"      y is the number of tests (default = 5).\n"
+				"does timed tests of modular square root \n\n";
+			return;
+		}
+		int timec = _strnicmp(p[2].c_str(), "time", 4);
 		if (timec == 0) {
 			test9timer(p);   /* 1st parameter is "time", other parameters passed on */
 			return;
 		}
 
-		int cmp = _strnicmp(p[0].c_str(), "new", 3);
+		int cmp = _strnicmp(p[2].c_str(), "new", 3);
 		newb = (cmp == 0);  // true if 1st parameter = "new"
 	}
 	auto start = clock();	// used to measure execution time
