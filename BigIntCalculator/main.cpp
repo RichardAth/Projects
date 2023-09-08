@@ -3802,25 +3802,27 @@ static long long setdiag(void) {
 
 /* check for commands. return 2 for exit, 1 for other command, 0 if not a valid command.
 Note: command syntax checking is not rigorous; typing errors may produce unexpected 
-results. */
-static int processCmd(const std::string &command) {
+results. command is a copy of the input buffer, not a reference. This is intentional
+because strtok_s overwrites part of the buffer. */
+static int processCmd(std::string command) {
 
     /* list of commands (static for efficiency) */
     const static std::vector<std::string> list =
-    { "EXIT", "SALIDA", "HELP", "AYUDA", "E",     "S",  
-       "F",   "X",      "D",    "TEST",  "MSIEVE", "YAFU", 
-       "V",   "PRINT",  "LIST", "LOOP", "REPEAT",  "IF",
-       "PARI", "QMES",  "SET"};
+    { "EXIT",  "SALIDA", "HELP", "AYUDA", "E",      "S",  
+       "F",    "X",      "D",    "TEST",  "MSIEVE", "YAFU", 
+       "V",    "PRINT",  "LIST", "LOOP",  "REPEAT", "IF",
+       "PARI", "QMES",   "SET"};
 
     std::vector<std::string> p;   /* each parameter is stored separately in an element of p */
     int p1 = INT_MIN;             /* if 1st parameter is numeric, store its value here */
     const char seps[] = ", \n";   /* separators between parameters; either , or space */
     char* token = nullptr;
     char* next = nullptr;         /* used by strtok_s */
-    std::string ccpy = command;   /* make writeable copy */
+
+    if (command.empty()) return 0;  /* buffer is empty; not a command */
 
     /* separate params text into an array of tokens, by finding the separator characters */
-    token = strtok_s(&ccpy[0], seps, &next);
+    token = strtok_s(&command[0], seps, &next);
     while (token != nullptr) {
         p.push_back(token);
         token = strtok_s(nullptr, seps, &next);
@@ -4176,7 +4178,7 @@ Initial & trailing spaces are removed. Letters are converted to upper case.
 ctrl-c or ctrl-break will force the function to return, with or without input, 
 but only after a 5 sec delay.*/
 static void myGetline(std::string &expr) {
-retry:
+
     getline(std::cin, expr);    // expression may include spaces
     if (std::cin.fail() || std::cin.bad()) {
         expr.erase();
@@ -4191,8 +4193,7 @@ retry:
     removeInitTrail(expr);       // remove initial & trailing spaces
 
     if (expr.empty()) {
-        Sleep(250);
-        goto retry;          /* input is zero-length; go back*/
+        return;
     }
 
     /* check for continuation character. If found get continuation line(s) */
