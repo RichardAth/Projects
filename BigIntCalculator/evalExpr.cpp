@@ -80,6 +80,7 @@ enum class opCode {
 /* functions */
     fn_gcd      = 100,
     fn_lcm,
+    fn_abs,
     fn_modpow,
     fn_modinv,
     fn_totient,
@@ -137,6 +138,7 @@ struct  functions {
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operator. 
+ Function names must also not conflict with commands. 
  Longer names must come before short ones that start with the same letters to 
  avoid mismatches */
 const static struct functions functionList[]{
@@ -146,6 +148,7 @@ const static struct functions functionList[]{
     "CARMICHAEL",1,  opCode::fn_carmichael,
     "SUMDIVS",   1,  opCode::fn_sumdivs,
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
+    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
     "SQRT",      1,  opCode::fn_sqrt,
     "NUMDIGITS", 2,  opCode::fn_numdigits,
     "NUMDIVS",   1,  opCode::fn_numdivs,
@@ -165,10 +168,13 @@ const static struct functions functionList[]{
     "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
     "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
     "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
+    "ABS",       1,          opCode::fn_abs,    /* absolute value */
     "GF",        1,  opCode::fn_gf,            /* Gauss factorial*/
     "F",         1,  opCode::fn_fib,			// fibonacci
     "LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
     "LE",		 2,  opCode::fn_legendre,
+    "JA",		 2,  opCode::fn_jacobi,
+    "KR",		 2,  opCode::fn_kronecker,
     "L",         1,  opCode::fn_luc,			// Lucas Number
     "PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
     "P",         1,  opCode::fn_part,			// number of partitions
@@ -180,14 +186,12 @@ const static struct functions functionList[]{
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
                                             // calculated using hurwitz class number
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "JA",		 2,  opCode::fn_jacobi,
-    "KR",		 2,  opCode::fn_kronecker,
     "APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
     "ISPOW",     1,  opCode::fn_ispow,
     "HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
     "CLASSNO",   1,  opCode::fn_classno,    // class number
     "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+
 };
 
 /* list of operators.  */
@@ -275,7 +279,9 @@ static Znum ComputeTotient(const Znum &n) {
     else return 0;
 }
 
-/* Calculate Carmichael Function AKA reduced totient */
+/* Calculate Carmichael Function AKA reduced totient.
+see https://en.wikipedia.org/wiki/Carmichael_function, 
+alse https://oeis.org/A002322 */
 static Znum ComputeCarmichael(const Znum& n) {
     fList factorlist;
 
@@ -994,7 +1000,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         mpz_xor(ZT(result), ZT(p[0]), ZT(p[1]));
         return retCode::EXPR_OK;
     }
-    case opCode::fact: {
+    case opCode::fact: /* multi-factorial */ {
         /* hard-coded limits allow size limit check before calculating the factorial */
         int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
              38536, 42873, 47172 };
@@ -1016,7 +1022,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         return retCode::EXPR_OK;
     }
-    case opCode::prim: {
+    case opCode::prim: /* primorial */ {
         if (p[0] > 46340)
             return retCode::INTERM_TOO_HIGH;
         if (p[0] < 0)
@@ -1026,7 +1032,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         mpz_primorial_ui(ZT(result), temp);  // get primorial
         return retCode::EXPR_OK;
     }
-
+    case opCode::fn_abs: /* absolute value */ {
+        result = abs(p[0]);
+        return retCode::EXPR_OK;
+    }
     case opCode::fn_gcd: /* GCD */ {
         //mpz_gcd(ZT(result), ZT(p[0]), ZT(p[1]));
         result = p[0];
@@ -1220,6 +1229,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     case opCode::fn_hurwitz: {
         if (mpz_sizeinbase(ZT(p[0]), 10) >35)
             return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
+        if (p[0] < 0)
+            return retCode::INVALID_PARAM;
         result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
         break;
     }

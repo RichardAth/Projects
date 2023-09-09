@@ -327,7 +327,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
 }
 
 /* convert mpz_t to GEN */
-static GEN MPtoGEN(const mpz_t num) {
+static GEN MPtoGEN(const mpz_t &num) {
     ptrdiff_t numlimbs = mpz_size(num);
     GEN rv;
     if (numlimbs == 0) {
@@ -443,17 +443,24 @@ static void TrealToMP(const GEN x, mpf_t value) {
 }
 
 /* get Hurwitz class number * 12. The Hurwitz class number is not always an integer
-but h(n) * 12 always is. */
+but h(n) * 12 always is. 
+see https://oeis.org/A259825 */
 Znum Hclassno12(const Znum &n) {
 
     double rvd;
     Znum num, denom;
+    if (n == 0)
+        return -1;   /* correct, but parilib does not work? */
 
     specinit();  /* initialise as required*/
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     GEN retval = hclassno_ref(ng);
+    if (verbose > 1) {
+        printf_s("Hclassno: n = %s \n", GENtostr_ref(ng));
+        printf_s("retval = %s\n", GENtostr_ref(retval));
+    }
     GENtoMP(retval, ZT(num), ZT(denom), rvd);
 
     ptrdiff_t diff = av - *avma_ref;
@@ -483,7 +490,8 @@ Znum classno(const Znum& n, int flag) {
 }
 
 /* ramanujantau(n): compute the value of Ramanujan's tau function at n, assuming the GRH.
-Algorithm in O(n^{1/2+eps}). */
+Algorithm in O(n^{1/2+eps}). 
+see https://oeis.org/A000594 and https://en.wikipedia.org/wiki/Ramanujan_tau_function*/
 Znum tau(const Znum& n) {
     Znum num;
 
@@ -492,6 +500,12 @@ Znum tau(const Znum& n) {
 
     GEN ng = MPtoGEN(ZT(n));
     GEN retval = tau_ref(ng);
+    if (verbose > 1) {
+        printf_s("Tau: n = %s \n", GENtostr_ref(ng));
+        printf_s("retval = %s\n", GENtostr_ref(retval));
+        /* if compiled in debug mode retval is always zero.
+         works OK if compiled in release mode. WTF?? */
+    }
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)

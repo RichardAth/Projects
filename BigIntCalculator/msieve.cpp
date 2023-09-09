@@ -139,7 +139,7 @@ static void delfile(const char * FileName)
 void msieveParam(const std::vector<std::string>& p) {
 	if (p.size() < 2) {
 		/* no parameters specified*/
-		std::cout << "invalid Msieve command (use ON.OFF, PATH, LOG, E ON/OFF or N ON/OFF \n";
+		std::cout << "invalid Msieve command (use ON, OFF, PATH, LOG, E ON/OFF or N ON/OFF \n";
 		return;
 	}
 	if (p[1] == "ON") {

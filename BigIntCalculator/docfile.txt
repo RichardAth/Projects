@@ -69,6 +69,7 @@ P(n)            : Unrestricted Partition Number (number of decompositions of n
 Pi(n)           : Number of primes <= n
 Gcd(m, n ...)   : Greatest common divisor of m, n ...
 Lcm(m, n ...)   : Least common multiple of m, n ...
+Abs(n)          : absolute value of n
 Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
 Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 

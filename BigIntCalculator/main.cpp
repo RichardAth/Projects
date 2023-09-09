@@ -1094,6 +1094,12 @@ static void doTests(void) {
         "hclass(999)",                   384,   /* hurwitz class number*/
         "classno(1000001)",               94,   /* class number */
         "gf(21)",                47297536000,   /* gauss factorial */
+        "carmichael(497)",             210,     /* carmichael function */
+        "numdivs(116)",                  6,     /* number of divisors*/
+        "sumdivs(116)",                210,
+        "invtot(132)",                 161,
+        "popcnt(123456789)",            16,     /* number of 1-bits */
+        "tau(9)",                  -113643,  /* Ramanujan's tau function */
     };
 
     results.clear();
