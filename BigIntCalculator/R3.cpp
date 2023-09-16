@@ -478,6 +478,9 @@ static unsigned __int64 R2(const unsigned __int64 n) {
             b *= (Rfactors.factorlist[i][1] + 1);
         }
     }
+    if (verbose >= 1) {
+        std::cout << "R2(" << n << ") = " << 4 * b << '\n';
+    }
     return 4 * b;
 }
 

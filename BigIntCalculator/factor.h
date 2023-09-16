@@ -129,7 +129,21 @@ public:
 			return 0;
 		for (auto i : this->f) {
 			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
-			term = term * (i.Factor - 1);	                        // (p^(e-1)-1)*(p-1)
+			term = term * (i.Factor - 1);	                        // p^(e-1)*(p-1)
+			result *= term;
+		}
+		return result;
+	}
+
+	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and e=exponent.*/
+	Znum dedekind() const {
+		// this only works if factorisation is complete!
+		Znum result = 1, term;
+		if (this->f.empty())
+			return 0;
+		for (auto i : this->f) {
+			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+			term = term * (i.Factor + 1);	                     // p^(e-1)*(p+1)
 			result *= term;
 		}
 		return result;

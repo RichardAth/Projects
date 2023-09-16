@@ -1324,11 +1324,12 @@ static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 }
 
 /* test factorisation using pseudo-random numbers of a specified size.
-Command format is TEST2 [p1[,p2[,p3]]] where 
+Command format is TEST 2 [p1[,p2[,p3]]] where 
 p1 is the number of tests, 
 p2 is the size of the numbers to be factored in bits,
-if p3  NE 0 the number to be factored consists of 2 approximately same-sized prime
-factors, otherwise it is a random number that can contain any number of factors. 
+if p3  NE 0 the number(s) to be factored consist(s) of 2 approximately same-sized 
+prime factors, if p3 = 0 it(they) will be (a) random number(s) that can contain 
+any number of factors. 
 if p3 <= 1 use fixed random seed value
 if p3 = 2 use truly random seed value
 if p3 > 2  use p3 as the seed value */

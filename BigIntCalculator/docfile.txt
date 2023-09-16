@@ -78,6 +78,7 @@ Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer
                   m such that a^m ≡ 1   (mod n) for every integer a between 1 
                   and n that is coprime to n. Also known as the reduced totient
                   function.
+Dedekind(n)     : Dedekind psi function.
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 
@@ -252,17 +253,20 @@ TEST    1st tests most of the calculator functions, then factorises a series of
         as normal factorisation. This test is good for regression testing.
 
 TEST 2  test factorisation using pseudo-random numbers of a specified size.
-        Command format is TEST 2 [num1[,num2[,num3]]] where num1 is the number of 
-        tests,  num2 is the size of the numbers to be factored in bits. If num3  
-        NE 0 the number to be factored consists of 2 approximately same-sized 
-        'strong' prime factors, otherwise it is a random number that can contain 
-        any number of factors. If num3 = 1 a fixed 'seed' for the random number
-        generator is used. If num3 = 2 a truly random seed value is used. If 
-        num3 > 2 the value of num3 is used as the 'seed' value. 
-		
-        If the value for num2 is the same and num3 ≠ 2 in two TEST2 
-        commands the same sequence of numbers to be factored is generated. This 
-        is useful for benchmarking factorisation.
+        Command format is TEST 2 [num1[,num2[,num3]]] where 
+        num1 is the number of tests (default value is 2),  
+        num2 is the size of the numbers to be factored in bits (default = 48 bits). 
+        If num3 = 0 the numbers to be factored are random numbers that can
+        contain any number of factors. (0 is the default value)
+        If num3 > 0 the numbers to be factored consist of 2 approximately same- 
+        sized 'strong' prime factors,   
+        If num3 = 0 or 1 a fixed 'seed' for the random number generator is used. 
+        If num3 = 2 a truly random seed value is used. 
+        If num3 > 2 the value of num3 is used as the 'seed' value. 
+
+        If the value for num2 is the same and num3 ≠ 2 in two TEST 2 commands
+         the same sequence of numbers to be factored is generated. each time.  
+        This is useful for benchmarking factorisation.
 
 TEST 3  Tests for the built-in bigintegers. These are based on DA's biginteger 
         functions but made into a C++ class with arithmetic , shift, compare 
@@ -325,7 +329,7 @@ TEST 7  tests the Lucas-Lehmer function. Format is TEST 7 [num]. All primes <= n
 TEST 8  test error handling
 TEST 9  test modular square root (use "TEST 9 H" for more info).
 TEST 10 [p1[,p2]]    test quadratic modular equation solver, where p1 is the 
-        number of tests and p2 is the number size in bits
+        number of tests (default = 20) and p2 is the number size in bits.
 
 Test example:
 
@@ -566,8 +570,8 @@ The IF command is processed as follows:
 1.  The expression in brackets after IF is evaluated. 
 2.  If the value is not zero the action specified after THEN is performed, 
     otherwise the ELSE action is taken. The action can be REPEAT  which goes 
-	back to the start of the loop, or STOP which terminates the loop, or a series 
-	of expressions separated by commas.
+    back to the start of the loop, or STOP which terminates the loop, or a series 
+    of expressions separated by commas.
 3   If the value is zero any expressions following the ELSE are evaluated.
   
     Remember that assignment statements are also expressions, so mini-programs

@@ -85,6 +85,7 @@ enum class opCode {
     fn_modinv,
     fn_totient,
     fn_carmichael,
+    fn_dedekind,
     fn_numdivs,
     fn_sumdivs,
     fn_sumdigits,
@@ -146,6 +147,7 @@ const static struct functions functionList[]{
     "MODINV",    2,  opCode::fn_modinv,
     "TOTIENT",   1,  opCode::fn_totient,
     "CARMICHAEL",1,  opCode::fn_carmichael,
+    "DEDEKIND",  1,  opCode::fn_dedekind,
     "SUMDIVS",   1,  opCode::fn_sumdivs,
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
     "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
@@ -275,6 +277,21 @@ static Znum ComputeTotient(const Znum &n) {
     if (rv) {
         auto tot = factorlist.totient();
         return tot;
+    }
+    else return 0;
+}
+
+/*calculate Dedekind psi function for n as the product of p^(e-1)*(p+1)
+where p = prime factor and e = exponent. */
+static Znum ComputeDedekind(const Znum & n) {
+    fList factorlist;
+
+    if (n == 1)
+        return 1;
+    auto rv = factorise(n, factorlist, nullptr);
+    if (rv) {
+        auto psi = factorlist.dedekind();
+        return psi;
     }
     else return 0;
 }
@@ -692,6 +709,7 @@ static Znum  FactConcat(const Znum &mode, const Znum &num) {
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
 */
 static Znum R2(const Znum &num) {
+    Znum rvz;
     if (num < 0)
         return 0;
     if (num == 0)
@@ -704,7 +722,11 @@ static Znum R2(const Znum &num) {
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);
-    return factorlist.R2();
+    rvz = factorlist.R2();
+    if (verbose >= 1) {
+        std::cout << "R2(" << num << ") = " << rvz << '\n';
+    }
+    return rvz;
 }
 
 /* The number of representations of n as the sum of two squares ignoring order and signs*/
@@ -1080,6 +1102,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeTotient(p[0]);
         break;
     }
+    case opCode::fn_dedekind: {			// dedekind psi
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;;
+        result = ComputeDedekind(p[0]);
+        break;
+    }
+
     case opCode::fn_carmichael: {			// reduced totient
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
