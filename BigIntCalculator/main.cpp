@@ -2305,6 +2305,11 @@ static void helpfunc(const std::vector<std::string> &command)
     const unsigned char BOM[] = { 0xEF, 0xBB, 0xBF };   /* byte order marker for UTF-8 */
     bool UTF8 = false;          /* set true if UTF8 BOM found */
     std::string helptopic;
+    int lineCount = 0;
+
+    const char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+            "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
+            "PARI", "AYUDA" };
 
     if (command.size() >1) {
         helptopic = command[1];
@@ -2312,9 +2317,6 @@ static void helpfunc(const std::vector<std::string> &command)
     else
         helptopic.clear();
 
-    char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
-            "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
-            "PARI", "AYUDA"};
     if (lang == 0){     /* if English select one from multiple topics  */
         if (helptopic.empty()) {  
             helpdiag();  /* result saved in global hResp */
@@ -2342,7 +2344,7 @@ retry:
 
         while (std::toupper(expr[0]) != 'Y') {
             std::cout << "Do you want to search for the help file? (Y/N) \n";
-            getline(std::cin, expr);
+            std::getline(std::cin, expr);
             if (std::toupper(expr[0]) == 'N')
                 return;
         }
@@ -2406,10 +2408,22 @@ retry:
                 /* we get a match if the topic between [ and ] is contained 
                 anywhere in helptopic */
                 printtopic = true;   /* we have found the required topic*/
+            lineCount = 0;    /* reset line count */
         }
         else {  /* not a header line */
-            if (printtopic)
+            if (printtopic) {
                 wprintf_s(L"%S", str);  /* print only if within the required topic */
+                lineCount++;
+            }
+            if (lineCount > 26) {
+                std::wcout << L"** More (y/n) ? ";
+                std::getline(std::cin, expr);
+                expr[0] = toupper(expr[0]);
+                if (expr[0] != 'Y')
+                    break;
+                else
+                    lineCount = 0;
+            }
         }
     }
 
@@ -2498,7 +2512,7 @@ double cycles_per_second = 0.0;
 double ticks_per_second = 0.0;
 double cycles_per_tick = 0.0;
 
-unsigned long long measure_processor_speed(void)
+static unsigned long long measure_processor_speed(void)
 {
     unsigned long long cycles;
 
@@ -2653,7 +2667,7 @@ const char* szFeatures[] =
 
 
 /* return cpuid , cache size, etc  */
-int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, 
+static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extensions, 
     int do_print)
 {
     char CPUString[0x20];
@@ -4186,7 +4200,7 @@ ctrl-c or ctrl-break will force the function to return, with or without input,
 but only after a 5 sec delay.*/
 static void myGetline(std::string &expr) {
 
-    getline(std::cin, expr);    // expression may include spaces
+    std::getline(std::cin, expr);    // expression may include spaces
     if (std::cin.fail() || std::cin.bad()) {
         expr.erase();
         return;   /* error reading from stdin */
@@ -4207,7 +4221,7 @@ static void myGetline(std::string &expr) {
     while (expr.back() == '\\') {   /* ends with continuation character? */
         std::string cont;
         std::cout << (lang ? "continuar: " : "continue: ");
-        getline(std::cin, cont);   /* get continuation line */
+        std::getline(std::cin, cont);   /* get continuation line */
         if (std::cin.fail() || std::cin.bad()) {
             expr.erase();
             return;
