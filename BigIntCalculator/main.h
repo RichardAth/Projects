@@ -18,8 +18,15 @@ extern unsigned long long* primeList;
 extern unsigned int prime_list_count;
 extern unsigned long long int primeListMax;
 extern int verbose;
+extern long long lltTdivCnt;  /* count no of Mersenne numbers (partly) factored by
+                           trial division */
+extern long long lltCmpCnt;   /* count no of Mersenne numbers determined to be composite
+                           using Lucas-Lehmer test */
+extern long long lltPriCnt;   /* count no of Mersenne numbers determined to be prime
+                           using Lucas-Lehmer test */
 
 /* defined in various places: not in main.cpp */
+extern long long SFhitcount, SFmisscount;
 extern std::string YafuPath;
 extern std::string yafuprog;
 extern std::string outPath;
@@ -31,7 +38,9 @@ extern std::vector <Znum> roots;   /* used by functions that return multiple val
 extern bool msieve;
 extern bool yafu;
 extern bool Pari;
+extern bool hexPrFlag;
 
+const char* myTime(void);
 void delfile(const std::string& path, const char* FileName);
 bool isPerfectSquare(const Znum &num);
 void msieveParam(const std::vector<std::string>& p);   /*process Msieve commands */
@@ -50,6 +59,16 @@ bool changepathPP(std::string& path, std::string& prog);
 bool changepath2(std::string& path);
 DWORD getComCtlVer(void);
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
+/* evaluate 1 or more expressions, separated by commas */
+retCode ComputeMultiExpr(std::string expr, Znum result);
+
+/* remove initial & trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
+void removeInitTrail(std::string& msg);
+/* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
+void removeIntSpace(std::string& msg);
+
+void helpfunc(const std::vector<std::string>& command);
+
 
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
@@ -70,3 +89,5 @@ Znum Hclassno12(const Znum& n);
 Znum classno(const Znum& n, int flag);
 Znum tau(const Znum& n);
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
+void get_computer_info(char* CPUidstr, double MEAS_CPU_FREQUENCY);
+Znum llt(const Znum& p);
