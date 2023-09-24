@@ -467,7 +467,7 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
 	Znum Aux1, Aux2, Aux3, Aux4, Xaux, Zaux, Temp4;
 		
 	Aux1 = pValue - 1;  // Aux1 = p - 1 (p is odd, so Aux1 is even)
-	DivideBigNbrByMaxPowerOf2(ctr, Aux1);  // Aux1 /= 2^ctr
+	DivideZnumByMaxPowerOf2(ctr, Aux1);  // Aux1 /= 2^ctr
 	
 	for (countdown = 20; countdown > 0; countdown--) {
 		int i;
@@ -908,7 +908,7 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 
 	// After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
 	Tmp1 = -1 - Mult[0] * Mult[0];
-	roots = ModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+	roots = primeModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
 	assert(!roots.empty());
 	Mult[1] = roots[0];
 	/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/

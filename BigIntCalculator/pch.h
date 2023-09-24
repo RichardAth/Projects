@@ -32,11 +32,12 @@
 #include "boost/multiprecision/gmp.hpp" 
 typedef boost::multiprecision::mpz_int Znum;
 /* following 5 includes must be in this order; */
+#include "showtime.h"
 #include "diagnostic.h"
 #include "bignbr.h"
 #include "bigint.h"
-#include "factor.h"
 #include "main.h"
+#include "factor.h"
 
 #define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
 #include <intsafe.h>

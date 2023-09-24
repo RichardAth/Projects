@@ -163,6 +163,7 @@ static void MultiplyBigNbrByMinPowerOf4(int* pPower4, const limb* number,
     *pPower4 = power4;
 }
 
+/* used for sqRoot method in BigInteger class */
 void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
 {
     int index;

@@ -14,7 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include "showtime.h"
+
 #pragma warning(disable : 4996)
 
 extern int lang;

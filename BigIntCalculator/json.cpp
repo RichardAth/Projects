@@ -252,7 +252,7 @@ flag_line_comment = 1 << 13,
 flag_block_comment = 1 << 14,
 flag_num_got_decimal = 1 << 15;
 
-json_value* json_parse_ex(json_settings* settings,
+static json_value* json_parse_ex(json_settings* settings,
     const json_char* json,
     size_t length,
     char* error_buf)

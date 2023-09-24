@@ -17,7 +17,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
-#include "bignbr.h"
 
 typedef void (*pShowSolutionsModPrime)(int factorIndex, int expon,
 	const BigInteger* pIncrement);

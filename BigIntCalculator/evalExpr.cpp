@@ -16,13 +16,6 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <stack>
 
-// declarations for external function
-
-void biperm(int n, Znum &result);  
-Znum llt(const Znum &p);
-size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
-    int level, bool dump);
-
 /* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
@@ -51,6 +44,60 @@ struct
 
 /* list of operators, arranged in order of priority, order is not exactly the
 same as C or Python. Followed by list of function codes*/
+/* operators and functions include:
+symbol		meaning					operator Priority
+n!			factorial               0
+n!..!	    multi-factorial         0
+p#			primorial               0
+            (product of all primes
+            less or equal than p)
+
+-			unary minus				1    (right to left)
+NOT			bitwise operators		1    (right to left)
+** or ^		Exponentiate			2    (right to left)
+*			multiply				3
+/			divide					3
+%			modulus (remainder)		3
+C			binomial coefficient	4
++			add						5
+-			subtract				5
+n SHL b		shift n left b bits		6
+n SHR b		shift n right b bits	6
+
+comparison operators
+>			return zero for false 	7
+>=			and -1 for true			7
+<									7
+<=									7
+==									8
+!=			not equal				8
+
+AND			bitwise operators		9
+OR									11
+XOR									10
+
+
+________________ Functions include ___________________________________
+GCD(a, b, ....)
+MODPOW(m,n,r): finds m^n modulo r
+MODINV(m,n): inverse of m modulo n, only valid when gcd(m,n)=1
+SUMDIGITS(n,r): Sum of digits of n in base r.
+NUMDIGITS(n,r): Number of digits of n in base r
+REVDIGITS(n,r): finds the value obtained by writing backwards the digits of n in base r.
+ISPRIME(n)
+F(n):		Fibonacci
+L(n):		Lucas
+P(n):		Unrestricted Partition Number (number of decompositions of n
+            into sums of integers without regard to order)
+PI(n):		Number of primes <= n
+N(n):		Next probable prime after n
+B(n):		Previous probable prime before n
+Totient(n): finds the number of positive integers less than n which are relatively prime to n.
+NumDivs(n): Number of positive divisors of n either prime or composite.
+SumDivs(n): Sum of positive divisors of n either prime or composite.
+FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
+
+*/
 enum class opCode {
     fact        = 21,	// !   factorial 
     prim        = 23,	// #   primorial
@@ -80,10 +127,12 @@ enum class opCode {
 /* functions */
     fn_gcd      = 100,
     fn_lcm,
+    fn_abs,
     fn_modpow,
     fn_modinv,
     fn_totient,
     fn_carmichael,
+    fn_dedekind,
     fn_numdivs,
     fn_sumdivs,
     fn_sumdigits,
@@ -137,6 +186,7 @@ struct  functions {
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operator. 
+ Function names must also not conflict with commands. 
  Longer names must come before short ones that start with the same letters to 
  avoid mismatches */
 const static struct functions functionList[]{
@@ -144,8 +194,10 @@ const static struct functions functionList[]{
     "MODINV",    2,  opCode::fn_modinv,
     "TOTIENT",   1,  opCode::fn_totient,
     "CARMICHAEL",1,  opCode::fn_carmichael,
+    "DEDEKIND",  1,  opCode::fn_dedekind,
     "SUMDIVS",   1,  opCode::fn_sumdivs,
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
+    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
     "SQRT",      1,  opCode::fn_sqrt,
     "NUMDIGITS", 2,  opCode::fn_numdigits,
     "NUMDIVS",   1,  opCode::fn_numdivs,
@@ -165,10 +217,13 @@ const static struct functions functionList[]{
     "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
     "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
     "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
+    "ABS",       1,          opCode::fn_abs,    /* absolute value */
     "GF",        1,  opCode::fn_gf,            /* Gauss factorial*/
     "F",         1,  opCode::fn_fib,			// fibonacci
     "LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
     "LE",		 2,  opCode::fn_legendre,
+    "JA",		 2,  opCode::fn_jacobi,
+    "KR",		 2,  opCode::fn_kronecker,
     "L",         1,  opCode::fn_luc,			// Lucas Number
     "PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
     "P",         1,  opCode::fn_part,			// number of partitions
@@ -180,14 +235,12 @@ const static struct functions functionList[]{
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
                                             // calculated using hurwitz class number
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "JA",		 2,  opCode::fn_jacobi,
-    "KR",		 2,  opCode::fn_kronecker,
     "APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
     "ISPOW",     1,  opCode::fn_ispow,
     "HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
     "CLASSNO",   1,  opCode::fn_classno,    // class number
     "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+
 };
 
 /* list of operators.  */
@@ -244,7 +297,7 @@ const static struct oper_list operators[]{
 enum class types { Operator, func, number, comma, error, uservar, end };
 
 struct token {
-    types typecode;
+    types typecode; /* type of token (operator, function, number, etc) */
     int function;   /* contains function code index, when typecode = func 
                        contains operator index when typecode = Operator */
     opCode oper;    /* contains operator value, only when typecode = Operator or func */
@@ -256,7 +309,7 @@ struct token {
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
 
 // returns true if num is a perfect square.
-bool isPerfectSquare(const Znum &num) {
+static bool isPerfectSquare(const Znum &num) {
     return (mpz_perfect_square_p(ZT(num)) != 0); /* true if num is a perfect square */
 }
 
@@ -275,7 +328,24 @@ static Znum ComputeTotient(const Znum &n) {
     else return 0;
 }
 
-/* Calculate Carmichael Function AKA reduced totient */
+/*calculate Dedekind psi function for n as the product of p^(e-1)*(p+1)
+where p = prime factor and e = exponent. */
+static Znum ComputeDedekind(const Znum & n) {
+    fList factorlist;
+
+    if (n == 1)
+        return 1;
+    auto rv = factorise(n, factorlist, nullptr);
+    if (rv) {
+        auto psi = factorlist.dedekind();
+        return psi;
+    }
+    else return 0;
+}
+
+/* Calculate Carmichael Function AKA reduced totient.
+see https://en.wikipedia.org/wiki/Carmichael_function, 
+alse https://oeis.org/A002322 */
 static Znum ComputeCarmichael(const Znum& n) {
     fList factorlist;
 
@@ -686,6 +756,7 @@ static Znum  FactConcat(const Znum &mode, const Znum &num) {
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
 */
 static Znum R2(const Znum &num) {
+    Znum rvz;
     if (num < 0)
         return 0;
     if (num == 0)
@@ -698,7 +769,11 @@ static Znum R2(const Znum &num) {
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);
-    return factorlist.R2();
+    rvz = factorlist.R2();
+    if (verbose >= 1) {
+        std::cout << "R2(" << num << ") = " << rvz << '\n';
+    }
+    return rvz;
 }
 
 /* The number of representations of n as the sum of two squares ignoring order and signs*/
@@ -838,6 +913,183 @@ static Znum primRoot(const Znum &num) {
     }
 
     return -1;  /* should never reach this point */
+}
+
+// find leftmost 1 bit of number. Bits are numbered from 63 to 0
+// An intrinsic is used that gets the bit number directly.
+// If n = zero the value returned is 0, although bit 0 is zero
+static int leftBit(unsigned __int64 n) {
+    int bit = 0, nz = 1;
+
+    nz = _BitScanReverse64((DWORD*)&bit, n);  // this intrinsic should be expanded inline
+    // to use the fastest available machine instructions
+    if (nz) return (int)bit;
+    else return 0;   // n actually contains no 1-bits.
+
+}
+
+/* n = 2^p -1. Increment lltTdivCnt & return 0 if trial division finds a factor,
+   otherwise return 1 */
+static int lltTrialDiv(const Znum& n, const long long p) {
+    Znum tmp, ncopy, limit;
+    const int maxlimit = 1000000;  /* Limits the number of iterations for trial
+                                     division. Experiments indicate that increasing
+                                     this limit slows llt down overall. */
+    bool composite = false;
+
+    /* do trial division */
+    ncopy = n;
+
+    /*  n is a mersenne number calculated as (2^p)-1 and p is a prime number.
+        The factors of n must be in the form of q = 2ip+1, where q < n.
+        2ip+1 < n therefore
+        i < (n-1)/2p */
+        //limit = (sqrt(n) - 1) / (2 * p) + 1;   /* mpz_sqrt is probably faster */
+    Znum nm1 = n - 1;
+    mpz_sqrt(ZT(limit), ZT(nm1));
+    /* if we find all factors < sqrt(n) the residue is the one remaining factor */
+
+    if (limit > maxlimit) {
+        /* hit this limit if p >= 41 */
+        if (verbose > 1)
+            gmp_printf("limit reduced from %Zd to %lld\n", limit, maxlimit);
+        limit = maxlimit;   // larger limit would take too long (also encounter > 64-bit integers)
+    }
+
+    long long ll_limit = MulPrToLong(limit);
+    Znum rem;
+    for (long long i = 1; i <= ll_limit; i++) {
+        long long d = 2 * i * p + 1;
+        //if (n%d == 0)
+        long long r = mpz_tdiv_r_ui(ZT(rem), ZT(n), d);
+        if (r == 0) {
+            composite = true;
+            ncopy /= d;
+            if (verbose > 0)
+                printf_s("2*%lld*p+1 (= %lld) is a factor\n", i, d);
+            else {
+                lltTdivCnt++;  /* increment counter */
+                return 0;  /* not prime; return as soon as we know this */
+            }
+        }
+    }
+
+    if (composite) {
+        if (ncopy > 1 && verbose > 0)
+            gmp_printf("%Zd is a factor\n", ncopy);
+        lltTdivCnt++;   /* increment counter */
+        return 0; /* not prime */
+    }
+    else {
+        if (verbose > 0)
+            printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
+                myTime(), leftBit(2 * ll_limit * p + 1) + 1);
+        return 1;  /* no factor found */
+    }
+}
+
+/* get remainder when num is divided by m = 2^p-1. The obscure method used
+avoids division by 2^p-1, and divides by 2^p instead which is much faster,
+as it is equivalent to a right shift by p bits.
+For efficiency both p and m are given as parameter values although a cleaner
+interface would just supply p and let m be recalculated. */
+static void getrem(Znum& rem, const Znum& num, const long long p, const Znum& m) {
+    static Znum mod2p, q;  /* static for efficiency */
+    mod2p = num & m;     // mod2p = num%(2^p) = num -q*2^p
+    mpz_tdiv_q_2exp(ZT(q), ZT(num), p);  // q = num/(2^p)
+    rem = q + mod2p;                    //rem = num-q*(2^p-1)
+    while (rem >= m)
+        rem -= m;               // reduce rem if necessary until 0 <= rem < (2^p-1)
+#ifdef _DEBUG
+    /* demonstrate that the result is correct */
+    //Znum  temp;
+    //mpz_tdiv_r(ZT(temp), ZT(num), ZT(m));
+    //assert(temp == rem);
+#endif
+}
+
+/* perform Lucas-Lehmer test. Return 0 if 2^p-1 is composite, 1 if prime
+see https://en.wikipedia.org/wiki/Lucas%E2%80%93Lehmer_primality_test
+also https://oeis.org/A000043
+and https://www.mersenne.org/primes/
+the largest mersenne prime found so far is p=82589933
+p must not be too large, otherwise it would take centuries to get a result.
+This code is based on the llt function in YAFU, but has been modified to make
+it much faster.
+if verbose is > 0 some extra messages are output.
+If verbose is > 1 trial division is used to try to find factors */
+Znum llt(const Znum& p) {
+    int rv;
+    Znum n, tmp;
+    long long exp = MulPrToLong(p); /* exp = p */
+    clock_t t1, t2, t3;
+
+    /* 1st check if p is prime. */
+    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1 or 2*/
+    /* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
+    if (rv == 0) {
+        lltTdivCnt++;  // count this result as found by trial division
+        return 0;      // if p is composite, 2^p -1 is composite.
+    }
+    if (p <= 7) {
+        lltPriCnt++;  // count as found by Lucas-Lehmer test
+        return 1;    /* 1st mersenne number that is not prime is p=11 */
+    }
+
+    n = 1;
+    mpz_mul_2exp(ZT(n), ZT(n), exp);   // n = 2^p
+    n -= 1;                            // n = 2^p-1
+
+    /* experiment - is mpz-probab_prime_p faster overall than trial division?
+     Results indicate yes, definitely. Maybe because it is >99% effective in screening
+     out composites with just 2 tests so that llt is only neeeded as confirmation.
+     Update 11/7/2021; using neither trial division nor  mpz-probab_prime_p is fastest.
+     LL test is in fact faster than miller-rabin even when MR is limitied to 2 rounds. */
+    if (verbose > 1) {
+        t1 = clock();
+        /* use trial division if verbose > 1 because this can give some factors,
+        whereas the other tests only show whether n is prime or composite */
+        int rv = lltTrialDiv(n, exp);
+        t2 = clock();
+        printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
+        if (rv == 0) {
+            std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
+            return 0;   /* factor found -> n is composite */
+        }
+    }
+
+    /*do the ll test */
+    tmp = 4;
+    int nchars = 0;
+    if (verbose > 0)
+        t2 = clock();
+    for (long long i = 0; i < exp - 2; i++) {
+        tmp *= tmp;
+        tmp -= 2;
+        //tmp %= n;
+        getrem(tmp, tmp, exp, n);  /* get remainder of division by n */
+        if (verbose > 0 && (i > 0) && (i & 0x7ff) == 0) { /* 7ff = 2047, print msg every 2048 iterations */
+            for (int j = 0; j < nchars; j++)
+                printf_s("\b");    // erase previous output
+            nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
+                (double)i * 100.0 / (exp - 2));
+            fflush(stdout);
+        }
+    }
+    if (verbose > 0) {
+        t3 = clock();
+        printf_s(lang ? "\ntiempo usado por llt = %.2f sec \n" : "\ntime used by llt = %.2f sec \n",
+            (double)(t3 - t2) / CLOCKS_PER_SEC);
+    }
+
+    if (tmp == 0) {
+        lltPriCnt++;  /* increment counter */
+        return 1;             // prime
+    }
+    else {
+        lltCmpCnt++;   /* increment counter */
+        return 0;            // composite
+    }
 }
 
 
@@ -994,7 +1246,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         mpz_xor(ZT(result), ZT(p[0]), ZT(p[1]));
         return retCode::EXPR_OK;
     }
-    case opCode::fact: {
+    case opCode::fact: /* multi-factorial */ {
         /* hard-coded limits allow size limit check before calculating the factorial */
         int limits[] = { 0, 5983, 11079, 15923, 20617, 25204, 29710, 34150,
              38536, 42873, 47172 };
@@ -1016,7 +1268,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         return retCode::EXPR_OK;
     }
-    case opCode::prim: {
+    case opCode::prim: /* primorial */ {
         if (p[0] > 46340)
             return retCode::INTERM_TOO_HIGH;
         if (p[0] < 0)
@@ -1026,7 +1278,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         mpz_primorial_ui(ZT(result), temp);  // get primorial
         return retCode::EXPR_OK;
     }
-
+    case opCode::fn_abs: /* absolute value */ {
+        result = abs(p[0]);
+        return retCode::EXPR_OK;
+    }
     case opCode::fn_gcd: /* GCD */ {
         //mpz_gcd(ZT(result), ZT(p[0]), ZT(p[1]));
         result = p[0];
@@ -1071,6 +1326,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeTotient(p[0]);
         break;
     }
+    case opCode::fn_dedekind: {			// dedekind psi
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;;
+        result = ComputeDedekind(p[0]);
+        break;
+    }
+
     case opCode::fn_carmichael: {			// reduced totient
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
@@ -1220,6 +1482,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     case opCode::fn_hurwitz: {
         if (mpz_sizeinbase(ZT(p[0]), 10) >35)
             return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
+        if (p[0] < 0)
+            return retCode::INVALID_PARAM;
         result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
         break;
     }
@@ -1564,58 +1828,6 @@ static void printTokens(const std::vector <token> expr) {
 }
 
 /* evaluate expression and return value in Result
-operators and functions include:
-symbol		meaning					operator Priority
-n!			factorial               0
-n!..!	    multi-factorial         0
-p#			primorial               0
-            (product of all primes
-            less or equal than p)
-
--			unary minus				1    (right to left)
-NOT			bitwise operators		1    (right to left)
-** or ^		Exponentiate			2    (right to left)
-*			multiply				3
-/			divide					3
-%			modulus (remainder)		3
-C			binomial coefficient	4
-+			add						5
--			subtract				5
-n SHL b		shift n left b bits		6
-n SHR b		shift n right b bits	6
-
-comparison operators
->			return zero for false 	7
->=			and -1 for true			7
-<									7
-<=									7
-==									8
-!=			not equal				8
-
-AND			bitwise operators		9
-OR									11
-XOR									10
-
-
-________________Functions___________________________________
-GCD(a, b)
-MODPOW(m,n,r): finds m^n modulo r
-MODINV(m,n): inverse of m modulo n, only valid when gcd(m,n)=1
-SUMDIGITS(n,r): Sum of digits of n in base r.
-NUMDIGITS(n,r): Number of digits of n in base r
-REVDIGITS(n,r): finds the value obtained by writing backwards the digits of n in base r.
-ISPRIME(n)
-F(n):		Fibonacci
-L(n):		Lucas
-P(n):		Unrestricted Partition Number (number of decompositions of n
-            into sums of integers without regard to order)
-PI(n):		Number of primes <= n
-N(n):		Next probable prime after n
-B(n):		Previous probable prime before n
-Totient(n): finds the number of positive integers less than n which are relatively prime to n.
-NumDivs(n): Number of positive divisors of n either prime or composite.
-SumDivs(n): Sum of positive divisors of n either prime or composite.
-FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
 
 Hexadecimal numbers are preceded by 0X or 0x
 */
@@ -1831,7 +2043,7 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) 
 If the final operation is a function call that returns multiple values,
-multiValue is set to true, otherwise it is false*/
+multiValue is set to true, otherwise it is set to false*/
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
     Znum val;
@@ -1993,6 +2205,56 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
             //putchar('\n');
         }
     }
+
+    return rv;
+}
+
+/* evaluate 1 or more expressions, separated by commas */
+retCode ComputeMultiExpr(std::string expr, Znum result) {
+    std::string subExpr;
+    retCode rv = retCode::EXPR_OK;
+    size_t subStart = 0, subEnd;
+    int bc = 0;   /* bracket count */
+    int asgCt = 0;   /* number of assignment operators */
+    while (subStart < expr.size()) {
+        bc = 0;
+        /* find  separator or end of text*/
+        for (subEnd = subStart + 1; subEnd < expr.size(); subEnd++) {
+            if (expr[subEnd] == '(')
+                bc++;
+            if (expr[subEnd] == ')')
+                bc--;
+            if (bc == 0 && expr[subEnd] == ',')
+                break;
+        }
+        if (bc != 0)
+            return retCode::PAREN_MISMATCH;
+        subExpr = expr.substr(subStart, subEnd - subStart);
+        removeInitTrail(subExpr);  /* remove initial & trailing blanks */
+        removeIntSpace(subExpr);   /* remove spaces between digits */
+        rv = ComputeExpr(subExpr, result, asgCt);
+        if (rv != retCode::EXPR_OK) {
+            textError(rv);   // invalid expression; print error message
+            return rv;
+        }
+        else {
+            if (asgCt == 0)
+                std::cout << " = ";
+            else {
+                /* print names of variables assigned values */
+                for (size_t ix = 0; ix < subExpr.size() && asgCt > 0; ix++) {
+                    putchar(subExpr[ix]);
+                    if (subExpr[ix] == '=')
+                        asgCt--;
+                }
+            }
+
+            ShowLargeNumber(result, groupSize, true, hexPrFlag);   // print value of expression
+            std::cout << '\n';
+
+        }
+        subStart = subEnd + 1;  /* move past , */
+    } /* end of while loop */
 
     return rv;
 }

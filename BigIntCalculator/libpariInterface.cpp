@@ -63,6 +63,9 @@ enum {
 bool fRunTimeLinkSuccess = false;    /* true when links to parilib set up */
 bool stackinit = false;              /* true when pari stack is initialised */
 bool Pari = false;                   /* true if parilib used for factorisation */
+GEN pariVersion;
+GEN PariV1, PariV2, PariV3;
+Znum Pariv1, Pariv2, Pariv3;
 
 /* typedefs for access to libpari functions */
 typedef      GEN(__cdecl* G_GG)     (GEN x, GEN y);  /* used for all funtions of the form GEN f(GEN x, GEN y) */
@@ -93,6 +96,8 @@ typedef      GEN(__cdecl* qfbclassnox)(GEN x, int64_t flag);  /* GEN     qfbclas
 typedef ulong** avmaX;
 typedef     void(__cdecl* set_avmaX)(ulong av);  /* void   set_avma(ulong av);*/
 typedef      GEN(__cdecl* stirlingX)(int64_t n, int64_t m, int64_t flag); /* GEN stirling(int64_t n, int64_t m, int64_t flag)*/
+typedef      GEN(__cdecl* pari_versionX)(void);
+typedef      GEN(__cdecl* ramanujantauX)(GEN x, int64_t y);  /* for parilib versions 2.14 and higher */
 
 HINSTANCE hinstLib;
 
@@ -131,10 +136,15 @@ static qfbclassnox       qfbclassno_ref;
 static avmaX             avma_ref;
 static set_avmaX         set_avma_ref;
 static G_G               tau_ref;
+static ramanujantauX     tau2_ref;    /* for libpari version 2.14 and higher */
 static stirlingX         stirling_ref;
 static paristack_setsizeX paristack_setsize_ref;
 static G_G               factor_ref;
 static v_v               pari_close_ref;
+static pari_versionX     pari_version_ref;
+
+/* forward reference */
+static void InttoMP(const GEN x, mpz_t value);
 
 /* set up pointers to parilib functions, initialise pari stack.
 pari library functions are accessed in this way because linking statically to
@@ -194,9 +204,11 @@ static void specinit() {
             avma_ref = (avmaX)GetProcAddress(hinstLib, "avma");
             set_avma_ref = (set_avmaX)GetProcAddress(hinstLib, "set_avma");
             tau_ref = (G_G)GetProcAddress(hinstLib, "ramanujantau");
+            tau2_ref = (ramanujantauX)GetProcAddress(hinstLib, "ramanujantau");
             stirling_ref = (stirlingX)GetProcAddress(hinstLib, "stirling");
             factor_ref = (G_G)GetProcAddress(hinstLib, "factor");
             pari_close_ref = (v_v)GetProcAddress(hinstLib, "pari_close");
+            pari_version_ref = (pari_versionX)GetProcAddress(hinstLib, "pari_version");
 
             /* check that all function pointers were set up successfully */
             if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
@@ -218,14 +230,14 @@ static void specinit() {
                 nullptr == qfbclassno_ref || nullptr == avma_ref ||
                 nullptr == set_avma_ref || nullptr == tau_ref ||
                 nullptr == stirling_ref || nullptr == factor_ref ||
-                nullptr == pari_close_ref) {
+                nullptr == pari_close_ref || nullptr == pari_version_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
                 system("PAUSE");
                 abort();
             }
 
-            fRunTimeLinkSuccess = true;
+            fRunTimeLinkSuccess = true; /* flag to prevent code above being excuted again  */
         }
     }
 
@@ -237,7 +249,30 @@ static void specinit() {
             pari_print_version_ref();  /* print some info from libpari dll */
             printf("Pari stack initialised. avma = %p\n", *avma_ref);
         }
-    }
+        pariVersion = pari_version_ref(); /* returns the version number as a PARI object, 
+                      a t_VEC with three t_INT and one t_STR component. */
+
+        /* convert 3 parts of version number into 3 integers */
+        int64_t type = typ(pariVersion);
+        assert(type == t_VEC);
+        PariV1 = gel(pariVersion, 1);
+        type = typ(PariV1);
+        assert(type == t_INT);
+        InttoMP(PariV1, ZT(Pariv1));
+        PariV2 = gel(pariVersion, 2);
+        type = typ(PariV2);
+        assert(type == t_INT);
+        InttoMP(PariV2, ZT(Pariv2));
+        PariV3 = gel(pariVersion, 3);
+        type = typ(PariV3);
+        assert(type == t_INT);
+        InttoMP(PariV3, ZT(Pariv3));
+ 
+        if (verbose > 1) {
+            printf_s("Pari version info: %s %s %s \n",
+                GENtostr_ref(PariV1), GENtostr_ref(PariV2), GENtostr_ref(PariV3));
+        }
+   }
 }
 
 /* convert t_INT in x to mpz_t in value */
@@ -327,7 +362,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
 }
 
 /* convert mpz_t to GEN */
-static GEN MPtoGEN(const mpz_t num) {
+static GEN MPtoGEN(const mpz_t &num) {
     ptrdiff_t numlimbs = mpz_size(num);
     GEN rv;
     if (numlimbs == 0) {
@@ -443,17 +478,24 @@ static void TrealToMP(const GEN x, mpf_t value) {
 }
 
 /* get Hurwitz class number * 12. The Hurwitz class number is not always an integer
-but h(n) * 12 always is. */
+but h(n) * 12 always is. 
+see https://oeis.org/A259825 */
 Znum Hclassno12(const Znum &n) {
 
     double rvd;
     Znum num, denom;
+    if (n == 0)
+        return -1;   /* correct, but parilib does not work? */
 
     specinit();  /* initialise as required*/
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
     GEN retval = hclassno_ref(ng);
+    if (verbose > 1) {
+        printf_s("Hclassno: n = %s \n", GENtostr_ref(ng));
+        printf_s("retval = %s\n", GENtostr_ref(retval));
+    }
     GENtoMP(retval, ZT(num), ZT(denom), rvd);
 
     ptrdiff_t diff = av - *avma_ref;
@@ -483,7 +525,8 @@ Znum classno(const Znum& n, int flag) {
 }
 
 /* ramanujantau(n): compute the value of Ramanujan's tau function at n, assuming the GRH.
-Algorithm in O(n^{1/2+eps}). */
+Algorithm in O(n^{1/2+eps}). 
+see https://oeis.org/A000594 and https://en.wikipedia.org/wiki/Ramanujan_tau_function*/
 Znum tau(const Znum& n) {
     Znum num;
 
@@ -491,7 +534,19 @@ Znum tau(const Znum& n) {
     ulong* av = *avma_ref;
 
     GEN ng = MPtoGEN(ZT(n));
-    GEN retval = tau_ref(ng);
+    GEN retval;
+    if (Pariv2 < 14)
+        retval = tau_ref(ng);  /* works OK with older versions of libpari. 
+                                  Newer versions (2.14 and higher) require an 
+                                  int 2nd parameter, set to 12 to get the old 
+                                  functionality. */
+    else
+        retval = tau2_ref(ng, 12);
+    if (verbose > 1) {
+        printf_s("Tau: n = %s \n", GENtostr_ref(ng));
+        printf_s("retval = %s\n", GENtostr_ref(retval));
+  
+    }
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)

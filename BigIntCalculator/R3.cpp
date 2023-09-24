@@ -1,6 +1,6 @@
 ﻿#include "pch.h"
 #include <map>
-#include "showtime.h"
+
 #undef min  /* undefine min defined in windows.h */
 
 extern int verbose;
@@ -51,7 +51,7 @@ Znum power(const Znum &x, unsigned long long n) {
 }
 
 // calculate the product of all the factors in the list
-unsigned __int64 FactorMult(const factorsS f) {
+static unsigned __int64 FactorMult(const factorsS f) {
     unsigned __int64 prod = 1;
     HRESULT res;
     for (int i = 0; i < f.factorcount; i++) {
@@ -446,7 +446,7 @@ void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
 }
 
 /* calculate the number of ways an integer n can be expressed as the sum of 2
-squares x^2 and y^2.
+squares x^2 and y^2. This version id for numbers < 2^64.
 see http://mathworld.wolfram.com/SumofSquaresFunction.html,
 also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
@@ -477,6 +477,9 @@ static unsigned __int64 R2(const unsigned __int64 n) {
             /* p = 4k + 1 */
             b *= (Rfactors.factorlist[i][1] + 1);
         }
+    }
+    if (verbose >= 1) {
+        std::cout << "R2(" << n << ") = " << 4 * b << '\n';
     }
     return 4 * b;
 }

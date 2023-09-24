@@ -1,6 +1,5 @@
 #include "pch.h"
 
-#include "showtime.h"
 #include "json.h"
 
 /* forward declarations */
@@ -558,7 +557,7 @@ std::vector <Znum> factors;
 
 /* check whether the product of all the factors is equal to the number to be
 factored */
-bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors, 
+static bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors, 
 	const Znum &num) {
 	Znum residue = ToBeFactored;
 	Znum remainder;
@@ -683,7 +682,7 @@ static void process_value_s(json_value* value, int depth, const char* name,
 /* returns -1 for read error, +1 for parsing error, otherwise
 treats each line as a separate json record; parses it and stores
 selected fields of last record in a decoded form. */
-int process_file_s(FILE* fp, int* counter, const char* name_list[],
+static int process_file_s(FILE* fp, int* counter, const char* name_list[],
 	const int name_list_size, const Znum& num) {
 	char* string_p = NULL;
 	char buffer[4096] = "";
@@ -725,7 +724,7 @@ int process_file_s(FILE* fp, int* counter, const char* name_list[],
 }
 
 /* returns -1 for read error, +1 for parsing error, 0 for succcess*/
-int process_json_file_main(const Znum& num) {
+static int process_json_file_main(const Znum& num) {
 	FILE* fp;
 	char filename[MAX_PATH] = "";
 	struct stat filestatus;
