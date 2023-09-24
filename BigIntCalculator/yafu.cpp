@@ -6,7 +6,6 @@
 static void process_value_s(json_value* value, int depth, const char* name,
 	const int index);
 
-extern HWND handConsole;      /* handle to console window */
 
 /* Note: the path specified here can be overwritten by a path specified in the .ini file */
 #ifndef _DEBUG

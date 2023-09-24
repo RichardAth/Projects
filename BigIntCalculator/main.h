@@ -31,7 +31,7 @@ enum class retCode
 	EXPR_OK = 0,
 	EXPR_FAIL = 1
 };
-
+const char* myTime(void);
 long long MulPrToLong(const Znum& x);
 void writeIni(void);
 void generatePrimes(unsigned long long int max_val);
@@ -68,66 +68,81 @@ extern std::string helpFilePath;
 
 /* defined in various places: not in main.cpp */
 
+/* yafu.cpp */
+void yafuParam(const std::vector<std::string>& p);      /*process YAFU commands */
 extern std::string YafuPath;
 extern std::string yafuprog;
 extern std::string outPath;
-extern std::string MsievePathS;
-extern std::string MsieveProg;
-extern std::string MsieveLogPath;
-extern bool breakSignal;
-extern std::vector <Znum> roots;   /* used by functions that return multiple values */
-extern bool msieve;
-extern bool yafu;
-extern bool Pari;
-
-const char* myTime(void);
-//void delfile(const std::string& path, const char* FileName);
-void msieveParam(const std::vector<std::string>& p);   /*process Msieve commands */
-void yafuParam(const std::vector<std::string>& p);      /*process YAFU commands */
-void pariParam(const std::vector<std::string>& p);      /*process YAFU commands */
-int quadModEqn(const std::vector<std::string>& p);  /* Quadratic Modular Equation Solver */
-std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
-std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
-std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
-void printvars(std::string name);
-void doTests9(const std::vector<std::string> & p);  /* modular square root test */
-void doTestsA(const std::vector<std::string> & params);   /* quadratic modular equation solver */
-void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 char* getFileName(const char* filter, HWND owner, bool MustExist = true);
-/* check file status. Print date & time modified, return false if file not found */
 bool fileStatus(const std::string& fileName);
 bool changepathPP(std::string& path, std::string& prog);
 bool changepath2(std::string& path);
-DWORD getComCtlVer(void);
+extern bool yafu;
+
+/* msieve.cpp */
+void msieveParam(const std::vector<std::string>& p);   /*process Msieve commands */
+extern std::string MsievePathS;
+extern std::string MsieveProg;
+extern std::string MsieveLogPath;
+extern bool msieve;
+
+/* evalexpr.cpp */
 retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
 /* evaluate 1 or more expressions, separated by commas */
 retCode ComputeMultiExpr(std::string expr, Znum result);
+void printvars(std::string name);
+extern std::vector <Znum> roots;   /* used by functions that return multiple values */
+Znum llt(const Znum& p);
+
+/* libpariinterface.cpp */
+void pariParam(const std::vector<std::string>& p);
+extern bool Pari;
+Znum R3h(Znum n);
+Znum Hclassno12(const Znum& n);
+Znum classno(const Znum& n, int flag);
+Znum tau(const Znum& n);
+Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
+
+/* quadmod.cpp */
+void doTestsA(const std::vector<std::string>& params);   /* quadratic modular equation solver */
+int quadModEqn(const std::vector<std::string>& p);  /* Quadratic Modular Equation Solver */
+std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
+
+/* Modsqrt.cpp */
+std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
+void doTests9(const std::vector<std::string> & p);  /* modular square root test */
+
+/* fileversioninfo.cpp */
+void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
+DWORD getComCtlVer(void);
+
+/* mpz_prp.cpp */
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
+
+/* R3.cpp */
 bool isPrime2(unsigned __int64 num);
-void helpfunc(const std::vector<std::string>& command);
-void biperm(int n, Znum& result);
 size_t inverseTotient(__int64 n, std::vector<unsigned __int64>** result, bool debug,
 	int level, bool dump);
-
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod);
-
 // calculate a^n%mod using 'bigints'   
 Znum             modPower(const Znum& a, const Znum& n, const Znum& mod);
 unsigned __int64 modPowerBi(const Znum& a, const Znum& n, unsigned __int64 mod);
 constexpr __int64 power(const __int64 x, unsigned int n);
 Znum              power(const Znum& x, unsigned long long n);
 int jacobi(__int64 k, unsigned __int64 n);
-int jacobi(const Znum& k, const Znum& n); 
+int jacobi(const Znum& k, const Znum& n);
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
-Znum             modMult(const Znum& a, const Znum& b, const Znum &mod);
+Znum             modMult(const Znum& a, const Znum& b, const Znum& mod);
 
-Znum R3h(Znum n);
-Znum Hclassno12(const Znum& n);
-Znum classno(const Znum& n, int flag);
-Znum tau(const Znum& n);
-Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
+/* help.cpp */
+void helpfunc(const std::vector<std::string>& command);
+
+/* partition.cpp */
+void biperm(int n, Znum& result);
+
+/* computerinfo.cpp */
 void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY);
-Znum llt(const Znum& p);

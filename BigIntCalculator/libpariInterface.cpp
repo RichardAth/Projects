@@ -2,7 +2,6 @@
 
 //#include "pari.h"
 extern std::string PariPath;
-extern HWND handConsole;      /* handle to console window */
 
 
 /* stuff below copied from pari headers, to avoid including humungous pari.h etc*/

@@ -515,17 +515,16 @@ Repeated factors: No or Yes
 };
 
 std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
-
-//extern int ElipCurvNo;            // Elliptic Curve Number
+bool callMsieve(const Znum& num, fList& Factors);
+bool callYafu(const Znum& num, fList& Factors);
+void parifactor(const Znum& n, fList& factors);
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n, int depth = 0);
 
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-bool callMsieve(const Znum& num, fList& Factors);
-bool callYafu(const Znum& num, fList& Factors);
-void parifactor(const Znum& n, fList& factors);
+
 
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
 

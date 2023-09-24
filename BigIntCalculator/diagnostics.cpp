@@ -22,7 +22,6 @@
 #include "diagnostic.h"
 
 bool breakSignal = false;
-extern HWND handConsole;      /* handle to console window */
 
 /* used for minidump */
 struct module_data {

@@ -1,5 +1,7 @@
 #pragma once
 
+extern bool breakSignal;
+
 /* flags used to control action of SetProcessExceptionHandlers() function */
 struct flags {
 	unsigned char UnEx : 1;        /* set unhandled exception 'filter' */
