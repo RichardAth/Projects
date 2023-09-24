@@ -1,7 +1,5 @@
 #include "pch.h"
 
-#include "showtime.h"
-
 /* output from Msieve -h option:
 
 Msieve v. 1.54 (SVN 945)
@@ -104,10 +102,10 @@ bool eopt = true;    // set -e option in Msieve: perform 'deep' ECM, seek factor
 bool nopt = false;   // set -n option in Msieve: use the number field sieve (80+ digits only;
 				     //        performs all NFS tasks in order)
 #ifndef _DEBUG
-std::string MsievePath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string MsievePathS = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Release";
 #else
-std::string MsievePath = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
+std::string MsievePathS = "C:\\Users\\admin99\\Source\\Repos\\RichardAth\\Projects\\"
 "bin\\x64\\Debug";
 #endif
 std::string MsieveProg = "msieve.exe";
@@ -117,7 +115,7 @@ static std::string options = " -e ";   // perform 'deep' ECM, seek factors > 15 
 
 static void delfile(const char * FileName)
 {
-	std::string fname = MsievePath + "\\" + FileName;
+	std::string fname = MsievePathS + "\\" + FileName;
 	struct __stat64 fileStat;
 
 	int err = _stat64(fname.data(), &fileStat);
@@ -151,12 +149,12 @@ void msieveParam(const std::vector<std::string>& p) {
 		msieve = false;
 
 	else if (p[1] == "PATH") {
-		std::cout << "path = " << MsievePath << '\n';
+		std::cout << "path = " << MsievePathS << '\n';
 		if (p.size() >= 3 && p[2] =="SET") {
-			if (changepathPP(MsievePath, MsieveProg))
+			if (changepathPP(MsievePathS, MsieveProg))
 				writeIni();  // rewrite .ini file
 		}
-		fileStatus(MsievePath + '\\' + MsieveProg);
+		fileStatus(MsievePathS + '\\' + MsieveProg);
 	}
 
 	else if (p[1] == "LOG") {
@@ -196,7 +194,7 @@ properly would be so tedious it's not worth it. I had to make several kludges
 to build msieve, and the prebuilt msieve wouldn't work */
 bool callMsieve(const Znum &num, fList &Factors) {
 	/* set up command to invoke Msieve */
-	std::string command = MsievePath + "\\" + MsieveProg;
+	std::string command = MsievePathS + "\\" + MsieveProg;
 	std::string numStr;
 	int rv, fcount = 0;
 	std::string buffer;

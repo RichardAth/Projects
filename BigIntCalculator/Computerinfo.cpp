@@ -671,7 +671,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
 }
 
 // function containing system commands to get the computer name, CPU speed, etc
-void get_computer_info(char* CPUidstr, double MEAS_CPU_FREQUENCY)
+void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY)
 {
 
     //figure out cpu freq. 0.1 seconds won't be very accurate 

@@ -15,14 +15,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-//#include "boost/multiprecision/gmp.hpp"
-//typedef boost::multiprecision::mpz_int Znum;
-//#define ZT(a) a.backend().data()
-
-//#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  /* true iff a is even (works for -ve a as well) */
-
-bool isPrime2(unsigned __int64 num);
-
 /* MAX_LEN increased from 2500 to 2560 so that Karatsuba multiplication
 can handle maximum length numbers */
 #define MAX_LEN 2560        // approximately 23890 digits
@@ -38,10 +30,6 @@ can handle maximum length numbers */
 #define SMALL_NUMBER_BOUND 32768
 #define _USING64BITS_ 1
 
-//struct limb
-//{
-//	int x=0;      // maximum value in each limb is MAX_VALUE_LIMB
-//};
 #define MAX_VALUE_LIMB (LIMB_RANGE-1)
 
 typedef int limb;
@@ -104,7 +92,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 int ZtoBigNbr(int number[], Znum numberZ);
 void LimbstoZ(const limb number[], Znum& numberZ, int NumLen);
 
-void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number);
+void DivideZnumByMaxPowerOf2(int &ShRight, Znum &number);
 int PrimalityTest(const Znum &Value, long long upperBound);
 long long JacobiSymbol(long long upper, long long lower);
 long long PowerCheck(const Znum &BigInt, Znum &Base, long long upperBound);

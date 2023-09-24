@@ -3,11 +3,6 @@
 #include <io.h>
 #include "resource.h"
 
-/* external declarations */
-void ErrorDisp(const char* lpszFunction);
-extern HWND handConsole;      /* handle to console window */
-extern std::string helpFilePath;
-
 struct HelpDialogResp{
     int radiobutton;
     int Ok_Cancel;

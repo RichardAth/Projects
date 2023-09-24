@@ -18,10 +18,8 @@
 //
 #include "pch.h"
 
-#include <windows.h>
 #include <Mmsystem.h >   // for sound effects
 
-#include "main.h"
 #include "expression.h"
 #include "quadmodLL.h"
 

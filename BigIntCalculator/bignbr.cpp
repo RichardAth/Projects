@@ -89,7 +89,6 @@ void MultBigNbr(const limb* pFactor1, const limb* pFactor2, limb* pProd, int nbr
 	*(ptrProd + 1) = (int)floor(dAccumulator / dRangeLimb);
 }
 
-
 /* Quotient = Dividend/divisor */
 void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen)
 {
@@ -240,14 +239,14 @@ int ZtoBigNbr(int number[], Znum numberZ) {
 }
 
 /* convert integer list to Znum. */
-void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
-	numberZ = 0;
-	for (int i = NumLen - 1; i >= 0; i--) {
-		//numberZ *= LIMB_RANGE;
-		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
-		numberZ += number[i];
-	}
-}
+//void ValuestoZ(Znum &numberZ, const int number[], int NumLen) {
+//	numberZ = 0;
+//	for (int i = NumLen - 1; i >= 0; i--) {
+//		//numberZ *= LIMB_RANGE;
+//		mpz_mul_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);  // shift numberZ left
+//		numberZ += number[i];
+//	}
+//}
 
 
 /* get log of Znum in base e */
@@ -434,7 +433,7 @@ long long JacobiSymbol(long long upper, long long lower)
 
 // Find largest power of 2 that divides the number. Divide number
 // by that power and return value of power in ShRight.
-void DivideBigNbrByMaxPowerOf2(int &ShRight, Znum &number) {
+void DivideZnumByMaxPowerOf2(int &ShRight, Znum &number) {
 	Znum two = 2;
 	auto shift = mpz_remove(ZT(number), ZT(number), ZT(two));
 	ShRight = (int)shift;
@@ -470,7 +469,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
 	//see https://en.wikipedia.org/wiki/Probable_prime
 
 	Mult3 = Value - 1;
-	DivideBigNbrByMaxPowerOf2(ctr, Mult3);  // Mult3 /= 2^ctr
+	DivideZnumByMaxPowerOf2(ctr, Mult3);  // Mult3 /= 2^ctr
 	mpz_powm(ZT(Mult1), ZT(two), ZT(Mult3), ZT(Value));  // Mult1 = 2^Mult3 (mod Value)
 
 	if (Mult1 != 1 && Mult1 != Value - 1) {

@@ -83,7 +83,7 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 typedef HRESULT(CALLBACK* DLLGETVERSIONPROC2)(DLLVERSIONINFO2*);
 
 /* get the version number of the dll specified in DllName */
-bool GetVersion(LPCTSTR lpszDllName, DWORD * Major, DWORD * Minor, 
+static bool GetVersion(LPCTSTR lpszDllName, DWORD * Major, DWORD * Minor, 
 	DWORD * Build, DWORD * platform) {
 	HINSTANCE hinstDll;
 	DWORD dwVersion = 0;

@@ -28,17 +28,12 @@ struct sFactors
 	int Type;             /* not used? */
 };
 
-extern int lang;    // 0 English, 1 = Spanish
-extern int groupSize;
-void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
-/* ComputeNumDigits(n,r): Number of digits of n in base r. */
-long long ComputeNumDigits(const Znum& n, const Znum& radix);
 
+extern long long SFhitcount, SFmisscount;
 
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
-//#define ZisEven(a) (mpz_even_p(ZT(a)) != 0)  
 
 /*  get approximate size (1 limb = 64 bits) */
 #define numLimbs(a) abs(ZT(a)->_mp_size)
@@ -114,7 +109,7 @@ public:
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
-	friend int classify(Znum n);
+	//friend int classify(Znum n);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
 	/* methods that are in the class */
@@ -256,7 +251,8 @@ for factors found by YAFU or Msieve */
 	}
 
 
-/* return true if the number can be expressed as the sum of 2 squares. 
+/* return true if the number can be expressed as the sum of 2 squares,
+i.e. if all 4i+3 prime factors have a even exponents, i.e. R2(number) is non-zero
 Either square can be zero. */
 	bool twosq() const {
 		// this only works if factorisation is complete!
@@ -518,10 +514,6 @@ Repeated factors: No or Yes
 
 };
 
-//void squareFree(Znum& num, Znum& sq, std::vector<zFactors>& sqf);
-
-std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
-std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m); /* modular square root*/
 std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
 
 //extern int ElipCurvNo;            // Elliptic Curve Number
@@ -540,45 +532,11 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor);
 /* return a factor of N, using Shanks's square forms factorization method. */
 uint64_t SQUFOF(const uint64_t N);
 
-int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
-int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
-
 // returns 2^exp. exp must be less than 64
 constexpr unsigned __int64 pow2(unsigned int exp) {
 	assert(exp < 64);
 	return 1ULL << exp;  // exp must be less than 64
 }
-
-
-/* error and return codes, errors are -ve, OK is 0, FAIL is +1 */
-enum class retCode
-{
-	NUMBER_TOO_LOW = -100,
-	NUMBER_TOO_HIGH,
-	INTERM_TOO_HIGH,
-	DIVIDE_BY_ZERO,
-	PAREN_MISMATCH,
-	SYNTAX_ERROR,
-	TOO_MANY_PAREN,
-	INVALID_PARAM,
-	ARGUMENTS_NOT_RELATIVELY_PRIME,
-	//EXPR_BREAK,
-	//EXPR_OUT_OF_MEMORY,
-	//EXPR_CANNOT_USE_X_IN_EXPONENT,
-	//EXPR_DEGREE_TOO_HIGH,
-	EXPONENT_TOO_LARGE,
-	EXPONENT_NEGATIVE,
-	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
-	//EXPR_CANNOT_LIFT,
-	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
-	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
-	EXPR_BASE_MUST_BE_POSITIVE,
-	//EXPR_POWER_MUST_BE_POSITIVE,
-	EXPR_MODULUS_MUST_BE_NONNEGATIVE,
-	//EXPR_VAR_OR_COUNTER_REQUIRED,
-	EXPR_OK = 0,
-	EXPR_FAIL = 1
-};
 
 
 /* throw exception. For a list of exception classes derived from std:: exception

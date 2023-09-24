@@ -33,7 +33,7 @@
  * A "strong pseudoprime" to the base a is an odd composite n = (2^r)*s+1 with s odd such that
  * either a^s == 1 mod n, or a^((2^t)*s) == -1 mod n, for some integer t, with 0 <= t < r.
  * *********************************************************************************************/
-int mpz_sprp(const mpz_t n, const mpz_t a)
+static int mpz_sprp(const mpz_t n, const mpz_t a)
 {
 	mpz_t s;
 	mpz_t nm1;
@@ -104,7 +104,7 @@ int mpz_sprp(const mpz_t n, const mpz_t a)
  * A "Lucas pseudoprime" with parameters (P,Q) is a composite n with D=P^2-4Q,
  * (n,2QD)=1 such that U_(n-(D/n)) == 0 mod n [(D/n) is the Jacobi symbol]
  * *******************************************************************************/
-int mpz_lucas_prp(const mpz_t n, long int p, long int q)
+static int mpz_lucas_prp(const mpz_t n, long int p, long int q)
 {
 	mpz_t zD;
 	mpz_t res;

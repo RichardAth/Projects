@@ -1,17 +1,17 @@
 ﻿#include "pch.h"
 
 /* forward declaration */
-static std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
+std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
 
 // calculate x^n. Returns a Big Integer so should be no overflow problem.
-Znum powerBi(const __int64 x, unsigned __int64 n) {
+static Znum powerBi(const __int64 x, unsigned __int64 n) {
 	Znum result;
 	mpz_ui_pow_ui(ZT(result), x, n);
 	return result;
 }
 
 // returns 2 ^ exp. exp can be any number >= 0
-Znum pow2bi(unsigned __int64 exp) {
+static Znum pow2bi(unsigned __int64 exp) {
 	Znum result = 1;
 	mpz_mul_2exp(ZT(result), ZT(result), exp);
 	return result;
@@ -26,7 +26,7 @@ m1*n1 + m2*n2 = gcd(n1,n2)
 A solution is given by x = a1*m2*n2 + a2*m1*n1, provided n1 and n2 are co-prime
 N.B. if n1 and n2 are not co-prime an exception will be thrown
 */
-void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, Znum &x) {
+static void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, Znum &x) {
 
 	Znum m1, m2, gcd, t2;
 	mpz_gcdext(ZT(gcd), ZT(m1), ZT(m2), ZT(n1), ZT(n2));
@@ -53,13 +53,13 @@ void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, 
 
 /* find least significant 1-bit in num, equivalent to counting 0-bits, starting from 
 least significant bit. If num is a power of 2, then 2^return value = num.*/
-long long countZeroBits(const Znum &num) {
+static long long countZeroBits(const Znum &num) {
 	mp_bitcnt_t r = mpz_scan1(ZT(num), 0);
 	return r;
 }
 
 /* calculate max power of p that is a divisor of num */
-long long extract(const Znum& num, const Znum p) {
+static long long extract(const Znum& num, const Znum p) {
 	Znum residue;
 	mp_bitcnt_t r = mpz_remove(ZT(residue), ZT(num), ZT(p));
 	return r;
@@ -287,7 +287,7 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
-static std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
+std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
 	Znum c, t, R, b;
@@ -500,7 +500,7 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
 2 for modsqrt using quadratic modular equation solver. 
 p2d = test number size in bits.
 p3d = number of tests */
-void test9timerx(int type, int p2d, int p3d) {
+static void test9timerx(int type, int p2d, int p3d) {
 	gmp_randstate_t state;
 	Znum x, m;
 	std::vector <Znum> r;
@@ -557,7 +557,7 @@ void test9timerx(int type, int p2d, int p3d) {
 
 /* do timed tests of modular square root. p contains the number size and number 
    of tests parameters */
-void test9timer(const std::vector <std::string>& p) {
+static void test9timer(const std::vector <std::string>& p) {
 	int p2d = -1, p3d = -1;  /* save p2 and p3 as binary values */
 
 	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */

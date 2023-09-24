@@ -16,12 +16,6 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <stack>
 
-// declarations for external function
-
-void biperm(int n, Znum &result);  
-size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool debug,
-    int level, bool dump);
-
 /* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
@@ -315,7 +309,7 @@ struct token {
 static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
 
 // returns true if num is a perfect square.
-bool isPerfectSquare(const Znum &num) {
+static bool isPerfectSquare(const Znum &num) {
     return (mpz_perfect_square_p(ZT(num)) != 0); /* true if num is a perfect square */
 }
 

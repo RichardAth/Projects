@@ -1,10 +1,6 @@
 #include "pch.h"
 
 
-#include "boost/multiprecision/gmp.hpp" 
-#define ZT(a) a.backend().data()
-typedef boost::multiprecision::mpz_int Znum;    /* big integer */
-
 std::vector <Znum>bistoredp;   /* calculated values of p(n) */
 Znum bi1;
 

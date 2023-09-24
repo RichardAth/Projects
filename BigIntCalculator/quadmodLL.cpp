@@ -100,7 +100,7 @@ void printFactors(sFactors flist[]) {
 /* the same factor list is returned in both factorsMod and astFactorsMod,
 in different formats 
 Uses global variable Aux0 */
-void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
+static void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]) {
     Znum N;
     int numFactors;
     int* pFactorsMod = factorsMod;
@@ -131,7 +131,7 @@ void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[])
 /* for each solution <solution()> is called.
 The input parameters are in quad, astFactorsMod, Aux, exponents,  GcdAll, pValNn, 
 ... */
-void PerformChineseRemainderTheorem(const BigInteger *pValA, const BigInteger *pValB, 
+static void PerformChineseRemainderTheorem(const BigInteger *pValA, const BigInteger *pValB, 
     const BigInteger *pValC, const BigInteger *pValN)
 {
     int T1;

@@ -260,8 +260,6 @@ long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prim
                            using Lucas-Lehmer test */
 
 
-
-
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
     double root = sqrt((double)n);
@@ -354,7 +352,6 @@ void generatePrimes(unsigned long long int max_val) {
     primeListMax = primeList[count - 1];
     return;
 }
-
 
 
 /* translate error code to text and output it*/
@@ -1865,7 +1862,7 @@ void writeIni(void) {
     newStr << "yafu-path=" << YafuPath << '\n';
     newStr << "yafu-prog=" << yafuprog << '\n';
     newStr << "yafu-out=" << outPath << '\n';
-    newStr << "msieve-path=" << MsievePath << '\n';
+    newStr << "msieve-path=" << MsievePathS << '\n';
     newStr << "msieve-prog=" << MsieveProg << '\n';
     newStr << "msieve-log=" << MsieveLogPath << '\n';
     newStr << "helpfile=" << helpFilePath << '\n';
@@ -1942,7 +1939,7 @@ static void processIni(const char * arg) {
                 outPath = buffer.substr(9); // copy path following '=' character
             }
             else if (_strnicmp("msieve-path=", buffer.c_str(), 12) == 0) {
-                MsievePath = buffer.substr(12); // copy path following '=' character
+                MsievePathS = buffer.substr(12); // copy path following '=' character
             }
             else if (_strnicmp("msieve-prog=", buffer.c_str(), 12) == 0) {
                 MsieveProg = buffer.substr(12); // copy path following '=' character
@@ -2119,7 +2116,7 @@ static int ifCommand(const std::string &command) {
 // Returns:
 //   The handle to the tooltip.
 //
-HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParnt)
+static HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParnt)
 {
     if (!toolID || !hDlg || !pszText)
     {

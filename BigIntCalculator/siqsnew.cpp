@@ -31,8 +31,6 @@ the results would look completely different.
 
 #include "pch.h"
 
-#include "showtime.h"
-
 #pragma warning(disable : 4996)
 
 extern HANDLE hConsole;

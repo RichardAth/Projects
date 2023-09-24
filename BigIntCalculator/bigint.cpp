@@ -21,7 +21,7 @@ static limb adjustedArgument[MAX_LEN];
 static limb arrAux[MAX_LEN];
 static int bitLengthCycle[20];
 
-int getNbrLimbs(const limb* bigNbr)
+static int getNbrLimbs(const limb* bigNbr)
 {
 	const limb* ptrLimb = bigNbr + NumberLength;
 	while (ptrLimb > bigNbr)
@@ -887,7 +887,6 @@ void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
 	}
 	*pShRight = power2;
 }
-
 
 
 /* convert Znum to BigInteger. Returns false if number is too big to convert.
