@@ -69,6 +69,7 @@ extern std::string helpFilePath;
 /* defined in various places: not in main.cpp */
 
 /* yafu.cpp */
+bool callYafu(const Znum& num, fList& Factors);
 void yafuParam(const std::vector<std::string>& p);      /*process YAFU commands */
 extern std::string YafuPath;
 extern std::string yafuprog;
@@ -80,6 +81,7 @@ bool changepath2(std::string& path);
 extern bool yafu;
 
 /* msieve.cpp */
+bool callMsieve(const Znum& num, fList& Factors);
 void msieveParam(const std::vector<std::string>& p);   /*process Msieve commands */
 extern std::string MsievePathS;
 extern std::string MsieveProg;
@@ -96,6 +98,7 @@ Znum llt(const Znum& p);
 
 /* libpariinterface.cpp */
 void pariParam(const std::vector<std::string>& p);
+void parifactor(const Znum& n, fList& factors);
 extern bool Pari;
 Znum R3h(Znum n);
 Znum Hclassno12(const Znum& n);

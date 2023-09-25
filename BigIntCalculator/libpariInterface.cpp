@@ -57,8 +57,6 @@ enum {
 };
 /* end of stuff from pari headers */
 
-#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
-
 bool fRunTimeLinkSuccess = false;    /* true when links to parilib set up */
 bool stackinit = false;              /* true when pari stack is initialised */
 bool Pari = false;                   /* true if parilib used for factorisation */

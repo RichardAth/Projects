@@ -30,10 +30,14 @@ struct sFactors
 
 
 extern long long SFhitcount, SFmisscount;
+extern int lang;    // 0 English, 1 = Spanish
+extern int groupSize;
 
 #define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
+void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
+long long ComputeNumDigits(const Znum& n, const Znum& radix);
 
 /*  get approximate size (1 limb = 64 bits) */
 #define numLimbs(a) abs(ZT(a)->_mp_size)
@@ -60,7 +64,7 @@ public:
 	int exponent=0;
 	int upperBound=0;    /* used during trial division to show how far we've got. 
 						-1 indicats that Factor is prime */
-	/* define all comparison operators */
+	/* define all comparison operators when comparing two factors */
 	bool operator == (const zFactors &b) const {
 		return this->Factor == b.Factor;
 	}
@@ -109,7 +113,6 @@ public:
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
-	//friend int classify(Znum n);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
 	/* methods that are in the class */
@@ -440,7 +443,7 @@ Repeated factors: No or Yes
 		return this->f.size();
 	}
 
-	/* get number of digits in 2nd largest factor */
+	/* get number of digits in 2nd largest factor (base 10) */
 	int sndFac() const {
 		if (this->f.size() > 1)
 			return (int)ComputeNumDigits((this->f.end() - 2)->Factor, 10);
@@ -512,19 +515,13 @@ Repeated factors: No or Yes
 		return temp;
 	}
 
-};
-
-std::vector <Znum> ModSqrt(const Znum& aa, const Znum& m);
-bool callMsieve(const Znum& num, fList& Factors);
-bool callYafu(const Znum& num, fList& Factors);
-void parifactor(const Znum& n, fList& factors);
+};   /* end of class flist */
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
 long long int PollardRho(long long int n, int depth = 0);
 
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
-
 
 void LehmanZ(const Znum &nbr, int k, Znum &factor);
 
