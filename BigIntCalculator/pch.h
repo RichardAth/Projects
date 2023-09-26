@@ -31,6 +31,8 @@
 
 #include "boost/multiprecision/gmp.hpp" 
 typedef boost::multiprecision::mpz_int Znum;
+#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
+
 /* following 5 includes must be in this order; */
 #include "showtime.h"
 #include "diagnostic.h"

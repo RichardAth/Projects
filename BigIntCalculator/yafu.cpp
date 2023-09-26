@@ -486,7 +486,7 @@ bool callYafuOld(const Znum &num, fList &Factors) {
 
 	/* get control back when YAFU has finished */
 	if (rv == -1) {
-		std::cout << "cannot start YAFU errno = " << errno << '\n';
+		perror( "cannot start YAFU ") ;
 		return false;
 	}
 	else if (rv != 0) {

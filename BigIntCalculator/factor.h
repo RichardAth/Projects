@@ -33,8 +33,6 @@ extern long long SFhitcount, SFmisscount;
 extern int lang;    // 0 English, 1 = Spanish
 extern int groupSize;
 
-#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
-
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 long long ComputeNumDigits(const Znum& n, const Znum& radix);

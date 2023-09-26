@@ -228,7 +228,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 
 	/* get control back when msieve has finished */
 	if (rv ==  -1) {
-		std::cout << "cannot start msieve errno = " << errno << '\n';
+		perror( "cannot start msieve ");
 		return false;
 	}
 	else if (rv != 0) {
