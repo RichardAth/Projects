@@ -823,8 +823,6 @@ static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
     num /= sq;  // adjust value of num
 }
 
-
-extern unsigned __int64 R3(__int64 n);
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
 be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875.txt*/

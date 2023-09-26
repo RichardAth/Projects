@@ -1600,19 +1600,71 @@ static void doTests3(void) {
 #endif
 
 /* tests for r3 function */
-/* see http://oeis.org/A002102 */
+/* see https://oeis.org/A005875 
+Command format is TEST 11 [p1[,p2[,p3]]] where
+p1 is the number of tests,
+p2 is the size of the numbers to be factored in bits,
+if p3 <= 1 use fixed random seed value (default)
+if p3 = 2 use truly random seed value
+if p3 > 2  use p3 as the seed value*/
+static void doTestsB(const std::vector<std::string> &p) {
+    int i;
+    auto start = clock();	// used to measure execution time
+    generatePrimes(2000);
+    long long p1 = 0;  // number of tests; must be greater than 0, default is 20
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 48)
+    long long p3 = 0;
+    long long xl;
+    unsigned long long rv;
+    gmp_randstate_t state;
+    Znum x, rv3;
 
-extern unsigned __int64 R2(const unsigned __int64 n);
+    if (p.size() >= 3)
+        p1 = atoi(p[2].data());
+    if (p.size() >= 4)
+        p2 = atoi(p[3].data());
+    if (p.size() >= 5)
+        p3 = atoi(p[4].data());
 
-//static void doTests4(void) {
-//	generatePrimes(2000);
-//	for (int i = 0; i <= 9992; i++) {
-//		auto rv2 = R2(i);
-//		auto rv = R3(i);
-//		printf_s("%4d %4lld %4lld ", i, rv2, rv);
-//		std::cout << '\n';
-//	}
-//}
+    if (p1 <= 0) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+    if (p2 <= 7 || p2 >48) {
+        std::cout << "Use default 32 for number size in bits \n";
+        p2 = 32;
+    }
+
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    if (p3 <= 1)
+        gmp_randseed_ui(state, 756128234);
+    /* fixed seed means that the exact same tests can be repeated provided
+       that the same size of number is used each time */
+    else if (p3 == 2) {
+        std::random_device rd;   // non-deterministic generator
+        unsigned long long seedval = rd();
+        std::cout << "random generator seed value = " << seedval << '\n';
+        gmp_randseed_ui(state, seedval);
+        }
+        else
+            gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
+
+    for (i = 0; i <= p1; i++) {
+        mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
+        xl = MulPrToLong(x);
+        rv = R3(xl);
+        rv3 = R3h(x);
+        if (rv3 != rv || verbose > 1 || p2 >= 37) {
+            std::cout << myTime() <<  " R3(" << xl << ") =" << rv 
+                << "; R3h(" << x << ") = " << rv3 << '\n';
+        }
+    }
+    std::cout << "R3 " << p1 << " tests completed \n";
+    auto end = clock();              // measure amount of time used
+    auto elapsed = (double)end - start;
+    PrintTimeUsed(elapsed, " time used = ");
+    return;
+}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
 this test will take about 2.5 hours 
@@ -2672,7 +2724,10 @@ static int processCmd(std::string command) {
                  << "      Test 8                       test error handling \n"
                  << "      Test 9                       test modular square root (use \"TEST 9 H\" for more info.\n"
                  << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
-                 << "                   where p1 is the number of tests and p2 is the number size in bits \n";
+                 << "                   where p1 is the number of tests and p2 is the number size in bits \n"
+                 << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n";
+
              return 1;
          }
 
@@ -2725,6 +2780,11 @@ static int processCmd(std::string command) {
        
             doTestsA(p);   /* test quadratic modular equation solver  */
             return 1;
+         }
+
+         case 11:   /* R3 tests*/ {
+             doTestsB(p);
+             return 1;
          }
 
          default:

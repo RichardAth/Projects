@@ -140,6 +140,8 @@ int jacobi(__int64 k, unsigned __int64 n);
 int jacobi(const Znum& k, const Znum& n);
 unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod);
 Znum             modMult(const Znum& a, const Znum& b, const Znum& mod);
+extern unsigned __int64 R2(const unsigned __int64 n);
+extern unsigned __int64 R3(__int64 n);
 
 /* help.cpp */
 void helpfunc(const std::vector<std::string>& command);

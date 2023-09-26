@@ -452,7 +452,7 @@ also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
 >= sqrt(n).
 example: R2(4) = 4; 2^2+0, 0+2^2, (-2)^2+0, 0+(-2)^2 */
-static unsigned __int64 R2(const unsigned __int64 n) {
+unsigned __int64 R2(const unsigned __int64 n) {
     if (n == 0)
         return 1;
     if (n % 4 == 3)
@@ -478,7 +478,7 @@ static unsigned __int64 R2(const unsigned __int64 n) {
             b *= (Rfactors.factorlist[i][1] + 1);
         }
     }
-    if (verbose >= 1) {
+    if (verbose >= 2) {
         std::cout << "R2(" << n << ") = " << 4 * b << '\n';
     }
     return 4 * b;
@@ -559,7 +559,7 @@ unsigned __int64 R3(__int64 n) {
         else
             sum += 2 * R2(n - k * k);
         if ((k & 0x3fff) == 0) {
-            printf_s("%s R3: %.2f%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+            printf_s("%s R3(%lld): %.2f%% done \n", myTime(), n, 100.0 * double(k) / sqrt(n));
         }
     }
     sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2
