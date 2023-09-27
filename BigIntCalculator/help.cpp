@@ -100,7 +100,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_SYSCOMMAND:             /* 0x112 */
     case WM_CHANGEUISTATE:          /* 0x127 */
     case WM_UPDATEUISTATE:          /* 0x128 */
-    case WM_QUERYUISTATE:           /* 0x129*/
+    case WM_QUERYUISTATE:           /* 0x129 */
     case WM_CTLCOLORBTN:            /* 0x135 */
     case WM_CTLCOLORDLG:            /* 0x136 */
     case WM_CTLCOLORSTATIC:         /* 0x138 */
@@ -109,6 +109,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_LBUTTONUP:              /* 0x202 */
     case WM_CAPTURECHANGED:         /* 0x215 */
     case WM_MOVING:                 /* 0x216 */
+    case WM_DEVICECHANGE:           /* 0X219 */
     case WM_ENTERSIZEMOVE:          /* 0x231*/
     case WM_EXITSIZEMOVE:           /* 0x232 */
     case WM_IME_SETCONTEXT:         /* 0x281 */
@@ -144,7 +145,7 @@ static long long helpdiag(void) {
 
 
 /*search the docfile for the required help topic. The topic can be specified in
-the command parameter. If this is empty the topic can be selected via a dialog box;
+the command parameter. If this is not present the topic can be selected via a dialog box;
 the required entry is specified by hResp.radiobutton.
 Just search the file for the heading, and print everything until the next
 heading is found.
@@ -165,6 +166,9 @@ void helpfunc(const std::vector<std::string>& command)
     std::string helptopic;
     int lineCount = 0;
 
+    /* list of topics that can be selected (usually via the help dialog box). 
+       If new topics are addded to the help file the dialog box and associated 
+       functions should also be updated. */
     const char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
             "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
             "PARI", "AYUDA" };

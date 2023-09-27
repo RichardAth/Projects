@@ -377,7 +377,8 @@ static GEN MPtoGEN(const mpz_t &num) {
 }
 
 /* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting. 
-Note: n is intentionally a copy of the original value. This copy is modified. */
+Note: n is intentionally a copy of the original value. This copy is modified. 
+see https://oeis.org/A005875 */
 Znum R3h(Znum n) {
     mpz_t num, denom, result;
     double hxd;

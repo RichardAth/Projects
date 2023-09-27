@@ -1599,7 +1599,10 @@ static void doTests3(void) {
 }
 #endif
 
-/* tests for r3 function */
+/* tests for r3 function. This test exploits the fact that R3 and R3h calculate
+the same value by completely different methods. R3 is too slow to be practical
+for numbers greater than about 11 digits, but R3h requires that pari/GP has 
+been installed. */
 /* see https://oeis.org/A005875 
 Command format is TEST 11 [p1[,p2[,p3]]] where
 p1 is the number of tests,
@@ -1610,31 +1613,30 @@ if p3 > 2  use p3 as the seed value*/
 static void doTestsB(const std::vector<std::string> &p) {
     int i;
     auto start = clock();	// used to measure execution time
-    generatePrimes(2000);
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
     long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 48)
     long long p3 = 0;
     long long xl;
     unsigned long long rv;
-    gmp_randstate_t state;
+    gmp_randstate_t state;  /* use gmp/mpir random number generator */
     Znum x, rv3;
-
+    /* convert parameters to binary integers */
     if (p.size() >= 3)
         p1 = atoi(p[2].data());
     if (p.size() >= 4)
         p2 = atoi(p[3].data());
     if (p.size() >= 5)
         p3 = atoi(p[4].data());
-
+    /* check whether parameter values are within acceptable ranges */
     if (p1 <= 0) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
     }
-    if (p2 <= 7 || p2 >48) {
+    if (p2 <= 7 || p2 >41) {
         std::cout << "Use default 32 for number size in bits \n";
         p2 = 32;
     }
-
+    /* use value of p3 to seed the the 'random' number generator */
     gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
     if (p3 <= 1)
         gmp_randseed_ui(state, 756128234);
@@ -1649,7 +1651,7 @@ static void doTestsB(const std::vector<std::string> &p) {
         else
             gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
 
-    for (i = 0; i <= p1; i++) {
+    for (i = 1; i <= p1; i++) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         xl = MulPrToLong(x);
         rv = R3(xl);
