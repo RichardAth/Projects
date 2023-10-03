@@ -76,14 +76,16 @@ std::string attsound = "c:/Windows/Media/chimes.wav";
 
 
 /* display last error in a message box. lpszFunction should be a pointer to text 
-containing the function name. */
+containing the function name. 
+See https://learn.microsoft.com/en-us/windows/win32/debug/retrieving-the-last-error-code */
 void ErrorDisp(const char *lpszFunction)
 {
     // Retrieve the system error message for the last-error code
 
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError();
+    DWORD dw = GetLastError(); /* GetLastError gets the last error that was set 
+                                  by a Windows API function */
     if (dw == 0)
         return;   /* no error so just return */
 

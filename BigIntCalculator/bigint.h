@@ -316,6 +316,29 @@ public:
 		return *this;
 	}
 
+	/* bitwise or */
+	BigInteger operator | (const BigInteger& b) const {
+		BigInteger result;
+		BigIntOr(this, &b, &result);
+		return result;
+	}
+	BigInteger operator |= (const BigInteger& b) {
+		BigIntOr(this, &b, this);
+		return *this;
+	}
+
+	/* bitwise xor */
+	BigInteger operator ^ (const BigInteger& b) const {
+		BigInteger result;
+		BigIntXor(this, &b, &result);
+		return result;
+	}
+	BigInteger operator ^= (const BigInteger& b) {
+		BigIntXor(this, &b, this);
+		return *this;
+	}
+
+
 	BigInteger operator << (const int b) const {
 		BigInteger temp;
 		shiftBI(*this, b, temp);

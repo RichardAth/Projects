@@ -23,73 +23,73 @@ limb arrAux[MAX_LEN];
 int bitLengthCycle[20];
 
 void squareRoot(const Znum &arg, Znum & sqRoot) {
-	assert(arg >= 0);  // no imaginary numbers allowed here!!
-	mpz_sqrt(ZT(sqRoot), ZT(arg));
+    assert(arg >= 0);  // no imaginary numbers allowed here!!
+    mpz_sqrt(ZT(sqRoot), ZT(arg));
 }
 
 /* return true iff arg is a perfect square */
 bool isPerfectSquare(const Znum &arg, Znum &sqRoot) {
-	Znum rem;
-	assert(arg >= 0);  // no imaginary numbers allowed here!!
-	mpz_sqrtrem(ZT(sqRoot), ZT(rem), ZT(arg));
-	return rem == 0;  // true if arg is a perfect square
+    Znum rem;
+    assert(arg >= 0);  // no imaginary numbers allowed here!!
+    mpz_sqrtrem(ZT(sqRoot), ZT(rem), ZT(arg));
+    return rem == 0;  // true if arg is a perfect square
 }
 
 /* faster version for small n. Do some checks before sqrt
 because sqrt function is relatively slow. */
 bool isPerfectSquare(__int64 x) {
-	if (x < 0) return false;
-	if (x == 0) return true;
-	//while ((x & 0x3) == 0) 
-	//	x >>= 2;   // divide by largest possible power of 4
+    if (x < 0) return false;
+    if (x == 0) return true;
+    //while ((x & 0x3) == 0) 
+    //	x >>= 2;   // divide by largest possible power of 4
 
-	/* can use _BitScanForward64 instead (slightly faster) */
-	unsigned long ix;
-	auto result = _BitScanForward64(&ix, x);  // for gcc compiler use __builtin_ctzll instead
-	if ((ix & 1) == 1)
-		return false;     // if x contains an odd number of 2 factors it is 
-						  // not a perfect square
-	x >>= ix;
+    /* can use _BitScanForward64 instead (slightly faster) */
+    unsigned long ix;
+    auto result = _BitScanForward64(&ix, x);  // for gcc compiler use __builtin_ctzll instead
+    if ((ix & 1) == 1)
+        return false;     // if x contains an odd number of 2 factors it is 
+                          // not a perfect square
+    x >>= ix;
 
-	/* at this stage, x must be odd for a perfect square,
-	so sqrt(x) is odd if x is a perfect square, in which case
-	(sqrt(x))(mod 8) is 1 3 5 or 7. So x (mod 8) has to be 1 */
-	if ((x & 0x7) != 1)
-		return false;  // not a perfect square
+    /* at this stage, x must be odd for a perfect square,
+    so sqrt(x) is odd if x is a perfect square, in which case
+    (sqrt(x))(mod 8) is 1 3 5 or 7. So x (mod 8) has to be 1 */
+    if ((x & 0x7) != 1)
+        return false;  // not a perfect square
 
-	long long s = llround(sqrt(x));  // slightly faster than intSqrt
-	//long long s = intSqrt(x);
-	return (s * s == x);
+    long long s = llround(sqrt(x));  // slightly faster than intSqrt
+    //long long s = intSqrt(x);
+    return (s * s == x);
 }
 
 /* if x >= 0, returns floor(sqrt(x)) in ss */
 bool isPerfectSquare(__int64 x, __int64 &ss) {
-	long long s;
-	if (x < 0) return false;
+    long long s;
+    if (x < 0) return false;
     if (x == 0) {
         ss = 0;
         return true;
     }
-	//while ((x & 0x3) == 0) 
-	//	x >>= 2;   // divide by largest possible power of 4
+    //while ((x & 0x3) == 0) 
+    //	x >>= 2;   // divide by largest possible power of 4
 
-	/* can use _BitScanForward64 instead (slightly faster) */
-	unsigned long ix;
-	auto result = _BitScanForward64(&ix, x);  // for gcc compiler use __builtin_ctzll instead
-	if ((ix & 1) == 1)
-		return false;     // if x contains an odd number of 2 factors it is 
-						  // not a perfect square
-	x >>= ix;
+    /* can use _BitScanForward64 instead (slightly faster) */
+    unsigned long ix;
+    auto result = _BitScanForward64(&ix, x);  // for gcc compiler use __builtin_ctzll instead
+    if ((ix & 1) == 1)
+        return false;     // if x contains an odd number of 2 factors it is 
+                          // not a perfect square
+    x >>= ix;
 
-	/* at this stage, x must be odd for a perfect square,
-	so sqrt(x) is odd if x is a perfect square, in which case
-	(sqrt(x))(mod 8) is 1 3 5 or 7. So x (mod 8) has to be 1 */
-	if ((x & 0x7) != 1)
-		return false;  // not a perfect square
+    /* at this stage, x must be odd for a perfect square,
+    so sqrt(x) is odd if x is a perfect square, in which case
+    (sqrt(x))(mod 8) is 1 3 5 or 7. So x (mod 8) has to be 1 */
+    if ((x & 0x7) != 1)
+        return false;  // not a perfect square
 
-	s = llround(sqrt(x));  // slightly faster than intSqrt
-	ss = s << (ix / 2);
-	return (s * s == x);
+    s = llround(sqrt(x));  // slightly faster than intSqrt
+    ss = s << (ix / 2);
+    return (s * s == x);
 }
 
 // This routine uses Newton iteration: if x is an approximate inverse square root of N,

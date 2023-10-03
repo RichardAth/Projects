@@ -479,6 +479,8 @@ factor list just contains the number to be factorised. Whenever a new factor is 
 existing factors that are multiples of that factor are split into two factors. If
 this process creates equal factors they are merged. 
 
+Primes up to 393203 (33335 primes) are used in trial division.
+
 Step 1: if number to factor is > than the the square of the largest prime to be 
 used in trial division, check if the number is a perfect power +/- 1 and if so 
 attempt to factorise it. This step may return factors that are not prime factors.
