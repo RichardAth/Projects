@@ -17,14 +17,11 @@
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "pch.h"
-
 #include <Mmsystem.h >   // for sound effects
-
 #include "expression.h"
 #include "quadmodLL.h"
 
 extern std::string attsound;   // for sound effects
-
 extern int groupSize;
 
 char output[300000];

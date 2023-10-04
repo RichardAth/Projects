@@ -1371,6 +1371,7 @@ bool BigIntIsZero(const BigInteger* value)
     return false;      // Number is not zero.
 }
 
+/* change -ve to +ve and vice versa */
 void BigIntChSign(BigInteger* value)
 {
     if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
@@ -1387,6 +1388,7 @@ void BigIntChSign(BigInteger* value)
     }
 }
 
+/* change -ve to +ve */
 void BigIntAbs(BigInteger* value) {
     if (value->sign == SIGN_NEGATIVE)
         value->sign = SIGN_POSITIVE;
@@ -1579,7 +1581,7 @@ enum eOper {
     OPERATION_XOR,
 };
 
-void ConvertToTwosComplement(BigInteger* value)
+static void ConvertToTwosComplement(BigInteger* value)
 {
     int idx;
     int nbrLimbs;

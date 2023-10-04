@@ -1544,6 +1544,17 @@ static void doTests3(void) {
     elapsed = (double)end - start;
     std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
+    /* test square root function */
+    for (int i = 1; i <= 20; i++) {
+        largeRand(a);
+        b = sqrt(a);  /* get square root of Znum */
+        aBI = a;
+        bBI = aBI.sqRoot();  /* get square root of big integer */
+        BigtoZ(bm, bBI);
+        std::cout << "sqrt(" << a << ") = " << b << '\n';
+        assert(bm = b);      /* check that both square roots have the same value */
+    }
+
     //largeRand(mod);				     // get large random number  b
     //mod |= 1;                         /* make sure b is odd */
     //std::cout << "Mongomery modular multiplication. modulus = " << mod << '\n';
@@ -1608,7 +1619,7 @@ been installed. */
 /* see https://oeis.org/A005875 
 Command format is TEST 11 [p1[,p2[,p3]]] where
 p1 is the number of tests,
-p2 is the size of the numbers to be factored in bits,
+p2 is the size of the numbers to be processed in bits,
 if p3 <= 1 use fixed random seed value (default)
 if p3 = 2 use truly random seed value
 if p3 > 2  use p3 as the seed value*/
@@ -1938,6 +1949,8 @@ void writeIni(void) {
         int rv2 = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
         if (rv2 != 0)
             perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+        else if (verbose > 0)
+            std::cout << myTime() << " BigIntCalculator.ini written to disk \n";
     }
     else
         perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
@@ -2568,9 +2581,9 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
             if (b_ck == BST_CHECKED)
-                lang = TRUE;
+                lang = TRUE;    /* select Spanish */
             if (b_ck == BST_UNCHECKED)
-                lang = FALSE;
+                lang = FALSE;   /* select English */
             return FALSE;
 
         case group_size_int:

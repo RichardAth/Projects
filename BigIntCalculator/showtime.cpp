@@ -17,8 +17,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma warning(disable : 4996)
 
-extern int lang;
-
 /* get clock time in 1/10th of a second */
 double tenths(void) {
 	clock_t now = clock();

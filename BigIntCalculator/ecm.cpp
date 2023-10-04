@@ -19,7 +19,6 @@ see https://en.wikipedia.org/wiki/Lenstra_elliptic-curve_factorization
 Profiling indicates that about 2/3 of the CPU time is used during Modular Multiplication. */
 
 #include "pch.h"
-#include "showtime.h"
 
 //#define log 1              // remove this line to generate code without logging
 

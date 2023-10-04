@@ -3,17 +3,15 @@
 
 #undef min  /* undefine min defined in windows.h */
 
-extern int verbose;
-
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
-#ifdef _M_AMD64
-#ifndef _AMD64_
-#define _AMD64_ 1
-#endif
-#endif
-#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
-#include <intsafe.h>
-#include <intrin.h>
+//#ifdef _M_AMD64
+//#ifndef _AMD64_
+//#define _AMD64_ 1
+//#endif
+//#endif
+//#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
+//#include <intsafe.h>
+//#include <intrin.h>
 
 
 
