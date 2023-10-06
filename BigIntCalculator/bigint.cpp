@@ -409,7 +409,13 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
         return Remainder;
     }
     Base = Dividend / Divisor;    // Get quotient of division.
-    Base = Base*Divisor;
+    if (Divisor.nbrLimbs == 1) {
+        Base *= Divisor.limbs[0];   /* use multiplication by integer if possible*/
+        if (Divisor.sign == SIGN_NEGATIVE)
+            Base = -Base;
+    }
+    else
+        Base = Base*Divisor;   /* use long multiplication */
     return Dividend - Base;
 }
 
@@ -1133,9 +1139,6 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
     if (nbrLimbs < 0)
     {   // Absolute value of dividend is less than absolute value of divisor.
         Quotient = 0;
-        /*Quotient.limbs[0] = 0;
-        Quotient.nbrLimbs = 1;
-        Quotient.sign = SIGN_POSITIVE;*/
         return Quotient;
     }
     if (nbrLimbs == 0)
@@ -1148,9 +1151,6 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
         if (Dividend.limbs[nbrLimbs] < Divisor.limbs[nbrLimbs])
         {   // Dividend is less than divisor, so quotient is zero.
             Quotient = 0;
-            /*Quotient.limbs[0] = 0;
-            Quotient.nbrLimbs = 1;
-            Quotient.sign = SIGN_POSITIVE;*/
             return Quotient;
         }
     }

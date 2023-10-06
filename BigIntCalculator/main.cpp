@@ -1468,10 +1468,12 @@ static void doTests3(void) {
             e2 = mpz_get_d_2exp(&e2l, ZT(am));
             assert(e1l == e2l);   // check power of 2 exponent is correct
             relErrf = abs(e1 - e2) / e1;   /* should be less than 10E-14 */
-            relerror = (10'000'000'000'000'000LL * error) / p;  /* error ratio * 10^15 */
-            /* print log base 10 of p, then error ratio */
-            std::cout << " pdb = " << pdb / std::log(10)
-                << " error = " << relErrf <<  " relerror = " << relerror << '\n';
+            if (relErrf > 10E-13) {
+                relerror = (10'000'000'000'000'000LL * error) / p;  /* error * 10^15 */
+                /* print log base 10 of p, then error ratio */
+                std::cout << " pdb = " << pdb / std::log(10)
+                    << " error ratio = " << relErrf << " error*10^15 = " << relerror << '\n';
+            }
         }
     }
 
@@ -1545,14 +1547,15 @@ static void doTests3(void) {
     std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
     /* test square root function */
+    a = 1;
     for (int i = 1; i <= 20; i++) {
-        largeRand(a);
-        b = sqrt(a);  /* get square root of Znum */
-        aBI = a;
-        bBI = aBI.sqRoot();  /* get square root of big integer */
-        BigtoZ(bm, bBI);
+        a *= rand();
+        b = sqrt(a);         /* get square root of Znum, use Boost Library function */
+        aBI = a;             /* convert Znum to BigInteger*/
+        bBI = aBI.sqRoot();  /* get square root of big integer, use DA's function */
+        BigtoZ(bm, bBI);     /* convert BigInteger to Znum */
         std::cout << "sqrt(" << a << ") = " << b << '\n';
-        assert(bm = b);      /* check that both square roots have the same value */
+        assert(bm == b);      /* check that both square roots have the same value */
     }
 
     //largeRand(mod);				     // get large random number  b

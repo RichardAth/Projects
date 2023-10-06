@@ -316,7 +316,7 @@ and n = modulus. The parameters are supplied as text, which can be numbers or
 numerical expressions. The modulus has to be factored, so if it is too large
 the factorisation can take an excessive length of time. The results are placed in 
 the output buffer */
-static void quadmodText(const char* aText, const char* bText, const char* cText,
+static retCode quadmodText(const char* aText, const char* bText, const char* cText,
     const char* modText, int groupLength)
 {
     groupSize = groupLength; /* used for formatting the output */
@@ -329,21 +329,21 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
     {
         std::cout << (lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ") ;
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(bText, &ValB, false);  /* convert b from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente lineal: " : "Linear coefficient: ");
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(cText, &ValC, false);   /* convert c from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Término independiente: " : "Constant coefficient: ");
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(modText, &ValN, false);   /* convert mod from text to BigInteger */
     if ((rc == retCode::EXPR_OK) && (ValN.sign == SIGN_NEGATIVE))
@@ -354,7 +354,7 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
     {
         std::cout << (lang ? "Módulo: " : "Modulus: ");
         textError(rc);
-        return;
+        return rc;
     }
     if (ptrOutput == output)
     {    // No errors found. send ax² + bx +c = 0 (mod n) to output buffer.
@@ -392,6 +392,7 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
 
     copyStr(&ptrOutput, lang ? COPYRIGHT_SPANISH : COPYRIGHT_ENGLISH);
     copyStr(&ptrOutput, "\n");
+    return retCode::EXPR_OK;
 }
 
 /* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
@@ -442,10 +443,14 @@ int quadModEqn(const std::vector<std::string>& p) {
         fgets(N, sizeof(N), stdin);
         if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
 
-        quadmodText(A, B, C, N, groupSize);
-        printf("%s\n", output);   /* print output buffer, which contains the input 
+        auto rc = quadmodText(A, B, C, N, groupSize);
+        if (rc == retCode::EXPR_OK) {
+            printf("%s\n", output);   /* print output buffer, which contains the input
                                   parameters as well as the solutions */
-        return EXIT_SUCCESS;
+            return EXIT_SUCCESS;
+        }
+        else
+            return EXIT_FAILURE;
     }
     /* code below catches C++ 'throw' type exceptions */
     catch (const std::exception& e) {
