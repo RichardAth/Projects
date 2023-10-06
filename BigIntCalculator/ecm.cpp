@@ -239,10 +239,10 @@ static void prac(int n, limb *x, limb *z, limb *xT, limb *zT, limb *xT2, limb *z
 	/* first iteration always begins by Condition 3, then a swap */
 	d = n - r;
 	e = 2 * r - n;
-	memcpy(xB, xA, NumberLength * sizeof(limb));   // B <- A
-	memcpy(zB, zA, NumberLength * sizeof(limb));
-	memcpy(xC, xA, NumberLength * sizeof(limb));   // C <- A
-	memcpy(zC, zA, NumberLength * sizeof(limb));
+	std::memcpy(xB, xA, NumberLength * sizeof(limb));   // B <- A
+	std::memcpy(zB, zA, NumberLength * sizeof(limb));
+	std::memcpy(xC, xA, NumberLength * sizeof(limb));   // C <- A
+	std::memcpy(zC, zA, NumberLength * sizeof(limb));
 	duplicate(xA, zA, xA, zA);              /* A=2*A */
 	while (d != e) {
 		if (d < e) {
@@ -341,11 +341,11 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	SubtBigNbrModN(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x2*z1-x1*z2)
 	modmult(TX, TX, UX);                                 // UX = 4*(x2*z1-x1*z2)^2
 	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x != x3
-		memcpy(TZ, x, NumberLength * sizeof(limb));       // TZ = x
-		memcpy(TX,  UZ, NumberLength * sizeof(limb));     // TX = UZ = 4*(x1*x2-z1*z2)^2
+		std::memcpy(TZ, x, NumberLength * sizeof(limb));       // TZ = x
+		std::memcpy(TX,  UZ, NumberLength * sizeof(limb));     // TX = UZ = 4*(x1*x2-z1*z2)^2
 		modmult(z, TX,  UZ);                              // UZ = z*TX
 		modmult(UX, TZ, z3);                              // z3 = UX*TZ
-		memcpy(x3,  UZ, NumberLength * sizeof(limb));     // x3 = UZ
+		std::memcpy(x3,  UZ, NumberLength * sizeof(limb));     // x3 = UZ
 	}
 	else {
 		modmult( UZ, z, x3);            // x3 = 4*z*(x1*x2-z1*z2)^2
@@ -408,7 +408,7 @@ static void GenerateSieve(int initial) {
 	int i, j, Q, initModQ;
 	for (i = 0; i < 10 * SIEVE_SIZE; i += SIEVE_SIZE)
 	{
-		memcpy(&sieve[i], sieve2310, SIEVE_SIZE);
+		std::memcpy(&sieve[i], sieve2310, SIEVE_SIZE);
 	}
 #if MAX_PRIME_SIEVE == 11
 	j = 5;
@@ -802,7 +802,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 
 		//  Compute A0 <- 2 * (ElipCurvNo+1)*modinv(3 * (ElipCurvNo+1) ^ 2 - 1, N) mod N
 		// Aux2 <- 1 in Montgomery notation.
-		memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
+		std::memcpy(Aux2, MontgomeryMultR1, NumberLength * sizeof(limb));
 		modmultInt(Aux2, ElipCurvNo + 1, Aux2);    // Aux2 <- ElipCurvNo + 1 (mod TestNbr)
 		modmultInt(Aux2, 2, Aux1);                 // Aux1 <- 2*(ElipCurvNo+1) (mod TestNbr)
 		modmultInt(Aux2, ElipCurvNo + 1, Aux3);    // Aux3 <- (ElipCurvNo + 1)^2 (mod TestNbr)
@@ -856,14 +856,14 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		/**************/
 		/* First step */
 		/**************/
-		memcpy(Xaux, X, NumberLength * sizeof(limb));   // Xaux = X
-		memcpy(Zaux, Z, NumberLength * sizeof(limb));   // Zaux = Z
+		std::memcpy(Xaux, X, NumberLength * sizeof(limb));   // Xaux = X
+		std::memcpy(Zaux, Z, NumberLength * sizeof(limb));   // Zaux = Z
 #ifdef log
 		fprintf_s(logfile, " Start first step\n");
 		logf(Xaux);
 #endif
 		// GcdAccumulated = 1
-		memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
+		std::memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
 		for (Pass = 0; Pass < 2; Pass++) {
 #ifdef log
 			fprintf(logfile, "starting pass %d \n", Pass);
@@ -882,7 +882,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			if (Pass == 0) {
 				// GcdAccumulated *= Z
 				modmult(GcdAccumulated, Z, Aux1);
-				memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+				std::memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 #ifdef log
 				logf(GcdAccumulated);
 #endif
@@ -910,7 +910,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				if (Pass == 0) {
 					// GcdAccumulated *= Z;
 					modmult(GcdAccumulated, Z, Aux1);
-					memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+					std::memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 #ifdef log
 					fprintf_s(logfile, "indexM = %d ", indexM);
 					logf(GcdAccumulated);
@@ -962,7 +962,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					if (Pass == 0) {
 						// GcdAccumulated *= Z;
 						modmult(GcdAccumulated, Z, Aux1);
-						memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
+						std::memcpy(GcdAccumulated, Aux1, NumberLength * sizeof(limb));
 #ifdef log
 						fprintf_s(logfile, "%d of %d  ", i, 10 * SIEVE_SIZE);
 						logf(GcdAccumulated);
@@ -985,8 +985,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			if (Pass == 0) {
 				if (BigNbrIsZero(GcdAccumulated, NumberLength))
 				{ // If GcdAccumulated is multiple of TestNbr, continue.
-					memcpy(X, Xaux, NumberLength * sizeof(limb));
-					memcpy(Z, Zaux, NumberLength * sizeof(limb));
+					std::memcpy(X, Xaux, NumberLength * sizeof(limb));
+					std::memcpy(Z, Zaux, NumberLength * sizeof(limb));
 #ifdef log
 					logf(X);
 					logf(Z);
@@ -1022,9 +1022,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				sieve2310[(sieveidx[j++] = u / 2)] = (unsigned char)0;
 			}
 		}
-		memcpy(&sieve2310[HALF_SIEVE_SIZE], &sieve2310[0], HALF_SIEVE_SIZE);
-		memcpy(Xaux, X, NumberLength * sizeof(limb));  // (X:Z) -> Q (output
-		memcpy(Zaux, Z, NumberLength * sizeof(limb));  //         from step 1)
+		std::memcpy(&sieve2310[HALF_SIEVE_SIZE], &sieve2310[0], HALF_SIEVE_SIZE);
+		std::memcpy(Xaux, X, NumberLength * sizeof(limb));  // (X:Z) -> Q (output
+		std::memcpy(Zaux, Z, NumberLength * sizeof(limb));  //         from step 1)
 #ifdef log
 		fprintf_s(logfile, " Start second step\n");
 		logf(Xaux);
@@ -1032,9 +1032,9 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 #endif
 		for (Pass = 0; Pass < 2; Pass++) {
 			int Qaux, J;
-			memcpy(GcdAccumulated, MontgomeryMultR1, NumberLength * sizeof(limb));
-			memcpy(UX, X, NumberLength * sizeof(limb));
-			memcpy(UZ, Z, NumberLength * sizeof(limb));  // (UX:UZ) -> Q 
+			std::memcpy(GcdAccumulated, MontgomeryMultR1, NumberLength * sizeof(limb));
+			std::memcpy(UX, X, NumberLength * sizeof(limb));
+			std::memcpy(UZ, Z, NumberLength * sizeof(limb));  // (UX:UZ) -> Q 
 			ModInvBigNbr(Z, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, X, root[0]); // root[0] <- X/Z (Q)
 			J = 0;
@@ -1061,8 +1061,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			modmult(Aux1, Aux1, Aux2);
 			modmult(Aux2, UX, Z); // (X:Z) -> 3Q
 			for (I = 5; I < SIEVE_SIZE; I += 2) {
-				memcpy(WX, X, NumberLength * sizeof(limb));
-				memcpy(WZ, Z, NumberLength * sizeof(limb));
+				std::memcpy(WX, X, NumberLength * sizeof(limb));
+				std::memcpy(WZ, Z, NumberLength * sizeof(limb));
 				SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);
 				AddBigNbrModNB(TX, TZ, Aux2, TestNbr, NumberLength);
 				modmult(Aux1, Aux2, W1);
@@ -1078,7 +1078,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				if (Pass == 0) {
 					// GcdAccumulated *= Aux1 (Aux1 = W1 -W2)
 					modmult(GcdAccumulated, Aux1, Aux2);
-					memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
+					std::memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
 #ifdef log
 					fprintf_s(logfile, "%d of %d  ", I, SIEVE_SIZE);
 					logf(GcdAccumulated);
@@ -1095,8 +1095,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					}
 				}
 				if (I == HALF_SIEVE_SIZE) {
-					memcpy(DX, X, NumberLength * sizeof(limb));
-					memcpy(DZ, Z, NumberLength * sizeof(limb));  // (DX:DZ) -> HALF_SIEVE_SIZE*Q
+					std::memcpy(DX, X, NumberLength * sizeof(limb));
+					std::memcpy(DZ, Z, NumberLength * sizeof(limb));  // (DX:DZ) -> HALF_SIEVE_SIZE*Q
 				}
 				if (I % 3 != 0 && I % 5 != 0 && I % 7 != 0
 #if MAX_PRIME_SIEVE == 11
@@ -1108,8 +1108,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					ModInvBigNbr(Z, Aux1, TestNbr, NumberLength);
 					modmult(Aux1, X, root[J]); // root[J] <- X/Z
 				}
-				memcpy(UX, WX, NumberLength * sizeof(limb));  // (UX:UZ) <-
-				memcpy(UZ, WZ, NumberLength * sizeof(limb));  // Previous (X:Z)
+				std::memcpy(UX, WX, NumberLength * sizeof(limb));  // (UX:UZ) <-
+				std::memcpy(UZ, WZ, NumberLength * sizeof(limb));  // Previous (X:Z)
 			} /* end for I */
 #ifdef log
 			fprintf_s(logfile, "end 'for I' I=%d Pass = %d \n", I, Pass);
@@ -1124,8 +1124,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			modmult(Aux1, AA, Aux2);
 			AddBigNbrModNB(Aux2, W2, Aux3, TestNbr, NumberLength);
 			modmult(Aux1, Aux3, Z);
-			memcpy(UX, X, NumberLength * sizeof(limb));
-			memcpy(UZ, Z, NumberLength * sizeof(limb));    // (UX:UZ) -> SIEVE_SIZE*Q
+			std::memcpy(UX, X, NumberLength * sizeof(limb));
+			std::memcpy(UZ, Z, NumberLength * sizeof(limb));    // (UX:UZ) -> SIEVE_SIZE*Q
 			AddBigNbrModNB(X, Z, Aux1, TestNbr, NumberLength);
 			modmult(Aux1, Aux1, W1);
 			SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);
@@ -1175,7 +1175,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 						SubtBigNbrModN(Aux1, root[i], M, TestNbr, NumberLength);
 						// GcdAccumulated *= M
 						modmult(GcdAccumulated, M, Aux2);
-						memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
+						std::memcpy(GcdAccumulated, Aux2, NumberLength * sizeof(limb));
 #ifdef log
 						fprintf_s(logfile, "%d of %d  (%d of %d)",
 							indexM, maxIndexM, i, GROUP_SIZE);
@@ -1200,8 +1200,8 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 				}   // End if (indexM >= Qaux)
 
 				if (indexM != 0) { // Update (X:Z)
-					memcpy(WX, X, NumberLength * sizeof(limb));
-					memcpy(WZ, Z, NumberLength * sizeof(limb));
+					std::memcpy(WX, X, NumberLength * sizeof(limb));
+					std::memcpy(WZ, Z, NumberLength * sizeof(limb));
 					SubtBigNbrModN(X, Z, Aux1, TestNbr, NumberLength);
 					AddBigNbrModNB(TX, TZ, Aux2, TestNbr, NumberLength);
 					modmult(Aux1, Aux2, W1);
@@ -1214,16 +1214,16 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 					SubtBigNbrModN(W1, W2, Aux1, TestNbr, NumberLength);
 					modmult(Aux1, Aux1, Aux2);
 					modmult(Aux2, UX, Z);
-					memcpy(UX, WX, NumberLength * sizeof(limb));
-					memcpy(UZ, WZ, NumberLength * sizeof(limb));
+					std::memcpy(UX, WX, NumberLength * sizeof(limb));
+					std::memcpy(UZ, WZ, NumberLength * sizeof(limb));
 				}
 			} // end for (indexM = 0; indexM <= maxIndexM; indexM++)
 
 			if (Pass == 0) {
 				int rc;
 				if (BigNbrIsZero(GcdAccumulated, NumberLength)) { // If GcdAccumulated is zero
-					memcpy(X, Xaux, NumberLength * sizeof(limb));  // X = Xaux
-					memcpy(Z, Zaux, NumberLength * sizeof(limb));  // Z = Zaux
+					std::memcpy(X, Xaux, NumberLength * sizeof(limb));  // X = Xaux
+					std::memcpy(Z, Zaux, NumberLength * sizeof(limb));  // Z = Zaux
 #ifdef log
 					fprintf_s(logfile, "GcdAccumulated = 0 ");
 					logf(X);
@@ -1280,11 +1280,11 @@ static void ecminit(const Znum &zN) {
 	first = true;
 
 	/* set variables to zero */
-	memset(M, 0, NumberLength * sizeof(limb));
-	memset(DX, 0, NumberLength * sizeof(limb));
-	memset(DZ, 0, NumberLength * sizeof(limb));
-	memset(W3, 0, NumberLength * sizeof(limb));
-	memset(W4, 0, NumberLength * sizeof(limb));
+	std::memset(M, 0, NumberLength * sizeof(limb));
+	std::memset(DX, 0, NumberLength * sizeof(limb));
+	std::memset(DZ, 0, NumberLength * sizeof(limb));
+	std::memset(W3, 0, NumberLength * sizeof(limb));
+	std::memset(W4, 0, NumberLength * sizeof(limb));
 	ptrLowerText = lowerText;
 
 	ElipCurvNo--;  // decrement curve number

@@ -106,7 +106,7 @@ public:
 			return *this;		// if lhs == rhs do nothing
 		nbrLimbs = other.nbrLimbs;
 		sign = other.sign;
-		memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
+		std::memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
 		while (nbrLimbs > 1 && limbs[nbrLimbs - 1] == 0) {
 			nbrLimbs--;  // remove any leading zeros
 		}

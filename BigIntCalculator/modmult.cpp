@@ -130,8 +130,8 @@ void GetMontgomeryParmsPowerOf2(int powerOf2)
     NumberLength = (powerOf2 + BITS_PER_GROUP - 1) / BITS_PER_GROUP;
     int NumberLengthBytes = NumberLength * (int)sizeof(limb);
     powerOf2Exponent = powerOf2;
-    (void)memset(MontgomeryMultR1, 0, NumberLengthBytes);
-    (void)memset(MontgomeryMultR2, 0, NumberLengthBytes);
+    std::memset(MontgomeryMultR1, 0, NumberLengthBytes);
+    std::memset(MontgomeryMultR2, 0, NumberLengthBytes);
     MontgomeryMultR1[0] = 1;
     MontgomeryMultR2[0] = 1;
 }
@@ -1106,7 +1106,7 @@ void modmult(const limb factor1[], const limb factor2[], limb product[])
         }
 
         /* drop through to here only if NumberLength is 12 */
-        memset(Prod, 0, NumberLength * sizeof(limb));
+        std::memset(Prod, 0, NumberLength * sizeof(limb));
         for (i = 0; i < NumberLength; i++) {
             Pr = (Nbr = *(factor1 + i)) * (int64_t)*factor2 + (uint32_t)Prod[0];
             MontDig = ((int32_t)Pr * MontgomeryMultN[0]) & MAX_VALUE_LIMB;
@@ -1121,7 +1121,7 @@ void modmult(const limb factor1[], const limb factor2[], limb product[])
 #else
         double dLimbRange = (double)LIMB_RANGE;
         double dInvLimbRange = (double)1 / dLimbRange;
-        memset(Prod, 0, NumberLength * sizeof(limb));
+       std::memset(Prod, 0, NumberLength * sizeof(limb));
         for (i = 0; i < NumberLength; i++)
         {
             int Nbr = *(factor1 + i);
@@ -1180,7 +1180,7 @@ void modmult(const limb factor1[], const limb factor2[], limb product[])
                 carry >>= BITS_PER_GROUP;
             }
         }
-        memcpy(product, Prod, NumberLength * sizeof(limb));
+        std::memcpy(product, Prod, NumberLength * sizeof(limb));
         return;
     }
 
@@ -1522,11 +1522,11 @@ void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int nbrLen)
     size = (nbrLen + 1) * sizeof(limb);
     *((limb *)mod + nbrLen) = 0;   // value of mod is not changed
     *((limb *)num + nbrLen) = 0;   // value of num is not changed
-    memcpy(U, mod, size);
-    memcpy(V, num, size);
+    std::memcpy(U, mod, size);
+    std::memcpy(V, num, size);
     // Maximum value of R and S can be up to 2*M, so one more limb is needed.
-    memset(R, 0, size);   // R <- 0
-    memset(S, 0, size);   // S <- 1
+    std::memset(R, 0, size);   // R <- 0
+    std::memset(S, 0, size);   // S <- 1
     S[0] = 1;
     lenRS = 1;
     k = steps = 0;
@@ -1616,16 +1616,16 @@ void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int nbrLen)
             {  // compute now U and V and reset e, f, g and h.
                // U' <- eU + fV, V' <- gU + hV
                 len = (lenU > lenV ? lenU : lenV);
-                memset(&U[lenU], 0, (len - lenU + 1) * sizeof(limb));
-                memset(&V[lenV], 0, (len - lenV + 1) * sizeof(limb));
-                memcpy(Ubak, U, (len + 1) * sizeof(limb));
-                memcpy(Vbak, V, (len + 1) * sizeof(limb));
+                std::memset(&U[lenU], 0, (len - lenU + 1) * sizeof(limb));
+                std::memset(&V[lenV], 0, (len - lenV + 1) * sizeof(limb));
+                std::memcpy(Ubak, U, (len + 1) * sizeof(limb));
+                std::memcpy(Vbak, V, (len + 1) * sizeof(limb));
                 AddMult(U, a, -b, V, -c, d, len);
                 if ((U[lenU] | V[lenV]) & (1 << (BITS_PER_GROUP - 2)))
                 {    // Complete expansion of U and V required for all steps.
                      //  2. while V > 0 do
-                    memcpy(U, Ubak, (len + 1) * sizeof(limb));
-                    memcpy(V, Vbak, (len + 1) * sizeof(limb));
+                    std::memcpy(U, Ubak, (len + 1) * sizeof(limb));
+                    std::memcpy(V, Vbak, (len + 1) * sizeof(limb));
                     b = c = 0;  // U' = U, V' = V.
                     a = d = 1;
                     while (lenV > 1 || V[0] > 0) {
@@ -1816,7 +1816,7 @@ void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int nbrLen)
     R[nbrLen] = 0;
     // At this moment R = x^(-1)*2^(k+m)
     // 11. return MonPro(R, 2^(m-k))
-    memset(S, 0, size);
+    std::memset(S, 0, size);
     bitCount = nbrLen*BITS_PER_GROUP - k;
     if (bitCount < 0) {
         bitCount += nbrLen*BITS_PER_GROUP;
@@ -1838,7 +1838,7 @@ void ModInvBigNbr(const limb num[], limb inv[], const limb mod[], int nbrLen)
 void modPow(const limb* base, const limb* exp, int nbrGroupsExp, limb* power)
 {
     int lenBytes = (NumberLength + 1) * (int)sizeof(*power);
-    (void)memcpy(power, MontgomeryMultR1, lenBytes);  // power <- 1
+    std::memcpy(power, MontgomeryMultR1, lenBytes);  // power <- 1
     for (int index = nbrGroupsExp - 1; index >= 0; index--)
     {
         int groupExp = *(exp + index);
@@ -1856,7 +1856,7 @@ void modPow(const limb* base, const limb* exp, int nbrGroupsExp, limb* power)
 void modPowBaseInt(int base, const limb* exp, int nbrGroupsExp, limb* power)
 {
     int NumberLengthBytes = (NumberLength + 1) * (int)sizeof(limb);
-    (void)memcpy(power, MontgomeryMultR1, NumberLengthBytes);  // power <- 1
+    std::memcpy(power, MontgomeryMultR1, NumberLengthBytes);  // power <- 1
     for (int index = nbrGroupsExp - 1; index >= 0; index--)
     {
         int groupExp = *(exp + index);
@@ -1881,7 +1881,7 @@ void BigIntModularPower(const BigInteger* base, const BigInteger* exponent, BigI
     modmult(aux5, MontgomeryMultR2, aux6);   // Convert base to Montgomery notation.
     modPow(aux6, exponent->limbs, exponent->nbrLimbs, aux5);
     lenBytes = NumberLength * (int)sizeof(limb);
-    (void)memset(aux4, 0, lenBytes); // Convert power to standard notation.
+    std::memset(aux4, 0, lenBytes); // Convert power to standard notation.
     aux4[0] = 1;
     modmult(aux4, aux5, aux6);
     UncompressLimbsBigInteger(aux6, power);

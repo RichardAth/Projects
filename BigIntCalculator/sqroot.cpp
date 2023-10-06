@@ -319,7 +319,7 @@ void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
         // Multiply arrAux by approxInvSqrt.
         multiply(ptrArrAux + 1, &approxInvSqrt[lenInvSqrt - limbLength], approxInv, limbLength, NULL);
         lenBytes = limbLength * (int)sizeof(limb);
-        (void)memcpy(&approxInvSqrt[lenInvSqrt - limbLength], &approxInv[limbLength - 1], lenBytes);
+        std::memcpy(&approxInvSqrt[lenInvSqrt - limbLength], &approxInv[limbLength - 1], lenBytes);
         bitLengthNbrCycles--;
     }
     // Multiply approxInvSqrt by argument to obtain the square root.

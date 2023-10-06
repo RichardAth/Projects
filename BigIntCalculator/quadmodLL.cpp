@@ -178,7 +178,7 @@ static void PerformChineseRemainderTheorem(const BigInteger *pValA, const BigInt
                 (void)BigIntPowerIntExp(bigBase, astFactorsMod[E + 1].multiplicity, L);
                 NumberLength = prime.nbrLimbs;
                 NumberLengthBytes = NumberLength * (int)sizeof(limb);
-                (void)memcpy(TestNbr, prime.limbs, NumberLengthBytes);
+                std::memcpy(TestNbr, prime.limbs, NumberLengthBytes);
                 TestNbr[NumberLength] = 0;
                 GetMontgomeryParms(NumberLength);
                 BigIntModularDivision(&Q, &L, &prime, &Aux[T1]);
@@ -280,7 +280,7 @@ static void SolveModularLinearEquation(const BigInteger * pValA, const BigIntege
     {       // ValN is not 1.
         quad.Increment[solutionNbr] = ValNn;  // CopyBigInt(&quad.Increment[solutionNbr], pValN);
         Exponents[solutionNbr] = 1;
-        (void)memcpy(TestNbr, ValNn.limbs, NumberLengthBytes);
+        std::memcpy(TestNbr, ValNn.limbs, NumberLengthBytes);
         TestNbr[NumberLength] = 0;
         // Perform division using odd modulus r.
         GetMontgomeryParms(NumberLength);
@@ -371,14 +371,14 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
         tmp2.limbs[0] = 3;
         AddBigNbr(tmp2.limbs, tmp1.limbs, tmp2.limbs, nbrLimbs);
         MultBigNbr(tmp2.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs);
-        (void)memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
+        std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
         DivBigNbrByInt(tmp1.limbs, 2, sqrRoot.limbs, nbrLimbs);
         correctBits--;
     }
     // Get square root of ValCOdd from its inverse by multiplying by ValCOdd.
     MultBigNbr(ValCOdd.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs);
     lenBytes = nbrLimbs * (int)sizeof(limb);
-    (void)memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
+    std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
     setNbrLimbs(&sqrRoot);
     for (int ctr = 0; ctr < (bitsCZero / 2); ctr++)
     {
@@ -613,7 +613,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
 
     NumberLength = prime.nbrLimbs;
     int NumberLengthBytes = NumberLength * (int)sizeof(limb);
-    (void)memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime*/
+    std::memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime*/
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
     if (verbose > 1) {
@@ -708,7 +708,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             }
             // Step 4.
             NumberLengthBytes = NumberLength * (int)sizeof(limb);
-            (void)memcpy(Aux[5].limbs, Aux[4].limbs, NumberLengthBytes); // y
+            std::memcpy(Aux[5].limbs, Aux[4].limbs, NumberLengthBytes); // y
             r = e;
             K1 = Q;    // CopyBigInt(&K1, &Q);
             subtractdivide(K1, 1, 2);  /* K1 = (K-1)/2*/
@@ -737,14 +737,14 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             {
                 // Step 6
                 int k = 0;
-                (void)memcpy(Aux[10].limbs, Aux[9].limbs, NumberLengthBytes);
+                std::memcpy(Aux[10].limbs, Aux[9].limbs, NumberLengthBytes);
                 do
                 {
                     k++;
                     modmult(Aux[10].limbs, Aux[10].limbs, Aux[10].limbs);
                 } while (memcmp(Aux[10].limbs, MontgomeryMultR1, NumberLengthBytes) != 0);
                 // Step 7
-                (void)memcpy(Aux[11].limbs, Aux[5].limbs, NumberLengthBytes); // d
+                std::memcpy(Aux[11].limbs, Aux[5].limbs, NumberLengthBytes); // d
                 for (int ctr = 0; ctr < (r - k - 1); ctr++)
                 {
                     modmult(Aux[11].limbs, Aux[11].limbs, Aux[11].limbs);
@@ -896,7 +896,7 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     tmp2 = 1;        // intToBigInteger(&tmp2, 1);
     NumberLength = tmp1.nbrLimbs;
     NumberLengthBytes = NumberLength * (int)sizeof(limb);
-    (void)memcpy(TestNbr, tmp1.limbs, NumberLengthBytes);
+    std::memcpy(TestNbr, tmp1.limbs, NumberLengthBytes);
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
     BigIntModularDivision(&tmp2, &ValAOdd, &tmp1, &Aux[0]);
@@ -1008,7 +1008,7 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
 
     NumberLength = prime.nbrLimbs;
     NumberLengthBytes = NumberLength * (int)sizeof(limb);
-    (void)memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime */
+    std::memcpy(TestNbr, prime.limbs, NumberLengthBytes);  /* TestNbr = prime */
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
     BigIntModularDivision(pValC, pValB, &prime, ptrSolution); /* Solution = C/B (mod prime) */
@@ -1032,7 +1032,7 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
         L %= V;                     // (void)BigIntRemainder(&L, &V, &L);    // Denominator
         NumberLength = V.nbrLimbs;
         NumberLengthBytes = NumberLength * (int)sizeof(limb);
-        (void)memcpy(TestNbr, V.limbs, NumberLengthBytes);
+        std::memcpy(TestNbr, V.limbs, NumberLengthBytes);
         TestNbr[NumberLength] = 0;
         GetMontgomeryParms(NumberLength);
         BigIntModularDivision(&Q, &L, &V, &Aux1);    /* Aux1 = Q/L (mod V) */

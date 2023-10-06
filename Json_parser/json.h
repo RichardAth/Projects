@@ -188,7 +188,7 @@ extern "C"
 
         inline _json_value()
         {
-            memset(this, 0, sizeof(_json_value));
+            std::memset(this, 0, sizeof(_json_value));
         }
 
         inline const struct _json_value& operator [] (int index) const

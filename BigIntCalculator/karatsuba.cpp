@@ -87,11 +87,11 @@ void multiply(const limb factor1[], const limb factor2[], limb result[], const i
     }
 
     karatLength = length;
-    memset(arr, 0, 2 * length * sizeof(limb));      /* copy both operands to arr */
-    memcpy(&arr[0], factor1, len * sizeof(limb));
-    memcpy(&arr[length], factor2, len * sizeof(limb));
+    std::memset(arr, 0, 2 * length * sizeof(limb));      /* copy both operands to arr */
+    std::memcpy(&arr[0], factor1, len * sizeof(limb));
+    std::memcpy(&arr[length], factor2, len * sizeof(limb));
     Karatsuba(0, length, 2 * length);           /* do the actual multiplication */
-    memcpy(result, &arr[2 * (karatLength - length)], 2 * length * sizeof(limb));
+    std::memcpy(result, &arr[2 * (karatLength - length)], 2 * length * sizeof(limb));
     if (pResultLen != NULL) {
         if (karatLength > length && arr[2 * (karatLength - length) - 1] == 0) {
             *pResultLen = length * 2 - 1;
@@ -689,7 +689,7 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
     arrayAux[prodCol] = low;
 #endif
     /* copy product back into factor1 and Factor2 */
-    memcpy(&arr[idxFactor1], &arrayAux[0], 2 * nbrLen * sizeof(limb));
+    std::memcpy(&arr[idxFactor1], &arrayAux[0], 2 * nbrLen * sizeof(limb));
     return;
 }
 

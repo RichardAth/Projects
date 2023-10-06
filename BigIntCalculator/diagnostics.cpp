@@ -38,7 +38,7 @@ class symbol {
 
 public:
 	symbol(HANDLE process, DWORD64 address) : sym((sym_type *)::operator new(sizeof(*sym) + max_name_len)) {
-		memset(sym, '\0', sizeof(*sym) + max_name_len);
+		std::memset(sym, '\0', sizeof(*sym) + max_name_len);
 		sym->SizeOfStruct = sizeof(*sym);
 		sym->MaxNameLength = max_name_len;
 		DWORD64 displacement;

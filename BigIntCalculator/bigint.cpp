@@ -325,11 +325,11 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
     /* Factor1 will be expanded to the length of Factor2 or vice versa. It is necessary to
     override the const-ness, but the value represented does not change */
     if (nbrLimbsFactor1 < nbrLimbsFactor2) {
-        memset(&((BigInteger&)Factor1).limbs[nbrLimbsFactor1], 0, (nbrLimbsFactor2 - nbrLimbsFactor1) * sizeof(limb));
+        std::memset(&((BigInteger&)Factor1).limbs[nbrLimbsFactor1], 0, (nbrLimbsFactor2 - nbrLimbsFactor1) * sizeof(limb));
         nbrLimbs = nbrLimbsFactor2;
     }
     else {
-        memset(&((BigInteger&)Factor2).limbs[nbrLimbsFactor2], 0, (nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
+        std::memset(&((BigInteger&)Factor2).limbs[nbrLimbsFactor2], 0, (nbrLimbsFactor1 - nbrLimbsFactor2) * sizeof(limb));
         nbrLimbs = nbrLimbsFactor1;
     }
 
@@ -389,6 +389,9 @@ void MultBigNbrByInt(BigInteger &m, int n) {
         m.limbs[i] = prod & MAX_VALUE_LIMB;
     }
     if (carry != 0) {
+        if (i >= MAX_LEN) {
+            ThrowExc("BigInteger exceeds max size");
+        }
         m.limbs[i] = (int)carry;
         m.nbrLimbs++;
     }
@@ -419,7 +422,7 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
     return Dividend - Base;
 }
 
-/* calculate base^exponent. */
+/* calculate base^exponent. Throws exception if Power would exceed max size */
 void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) {
     int mask;
     if (base == 0) {     // base = 0 -> power = 0
@@ -801,13 +804,13 @@ void LimbsToBigInteger(/*@in@*/const limb *ptrValues,
         mesg += " in file "; mesg += __FILE__;
         throw std::range_error(mesg);
     }
-    memset(bigint.limbs, 0, MAX_LEN * sizeof(limb));  /* ensure unused limbs are zero */
+    std::memset(bigint.limbs, 0, MAX_LEN * sizeof(limb));  /* ensure unused limbs are zero */
     if (NumLen == 1) {
         bigint.limbs[0] = ptrValues[0];
         bigint.nbrLimbs = 1;
     }
     else { 
-        memcpy(bigint.limbs, ptrValues, NumLen * sizeof(limb));
+        std::memcpy(bigint.limbs, ptrValues, NumLen * sizeof(limb));
 
         int nbrLimbs;   // remove any leading zeros
         for (nbrLimbs = NumLen-1; nbrLimbs > 1; nbrLimbs--) {
@@ -831,13 +834,13 @@ void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
     else {
         int nbrLimbs = bigint.nbrLimbs; // use lesser of bigint.nbrLimbs & NumLen
         if (nbrLimbs >= NumLen) {
-            memcpy(ptrValues, bigint.limbs, NumLen * sizeof(limb));
+            std::memcpy(ptrValues, bigint.limbs, NumLen * sizeof(limb));
             ptrValues[NumLen] = 0;
         }
         else {
-            memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
+            std::memcpy(ptrValues, bigint.limbs, nbrLimbs * sizeof(limb));
             /* set any extra limbs to zero */
-            memset(ptrValues + nbrLimbs, 0, (NumLen - nbrLimbs) * sizeof(limb));
+            std::memset(ptrValues + nbrLimbs, 0, (NumLen - nbrLimbs) * sizeof(limb));
         }
     }
 }
@@ -1027,7 +1030,7 @@ void shiftBI(const BigInteger &first, const int shiftCtr, BigInteger &result)
 
         result.limbs[ptrDest] = (prevLimb << rem) & MAX_INT_NBR;
         if (delta > 0) {
-            memset(result.limbs, 0, delta * sizeof(limb));
+            std::memset(result.limbs, 0, delta * sizeof(limb));
         }
         //result.nbrLimbs += delta;
         if (result.limbs[result.nbrLimbs] != 0) {
@@ -1176,11 +1179,11 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 
         nbrLimbs += 3;    // Use this number of limbs for intermediate calculations.
         if (nbrLimbs > nbrLimbsDivisor) {
-            memset(&adjustedArgument[0], 0, (nbrLimbs - nbrLimbsDivisor) * sizeof(limb));
-            memcpy(&adjustedArgument[nbrLimbs - nbrLimbsDivisor], &Divisor.limbs[0], nbrLimbsDivisor * sizeof(limb));
+            std::memset(&adjustedArgument[0], 0, (nbrLimbs - nbrLimbsDivisor) * sizeof(limb));
+            std::memcpy(&adjustedArgument[nbrLimbs - nbrLimbsDivisor], &Divisor.limbs[0], nbrLimbsDivisor * sizeof(limb));
         }
         else {
-            memcpy(&adjustedArgument[0], &Divisor.limbs[nbrLimbsDivisor - nbrLimbs], nbrLimbs * sizeof(limb));
+            std::memcpy(&adjustedArgument[0], &Divisor.limbs[nbrLimbsDivisor - nbrLimbs], nbrLimbs * sizeof(limb));
         }
         MultiplyBigNbrByMinPowerOf2(power2, adjustedArgument, nbrLimbs, adjustedArgument);
         // Initialize approximate inverse.
@@ -1232,8 +1235,8 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
                 approxInv, approxInv, nbrLimbs, NULL);
         }
         else {
-            memset(arrAux, 0, (nbrLimbs - nbrLimbsDividend) * sizeof(limb));
-            memcpy(&arrAux[nbrLimbs - nbrLimbsDividend], Dividend.limbs, nbrLimbsDividend * sizeof(limb));
+            std::memset(arrAux, 0, (nbrLimbs - nbrLimbsDividend) * sizeof(limb));
+            std::memcpy(&arrAux[nbrLimbs - nbrLimbsDividend], Dividend.limbs, nbrLimbsDividend * sizeof(limb));
             multiply(arrAux, approxInv, approxInv, nbrLimbs, NULL);
         }             // approxInv holds the quotient.
                       // Shift left quotient power2 bits into result.
@@ -1290,12 +1293,12 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
             // Test whether the quotient is correct.
             // It is correct only if multiplied by the divisor, it is <= than the dividend.
             if (nbrLimbsQuotient > nbrLimbsDivisor) {
-                memcpy(&approxInv[0], Divisor.limbs, nbrLimbsDivisor * sizeof(limb));
-                memset(&approxInv[nbrLimbsDivisor], 0, (nbrLimbsQuotient - nbrLimbsDivisor) * sizeof(limb));
+                std::memcpy(&approxInv[0], Divisor.limbs, nbrLimbsDivisor * sizeof(limb));
+                std::memset(&approxInv[nbrLimbsDivisor], 0, (nbrLimbsQuotient - nbrLimbsDivisor) * sizeof(limb));
                 multiply(&approxInv[0], ptrQuot, arrAux, nbrLimbsQuotient, NULL);
             }
             else {
-                memset(&approxInv[2 * nbrLimbs], 0, (nbrLimbsDivisor - nbrLimbsQuotient) * sizeof(limb));
+                std::memset(&approxInv[2 * nbrLimbs], 0, (nbrLimbsDivisor - nbrLimbsQuotient) * sizeof(limb));
                 multiply(Divisor.limbs, ptrQuot, arrAux, nbrLimbsDivisor, NULL);
             }
             ptrDividend = (limb *)&Dividend.limbs[Dividend.nbrLimbs - 1];
@@ -1320,7 +1323,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
                 }
             }
         }
-        memcpy(&Quotient.limbs[0], ptrQuot, nbrLimbsQuotient * sizeof(limb));
+        std::memcpy(&Quotient.limbs[0], ptrQuot, nbrLimbsQuotient * sizeof(limb));
         Quotient.nbrLimbs = nbrLimbsQuotient;
     }
     if (Dividend.sign == Divisor.sign || (Quotient.limbs[0] == 0 && Quotient.nbrLimbs == 1)) {
@@ -1464,7 +1467,7 @@ void BigIntPowerOf2(BigInteger* pResult, int exponent)
     if (nbrLimbs > 0)
     {
         int nbrLimbsBytes = nbrLimbs * (int)sizeof(limb);
-        (void)memset(pResult->limbs, 0, nbrLimbsBytes);
+        std::memset(pResult->limbs, 0, nbrLimbsBytes);
     }
     pResult->limbs[nbrLimbs] = (int)(1U << power2);
     pResult->nbrLimbs = nbrLimbs + 1;
@@ -1768,14 +1771,14 @@ void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint)
         int nbrLimbs = bigint->nbrLimbs;
         if (nbrLimbs > NumberLength)
         {
-            (void)memcpy(ptrValues, bigint->limbs, numberLengthBytes);
+            std::memcpy(ptrValues, bigint->limbs, numberLengthBytes);
         }
         else
         {
             int nbrLimbsBytes = nbrLimbs * (int)sizeof(limb);
-            (void)memcpy(ptrValues, bigint->limbs, nbrLimbsBytes);
+            std::memcpy(ptrValues, bigint->limbs, nbrLimbsBytes);
             nbrLimbsBytes = numberLengthBytes - nbrLimbsBytes;
-            (void)memset(ptrValues + nbrLimbs, 0, nbrLimbsBytes);
+            std::memset(ptrValues + nbrLimbs, 0, nbrLimbsBytes);
         }
     }
 }
@@ -1792,7 +1795,7 @@ void UncompressLimbsBigInteger(const limb* ptrValues, /*@out@*/BigInteger* bigin
         int nbrLimbs;
         const limb* ptrValue1;
         int numberLengthBytes = NumberLength * (int)sizeof(limb);
-        (void)memcpy(bigint->limbs, ptrValues, numberLengthBytes);
+        std::memcpy(bigint->limbs, ptrValues, numberLengthBytes);
         ptrValue1 = ptrValues + NumberLength;
         for (nbrLimbs = NumberLength; nbrLimbs > 1; nbrLimbs--)
         {

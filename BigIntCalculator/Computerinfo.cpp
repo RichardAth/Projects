@@ -322,7 +322,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
     CPUID(0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
     //__cpuid(CPUInfo, 0);
     nIds = CPUInfo[0];
-    memset(CPUString, 0, sizeof(CPUString));
+    std::memset(CPUString, 0, sizeof(CPUString));
     *((int*)CPUString) = CPUInfo[1];
     *((int*)(CPUString + 4)) = CPUInfo[3];
     *((int*)(CPUString + 8)) = CPUInfo[2];
@@ -379,7 +379,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
     CPUID(0x80000000, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
     //__cpuid(CPUInfo, 0x80000000);
     nExIds = CPUInfo[0];
-    memset(CPUBrandString, 0, sizeof(CPUBrandString));
+    std::memset(CPUBrandString, 0, sizeof(CPUBrandString));
 
     // Get the information associated with each extended ID.
     for (i = 0x80000000; i <= nExIds; ++i)
@@ -420,11 +420,11 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
 
         // Interpret CPU brand string and cache information.
         if (i == 0x80000002)
-            memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
+            std::memcpy(CPUBrandString, CPUInfo, sizeof(CPUInfo));
         else if (i == 0x80000003)
-            memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
+            std::memcpy(CPUBrandString + 16, CPUInfo, sizeof(CPUInfo));
         else if (i == 0x80000004)
-            memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
+            std::memcpy(CPUBrandString + 32, CPUInfo, sizeof(CPUInfo));
         else if (i == 0x80000006)
         {
             nCacheLineSize = CPUInfo[2] & 0xff;

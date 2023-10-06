@@ -422,11 +422,11 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 		}
 		F4 = F2;
 		while (F4 * 2 <= F3) {
-			memcpy(SieveArray + F4, SieveArray, F4 * sizeof(*SieveArray));
+			std::memcpy(SieveArray + F4, SieveArray, F4 * sizeof(*SieveArray));
 			F4 *= 2;
 		}
 
-		memcpy(SieveArray + F4, SieveArray, (F3 - F4) * sizeof(*SieveArray));
+		std::memcpy(SieveArray + F4, SieveArray, (F3 - F4) * sizeof(*SieveArray));
 
 		if (F3 == X1 + 1) {
 			break;  /* <<<<<<<<<<< only exit from for loop */
@@ -1881,7 +1881,7 @@ static bool PartialRelationFound(
 			// duplicates.
 			mergeArrays(aindex, nbrFactorsA, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
 			rowMatrixBbeforeMerge[0] = nbrColumns = rowMatrixB[LENGTH_OFFSET];
-			memcpy(&rowMatrixBbeforeMerge[1], &rowMatrixB[1], nbrColumns * sizeof(int));
+			std::memcpy(&rowMatrixBbeforeMerge[1], &rowMatrixB[1], nbrColumns * sizeof(int));
 			mergeArrays(rowPartials, nbrFactorsPartial, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
 			nbrSquares = rowSquares[0];
 			for (index = 1; index < nbrSquares; index++)
@@ -2579,7 +2579,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 			}
 			if (column == 0)
 			{                // Singleton not found: move row upwards.
-				memcpy(&matrixB[row - delta][0], &matrixB[row][0], sizeof(int) * MAX_FACTORS_RELATION);
+				std::memcpy(&matrixB[row - delta][0], &matrixB[row][0], sizeof(int) * MAX_FACTORS_RELATION);
 				vectLeftHandSide[row - delta] = vectLeftHandSide[row];
 				//memcpy(vectLeftHandSide[row - delta], vectLeftHandSide[row], sizeof(vectLeftHandSide[0]));
 			}
@@ -2776,7 +2776,7 @@ static bool InsertNewRelation(
 	MultZnumModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
 	// Add relation to matrix B.
-	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
+	std::memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
 
 	vectLeftHandSide[congruencesFound] = biR;
 	congruencesFound++;
@@ -3127,10 +3127,10 @@ static void BlockLanczos(void)
 
 		  /* Selection of S(i) and W(i) */
 
-		memcpy(matrixTemp, matrixWinv2, sizeof(matrixTemp));
-		memcpy(matrixWinv2, matrixWinv1, sizeof(matrixTemp));
-		memcpy(matrixWinv1, matrixWinv, sizeof(matrixTemp));
-		memcpy(matrixWinv, matrixTemp, sizeof(matrixTemp));
+		std::memcpy(matrixTemp, matrixWinv2, sizeof(matrixTemp));
+		std::memcpy(matrixWinv2, matrixWinv1, sizeof(matrixTemp));
+		std::memcpy(matrixWinv1, matrixWinv, sizeof(matrixTemp));
+		std::memcpy(matrixWinv, matrixTemp, sizeof(matrixTemp));
 
 		mask = 1;
 		for (j = 31; j >= 0; j--) {
@@ -3283,21 +3283,21 @@ static void BlockLanczos(void)
 		}
 		/* cycle arrays:
 		  V2 <- V1, V1 <- V, V <- Calc3, Calc3 <- V2*/
-		memcpy(ag->matrixTemp2, ag->matrixV2, sizeof(ag->matrixTemp2));
-		memcpy(ag->matrixV2, ag->matrixV1, sizeof(ag->matrixV2));
-		memcpy(ag->matrixV1, ag->matrixV, sizeof(ag->matrixV1));
-		memcpy(ag->matrixV, ag->matrixCalc3, sizeof(ag->matrixV));
-		memcpy(ag->matrixCalc3, ag->matrixTemp2, sizeof(ag->matrixCalc3));
+		std::memcpy(ag->matrixTemp2, ag->matrixV2, sizeof(ag->matrixTemp2));
+		std::memcpy(ag->matrixV2, ag->matrixV1, sizeof(ag->matrixV2));
+		std::memcpy(ag->matrixV1, ag->matrixV, sizeof(ag->matrixV1));
+		std::memcpy(ag->matrixV, ag->matrixCalc3, sizeof(ag->matrixV));
+		std::memcpy(ag->matrixCalc3, ag->matrixTemp2, sizeof(ag->matrixCalc3));
 		/* Vt2V0 <- Vt1V0, Vt1V0 <- VtV0, VtV0 <- Calc2, Calc2 <- Vt2V0*/
-		memcpy(matrixTemp, matrixVt2V0, sizeof(matrixTemp));
-		memcpy(matrixVt2V0, matrixVt1V0, sizeof(matrixVt2V0));
-		memcpy(matrixVt1V0, matrixVtV0, sizeof(matrixVt1V0));
-		memcpy(matrixVtV0, matrixCalc2, sizeof(matrixVtV0));
-		memcpy(matrixCalc2, matrixTemp, sizeof(matrixCalc2));
+		std::memcpy(matrixTemp, matrixVt2V0, sizeof(matrixTemp));
+		std::memcpy(matrixVt2V0, matrixVt1V0, sizeof(matrixVt2V0));
+		std::memcpy(matrixVt1V0, matrixVtV0, sizeof(matrixVt1V0));
+		std::memcpy(matrixVtV0, matrixCalc2, sizeof(matrixVtV0));
+		std::memcpy(matrixCalc2, matrixTemp, sizeof(matrixCalc2));
 		/* swap Vt1AV1 and VtAV */
-		memcpy(matrixTemp, matrixVt1AV1, sizeof(matrixTemp));
-		memcpy(matrixVt1AV1, matrixVtAV, sizeof(matrixVt1AV1));
-		memcpy(matrixVtAV, matrixTemp, sizeof(matrixVtAV));
+		std::memcpy(matrixTemp, matrixVt1AV1, sizeof(matrixTemp));
+		std::memcpy(matrixVt1AV1, matrixVtAV, sizeof(matrixVt1AV1));
+		std::memcpy(matrixVtAV, matrixTemp, sizeof(matrixVtAV));
 	} /* end while */
 
 	  /* Find matrix V1:V2 = B * (X-Y:V) */
@@ -3504,7 +3504,7 @@ static void sieveThread(Znum &result) {
 				rowPrimeSieveData0 = &primeSieveData[i];
 				rowPrimeSieveData->value = rowPrimeSieveData0->value;
 				rowPrimeSieveData->modsqrt = rowPrimeSieveData0->modsqrt;
-				memcpy(rowPrimeSieveData->Bainv2, rowPrimeSieveData0->Bainv2, sizeof(rowPrimeSieveData0->Bainv2));
+				std::memcpy(rowPrimeSieveData->Bainv2, rowPrimeSieveData0->Bainv2, sizeof(rowPrimeSieveData0->Bainv2));
 			}
 		}
 		//    threadArray[threadNumber] = Thread.currentThread();

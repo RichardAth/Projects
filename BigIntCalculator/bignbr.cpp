@@ -209,7 +209,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
     }
     if (i < NumLen) {
         /* set any extra limbs to zero */
-        memset(number + i, 0, (NumLen - i) * sizeof(limb));
+        std::memset(number + i, 0, (NumLen - i) * sizeof(limb));
     }
     if (neg) {
         ChSignBigNbr((int *)number, i + 1);

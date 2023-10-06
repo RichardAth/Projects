@@ -1251,7 +1251,7 @@ static void doTests3(void) {
 
     auto start = clock();	// used to measure execution time
 
-    memset(one, 0, MAX_LEN * sizeof(limb));
+    std::memset(one, 0, MAX_LEN * sizeof(limb));
     one[0] = 1;                   /* set value of one to 1 */
 
     srand(421040034);               // seed random number generator 
@@ -1526,7 +1526,7 @@ static void doTests3(void) {
         ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
         while (modL[numLen - 1] == 0)
             numLen--;                    // adjust length i.e. remove leading zeros
-        memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+        std::memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
         NumberLength = numLen;
         GetMontgomeryParms(numLen);
         XlargeRand(a, c);				     // get large random number a
