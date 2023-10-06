@@ -315,7 +315,7 @@ void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength)
 	{
 		*ptrDest++ = '(';
 		int2dec(&ptrDest, digits);
-		strcpy(ptrDest, " digits)");
+		std::strcpy(ptrDest, " digits)");
 		ptrDest += strlen(ptrDest);
 	}
 	else if (ptrDest > decimal)

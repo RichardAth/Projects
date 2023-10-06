@@ -221,13 +221,13 @@ static void MultZnumByIntModN(const Znum& Nbr1, int Nbr2, Znum& Prod, const Znum
 static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
+	std::strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, rows);   // Show number of rows.
-	strcpy(ptrText, " X ");
+	std::strcpy(ptrText, " X ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, cols);   // Show number of columns.
-	strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
+	std::strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
 		" congruence matrix using Block Lanczos algorithm.\n");
 
 	printf_s("%s", ptrLowerText);
@@ -244,14 +244,14 @@ static void upOneLine(void) {
 static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
+	std::strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, nbrFactorBasePrimes);   // Show number of primes in factor base.
-	strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
+	std::strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
 	ptrSIQSStrings = ptrText;
-	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
+	std::strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
 	printf_s("%s", ptrLowerText);
 }
@@ -260,13 +260,13 @@ static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 static void getMultAndFactorBase(int multiplier, int FactorBase)
 {
 	char *ptrText = ptrSIQSStrings;
-	strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
+	std::strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, multiplier);  // Show Knuth-Schroeppel multiplier.
-	strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
+	std::strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
 	ptrText += strlen(ptrText);
 	int2dec(&ptrText, FactorBase);  // Show factor base.
-	strcpy(ptrText, "\n");
+	std::strcpy(ptrText, "\n");
 	ptrText += strlen(ptrText);
 	ptrSIQSStrings = ptrText;
 }
@@ -301,12 +301,12 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	}
 
 	if (timeSieve > 1 && congruencesFound > 10) {
-		strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
+		std::strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
 		ptrText += strlen(ptrText);
 		GetDHMS(&ptrText, u);      // print estimated time to completion
 	}
 
-	strcpy(ptrText, "\n");
+	std::strcpy(ptrText, "\n");
 
 	if (first) {
 		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -3059,7 +3059,7 @@ static void BlockLanczos(void)
 #if DEBUG_SIQS
 	{
 		char *ptrOutput = output;
-		strcpy(ptrOutput, "MatrixBLength = ");
+		std::strcpy(ptrOutput, "MatrixBLength = ");
 		ptrOutput += strlen(ptrOutput);
 		int2dec(&ptrOutput, matrixBLength);
 		*ptrOutput = 0;
@@ -3075,15 +3075,15 @@ static void BlockLanczos(void)
 			char SIQSInfo[200];
 			char *ptrText = SIQSInfo;
 			oldTimeElapsed = elapsedTime;
-			//strcpy(ptrText, "4\n");
+			//std::strcpy(ptrText, "4\n");
 			//ptrText += strlen(ptrText);
 			GetDHMS(&ptrText, elapsedTime / 10);
-			strcpy(ptrText, "  ");
+			std::strcpy(ptrText, "  ");
 			ptrText += strlen(ptrText);
-			strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
+			std::strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
 			ptrText += strlen(ptrText);
 			int2dec(&ptrText, stepNbr * 3200 / matrixRows);
-			strcpy(ptrText, "%\n");
+			std::strcpy(ptrText, "%\n");
 
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -3214,10 +3214,10 @@ static void BlockLanczos(void)
 		char *ptrOutput = output;
 		if (stepNbr < 200)
 		{
-			strcpy(ptrOutput, "Step #");
+			std::strcpy(ptrOutput, "Step #");
 			ptrOutput += strlen(ptrOutput);
 			int2dec(&ptrOutput, stepNbr);
-			strcpy(ptrOutput, ": matrixWinv1[0] = ");
+			std::strcpy(ptrOutput, ": matrixWinv1[0] = ");
 			ptrOutput += strlen(ptrOutput);
 			int2dec(&ptrOutput, matrixWinv1[0]);
 			*ptrOutput = 0;

@@ -975,7 +975,7 @@ e_unknown_value:
 
 e_alloc_failure:
 
-    strcpy(error, "Memory allocation failure");
+    std::strcpy(error, "Memory allocation failure");
     goto e_failed;
 
 e_overflow:
@@ -988,9 +988,9 @@ e_failed:
     if (error_buf)
     {
         if (*error)
-            strcpy(error_buf, error);
+            std::strcpy(error_buf, error);
         else
-            strcpy(error_buf, "Unknown error");
+            std::strcpy(error_buf, "Unknown error");
     }
 
     if (state.first_pass)

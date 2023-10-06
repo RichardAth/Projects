@@ -208,7 +208,7 @@ extern "C"
                 return json_value_none;
 
             for (unsigned int i = 0; i < u.object.length; ++i)
-                if (!strcmp(u.object.values[i].name, index))
+                if (!std::strcmp(u.object.values[i].name, index))
                     return *u.object.values[i].value;
 
             return json_value_none;

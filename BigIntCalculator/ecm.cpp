@@ -473,19 +473,19 @@ void showECMStatus(void) {
 
 	oldTimeElapsed = elapsedTime;
 	ptrStatus = status;
-	strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
+	std::strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
 	ptrStatus += strlen(ptrStatus);
 	GetDHMS(&ptrStatus, elapsedTime / 10); // days, hours, mins, secs to o/p buffer
 	switch (StepECM)
 	{
 	case 1:
-		strcpy(ptrStatus, lang ? "Paso 1: " : "Step 1: ");
+		std::strcpy(ptrStatus, lang ? "Paso 1: " : "Step 1: ");
 		ptrStatus += strlen(ptrStatus);
 		ptrStatus += sprintf(ptrStatus, "%2d%%", indexPrimes / (nbrPrimes / 100));
 		break;
 
 	case 2:
-		strcpy(ptrStatus, lang ? "Paso 2: " : "Step 2: ");
+		std::strcpy(ptrStatus, lang ? "Paso 2: " : "Step 2: ");
 		ptrStatus += strlen(ptrStatus);
 		ptrStatus += sprintf(ptrStatus, "%2d%%", maxIndexM == 0 ? 0 : indexM / (maxIndexM / 100));
 		break;
@@ -728,15 +728,15 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			ptrText = ptrLowerText;  // Point after number that is being factored.
 			auto elapsedTime = (int)(tenths() - originalTenthSecond);
 			GetDHMSt(&ptrText, elapsedTime);
-			strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
+			std::strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
 			ptrText += strlen(ptrText);
 			ptrText += sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
 
-			strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
+			std::strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
 			ptrText += strlen(ptrText);
  			ptrText += sprintf(ptrText, "%5lld", L1);       // Show first bound.
 
-			strcpy(ptrText, lang ? " y B2=" : " and B2=");
+			std::strcpy(ptrText, lang ? " y B2=" : " and B2=");
 			ptrText += strlen(ptrText);
 			ptrText += sprintf(ptrText, "%7lld \n", L2); // Show second bound.
 

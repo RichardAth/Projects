@@ -627,7 +627,7 @@ static void process_object_s(json_value* value, int depth, const char* name,
 	}
 	length = value->u.object.length;
 	for (x = 0; x < length; x++) {
-		if (strcmp(value->u.object.values[x].name, name) != 0)
+		if (std::strcmp(value->u.object.values[x].name, name) != 0)
 			continue;  /* ignore object unless name matches */
 		//print_depth_shift(depth);
 		//printf("object[%d].name = %s\n", x, value->u.object.values[x].name);

@@ -2463,7 +2463,7 @@ static int set_uvar(const char *name, const Znum &data) {
     int i;
 
     for (i = 0; i < uvars.num; i++) {
-        if (strcmp(uvars.vars[i].name, name) == 0) {
+        if (std::strcmp(uvars.vars[i].name, name) == 0) {
             uvars.vars[i].data =  data;
             return 0;
         }
@@ -2479,7 +2479,7 @@ static int get_uvar(const char *name, Znum data)
     int i;
 
     for (i = 0; i < uvars.num; i++) {
-        if (strcmp(uvars.vars[i].name, name) == 0) 	{
+        if (std::strcmp(uvars.vars[i].name, name) == 0) 	{
             data=  uvars.vars[i].data;
             return i;
         }
@@ -2502,6 +2502,6 @@ void printvars(std::string name) {
         printf_s("No user variables defined \n");
     else
         for (int i = 0; i < uvars.num; i++)
-            if (name.size() == 0 || strcmp(uvars.vars[i].name, name.c_str()) == 0)
+            if (name.size() == 0 || std::strcmp(uvars.vars[i].name, name.c_str()) == 0)
             gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
  }

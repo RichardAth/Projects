@@ -681,7 +681,7 @@ void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY)
     // something in extended cpuid causes a segfault on mac builds.
     // just disable it for now - this information is not critical for
     // program operation.
-    strcpy(idstr, "N/A");
+    std::strcpy(idstr, "N/A");
     CLSIZE = 0;
     L1CACHE = DEFAULT_L1_CACHE_SIZE;
     L2CACHE = DEFAULT_L2_CACHE_SIZE;
@@ -707,7 +707,7 @@ void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY)
     if (ret != 0)
     {
         printf("error occured when getting host name\n");
-        strcpy(sysname, "N/A");
+        std::strcpy(sysname, "N/A");
     }
     sysname_sz = strlen(sysname);
 
