@@ -118,7 +118,7 @@ uint64 measure_processor_speed(void)
         difference = my_difftime(&start, &stop);
         t_time = ((double)difference->secs +
             (double)difference->usecs / 1000000);
-        free(difference);
+        std::free(difference);
     } while (t_time < 0.1);
     cycles = yafu_read_clock() - cycles;
 
@@ -448,7 +448,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         }
     }
     ptrdiff_t ix = 0;
-    while (ix < 64 && isblank(CPUBrandString[ix]))
+    while (ix < 64 &&  std::isblank(CPUBrandString[ix]))
         ix++;        /* find 1st non-blank character */
     strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
     // Display all the information in user-friendly format.

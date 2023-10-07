@@ -38,7 +38,7 @@ void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexP
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
 
 /*  get approximate size (1 limb = 64 bits) */
-#define numLimbs(a) abs(ZT(a)->_mp_size)
+#define numLimbs(a)  std::abs(ZT(a)->_mp_size)
 
 /* counters showing how the factors were found */
 struct counters {

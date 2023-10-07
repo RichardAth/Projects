@@ -255,7 +255,7 @@ static void inifile(const std::string &param) {
 
 
 		/* should we change/add the ggnfs_dir parameter?*/
-		if (!param.empty() && toupper(param[0]) == 'I') {
+		if (!param.empty() &&  std::toupper(param[0]) == 'I') {
 			if (useOldYafu) {
 				newFname = YafuPath + "\\" + "yafu.new";
 				oldFname = YafuPath + "\\" + "yafu.old";

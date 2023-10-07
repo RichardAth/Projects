@@ -894,7 +894,7 @@ void DivideBigNbrByMaxPowerOf2(int *pShRight, limb *number, int *pNbrLimbs)
     }
     if (index > 0)
     {   // Move limbs to final position.
-        memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
+         std::memmove(number, &number[index], (nbrLimbs - index) * sizeof(limb));
     }
     *pShRight = power2;
 }
@@ -1227,7 +1227,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
             *ptrArrAux = 1 - *ptrArrAux;
             // Multiply arrAux by approxInv.
             multiply(&arrAux[limbLength], &approxInv[nbrLimbs - limbLength], approxInv, limbLength, NULL);
-            memmove(&approxInv[nbrLimbs - limbLength], &approxInv[limbLength - 1], limbLength * sizeof(limb));
+             std::memmove(&approxInv[nbrLimbs - limbLength], &approxInv[limbLength - 1], limbLength * sizeof(limb));
         }
         // Multiply approxInv by argument to obtain the quotient.
         if (nbrLimbsDividend >= nbrLimbs) {
@@ -1345,7 +1345,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
 BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
     BigInteger Quotient;
     int len = Dividend.nbrLimbs;
-    DivBigNbrByInt(Dividend.limbs, abs(Divisor), Quotient.limbs, len);
+    DivBigNbrByInt(Dividend.limbs,  std::abs(Divisor), Quotient.limbs, len);
     if (Divisor >= 0)
         if (Dividend.sign == SIGN_POSITIVE)
             Quotient.sign = SIGN_POSITIVE;

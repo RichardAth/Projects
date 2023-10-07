@@ -583,7 +583,7 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
 			/* even if x*x overflows, the function as a whole still works OK */
 			x = (x*x + 1) % num;
-			factor = gcd(abs(x - x_fixed), num);
+			factor = gcd( std::abs(x - x_fixed), num);
 		}
 		if (factor == num) {
 			/* there is a small possibility that PollardFactor won't work,
@@ -651,7 +651,7 @@ long long int PollardRho(long long int n, int depth)
 		y = (modPowerLL(y, 2, n) + c + n) % n;
 
 		/* check gcd of |x-y| and n */
-		d = gcd(abs(x - y), n);
+		d = gcd( std::abs(x - y), n);
 
 		/* retry if the algorithm fails to find prime factor
 		 * with chosen x and c */

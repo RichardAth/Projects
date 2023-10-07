@@ -2140,7 +2140,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	matrixPartial.resize(MAX_PRIMES * 8);
 	primeSieveData.resize(MAX_PRIMES + 3);
 	/* allocate storage for ther arrays */
-	ag = (AG*)calloc(1, sizeof(AG));
+	ag = (AG*)std::calloc(1, sizeof(AG));
 	assert(ag != nullptr);
 	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
@@ -2629,7 +2629,7 @@ static bool LinearAlgebraPhase(
 			*ptrOutput = 0;
 			printf("%s\n", output);
 		}
-		//    exit(0);
+		//    std::exit(0);
 	}
 #endif
 	// Get new number of rows after erasing singletons.

@@ -515,7 +515,7 @@ static void test9timerx(int type, int p2d, int p3d) {
 	/* fixed seed means that the exact same tests can be repeated provided
 	   that the same size of number is used each time */
 
-	auto start = clock();	// used to measure execution time
+	auto start = std::clock();	// used to measure execution time
 	for (int i = 1; i <= p3d; i++) {
 		mpz_urandomb(ZT(x), state, p2d);  // get random number, size=p2 bits
 		mpz_urandomb(ZT(m), state, p2d);  // get random number, size=p2 bits
@@ -550,7 +550,7 @@ static void test9timerx(int type, int p2d, int p3d) {
 	}
 	gmp_randclear(state);  // clear state - avoid memory leakage
 	std::cout << "No roots = " << nrCount << " found " << rCount << " roots \n";
-	auto end = clock();   // measure amount of time used
+	auto end = std::clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, msg[type]);
  }
@@ -562,14 +562,14 @@ static void test9timer(const std::vector <std::string>& p) {
 
 	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */
 	if (p.size() >= 4) {
-		p2d = atoi(p[3].c_str());  /* convert to binary */
+		p2d = std::atoi(p[3].c_str());  /* convert to binary */
 	}
 	if (p2d < 10) {
 		std::cout << "Use default 10 for number size in bits \n";
 		p2d = 10;
 	}
 	if (p.size() >= 5) 
-		p3d = atoi(p[4].c_str());  /* convert to binary */
+		p3d = std::atoi(p[4].c_str());  /* convert to binary */
 	if (p3d < 5) {
 		std::cout << "Use default 5 for number of tests \n";
 		p3d = 5;
@@ -659,7 +659,7 @@ void doTests9(const std::vector<std::string> & p) {
 	bool newb = false;
 
 	if (p.size() >= 3) {
-		if (toupper(p[2][0] == 'H')) {
+		if ( std::toupper(p[2][0] == 'H')) {
 			std::cout << "test modular square root. command format is:\n"
 				"TEST 9        (test modular square root for a = 0 to 2000,"
 				" modulus = 2 to 2000)\n"
@@ -681,7 +681,7 @@ void doTests9(const std::vector<std::string> & p) {
 		int cmp = _strnicmp(p[2].c_str(), "new", 3);
 		newb = (cmp == 0);  // true if 1st parameter = "new"
 	}
-	auto start = clock();	// used to measure execution time
+	auto start = std::clock();	// used to measure execution time
 	for (long long m = 2; m <= 2000; m++) {
 		for (long long a = 0; a < m; a++) {
 			rv &= test9once(a, m, roots, newb);
@@ -706,7 +706,7 @@ void doTests9(const std::vector<std::string> & p) {
 		std::cout << "All modular square root tests completed successfully. \n";
 	else
 		std::cout << "One or more modular square root tests failed. \n";
-	auto end = clock();   // measure amount of time used
+	auto end = std::clock();   // measure amount of time used
 	double elapsed = (double)end - start;
 	PrintTimeUsed(elapsed, "All tests completed. Time used = ");
 }

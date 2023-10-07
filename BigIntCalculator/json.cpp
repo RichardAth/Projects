@@ -71,7 +71,7 @@ const struct _json_value json_value_none;
 
 static unsigned char hex_value(json_char c)
 {
-    if (isdigit((unsigned char)c))
+    if ( std::isdigit((unsigned char)c))
         return c - '0';
 
     switch (c) {
@@ -105,13 +105,13 @@ typedef struct
 static void* default_alloc(size_t size, int zero, void* user_data)
 {
     (void)user_data; /* ignore unused-parameter warn */
-    return zero ? calloc(1, size) : malloc(size);
+    return zero ? std::calloc(1, size) : std::malloc(size);
 }
 
 static void default_free(void* ptr, void* user_data)
 {
     (void)user_data; /* ignore unused-parameter warn */
-    free(ptr);
+    std::free(ptr);
 }
 
 static void* json_alloc(json_state* state, size_t size, int zero)
@@ -678,14 +678,14 @@ static json_value* json_parse_ex(json_settings* settings,
 
                     default:
 
-                        if (isdigit((unsigned char)b) || b == '-')
+                        if ( std::isdigit((unsigned char)b) || b == '-')
                         {
                             if (!new_value(&state, &top, &root, &alloc, json_integer))
                                 goto e_alloc_failure;
 
                             if (!state.first_pass)
                             {
-                                while (isdigit((unsigned char)b) || b == '+' || b == '-'
+                                while ( std::isdigit((unsigned char)b) || b == '+' || b == '-'
                                     || b == 'e' || b == 'E' || b == '.')
                                 {
                                     if ((++state.ptr) == end)
@@ -775,7 +775,7 @@ static json_value* json_parse_ex(json_settings* settings,
                 case json_integer:
                 case json_double:
 
-                    if (isdigit((unsigned char)b))
+                    if ( std::isdigit((unsigned char)b))
                     {
                         ++num_digits;
 

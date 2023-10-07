@@ -530,9 +530,9 @@ void doTestsA(const std::vector<std::string> &p) {
     Znum a, b, c, n=0;
 
     if (p.size() >= 3)
-        p1 = atoi(p[2].data());
+        p1 = std::atoll(p[2].data());
     if (p.size() >= 4)
-        p2 = atoi(p[3].data());
+        p2 = std::atoll(p[3].data());
     if (p1 <= 0) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
@@ -546,7 +546,7 @@ void doTestsA(const std::vector<std::string> &p) {
     /* fixed seed means that the exact same tests can be repeated provided
        that the same size of number is used each time */
 
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
     SetCallbacksForSolveEquation(solms);
 
     for (int i = 1; i <= p1; i++) {
@@ -601,7 +601,7 @@ void doTestsA(const std::vector<std::string> &p) {
         }
     }
 
-    auto end = clock();   // measure amount of time used
+    auto end = std::clock();   // measure amount of time used
     double elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "All tests completed. Time used = ");
     gmp_randclear(state);  // clear state - avoid memory leakage

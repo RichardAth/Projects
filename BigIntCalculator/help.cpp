@@ -252,7 +252,7 @@ retry:
             int d1 = (unsigned char)str[1] - BOM[1];
             int d2 = (unsigned char)str[2] - BOM[2];
             if (d == 0 && d1 == 0 && d2 == 0) {
-                memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
+                 std::memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
                 UTF8 = true;
             }
         }
@@ -278,7 +278,7 @@ retry:
                 if (lineCount > 27) {
                     std::wcout << L"** More (y/n) ? ";  /* pause every 27 lines of output */
                     std::getline(std::cin, expr);
-                    expr[0] = toupper(expr[0]);
+                    expr[0] = std::toupper(expr[0]);
                     if (expr[0] != 'Y')
                         break;
                     else

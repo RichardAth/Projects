@@ -258,7 +258,7 @@ and 193707721 is the factor itself in decimal.*/
 		if (buffer[26] == 'p') {      // ignore log entry unless it's a prime factor
 			             // note: some other log entries also have a 'p' in this position
 			int  len = 0;  
-			for (i = 27; isdigit(buffer[i]); i++)  // get number of ascii digits in factor
+			for (i = 27; std::isdigit(buffer[i]); i++)  // get number of ascii digits in factor
 				len = len * 10 + (buffer[i] - '0');
 			if (len == 0)
 				continue;                    // p not followed by a number

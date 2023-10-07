@@ -19,7 +19,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 /* get clock time in 1/10th of a second */
 double tenths(void) {
-	clock_t now = clock();
+	clock_t now = std::clock();
 	return (double)now / (CLOCKS_PER_SEC / 10); ;
 }
 

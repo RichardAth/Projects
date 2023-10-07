@@ -641,7 +641,7 @@ static void ClassicalMult(int idxFactor1, int idxFactor2, int nbrLen) {
         ClassicalMult16Limbs(idxFactor1, idxFactor2);  /* arrayAux = Factor1 * Factor2 */
         break;
 
-    default: abort();   // should never get here
+    default: std::abort();   // should never get here
     }
 #else
     limb *ptrFactor1, *ptrFactor2;

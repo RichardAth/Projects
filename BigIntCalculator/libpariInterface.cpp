@@ -160,8 +160,8 @@ static void specinit() {
             std::cerr << "could not access dll for PARI \n";
             std::cerr << "To install libpari go to"
                 " https ://pari.math.u-bordeaux.fr/download.html \n";
-            system("PAUSE");
-            abort();
+            std::system("PAUSE");
+            std::abort();
         }
 
         else {
@@ -230,8 +230,8 @@ static void specinit() {
                 nullptr == pari_close_ref || nullptr == pari_version_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
-                system("PAUSE");
-                abort();
+                std::system("PAUSE");
+                std::abort();
             }
 
             fRunTimeLinkSuccess = true; /* flag to prevent code above being excuted again  */
@@ -354,7 +354,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
     }
 
     default:
-        abort();  /* unsupported GEN type */
+        std::abort();  /* unsupported GEN type */
     }
 }
 
@@ -431,7 +431,7 @@ Znum R3h(Znum n) {
         break;
 
     default:   /* n%8 = 0 or 4 */
-        abort();   /* should never happen */
+        std::abort();   /* should never happen */
     }
 
     mpz_clears(num, denom, result, nullptr);  /* avoid memory leakage */

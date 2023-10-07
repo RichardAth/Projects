@@ -606,7 +606,7 @@ static retCode ComputeBack(const Znum &n, Znum &p) {
             return retCode::EXPR_OK;
         }
     }
-    abort();   //should never get here!!
+    std::abort();   //should never get here!!
 }
 
 /* calculate the number of primes <= value */
@@ -1044,11 +1044,11 @@ Znum llt(const Znum& p) {
      Update 11/7/2021; using neither trial division nor  mpz-probab_prime_p is fastest.
      LL test is in fact faster than miller-rabin even when MR is limitied to 2 rounds. */
     if (verbose > 1) {
-        t1 = clock();
+        t1 = std::clock();
         /* use trial division if verbose > 1 because this can give some factors,
         whereas the other tests only show whether n is prime or composite */
         int rv = lltTrialDiv(n, exp);
-        t2 = clock();
+        t2 = std::clock();
         printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
         if (rv == 0) {
             std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
@@ -1060,7 +1060,7 @@ Znum llt(const Znum& p) {
     tmp = 4;
     int nchars = 0;
     if (verbose > 0)
-        t2 = clock();
+        t2 = std::clock();
     for (long long i = 0; i < exp - 2; i++) {
         tmp *= tmp;
         tmp -= 2;
@@ -1075,7 +1075,7 @@ Znum llt(const Znum& p) {
         }
     }
     if (verbose > 0) {
-        t3 = clock();
+        t3 = std::clock();
         printf_s(lang ? "\ntiempo usado por llt = %.2f sec \n" : "\ntime used by llt = %.2f sec \n",
             (double)(t3 - t2) / CLOCKS_PER_SEC);
     }
@@ -1745,7 +1745,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
 
     default:
-        abort();	// should never get here
+        std::abort();	// should never get here
     }
 
     return retcode;
@@ -1819,7 +1819,7 @@ static void printTokens(const std::vector <token> expr) {
         }
 
         default:
-            abort(); /* unrecognised token */
+            std::abort(); /* unrecognised token */
         }
     }
     std::cout << '\n';
@@ -2126,7 +2126,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                 break;
             }
         default:
-            abort(); /* unrecognised token */
+            std::abort(); /* unrecognised token */
         }
     }
 
@@ -2274,14 +2274,14 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
     while (exprIndex < expr.length()) {
         nxtToken.typecode = types::error;   /* should be replaced later by valid code */
-        int charValue = toupper(expr[exprIndex]);
+        int charValue = std::toupper(expr[exprIndex]);
 
         /* skip blanks */
-        while (exprIndex <= (expr.length()) && isspace(charValue)) {
+        while (exprIndex <= (expr.length()) &&  std::isspace(charValue)) {
             exprIndex++;
             if (exprIndex >= expr.length())
                 break;
-            charValue = toupper(expr[exprIndex]);
+            charValue = std::toupper(expr[exprIndex]);
         }
         if (exprIndex >= expr.length())
             break;
@@ -2321,7 +2321,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
             /* convert number from ascii to Znum */
             int exprIndexAux = exprIndex;
             if (charValue == '0' && exprIndexAux < expr.length() - 2 &&
-                toupper(expr[exprIndexAux + 1]) == 'X')
+                 std::toupper(expr[exprIndexAux + 1]) == 'X')
             {  // hexadecimal
                 std::vector<char> digits;
                 exprIndexAux++;
@@ -2495,7 +2495,7 @@ static void free_uvars() {
     uvars.alloc = 0;
 }
 void printvars(std::string name) {
-    while (name.size() > 0 && isblank(name[0])) {
+    while (name.size() > 0 &&  std::isblank(name[0])) {
         name.erase(0, 1);  /* remove leading spaces */
     }
     if (uvars.num == 0)
