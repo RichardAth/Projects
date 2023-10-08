@@ -676,7 +676,7 @@ static uint64_t PrimePi(const Znum &Zn) {
     if (primeListMax >= n)
         return (PrimePiC(n));
 
-    const auto v = (unsigned long long)sqrt(n);
+    const auto v = (unsigned long long)std::sqrt(n);
 
     // about sqrt(n) * 12 bytes, for n = 10^12 => 12 MByte 
     std::vector<uint64_t> higher(v + 2, 0);
@@ -1838,7 +1838,7 @@ static void operSearch(const std::string &expr, int &opcode) {
         /* use case-insensitive compare */
         if (_strnicmp(expr.data(), operators[ix].oper, std::strlen(operators[ix].oper)) == 0) {
             opcode = ix;
-            if (operators[ix].operCode == opCode::comb && isalpha(expr[1]))
+            if (operators[ix].operCode == opCode::comb && std::isalpha(expr[1]))
                 break;  /* if 'C' in expr is followed by another letter it can't be the C operator */
             else
                 return;

@@ -106,7 +106,7 @@ void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbr
         int quotient, dividend;
         dividend = (remainder << BITS_PER_INT_GROUP) + Dividend[ctr];
         dDividend = (double)remainder * dLimb + Dividend[ctr];
-        dQuotient = floor(dDividend / dDivisor + 0.5);
+        dQuotient = std::floor(dDividend / dDivisor + 0.5);
         quotient = (unsigned int)dQuotient;   // quotient has correct value or 1 more.
         remainder = dividend - quotient * divisor;
         if ((unsigned int)remainder >= (unsigned int)divisor)
@@ -128,10 +128,10 @@ int modPower (int NbrMod, int Expon, int currentPrime) {
     while (Expon != 0) {
         if ((Expon & 1) == 1) {
             Power *= Square;
-            Power -= floor(Power / Modulus)*Modulus;
+            Power -= std::floor(Power / Modulus)*Modulus;
         }
         Square *= Square;
-        Square -= floor(Square / Modulus)*Modulus;
+        Square -= std::floor(Square / Modulus)*Modulus;
         Expon >>= 1;
     }
     return (int)Power;
@@ -303,7 +303,7 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
         upperBound = 2;
 
     /* upperBound^maxExpon ≈ factor */
-    unsigned long long maxExpon = (unsigned long long) (ceil(logZnum(factor) / log(upperBound)));
+    unsigned long long maxExpon = (unsigned long long) (std::ceil(logZnum(factor) / std::log(upperBound)));
 
     int h;
     long long modulus, Exponent;

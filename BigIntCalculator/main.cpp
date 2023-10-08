@@ -264,7 +264,7 @@ long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prim
 
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
-    double root = sqrt((double)n);
+    double root = std::sqrt((double)n);
     unsigned long long  iroot = std::llround(root);
     while (iroot*iroot > n)
         iroot--;
@@ -1942,7 +1942,7 @@ void writeIni(void) {
     newStr.close();
 
       // delete any previous .old
-    int rc = remove(oldFname.c_str());
+    int rc = std::remove(oldFname.c_str());
     if (rc != 0 && errno != ENOENT) {
         std::perror("could not remove BigIntCalculator.old file ");
     }
@@ -1984,13 +1984,13 @@ static void processIni(const char * arg) {
     std::ifstream iniStr(iniFname, std::ios::in);  // open .ini file
     if (!iniStr.is_open()) {
         /* can't open .ini file - make one from scratch */
-        const time_t currtime = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+        const time_t currtime = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
         struct tm mytime;
         char timestamp[23];   // date & time in format "dd/mm/yyyy at hh:mm:ss"
 
         localtime_s(&mytime, &currtime);  // convert to tm format
         /* convert to dd/mm/yyyy hh:mm:ss */
-        strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &mytime);
+        std::strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &mytime);
         buffer = "%file originally created on ";
         buffer += timestamp;     //  "dd/mm/yyyy at hh:mm:ss"
         inifile.push_back(buffer);
@@ -3002,7 +3002,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     auto lc = std::setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
 
-    printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
+    printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
         << '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
 

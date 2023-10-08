@@ -896,7 +896,7 @@ void testerrors(void) {
 
     int ExceptionType = 9999;
     char buffer[256];
-    fgets(buffer, sizeof(buffer), stdin);
+    std::fgets(buffer, sizeof(buffer), stdin);
     int rv = sscanf_s(buffer, "%d", &ExceptionType);
 
 

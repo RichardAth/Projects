@@ -454,7 +454,7 @@ is an integer it is not exact, and also for large values only at best the 1st
 15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
     double e = std::exp(logar);
-    auto rv = fpclassify(e);  // check for overflow
+    auto rv = std::fpclassify(e);  // check for overflow
     
     if (rv != FP_INFINITE && rv != FP_NAN) {
         bigInt = e;  /* note: the assignment statement uses DoubleToBigInt to
@@ -471,7 +471,7 @@ void expBigInt(BigInteger &bigInt, double logar) {
         base <<= 128;        //  new base for logs = 2^128
         double logb = logar / (std::log(2.0)*128);  // convert log to new base
         double intpf;   // integer part of log
-        double fracpf = modf(logb, &intpf);  // split into log integer and fraction
+        double fracpf = std::modf(logb, &intpf);  // split into log integer and fraction
         /* the desired result = base^(intpf+fracpf)
                  = base^intpf * base^fracpf */
         int intp = (int)std::round(intpf);         // exact conversion

@@ -125,7 +125,7 @@ static void delfile(const char * FileName)
 	auto  fsize = fileStat.st_size / 1024;
 	std::cout << FileName << " size is " << fsize << " KB \n";
 
-	int rc = remove(fname.data());
+	int rc = std::remove(fname.data());
 	if (rc != 0 && errno != ENOENT) {
 		std::perror("could not remove file ");
 	}
@@ -217,7 +217,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
 	}
 
-	int rc = remove(MsieveLogPath.data());
+	int rc = std::remove(MsieveLogPath.data());
 	if (rc != 0 && errno != ENOENT) {
 		std::perror("could not remove old Mseive log file ");
 	}

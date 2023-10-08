@@ -50,7 +50,7 @@ void delfile(const std::string& path, const char* FileName) {
 	auto  fsize = fileStat.st_size/1024 ;
 	std::cout << FileName << " size is " << fsize << " KB \n";
 
-	int rc = remove(fname.data());
+	int rc = std::remove(fname.data());
 	if (rc != 0) {
 		if (errno != ENOENT) {
 			std::cout << "could not remove file " << fname.data() << ' '
@@ -476,7 +476,7 @@ bool callYafuOld(const Znum &num, fList &Factors) {
 	numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in buffer
 	genfile(numStr);
 
-	int rc = remove(logfile.data());
+	int rc = std::remove(logfile.data());
 	if (rc != 0 && errno != ENOENT) {
 		std::perror("could not remove old YAFU log file ");
 	}
