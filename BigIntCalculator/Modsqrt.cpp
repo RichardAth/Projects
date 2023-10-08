@@ -74,7 +74,7 @@ static void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &ro
 				std::cout << r << ", ";
 		else
 			std::cout << "<empty>";
-		putchar('\n');
+		std::putchar('\n');
 	}
 }
 
@@ -619,7 +619,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 			for (auto r : r2) {
 				printf_s("%lld, ", r); 
 			}
-			putchar('\n');
+			std::putchar('\n');
 		}
 		return false;
 	}
@@ -633,7 +633,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
 			printf_s("modsqrt(%lld, %lld) = ", a, m);
 			for (long long r : r2)
 				printf_s("%lld, ", r);
-			putchar('\n');
+			std::putchar('\n');
 		}
 	}
 	return true;

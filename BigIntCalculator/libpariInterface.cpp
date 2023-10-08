@@ -244,7 +244,7 @@ static void specinit() {
         stackinit = true;
         if (verbose > 0) {
             pari_print_version_ref();  /* print some info from libpari dll */
-            printf("Pari stack initialised. avma = %p\n", *avma_ref);
+            printf_s("Pari stack initialised. avma = %p\n", *avma_ref);
         }
         pariVersion = pari_version_ref(); /* returns the version number as a PARI object, 
                       a t_VEC with three t_INT and one t_STR component. */
@@ -437,7 +437,7 @@ Znum R3h(Znum n) {
     mpz_clears(num, denom, result, nullptr);  /* avoid memory leakage */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return r;            /* return result */
 }
@@ -498,7 +498,7 @@ Znum Hclassno12(const Znum &n) {
 
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
 
     return (num * 12) / denom;  /* division is always exact; remainder = 0 */
@@ -517,7 +517,7 @@ Znum classno(const Znum& n, int flag) {
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
@@ -548,7 +548,7 @@ Znum tau(const Znum& n) {
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
@@ -569,7 +569,7 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     InttoMP(retval, ZT(num));  /* convert result to Znums */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
@@ -685,6 +685,6 @@ void parifactor(const Znum& n, fList &factors) {
     }
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
 }

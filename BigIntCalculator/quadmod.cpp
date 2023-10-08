@@ -73,7 +73,7 @@ static int Show(const BigInteger* num, const char* str, int t)
         {    // num is not 1 or -1.
             *ptrOutput = ' ';
             ptrOutput++;
-            Bin2Dec(&ptrOutput, num->limbs, num->nbrLimbs, groupSize);
+            Bin2DecV2(&ptrOutput, num->limbs, num->nbrLimbs, groupSize);
         }
         copyStr(&ptrOutput, str);
         return t | 1;
@@ -129,17 +129,17 @@ static void Solution(const BigInteger* value, const BigInteger * pValA,
     copyStr(&ptrOutput, "\n");
 
     if (verbose > 1) {
-        printf("solution nbr %4d ", SolNbr);
+        printf_s("solution nbr %4d ", SolNbr);
         PrintBigInteger(value, 0);
-        printf("\na = ");
+        printf_s("\na = ");
         PrintBigInteger(pValA, 0);
-        printf(", b= ");
+        printf_s(", b= ");
         PrintBigInteger(pValB, 0);
-        printf(", c= ");
+        printf_s(", c= ");
         PrintBigInteger(pValC, 0); 
-        printf(", n= ");
+        printf_s(", n= ");
         PrintBigInteger(pValN, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 #ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
@@ -156,15 +156,15 @@ static void solms(const BigInteger* value, const BigInteger* pValA,
     if (verbose > 1) {
         SolNbr++;
         gmp_printf("solution nbr %4d %Zd ", SolNbr, vZ);
-        printf("\na = ");
+        printf_s("\na = ");
         PrintBigInteger(pValA, groupSize);
-        printf(", b= ");
+        printf_s(", b= ");
         PrintBigInteger(pValB, groupSize);
-        printf(", c= ");
+        printf_s(", c= ");
         PrintBigInteger(pValC, groupSize);
-        printf(", n= ");
+        printf_s(", n= ");
         PrintBigInteger(pValN, groupSize);
-        putchar('\n');
+        std::putchar('\n');
     }
 #ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
@@ -402,50 +402,50 @@ int quadModEqn(const std::vector<std::string>& p) {
     char A[50], B[50], C[50], N[50];
     try {
         if (lang) {
-            printf("Resolución de ecuaciones cuadráticas modulares \n");
-            printf("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
+            printf_s("Resolución de ecuaciones cuadráticas modulares \n");
+            printf_s("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
                 " (mod n) donde la incógnita entera x se encuentra en el rango"
                 " 0 ≤ x < n.\n");
-            printf("En particular, puede hallar raíces cuadradasmodulares si ingresa "
+            printf_s("En particular, puede hallar raíces cuadradasmodulares si ingresa "
                 " a = -1, b = 0, c = número cuya raíz se desea hallar y n = módulo.\n");
 
-            printf("ingrese el valor para A: ");
+            printf_s("ingrese el valor para A: ");
         }
         else { /* english */
-            printf("Quadratic Modular Equation Solver\n");
-            printf("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
+            printf_s("Quadratic Modular Equation Solver\n");
+            printf_s("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
                 " the unknown integer x is in the range 0 <= x < N. \n");
-            printf("In particular, it can find modular square roots by setting "
+            printf_s("In particular, it can find modular square roots by setting "
                 "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
 
-            printf("Enter value for A: ");
+            printf_s("Enter value for A: ");
         }
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(A, sizeof(A), stdin);
-        if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(A, sizeof(A), stdin);
+        if (A[std::strlen(A) - 1] == '\n') A[std::strlen(A) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para B: " : "Enter value for B: ");
+        printf_s((lang) ? "ingrese el valor para B: " : "Enter value for B: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(B, sizeof(B), stdin);
-        if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(B, sizeof(B), stdin);
+        if (B[std::strlen(B) - 1] == '\n') B[std::strlen(B) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
+        printf_s((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(C, sizeof(C), stdin);
-        if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(C, sizeof(C), stdin);
+        if (C[std::strlen(C) - 1] == '\n') C[std::strlen(C) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
+        printf_s((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(N, sizeof(N), stdin);
-        if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(N, sizeof(N), stdin);
+        if (N[std::strlen(N) - 1] == '\n') N[std::strlen(N) - 1] = '\0'; /* remove trailing \n */
 
         auto rc = quadmodText(A, B, C, N, groupSize);
         if (rc == retCode::EXPR_OK) {
-            printf("%s\n", output);   /* print output buffer, which contains the input
+            printf_s("%s\n", output);   /* print output buffer, which contains the input
                                   parameters as well as the solutions */
             return EXIT_SUCCESS;
         }
@@ -567,7 +567,7 @@ void doTestsA(const std::vector<std::string> &p) {
                     std::cout << roots[j] << ", ";
 
                 }
-                putchar('\n');
+                std::putchar('\n');
                 for (int j = 0; j < roots.size(); j++)
                     checkSolution(roots[j], a, b, c, n);
             }
@@ -589,7 +589,7 @@ void doTestsA(const std::vector<std::string> &p) {
                         std::cout << roots[j] << ", ";
                         
                     }
-                    putchar('\n'); 
+                    std::putchar('\n'); 
                     for (int j = 0; j < roots.size(); j++)
                         checkSolution(roots[j], a, b, c, n);
                 }

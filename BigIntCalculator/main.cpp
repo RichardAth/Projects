@@ -102,7 +102,7 @@ void ErrorDisp(const char *lpszFunction)
     // Display the error message
 
     lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-        (lstrlen((LPCTSTR)lpMsgBuf) + strlen(lpszFunction) + 40) * sizeof(TCHAR));
+        (lstrlen((LPCTSTR)lpMsgBuf) + std::strlen(lpszFunction) + 40) * sizeof(TCHAR));
     StringCchPrintf((LPTSTR)lpDisplayBuf,
         LocalSize(lpDisplayBuf) / sizeof(TCHAR),
         TEXT("%S failed with error %d: %s"),
@@ -139,9 +139,9 @@ static char* getHex(Znum Bi_Nbr) {
         hexbuffer = mpz_get_str(NULL, 16, ZT(Bi_Nbr));
         if (!(hexbuffer[0] >= '0' && hexbuffer[0] <= '7')) {
             /* we need to insert a zero. move everything down 1 byte*/
-            hexbuffer = (char *)realloc(hexbuffer, strlen(hexbuffer) + 2);
+            hexbuffer = (char *)std::realloc(hexbuffer, std::strlen(hexbuffer) + 2);
             assert(hexbuffer != NULL);
-            std::memmove(&hexbuffer[1], &hexbuffer[0], strlen(hexbuffer) + 1); 
+            std::memmove(&hexbuffer[1], &hexbuffer[0], std::strlen(hexbuffer) + 1); 
             hexbuffer[0] = '0';
         }
     }
@@ -265,7 +265,7 @@ long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prim
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
     double root = sqrt((double)n);
-    unsigned long long  iroot = llround(root);
+    unsigned long long  iroot = std::llround(root);
     while (iroot*iroot > n)
         iroot--;
     return iroot;
@@ -1888,7 +1888,7 @@ static void doTests7(const std::vector<std::string> &p) {
     for (auto p : mPrimes) {
         std::cout << p << ", ";
     }
-    putchar('\n');
+    std::putchar('\n');
     long long other = (long long)i - (lltPriCnt+ lltTdivCnt+ lltCmpCnt);
     printf_s("%5.2f%% primes found by llt \n", 100.0 *lltPriCnt / i);
     if (lltTdivCnt != 0)
@@ -1944,19 +1944,19 @@ void writeIni(void) {
       // delete any previous .old
     int rc = remove(oldFname.c_str());
     if (rc != 0 && errno != ENOENT) {
-        perror("could not remove BigIntCalculator.old file ");
+        std::perror("could not remove BigIntCalculator.old file ");
     }
     // rename .ini as .old
     int rv = rename(iniFname.c_str(), oldFname.c_str());   
     if (rv == 0 || errno == ENOENT) {
         int rv2 = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
         if (rv2 != 0)
-            perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+            std::perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
         else if (verbose > 0)
             std::cout << myTime() << " BigIntCalculator.ini written to disk \n";
     }
     else
-        perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
+        std::perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
 }
 
 /* read the .ini file and update paths. 
@@ -2975,7 +2975,7 @@ static void initialise(int argc, char *argv[]) {
     {
         fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
         Beep(750, 1000);
-        exit (EXIT_FAILURE);
+        std::exit (EXIT_FAILURE);
     }
 
     VersionInfo(argv[0], version, modified); /* get version info from .exe file */
@@ -2986,7 +2986,7 @@ static void initialise(int argc, char *argv[]) {
 
 #ifdef __GNUC__
     printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-    setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
+    std::setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
 
 #ifdef _MSC_FULL_VER
@@ -2999,7 +2999,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     ver %= 100000;                        // remove next 2 digits
     std::cout << ver << '\n';             // last 5 digits
 
-    auto lc = setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
+    auto lc = std::setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
 
     printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
@@ -3172,7 +3172,7 @@ int main(int argc, char *argv[]) {
                             std::cout << roots[i] << ", ";
                         }
                     }
-                    putchar('\n');
+                    std::putchar('\n');
                     std::cout << "found " << roots.size() << " results \n";
                 }
                 if (asgCt != 0)

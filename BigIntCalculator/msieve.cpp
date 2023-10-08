@@ -127,7 +127,7 @@ static void delfile(const char * FileName)
 
 	int rc = remove(fname.data());
 	if (rc != 0 && errno != ENOENT) {
-		perror("could not remove file ");
+		std::perror("could not remove file ");
 	}
 	else std::cout << "removed file: " << FileName << '\n';
 }
@@ -211,7 +211,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 	numStr.resize(numdigits + 5);             // resize buffer
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
-	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
+	numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
 	if (verbose > 0) {
 		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
@@ -219,16 +219,16 @@ bool callMsieve(const Znum &num, fList &Factors) {
 
 	int rc = remove(MsieveLogPath.data());
 	if (rc != 0 && errno != ENOENT) {
-		perror("could not remove old Mseive log file ");
+		std::perror("could not remove old Mseive log file ");
 	}
 	delfile("msieve.log");
 	delfile("msieve.dat");
 
-	rv = system(command.data());             // start msieve;
+	rv = std::system(command.data());             // start msieve;
 
 	/* get control back when msieve has finished */
 	if (rv ==  -1) {
-		perror( "cannot start msieve ");
+		std::perror( "cannot start msieve ");
 		return false;
 	}
 	else if (rv != 0) {

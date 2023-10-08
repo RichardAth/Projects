@@ -631,7 +631,7 @@ size_t DivisorList(unsigned __int64 tnum, std::vector <__int64> &divlist) {
         for (int i = 0; i < noofdivs; i++) {
             printf_s("%lld ", divlist[i]);
         }
-        putchar('\n');*/
+        std::putchar('\n');*/
 #endif
     return noofdivs;
 }
@@ -664,7 +664,7 @@ static void dumpCache(__int64 n, std::map <__int64, std::vector<unsigned __int64
         for (auto it2 : it.second) {
             printf_s(" %3lld,", it2);
         }
-        putchar('\n');
+        std::putchar('\n');
     }
 }
 

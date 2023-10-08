@@ -7892,7 +7892,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose)
 	if (NumberLngth > 6021)
 	{
 		if (verbose >= APRTCLE_VERBOSE2)
-			printf(" Info: Number too large, returning BPSW(N)\n");
+			printf_s(" Info: Number too large, returning BPSW(N)\n");
 		return mpz_bpsw_prp(N);
 	}
 
@@ -7988,9 +7988,9 @@ MainStart:
 
 					if (verbose >= APRTCLE_VERBOSE1)
 					{
-						printf("APRCL Progress: P = %2d, Q = %12d  (%3.2f%%)\r", P, Q,
+						printf_s("APRCL Progress: P = %2d, Q = %12d  (%3.2f%%)\r", P, Q,
 							(i * (TestingQs + 1) + j) * 100.0 / (NP * (TestingQs + 1)));
-						fflush(stdout);
+						std::fflush(stdout);
 					}
 
 					PM = 1;
@@ -8387,7 +8387,7 @@ MainStart:
 							/* Not prime */
 							if (verbose >= APRTCLE_VERBOSE2)
 							{
-								printf("Failed: W != P - 1 : H=%d : W=%d : P-1=%d\n", H, W, P - 1); fflush(stdout);
+								printf_s("Failed: W != P - 1 : H=%d : W=%d : P-1=%d\n", H, W, P - 1); std::fflush(stdout);
 							}
 							free_vars();
 							return APRTCLE_COMPOSITE;
@@ -8407,7 +8407,7 @@ MainStart:
 							/* Not prime */
 							if (verbose >= APRTCLE_VERBOSE2)
 							{
-								printf("Failed: I == PM : I=%d : PM=%d\n", I, PM); fflush(stdout);
+								printf_s("Failed: I == PM : I=%d : PM=%d\n", I, PM); std::fflush(stdout);
 							}
 							free_vars();
 							return APRTCLE_COMPOSITE;
@@ -8422,8 +8422,8 @@ MainStart:
 								/* Not prime */
 								if (verbose >= APRTCLE_VERBOSE2)
 								{
-									printf("Failed: biTmp != 0 (1)\n");
-									gmp_printf("biTmp=%Zd\n", biTmp); fflush(stdout);
+									printf_s("Failed: biTmp != 0 (1)\n");
+									gmp_printf("biTmp=%Zd\n", biTmp); std::fflush(stdout);
 								}
 								free_vars();
 								return APRTCLE_COMPOSITE;
@@ -8467,8 +8467,8 @@ MainStart:
 						/* Not prime */
 						if (verbose >= APRTCLE_VERBOSE2)
 						{
-							printf("Failed: biTmp != 0 (2)\n");
-							gmp_printf("biTmp = %Zd\n", biTmp); fflush(stdout);
+							printf_s("Failed: biTmp != 0 (2)\n");
+							gmp_printf("biTmp = %Zd\n", biTmp); std::fflush(stdout);
 						}
 						free_vars();
 						return APRTCLE_COMPOSITE;
@@ -8497,7 +8497,7 @@ MainStart:
 					{
 						if (verbose >= APRTCLE_VERBOSE2)
 						{
-							printf("APR-CL cannot tell: lvlnow == lvlmax, returning BPSW(N)\n"); fflush(stdout);
+							printf_s("APR-CL cannot tell: lvlnow == lvlmax, returning BPSW(N)\n"); std::fflush(stdout);
 						}
 						free_vars();
 						return mpz_bpsw_prp(N); /* Cannot tell */
@@ -8526,7 +8526,7 @@ MainStart:
 					} /* end for J */
 					if (verbose >= APRTCLE_VERBOSE2)
 					{
-						printf("Failed: APR-CL error, returning BPSW(N)\n"); fflush(stdout);
+						printf_s("Failed: APR-CL error, returning BPSW(N)\n"); std::fflush(stdout);
 					}
 					free_vars();
 					return mpz_bpsw_prp(N); /* Program error */

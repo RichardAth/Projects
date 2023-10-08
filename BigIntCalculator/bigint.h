@@ -80,7 +80,7 @@ public:
 		if (sign == SIGN_NEGATIVE)
 			rv = -rv;
 		if (nbrLimbs > 1) {
-			rv *= pow(LIMB_RANGE, nbrLimbs - 1);
+			rv *= std::pow(LIMB_RANGE, nbrLimbs - 1);
 		}
 		auto c = fpclassify(rv);
 		if (c == FP_INFINITE) {

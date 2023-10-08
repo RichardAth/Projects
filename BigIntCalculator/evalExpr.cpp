@@ -420,7 +420,7 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     //	for (int i = 0; i < numdiv; i++) {
     //		gmp_printf("%Zd ", divlist[i]);
     //	}
-    //	putchar('\n');
+    //	std::putchar('\n');
     //}
 #endif
     return numdiv;
@@ -1071,7 +1071,7 @@ Znum llt(const Znum& p) {
                 printf_s("\b");    // erase previous output
             nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
                 (double)i * 100.0 / (exp - 2));
-            fflush(stdout);
+            std::fflush(stdout);
         }
     }
     if (verbose > 0) {
@@ -1646,7 +1646,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                 gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
                 for (Znum r : roots)
                     gmp_printf("%Zd, ", r);
-                putchar('\n');
+                std::putchar('\n');
             }
         }
         /* the result can be: no solution: roots is empty
@@ -1671,7 +1671,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                 gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
                 for (Znum r : roots)
                     gmp_printf("%Zd, ", r);
-                putchar('\n');
+                std::putchar('\n');
             }
         }
         /* the result can be: no solution: roots is empty
@@ -1836,7 +1836,7 @@ static void operSearch(const std::string &expr, int &opcode) {
     opcode = -1;
     for (int ix = 0; ix < sizeof(operators) / sizeof(operators[0]); ix++) {
         /* use case-insensitive compare */
-        if (_strnicmp(expr.data(), operators[ix].oper, strlen(operators[ix].oper)) == 0) {
+        if (_strnicmp(expr.data(), operators[ix].oper, std::strlen(operators[ix].oper)) == 0) {
             opcode = ix;
             if (operators[ix].operCode == opCode::comb && isalpha(expr[1]))
                 break;  /* if 'C' in expr is followed by another letter it can't be the C operator */
@@ -2200,7 +2200,7 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
             //for (auto c : expr) {
             //	printf_s("%2x", c);
             //}
-            //putchar('\n');
+            //std::putchar('\n');
         }
     }
 
@@ -2241,7 +2241,7 @@ retCode ComputeMultiExpr(std::string expr, Znum result) {
             else {
                 /* print names of variables assigned values */
                 for (size_t ix = 0; ix < subExpr.size() && asgCt > 0; ix++) {
-                    putchar(subExpr[ix]);
+                    std::putchar(subExpr[ix]);
                     if (subExpr[ix] == '=')
                         asgCt--;
                 }
@@ -2296,7 +2296,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
             //nxtToken.numops = opr[(int)nxtToken.oper].numOps;
             nxtToken.numops = operators[opIndex].numOps;
             nxtToken.value = 0;
-            exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
+            exprIndex += (int)std::strlen(operators[opIndex].oper);  // move index to next char after operator
             if (operators[opIndex].operCode == opCode::fact) {
                 nxtToken.value = 1;
                 while (expr.substr(exprIndex, 1) == "!") {
@@ -2371,13 +2371,13 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
         else {
             for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
                 if (_strnicmp(&expr[exprIndex],
-                    functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
+                    functionList[ix].fname, std::strlen(functionList[ix].fname)) == 0) {
                     /* we have a match to a function name */
                     nxtToken.typecode = types::func;
                     nxtToken.function = int(ix);        /* save index into functionList*/
                     nxtToken.numops = functionList[ix].NoOfParams;     
                     nxtToken.oper = functionList[ix].fCode;  
-                    exprIndex += (int)strlen(functionList[ix].fname); 
+                    exprIndex += (int)std::strlen(functionList[ix].fname); 
                                 /* move exprIndex past function name */
                     goto next;  /* go to finish processing this token, then 
                                 process rest of expr */

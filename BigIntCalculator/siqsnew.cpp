@@ -222,10 +222,10 @@ static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
 	std::strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, rows);   // Show number of rows.
 	std::strcpy(ptrText, " X ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, cols);   // Show number of columns.
 	std::strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
 		" congruence matrix using Block Lanczos algorithm.\n");
@@ -245,10 +245,10 @@ static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
 	std::strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, nbrFactorBasePrimes);   // Show number of primes in factor base.
 	std::strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
 	ptrSIQSStrings = ptrText;
 	std::strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
@@ -261,13 +261,13 @@ static void getMultAndFactorBase(int multiplier, int FactorBase)
 {
 	char *ptrText = ptrSIQSStrings;
 	std::strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, multiplier);  // Show Knuth-Schroeppel multiplier.
 	std::strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, FactorBase);  // Show factor base.
 	std::strcpy(ptrText, "\n");
-	ptrText += strlen(ptrText);
+	ptrText += std::strlen(ptrText);
 	ptrSIQSStrings = ptrText;
 }
 
@@ -286,14 +286,14 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 
 		GetDHMS(&ptrText, elapsedTime);
 	if (lang) {  // español
-		ptrText += sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
+		ptrText += std::sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
 			"Relaciones: %5d completas y %5d obtenidas de %6d parciales.\n"
 			"progreso = %2d%%. ",
 			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
 			totalPartials, percentage);
 	}
 	else {  // english
-		ptrText += sprintf(ptrText, "%5d congruences found with %5d different primes \n"
+		ptrText += std::sprintf(ptrText, "%5d congruences found with %5d different primes \n"
 			"Relations: %5d full and %5d found from %6d partials.\n"
 			"progress = %2d%%. ",
 			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
@@ -302,7 +302,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 
 	if (timeSieve > 1 && congruencesFound > 10) {
 		std::strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
-		ptrText += strlen(ptrText);
+		ptrText += std::strlen(ptrText);
 		GetDHMS(&ptrText, u);      // print estimated time to completion
 	}
 
@@ -2615,7 +2615,7 @@ static bool LinearAlgebraPhase(
 #if DEBUG_SIQS
 	{
 		int i;
-		printf("******* Linear Algebra Phase ************\n");
+		printf_s("******* Linear Algebra Phase ************\n");
 		for (j = 0; j < matrixBLength; j++)
 		{
 			char *ptrOutput = output;
@@ -2627,7 +2627,7 @@ static bool LinearAlgebraPhase(
 				*ptrOutput++ = ',';
 			}
 			*ptrOutput = 0;
-			printf("%s\n", output);
+			printf_s("%s\n", output);
 		}
 		//    std::exit(0);
 	}
@@ -2726,7 +2726,7 @@ static bool InsertNewRelation(
 			*ptrOutput++ = ',';
 		}
 		*ptrOutput = 0;
-		printf(" rowMatrixB = %s\n", output);
+		printf_s(" rowMatrixB = %s\n", output);
 	}
 	if (++nn == 3018)
 	{
@@ -3060,10 +3060,10 @@ static void BlockLanczos(void)
 	{
 		char *ptrOutput = output;
 		std::strcpy(ptrOutput, "MatrixBLength = ");
-		ptrOutput += strlen(ptrOutput);
+		ptrOutput += std::strlen(ptrOutput);
 		int2dec(&ptrOutput, matrixBLength);
 		*ptrOutput = 0;
-		printf("%s\n", output);
+		printf_s("%s\n", output);
 	}
 #endif
 	for (;;) {
@@ -3076,12 +3076,12 @@ static void BlockLanczos(void)
 			char *ptrText = SIQSInfo;
 			oldTimeElapsed = elapsedTime;
 			//std::strcpy(ptrText, "4\n");
-			//ptrText += strlen(ptrText);
+			//ptrText += std::strlen(ptrText);
 			GetDHMS(&ptrText, elapsedTime / 10);
 			std::strcpy(ptrText, "  ");
-			ptrText += strlen(ptrText);
+			ptrText += std::strlen(ptrText);
 			std::strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
-			ptrText += strlen(ptrText);
+			ptrText += std::strlen(ptrText);
 			int2dec(&ptrText, stepNbr * 3200 / matrixRows);
 			std::strcpy(ptrText, "%\n");
 
@@ -3215,13 +3215,13 @@ static void BlockLanczos(void)
 		if (stepNbr < 200)
 		{
 			std::strcpy(ptrOutput, "Step #");
-			ptrOutput += strlen(ptrOutput);
+			ptrOutput += std::strlen(ptrOutput);
 			int2dec(&ptrOutput, stepNbr);
 			std::strcpy(ptrOutput, ": matrixWinv1[0] = ");
-			ptrOutput += strlen(ptrOutput);
+			ptrOutput += std::strlen(ptrOutput);
 			int2dec(&ptrOutput, matrixWinv1[0]);
 			*ptrOutput = 0;
-			printf("%s\n", output);
+			printf_s("%s\n", output);
 		}
 #endif
 		if (stepNbr >= 3) {

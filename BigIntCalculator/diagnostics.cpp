@@ -52,7 +52,7 @@ public:
             return "<couldn't map PC to fn name>";
         std::vector<char> und_name(max_name_len);
         UnDecorateSymbolName(sym->Name, &und_name[0], max_name_len, UNDNAME_COMPLETE);
-        return std::string(&und_name[0], strlen(&und_name[0]));
+        return std::string(&und_name[0], std::strlen(&und_name[0]));
     }
 };
 
@@ -249,12 +249,12 @@ DWORD StackTrace2(void)
         if (frame.AddrPC.Offset != 0) {
             std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
             sprintf_s(builder+bIx, bIxMax-bIx, "%-16s ", fnName.c_str());
-            bIx = strlen(builder);
+            bIx = std::strlen(builder);
             if (SymGetLineFromAddr64(process, frame.AddrPC.Offset, &offset_from_symbol, &line)) {
                 strcat_s(builder, bIxMax, line.FileName);
-                bIx = strlen(builder);
+                bIx = std::strlen(builder);
                 sprintf_s(builder+bIx, bIxMax-bIx, " (%4d) \n", line.LineNumber);
-                bIx = strlen(builder);
+                bIx = std::strlen(builder);
             }
             else strcat_s(builder, bIxMax, "\n");
 
@@ -266,11 +266,11 @@ DWORD StackTrace2(void)
             //	printf_s("%s", "the program has crashed.\n\n");
             //	break;
             //}
-            bIx = strlen(builder);
+            bIx = std::strlen(builder);
         }
         else {
             strcat_s(builder, bIxMax - bIx, "(No Symbols: PC.offset == 0)\n");
-            bIx = strlen(builder);
+            bIx = std::strlen(builder);
         }
         if (!StackWalk64(image_type, process, hThread, &frame, &ct, NULL,
             SymFunctionTableAccess64, SymGetModuleBase64, NULL))
@@ -296,11 +296,11 @@ void InvalidParameterHandler(const wchar_t* expression,
     unsigned int line,
     size_t pReserved)
 {
-    wprintf(L"Invalid parameter detected in: \n"
+    wprintf_s(L"Invalid parameter detected in: \n"
             L"function    %s.\n"
             L" File:      %s \n"
             L"Line:       %d\n", function, file, line);
-    wprintf(L"Expression: %s\n", expression);
+    wprintf_s(L"Expression: %s\n", expression);
     StackTrace2();
 }
 
@@ -398,7 +398,7 @@ void SigfpeHandler(int sig, int num) {
 }
 
 void SigabrtHandler(int sig) {
-    fprintf(stderr, "Abort signal occurred\n");
+    std::fprintf(stderr, "Abort signal occurred\n");
     StackTrace2();
     EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
     createMiniDump(ep);
@@ -413,7 +413,7 @@ void SigabrtHandler(int sig) {
 }
 
 void SigillHandler(int sig) {
-    fprintf(stderr, "Illegal Instruction \n");
+    std::fprintf(stderr, "Illegal Instruction \n");
     StackTrace2();
     //__debugbreak();     // try to enter debuggger (to look at call stack)
     EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
@@ -427,7 +427,7 @@ void SigillHandler(int sig) {
 }
 
 void SigsegvHandler(int sig) {
-    fprintf(stderr, "Segment Violation \n");
+    std::fprintf(stderr, "Segment Violation \n");
     StackTrace2();
     //__debugbreak();     // try to enter debuggger (to look at call stack)
     EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
@@ -472,7 +472,7 @@ void SigintHandler(int sig) {
 }
 
 void SigtermHandler(int sig) {
-    fprintf(stderr, "termination \n");
+    std::fprintf(stderr, "termination \n");
     StackTrace2();
     //__debugbreak();     // try to enter debuggger (to look at call stack)
     EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
@@ -930,7 +930,7 @@ void testerrors(void) {
 #pragma warning(disable : 6387)
             // warning C6387: 'argument 1' might be '0': this does
             // not adhere to the specification for the function 'printf'
-            int rc = printf_s(formatString);
+            int rc = printf(formatString);
 #pragma warning(default : 6387)   
             printf_s("return code from printf_s is %d \n", rc);
             break;

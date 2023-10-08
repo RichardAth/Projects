@@ -335,11 +335,11 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
 
         if (do_print > 1)
         {
-            printf("\nFor InfoType %d\n", i);
-            printf("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
-            printf("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
-            printf("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
-            printf("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
+            printf_s("\nFor InfoType %d\n", i);
+            printf_s("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
+            printf_s("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
+            printf_s("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
+            printf_s("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
         }
 
         // Interpret CPU feature information.
@@ -388,11 +388,11 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         //__cpuid(CPUInfo, i);
         if (do_print > 1)
         {
-            printf("\nFor InfoType %x\n", i);
-            printf("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
-            printf("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
-            printf("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
-            printf("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
+            printf_s("\nFor InfoType %x\n", i);
+            printf_s("CPUInfo[0] = 0x%x\n", CPUInfo[0]);
+            printf_s("CPUInfo[1] = 0x%x\n", CPUInfo[1]);
+            printf_s("CPUInfo[2] = 0x%x\n", CPUInfo[2]);
+            printf_s("CPUInfo[3] = 0x%x\n", CPUInfo[3]);
         }
 
         if (i == 0x80000001)
@@ -453,33 +453,33 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
     strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
     // Display all the information in user-friendly format.
     if (do_print > 0)
-        printf("\n\nCPU String: %s\n", CPUString);
+        printf_s("\n\nCPU String: %s\n", CPUString);
 
     if (nIds >= 1)
     {
         if (do_print > 0)
         {
             if (nSteppingID)
-                printf("Stepping ID = %d\n", nSteppingID);
+                printf_s("Stepping ID = %d\n", nSteppingID);
             if (nModel)
-                printf("Model = %d\n", nModel);
+                printf_s("Model = %d\n", nModel);
             if (nFamily)
-                printf("Family = %d\n", nFamily);
+                printf_s("Family = %d\n", nFamily);
             if (nProcessorType)
-                printf("Processor Type = %d\n", nProcessorType);
+                printf_s("Processor Type = %d\n", nProcessorType);
             if (nExtendedmodel)
-                printf("Extended model = %d\n", nExtendedmodel);
+                printf_s("Extended model = %d\n", nExtendedmodel);
             if (nExtendedfamily)
-                printf("Extended family = %d\n", nExtendedfamily);
+                printf_s("Extended family = %d\n", nExtendedfamily);
             if (nBrandIndex)
-                printf("Brand Index = %d\n", nBrandIndex);
+                printf_s("Brand Index = %d\n", nBrandIndex);
             if (nCLFLUSHcachelinesize)
-                printf("CLFLUSH cache line size = %d\n",
+                printf_s("CLFLUSH cache line size = %d\n",
                     nCLFLUSHcachelinesize);
             if (bMultithreading && (nLogicalProcessors > 0))
-                printf("Logical Processor Count = %d\n", nLogicalProcessors);
+                printf_s("Logical Processor Count = %d\n", nLogicalProcessors);
             if (nAPICPhysicalID)
-                printf("APIC Physical ID = %d\n", nAPICPhysicalID);
+                printf_s("APIC Physical ID = %d\n", nAPICPhysicalID);
 
             if (nFeatureInfo || bSSE3Instructions ||
                 bMONITOR_MWAIT || bCPLQualifiedDebugStore ||
@@ -495,36 +495,36 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
                 bRDTSCP || b64Available || b3DNowExt || b3DNow || bNestedPaging ||
                 bLBRVisualization || bFP128 || bMOVOptimization)
             {
-                printf("\nThe following features are supported:\n");
+                printf_s("\nThe following features are supported:\n");
 
                 if (bSSE3Instructions)
-                    printf("\tSSE3\n");
+                    printf_s("\tSSE3\n");
                 if (bMONITOR_MWAIT)
-                    printf("\tMONITOR/MWAIT\n");
+                    printf_s("\tMONITOR/MWAIT\n");
                 if (bCPLQualifiedDebugStore)
-                    printf("\tCPL Qualified Debug Store\n");
+                    printf_s("\tCPL Qualified Debug Store\n");
                 if (bVirtualMachineExtensions)
-                    printf("\tVirtual Machine Extensions\n");
+                    printf_s("\tVirtual Machine Extensions\n");
                 if (bEnhancedIntelSpeedStepTechnology)
-                    printf("\tEnhanced Intel SpeedStep Technology\n");
+                    printf_s("\tEnhanced Intel SpeedStep Technology\n");
                 if (bThermalMonitor2)
-                    printf("\tThermal Monitor 2\n");
+                    printf_s("\tThermal Monitor 2\n");
                 if (bSupplementalSSE3)
-                    printf("\tSupplemental Streaming SIMD Extensions 3\n");
+                    printf_s("\tSupplemental Streaming SIMD Extensions 3\n");
                 if (bL1ContextID)
-                    printf("\tL1 Context ID\n");
+                    printf_s("\tL1 Context ID\n");
                 if (bCMPXCHG16B)
-                    printf("\tCMPXCHG16B Instruction\n");
+                    printf_s("\tCMPXCHG16B Instruction\n");
                 if (bxTPRUpdateControl)
-                    printf("\txTPR Update Control\n");
+                    printf_s("\txTPR Update Control\n");
                 if (bPerfDebugCapabilityMSR)
-                    printf("\tPerf\\Debug Capability MSR\n");
+                    printf_s("\tPerf\\Debug Capability MSR\n");
                 if (*bSSE41Extensions)
-                    printf("\tSSE4.1 Extensions\n");
+                    printf_s("\tSSE4.1 Extensions\n");
                 if (bSSE42Extensions)
-                    printf("\tSSE4.2 Extensions\n");
+                    printf_s("\tSSE4.2 Extensions\n");
                 if (bPOPCNT)
-                    printf("\tPPOPCNT Instruction\n");
+                    printf_s("\tPPOPCNT Instruction\n");
 
                 i = 0;
                 nIds = 1;
@@ -532,72 +532,72 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
                 {
                     if (nFeatureInfo & nIds)
                     {
-                        printf("\t");
-                        printf("%s", szFeatures[i]);
-                        printf("\n");
+                        printf_s("\t");
+                        printf_s("%s", szFeatures[i]);
+                        printf_s("\n");
                     }
 
                     nIds <<= 1;
                     ++i;
                 }
                 if (bLAHF_SAHFAvailable)
-                    printf("\tLAHF/SAHF in 64-bit mode\n");
+                    printf_s("\tLAHF/SAHF in 64-bit mode\n");
                 if (bCmpLegacy)
-                    printf("\tCore multi-processing legacy mode\n");
+                    printf_s("\tCore multi-processing legacy mode\n");
                 if (bSVM)
-                    printf("\tSecure Virtual Machine\n");
+                    printf_s("\tSecure Virtual Machine\n");
                 if (bExtApicSpace)
-                    printf("\tExtended APIC Register Space\n");
+                    printf_s("\tExtended APIC Register Space\n");
                 if (bAltMovCr8)
-                    printf("\tAltMovCr8\n");
+                    printf_s("\tAltMovCr8\n");
                 if (bLZCNT)
-                    printf("\tLZCNT instruction\n");
+                    printf_s("\tLZCNT instruction\n");
                 if (bSSE4A)
-                    printf("\tSSE4A (EXTRQ, INSERTQ, MOVNTSD, MOVNTSS)\n");
+                    printf_s("\tSSE4A (EXTRQ, INSERTQ, MOVNTSD, MOVNTSS)\n");
                 if (bMisalignedSSE)
-                    printf("\tMisaligned SSE mode\n");
+                    printf_s("\tMisaligned SSE mode\n");
                 if (bPREFETCH)
-                    printf("\tPREFETCH and PREFETCHW Instructions\n");
+                    printf_s("\tPREFETCH and PREFETCHW Instructions\n");
                 if (bSKINITandDEV)
-                    printf("\tSKINIT and DEV support\n");
+                    printf_s("\tSKINIT and DEV support\n");
                 if (bSYSCALL_SYSRETAvailable)
-                    printf("\tSYSCALL/SYSRET in 64-bit mode\n");
+                    printf_s("\tSYSCALL/SYSRET in 64-bit mode\n");
                 if (bExecuteDisableBitAvailable)
-                    printf("\tExecute Disable Bit\n");
+                    printf_s("\tExecute Disable Bit\n");
                 if (bMMXExtensions)
-                    printf("\tExtensions to MMX Instructions\n");
+                    printf_s("\tExtensions to MMX Instructions\n");
                 if (bFFXSR)
-                    printf("\tFFXSR\n");
+                    printf_s("\tFFXSR\n");
                 if (b1GBSupport)
-                    printf("\t1GB page support\n");
+                    printf_s("\t1GB page support\n");
                 if (bRDTSCP)
-                    printf("\tRDTSCP instruction\n");
+                    printf_s("\tRDTSCP instruction\n");
                 if (b64Available)
-                    printf("\t64 bit Technology\n");
+                    printf_s("\t64 bit Technology\n");
                 if (b3DNowExt)
-                    printf("\t3Dnow Ext\n");
+                    printf_s("\t3Dnow Ext\n");
                 if (b3DNow)
-                    printf("\t3Dnow! instructions\n");
+                    printf_s("\t3Dnow! instructions\n");
                 if (bNestedPaging)
-                    printf("\tNested Paging\n");
+                    printf_s("\tNested Paging\n");
                 if (bLBRVisualization)
-                    printf("\tLBR Visualization\n");
+                    printf_s("\tLBR Visualization\n");
                 if (bFP128)
-                    printf("\tFP128 optimization\n");
+                    printf_s("\tFP128 optimization\n");
                 if (bMOVOptimization)
-                    printf("\tMOVU Optimization\n");
+                    printf_s("\tMOVU Optimization\n");
             }
         }
     }
 
     if (nExIds >= 0x80000004 && do_print > 0)
-        printf("\nCPU Brand String: %s\n", CPUBrandString);
+        printf_s("\nCPU Brand String: %s\n", CPUBrandString);
 
     if (nExIds >= 0x80000006 && do_print > 0)
     {
-        printf("Cache Line Size = %d\n", nCacheLineSize);
-        printf("L2 Associativity = %d\n", nL2Associativity);
-        printf("Cache Size = %dK\n", nCacheSizeK);
+        printf_s("Cache Line Size = %d\n", nCacheLineSize);
+        printf_s("L2 Associativity = %d\n", nL2Associativity);
+        printf_s("Cache Size = %dK\n", nCacheSizeK);
     }
 
 
@@ -611,7 +611,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         if (i == 0) {
             nCores = CPUInfo[0] >> 26;
             if (do_print > 0)
-                printf("\n\nNumber of Cores = %d\n", nCores + 1);
+                printf_s("\n\nNumber of Cores = %d\n", nCores + 1);
         }
 
         nCacheType = (CPUInfo[0] & 0x1f);
@@ -625,45 +625,45 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         nNumberSets = CPUInfo[2];
 
         if (do_print > 0) {
-            printf("\n");
+            printf_s("\n");
 
-            printf("ECX Index %d\n", i);
+            printf_s("ECX Index %d\n", i);
             switch (nCacheType)
             {
             case 0:
-                printf("   Type: Null\n");
+                printf_s("   Type: Null\n");
                 break;
             case 1:
-                printf("   Type: Data Cache\n");
+                printf_s("   Type: Data Cache\n");
                 break;
             case 2:
-                printf("   Type: Instruction Cache\n");
+                printf_s("   Type: Instruction Cache\n");
                 break;
             case 3:
-                printf("   Type: Unified Cache\n");
+                printf_s("   Type: Unified Cache\n");
                 break;
             default:
-                printf("   Type: Unknown\n");
+                printf_s("   Type: Unknown\n");
             }
 
-            printf("   Level = %d\n", nCacheLevel + 1);
+            printf_s("   Level = %d\n", nCacheLevel + 1);
             if (bSelfInit) {
-                printf("   Self Initializing\n");
+                printf_s("   Self Initializing\n");
             }
             else {
-                printf("   Not Self Initializing\n");
+                printf_s("   Not Self Initializing\n");
             }
             if (bFullyAssociative) {
-                printf("   Is Fully Associatve\n");
+                printf_s("   Is Fully Associatve\n");
             }
             else {
-                printf("   Is Not Fully Associatve\n");
+                printf_s("   Is Not Fully Associatve\n");
             }
-            printf("   Max Threads = %d\n", nMaxThread + 1);
-            printf("   System Line Size = %d\n", nSysLineSize + 1);
-            printf("   Physical Line Partions = %d\n", nPhysicalLinePartitions + 1);
-            printf("   Ways of Associativity = %d\n", nWaysAssociativity + 1);
-            printf("   Number of Sets = %d\n", nNumberSets + 1);
+            printf_s("   Max Threads = %d\n", nMaxThread + 1);
+            printf_s("   System Line Size = %d\n", nSysLineSize + 1);
+            printf_s("   Physical Line Partions = %d\n", nPhysicalLinePartitions + 1);
+            printf_s("   Ways of Associativity = %d\n", nWaysAssociativity + 1);
+            printf_s("   Number of Sets = %d\n", nNumberSets + 1);
         }
     }
 
@@ -706,10 +706,10 @@ void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY)
     sysname[(sizeof(sysname) - 1) / sizeof(*sysname)] = 0;	// null terminate
     if (ret != 0)
     {
-        printf("error occured when getting host name\n");
+        printf_s("error occured when getting host name\n");
         std::strcpy(sysname, "N/A");
     }
-    sysname_sz = strlen(sysname);
+    sysname_sz = std::strlen(sysname);
 
 #endif
 

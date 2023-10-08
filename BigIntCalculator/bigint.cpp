@@ -474,7 +474,7 @@ void expBigInt(BigInteger &bigInt, double logar) {
         double fracpf = modf(logb, &intpf);  // split into log integer and fraction
         /* the desired result = base^(intpf+fracpf)
                  = base^intpf * base^fracpf */
-        int intp = (int)round(intpf);         // exact conversion
+        int intp = (int)std::round(intpf);         // exact conversion
         BigIntPowerIntExp(base, intp, bigInt);  /* bigInt = base^intpf*/
 
         /* by using a large base we make frac large, so that conversion to integer 
@@ -492,7 +492,7 @@ significant digits. Used for operator overloading. */
 void DoubleToBigInt(BigInteger &bigInt, double dvalue) {
 
     if (dvalue - 0.5 > LLONG_MIN && dvalue + 0.5 < LLONG_MAX) {
-        long long vv = (long long)round(dvalue); // convert directly to long long if possible
+        long long vv = std::llround(dvalue); // convert directly to long long if possible
         bigInt = vv;
         return;
     }

@@ -83,18 +83,18 @@ struct stQuad quad;
 /* mainly for debugging */
 void printFactors(sFactors flist[]) {
     int nbrFactors = std::min(flist[0].multiplicity, (int)maxFactors);
-    printf("factor list: \n");
+    printf_s("factor list: \n");
     for (int i = 1; i <= nbrFactors; i++) {
-        printf("% 4d ", i);
+        printf_s("% 4d ", i);
         IntArray2BigInteger(flist[i].ptrFactor, &prime);
         PrintBigInteger(&prime, 0);
         if (flist[i].multiplicity != 1) {
-            printf("^%d", flist[i].multiplicity);
+            printf_s("^%d", flist[i].multiplicity);
         }
         /* values below only set for larger factors*/
-        printf(" upperBound = %d, Type = %d \n", flist[i].upperBound, flist[i].Type);
+        printf_s(" upperBound = %d, Type = %d \n", flist[i].upperBound, flist[i].Type);
     }
-    putchar('\n');
+    std::putchar('\n');
 }
 
 /* the same factor list is returned in both factorsMod and astFactorsMod,
@@ -255,13 +255,13 @@ static void SolveModularLinearEquation(const BigInteger * pValA, const BigIntege
     ValNn = *pValN;
 
     if (verbose > 1) {
-        printf("SolveModularLinearEquation: b = ");
+        printf_s("SolveModularLinearEquation: b = ");
         PrintBigInteger(pValB, 0);
-        printf(" c = ");
+        printf_s(" c = ");
         PrintBigInteger(pValC, 0);
-        printf(" n = ");
+        printf_s(" n = ");
         PrintBigInteger(pValN, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
     BigIntGcd(*pValB, *pValN, Aux[0]);
     if (Aux[0] != 1)  //((Aux[0].nbrLimbs != 1) || (Aux[0].limbs[0] != 1))
@@ -333,13 +333,13 @@ static void SolveModularLinearEquation(const BigInteger * pValA, const BigIntege
     }
     astFactorsMod[0].multiplicity = solutionNbr;
     if (verbose > 1) {
-        printf("solution = ");
+        printf_s("solution = ");
         PrintBigInteger(ptrSolution1, 0);
-        printf("\nquad.Increment[0] = ");
+        printf_s("\nquad.Increment[0] = ");
         PrintBigInteger(&quad.Increment[0], 0);
-        printf("\nquad.Increment[1] = ");
+        printf_s("\nquad.Increment[1] = ");
         PrintBigInteger(&quad.Increment[1], 0);
-        printf("\nsolutionNbr = %d \n", solutionNbr);
+        printf_s("\nsolutionNbr = %d \n", solutionNbr);
     } 
     PerformChineseRemainderTheorem(pValA, pValB, pValC, pValN);
 }
@@ -457,15 +457,15 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
     int bitsCZero;
 
     if (verbose > 1) {
-        printf("SolveQuadraticEqModPowerOf2: expon = %d, factorIndex = %d \n a = ", exponent, factorIndex);
+        printf_s("SolveQuadraticEqModPowerOf2: expon = %d, factorIndex = %d \n a = ", exponent, factorIndex);
         PrintBigInteger(pValA, 0);
-        printf("\n b = ");
+        printf_s("\n b = ");
         PrintBigInteger(pValB, 0);
-        printf("\n c = ");
+        printf_s("\n c = ");
         PrintBigInteger(pValC, 0);
-        printf("\n prime = ");
+        printf_s("\n prime = ");
         PrintBigInteger(&prime, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 
     // ax^2 + bx + c = 0 (mod 2^expon)
@@ -604,11 +604,11 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     int correctBits;
 
     if (verbose > 1) {
-        printf("ComputeSquareRootModPowerOfP: Aux[3] = ");
+        printf_s("ComputeSquareRootModPowerOfP: Aux[3] = ");
         PrintBigInteger(&Aux[3], 0);
-        printf("\n prime = ");
+        printf_s("\n prime = ");
         PrintBigInteger(&prime, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 
     NumberLength = prime.nbrLimbs;
@@ -617,17 +617,17 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
     if (verbose > 1) {
-        printf("MontgomeryMultR1 = ");
+        printf_s("MontgomeryMultR1 = ");
         PrintBigInteger(&MontgomeryMultR1BI, 0);
-        printf("\nMontgomeryMultR2 = ");
+        printf_s("\nMontgomeryMultR2 = ");
         PrintBigInteger(&MontgomeryMultR2BI, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
     Q = prime;    // CopyBigInt(&Q, &prime);
     if (verbose > 1) {
-        printf("Q = ");
+        printf_s("Q = ");
         PrintBigInteger(&Q, 0);
-        printf("\n");
+        printf_s("\n");
     }
     if ((prime.limbs[0] & 3) == 3)
     {                 // prime mod 4 = 3
@@ -676,15 +676,15 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             // Step 1.
             Q--;  // subtractdivide(Q, 1, 1);   // Q <- (prime-1).
             if (verbose > 1) {
-                printf("Q = ");
+                printf_s("Q = ");
                 PrintBigInteger(&Q, 0);
-                printf("\n");
+                printf_s("\n");
             }
             DivideBigNbrByMaxPowerOf2(&e, Q.limbs, &Q.nbrLimbs);
             if (verbose > 1) {
-                printf("step 1: Q = ");
+                printf_s("step 1: Q = ");
                 PrintBigInteger(&Q, 0);
-                printf(" e = %d \n", e);
+                printf_s(" e = %d \n", e);
             }
             // Step 2.
             x = 1;
@@ -694,7 +694,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
                 Aux[3] = x;  // intToBigInteger(&Aux[3], x);
             } while (BigIntJacobiSymbol(&Aux[3], &prime) >= 0);
             if (verbose > 1) {
-                printf("step2: Aux[3] = %d \n", x);
+                printf_s("step2: Aux[3] = %d \n", x);
             }
 
             // Step 3.
@@ -702,9 +702,9 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
             modPowBaseInt(x, Q.limbs, Q.nbrLimbs, Aux[4].limbs);  // z
             if (verbose > 1) {
                 Aux[4].nbrLimbs = NumberLength;
-                printf("step 3: Aux[4] = ");
+                printf_s("step 3: Aux[4] = ");
                 PrintBigInteger(&Aux[4], 0);
-                putchar('\n');
+                std::putchar('\n');
             }
             // Step 4.
             NumberLengthBytes = NumberLength * (int)sizeof(limb);
@@ -720,17 +720,17 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
                 Aux[7].nbrLimbs = NumberLength;
                 Aux[8].nbrLimbs = NumberLength;
                 Aux[9].nbrLimbs = NumberLength;
-                printf("step 4: Aux[5] = ");
+                printf_s("step 4: Aux[5] = ");
                 PrintBigInteger(&Aux[5], 0);
-                printf("\nAux[6] = ");
+                printf_s("\nAux[6] = ");
                 PrintBigInteger(&Aux[6], 0);
-                printf("\nAux[7] = ");
+                printf_s("\nAux[7] = ");
                 PrintBigInteger(&Aux[7], 0);
-                printf("\nAux[8] = ");
+                printf_s("\nAux[8] = ");
                 PrintBigInteger(&Aux[8], 0);
-                printf("\nAux[9] = ");
+                printf_s("\nAux[9] = ");
                 PrintBigInteger(&Aux[9], 0);
-                putchar('\n');
+                std::putchar('\n');
             }
             // Step 5
             while (memcmp(Aux[9].limbs, MontgomeryMultR1, NumberLengthBytes) != 0)
@@ -764,9 +764,9 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
         UncompressLimbsBigInteger(toConvert, &SqrtDisc);
     }
     if (verbose > 1) {
-        printf("SqrtDisc = ");
+        printf_s("SqrtDisc = ");
         PrintBigInteger(&SqrtDisc, 0);
-        printf("\n");
+        printf_s("\n");
     }
     // Obtain inverse of square root stored in SqrtDisc (mod prime).
     tmp2 = 1;  // intToBigInteger(&tmp2, 1);
@@ -799,9 +799,9 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     sqrRoot *= discriminant;  // (void)BigIntMultiply(&sqrRoot, &discriminant, &sqrRoot);
     sqrRoot %= Q;             // (void)BigIntRemainder(&sqrRoot, &Q, &sqrRoot);
     if (verbose > 1) {
-        printf("sqrRoot = ");
+        printf_s("sqrRoot = ");
         PrintBigInteger(&sqrRoot, 0);
-        printf("\n");
+        printf_s("\n");
     }
 }
 
@@ -818,17 +818,17 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     int NumberLengthBytes;
 
     if (verbose > 1) {
-        printf("SolveQuadraticEqModPowerOfP: expon = %d \na = ", expon);
+        printf_s("SolveQuadraticEqModPowerOfP: expon = %d \na = ", expon);
         PrintBigInteger(pValA, 0);
-        printf("\nb = ");
+        printf_s("\nb = ");
         PrintBigInteger(pValB, 0);
-        printf("\nprime = ");
+        printf_s("\nprime = ");
         PrintBigInteger(&prime, 0);
-        printf("\ndiscriminant = ");
+        printf_s("\ndiscriminant = ");
         PrintBigInteger(&discriminant, 0);
-        printf("\nV = ");
+        printf_s("\nV = ");
         PrintBigInteger(&V, 0);
-        putchar ('\n');
+        std::putchar ('\n');
     }
 
     // Number of bits of square root of discriminant to compute: expon + bits_a + 1,
@@ -877,9 +877,9 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     ValAOdd = *pValA + *pValA; // BigIntAdd(pValA, pValA, &ValAOdd);
     (void)BigIntPowerIntExp(prime, expon - deltaZeros, tmp1); /* tmp1 = prime^(expon-deltaZeros) */
     if (verbose > 1) {
-        printf("prime^(expon-deltaZeros) = ");
+        printf_s("prime^(expon-deltaZeros) = ");
         PrintBigInteger(&tmp1, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
     ValAOdd %= tmp1;  //(void)BigIntRemainder(&ValAOdd, &tmp1, &ValAOdd);
     nbrLimbs = tmp1.nbrLimbs;
@@ -902,9 +902,9 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     BigIntModularDivision(&tmp2, &ValAOdd, &tmp1, &Aux[0]);
     ValAOdd = Aux[0];       // CopyBigInt(&ValAOdd, &Aux[0]);
     if (verbose > 1) {
-        printf("ValAOdd = ");
+        printf_s("ValAOdd = ");
         PrintBigInteger(&ValAOdd, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
     if (discriminant == 0)  // (BigIntIsZero(&discriminant))
     {     // Discriminant is zero.
@@ -938,9 +938,9 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
         // Compute square root (mod prime) of discriminant in Aux[3]. result in sqrRoot
         ComputeSquareRootModPowerOfP(nbrBitsSquareRoot);
         //if (verbose > 1) {
-        //    printf("sqrRoot = ");
+        //    printf_s("sqrRoot = ");
         //    PrintBigInteger(&sqrRoot, 0);
-        //    putchar('\n');
+        //    std::putchar('\n');
         //}
         // Multiply by square root of discriminant by prime^deltaZeros.
         for (ctr = 0; ctr < deltaZeros; ctr++)  {
@@ -995,15 +995,15 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     int NumberLengthBytes;
 
     if (verbose > 1) {
-        printf("QuadraticTermMultipleOfP: expon = %d \nA = ", expon);
+        printf_s("QuadraticTermMultipleOfP: expon = %d \nA = ", expon);
         PrintBigInteger(pValA, 0);
-        printf("\nB = ");
+        printf_s("\nB = ");
         PrintBigInteger(pValB, 0);
-        printf("\nC = ");
+        printf_s("\nC = ");
         PrintBigInteger(pValC, 0);
-        printf("\nprime = ");
+        printf_s("\nprime = ");
         PrintBigInteger(&prime, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 
     NumberLength = prime.nbrLimbs;
@@ -1049,9 +1049,9 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     /* make Solution 2 = Solution 1*/
     quad.Solution2[factorIndex] = quad.Solution1[factorIndex];  // CopyBigInt(&quad.Solution2[factorIndex], &quad.Solution1[factorIndex]);
     if (verbose > 1) {
-        printf("Solution = ");
+        printf_s("Solution = ");
         PrintBigInteger(ptrSolution, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 }
 
@@ -1063,11 +1063,11 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
     bool solutions;
 
     if (verbose > 1) {
-        printf("QuadraticTermNotMultipleOfP: expon = %d, factorIndex = %d \n a = ", expon, factorIndex);
+        printf_s("QuadraticTermNotMultipleOfP: expon = %d, factorIndex = %d \n a = ", expon, factorIndex);
         PrintBigInteger(pValA, 0);
-        printf("\n b = ");
+        printf_s("\n b = ");
         PrintBigInteger(pValB, 0);
-        printf("\n c = ");
+        printf_s("\n c = ");
         PrintBigInteger(pValC, 0);
     }
 
@@ -1080,9 +1080,9 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
     discriminant = Aux[0] - discriminant;  // BigIntSubt(&Aux[0], &discriminant, &discriminant);  /*  discriminant = b^2 - 4*a.c */
 
     if (verbose > 1) {
-        printf("\n discriminant = ");
+        printf_s("\n discriminant = ");
         PrintBigInteger(&discriminant, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 
     if (prime == 2)     //((prime.nbrLimbs == 1) && (prime.limbs[0] == 2))
@@ -1116,14 +1116,14 @@ static bool QuadraticTermNotMultipleOfP(int expon, int factorIndex,
         std::cout << "solutions = " << solutions << " sol1Invalid = " << sol1Invalid
             << " sol2Invalid = " << sol2Invalid << '\n';
         if (!sol1Invalid) {
-            printf("solution 1 = ");
+            printf_s("solution 1 = ");
             PrintBigInteger(&quad.Solution1[factorIndex], 0);
-            putchar('\n');
+            std::putchar('\n');
         }
         if (!sol2Invalid) {
-            printf("solution 2 = ");
+            printf_s("solution 2 = ");
             PrintBigInteger(&quad.Solution2[factorIndex], 0);
-            putchar('\n');
+            std::putchar('\n');
         }
     }
 
@@ -1160,19 +1160,19 @@ void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
     pValNn = pValNnParm;  /* pValNn is used in PerformChineseRemainderTheorem */
 
     if (verbose > 1) {
-        printf("SolveEquation: a = ");
+        printf_s("SolveEquation: a = ");
         PrintBigInteger(pValA, 0);
-        printf(" b = ");
+        printf_s(" b = ");
         PrintBigInteger(pValB, 0);
-        printf(" c = ");
+        printf_s(" c = ");
         PrintBigInteger(pValC, 0);
-        printf(" n = ");
+        printf_s(" n = ");
         PrintBigInteger(pValN, 0);
-        printf("\nGcdAllParm = ");
+        printf_s("\nGcdAllParm = ");
         PrintBigInteger(pGcdAllParm, 0);
-        printf(" ValNnParm = ");
+        printf_s(" ValNnParm = ");
         PrintBigInteger(pValNnParm, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 
     Aux[0] = *pValA % *pValN;   //(void)BigIntRemainder(pValA, pValN, &Aux[0]);
@@ -1235,9 +1235,9 @@ void SolveEquation(const BigInteger* pValA, const BigInteger* pValB,
         }
 
         if (verbose > 1) {
-            printf("Q = ");
+            printf_s("Q = ");
             PrintBigInteger(&Q, 0);
-            putchar('\n');
+            std::putchar('\n');
         }
 
         quad.Increment[factorIndex] = Q; //CopyBigInt(&quad.Increment[factorIndex], &Q);  /* Increment = Q */

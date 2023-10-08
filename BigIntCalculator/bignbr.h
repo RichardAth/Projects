@@ -70,8 +70,8 @@ void multiply(const limb factor1[], const limb factor2[], limb result[], int len
 
 /* defined in baseconv.cpp */
 void int2dec(char** pOutput, long long nbr);
-void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength);
-void Bin2Dec(char** ppDecimal, const limb* binary, int nbrLimbs, int groupLength);
+//void Bin2Dec(const limb binary[], char* decimal, int nbrLimbs, int groupLength);
+void Bin2DecV2(char** ppDecimal, const limb* binary, int nbrLimbs, int groupLength);
 
 /* defined in modmult.cpp */
 void ComputeInversePower2(const limb* value, limb* result, limb* tmp);

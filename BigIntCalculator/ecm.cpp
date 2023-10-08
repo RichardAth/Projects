@@ -474,20 +474,20 @@ void showECMStatus(void) {
 	oldTimeElapsed = elapsedTime;
 	ptrStatus = status;
 	std::strcpy(ptrStatus, lang ? "Transcurrió " : "Time elapsed: ");
-	ptrStatus += strlen(ptrStatus);
+	ptrStatus += std::strlen(ptrStatus);
 	GetDHMS(&ptrStatus, elapsedTime / 10); // days, hours, mins, secs to o/p buffer
 	switch (StepECM)
 	{
 	case 1:
 		std::strcpy(ptrStatus, lang ? "Paso 1: " : "Step 1: ");
-		ptrStatus += strlen(ptrStatus);
-		ptrStatus += sprintf(ptrStatus, "%2d%%", indexPrimes / (nbrPrimes / 100));
+		ptrStatus += std::strlen(ptrStatus);
+		ptrStatus += std::sprintf(ptrStatus, "%2d%%", indexPrimes / (nbrPrimes / 100));
 		break;
 
 	case 2:
 		std::strcpy(ptrStatus, lang ? "Paso 2: " : "Step 2: ");
-		ptrStatus += strlen(ptrStatus);
-		ptrStatus += sprintf(ptrStatus, "%2d%%", maxIndexM == 0 ? 0 : indexM / (maxIndexM / 100));
+		ptrStatus += std::strlen(ptrStatus);
+		ptrStatus += std::sprintf(ptrStatus, "%2d%%", maxIndexM == 0 ? 0 : indexM / (maxIndexM / 100));
 		break;
 	}
 
@@ -729,16 +729,16 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			auto elapsedTime = (int)(tenths() - originalTenthSecond);
 			GetDHMSt(&ptrText, elapsedTime);
 			std::strcpy(ptrText, lang ? " ECM Curva " : " ECM Curve ");
-			ptrText += strlen(ptrText);
-			ptrText += sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
+			ptrText += std::strlen(ptrText);
+			ptrText += std::sprintf(ptrText, "%4d", ElipCurvNo);   // Show curve number.
 
 			std::strcpy(ptrText, lang ? " usando límites B1=" : " using bounds B1=");
-			ptrText += strlen(ptrText);
- 			ptrText += sprintf(ptrText, "%5lld", L1);       // Show first bound.
+			ptrText += std::strlen(ptrText);
+ 			ptrText += std::sprintf(ptrText, "%5lld", L1);       // Show first bound.
 
 			std::strcpy(ptrText, lang ? " y B2=" : " and B2=");
-			ptrText += strlen(ptrText);
-			ptrText += sprintf(ptrText, "%7lld \n", L2); // Show second bound.
+			ptrText += std::strlen(ptrText);
+			ptrText += std::sprintf(ptrText, "%7lld \n", L2); // Show second bound.
 
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -758,7 +758,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			first = false;
 #ifdef log
 			fprintf_s(logfile, "%s", ptrLowerText);   // send status to l,og file
-			fflush(logfile);
+			std::fflush(logfile);
 #endif
 #if 0
 		primalityString =
@@ -866,7 +866,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 		std::memcpy(GcdAccumulated, MontgomeryMultR1, (NumberLength + 1) * sizeof(limb));
 		for (Pass = 0; Pass < 2; Pass++) {
 #ifdef log
-			fprintf(logfile, "starting pass %d \n", Pass);
+			std::fprintf(logfile, "starting pass %d \n", Pass);
 #endif
 			/* For powers of 2 */
 			indexPrimes = 0;
@@ -1322,7 +1322,7 @@ bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor) {
 	if (dotpos != std::string::npos)
 		name1.resize(dotpos);
 	name1 += "ECMlog.txt";
-	logfile = fopen(name1.c_str(), "a");
+	logfile = std::fopen(name1.c_str(), "a");
 	std::cout << "log file name = " << name1 << '\n';
 #endif
 
@@ -1353,7 +1353,7 @@ bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor) {
 #endif
 	StepECM = 0; /* do not show pass number on screen */
 #ifdef log
-	fclose(logfile);
+	std::fclose(logfile);
 #endif
 	return true;
 }

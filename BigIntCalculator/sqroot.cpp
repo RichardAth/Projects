@@ -57,7 +57,7 @@ bool isPerfectSquare(__int64 x) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    long long s = llround(sqrt(x));  // slightly faster than intSqrt
+    long long s = std::llround(sqrt(x));  // slightly faster than intSqrt
     //long long s = intSqrt(x);
     return (s * s == x);
 }
@@ -87,7 +87,7 @@ bool isPerfectSquare(__int64 x, __int64 &ss) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    s = llround(sqrt(x));  // slightly faster than intSqrt
+    s = std::llround(sqrt(x));  // slightly faster than intSqrt
     ss = s << (ix / 2);
     return (s * s == x);
 }
@@ -220,7 +220,7 @@ void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
         }
     }
     lenBytes = (length + 1) / 2 * (int)sizeof(limb);
-    (void)memset(sqRoot, 0, lenBytes);
+    (void)std::memset(sqRoot, 0, lenBytes);
     if (index <= 1)
     {                // Argument is small, so compute directly its square root.
         if (index == 0)
@@ -255,10 +255,10 @@ void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
     }
     lenInvSqrt = (length + 5) / 2;
     lenBytes = lenInvSqrt * (int)sizeof(limb);
-    (void)memset(approxInvSqrt, 0, lenBytes);
+    (void)std::memset(approxInvSqrt, 0, lenBytes);
     // Initialize approximate inverse square root.
     invSqrt = (double)LIMB_RANGE /
-        sqrt(getMantissa(adjustedArgument + length, length) * (double)LIMB_RANGE + 1.0);
+        std::sqrt(getMantissa(adjustedArgument + length, length) * (double)LIMB_RANGE + 1.0);
     approxInvSqrt[lenInvSqrt - 1] = 1;
     invSqrt = (invSqrt - 1.0) * (double)LIMB_RANGE;
     if (invSqrt > (double)MAX_INT_NBR)
