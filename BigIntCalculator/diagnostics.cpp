@@ -1,13 +1,12 @@
 #include "pch.h"
 
-#include <setjmp.h>
-#include <signal.h>
+//#include <csetjmp>
+#include <csignal>
 
 #include <excpt.h>
 #include <new.h>
 #include <eh.h>
 #include <sstream>
-#include <string.h>
 
 #include <Psapi.h>
 /* To ensure correct resolution of symbols, add Psapi.lib and dbghelp.lib
@@ -82,7 +81,7 @@ public:
     }
 };
 
-/* walkbaack through call stack */
+/* walkback through call stack */
 DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 {
     HANDLE process = GetCurrentProcess();
@@ -284,7 +283,7 @@ DWORD StackTrace2(void)
     // Display the string:
     fprintf_s(stderr, "%s%s", " Stack Trace: \n",
         builder);
-    free(builder);
+    std::free(builder);
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -459,8 +458,8 @@ void SigintHandler(int sig) {
     }
     case IDNO: { /* NO selected */
         /* re-register signal handler */
-        signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
-        signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+        std::signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
+        std::signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
         breakSignal = true;     /* Main program can check this. Allows it to minimise
                         strange behaviour before it terminates */
         return;  /* main program continues, but cannot get any more input from stdin */
@@ -539,7 +538,7 @@ the interesting stack-frames being gone by the time you do the dump.  */
         // Suppress the abort message (debug only?, has no effect in release)
         _set_abort_behavior(0, _WRITE_ABORT_MSG);
         // Catch an abnormal program termination
-        signal(SIGABRT, SigabrtHandler);
+        std::signal(SIGABRT, SigabrtHandler);
     }
 
     /* Catch interrupt handler. When a CTRL+C interrupt occurs, Win32 operating 
@@ -548,13 +547,13 @@ the interesting stack-frames being gone by the time you do the dump.  */
     unexpected behavior.
     */
     if (f.interrupt) {
-        signal(SIGINT,   SigintHandler);     // interrupt (Ctrl - C)
-        signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
+        std::signal(SIGINT,   SigintHandler);     // interrupt (Ctrl - C)
+        std::signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
     }
 
     // Catch a termination request
     if (f.sigterm)
-        signal(SIGTERM, SigtermHandler);
+        std::signal(SIGTERM, SigtermHandler);
 
 
     // Catch terminate() calls. 
@@ -581,15 +580,15 @@ the interesting stack-frames being gone by the time you do the dump.  */
     typedef void(*sigh)(int); /* force compiler to accept SigfpeHandler although
                               it actually has 2 parameters, not 1 */
     if (f.sigfpe)
-        signal(SIGFPE, (sigh)SigfpeHandler);
+        std::signal(SIGFPE, (sigh)SigfpeHandler);
 
     // Catch an illegal instruction
     if (f.sigill)
-        signal(SIGILL, SigillHandler);
+        std::signal(SIGILL, SigillHandler);
 
     // Catch illegal storage access errors
     if (f.sigsegv)
-        signal(SIGSEGV, SigsegvHandler);
+        std::signal(SIGSEGV, SigsegvHandler);
 
 }
 
@@ -626,7 +625,7 @@ void createMiniDump(const EXCEPTION_POINTERS* pExcPtrs)
     const time_t current = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
     localtime_s(&newtime, &current);    // convert time to tm structure
     /* convert time to hhmmss */
-    strftime(timestamp, sizeof(timestamp), "%H%M%S", &newtime);
+    std::strftime(timestamp, sizeof(timestamp), "%H%M%S", &newtime);
     strcat_s(buf, timestamp);
     strcat_s(buf, ".dmp");
     // Create the minidump file
@@ -955,19 +954,19 @@ void testerrors(void) {
             break;
         }
     case 8: /* SIGILL */ {
-            raise(SIGILL);
+            std::raise(SIGILL);
             break;
         }
     case 9: /* SIGINT */ {
-            raise(SIGINT);
+            std::raise(SIGINT);
             break;
         }
     case 10: /* SIGSEGV */ {
-            raise(SIGSEGV);
+            std::raise(SIGSEGV);
             break;
         }
     case 11: /* SIGTERM */ {
-            raise(SIGTERM);
+            std::raise(SIGTERM);
             break;
         }
     case 12: /* RaiseException */ {
@@ -1019,11 +1018,11 @@ void testerrors(void) {
             break;
         }
     case 17: /* raise FPE */ {
-            raise(SIGFPE);  
+            std::raise(SIGFPE);  
             break;
         }
     case 18: /* raise Break signal */ {
-        raise(SIGBREAK);
+        std::raise(SIGBREAK);
         break;
     }
 

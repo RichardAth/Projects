@@ -2938,9 +2938,8 @@ static void initialise(int argc, char *argv[]) {
     char VSversion[100] = { 0 };  /* visual studio version*/
     size_t vslen = 0;             /* no of chars in visual studio version */
     flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
-#ifndef BIGNBR
     unsigned int control_word; /* save current state of fp control word here */
-#endif
+    errno_t err;
     int version[4]; /* version info from .exe file (taken from .rc resource file) */
     std::string modified;  /* date & time program last modified */
 
@@ -2954,20 +2953,18 @@ static void initialise(int argc, char *argv[]) {
     /* only seems to work properly if compiled in debug mode */
     f.InvParam = 1;    /* trap invalid parameters on library calls */
 #endif
-    //f.sigfpe = 1;      /* trap floating point error signal */
+    f.sigfpe = 1;      /* trap floating point error signal */
     SetProcessExceptionHandlers(f);
 
     /* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
         functions that actually work OK */
-#ifndef BIGNBR
     err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
     /* trap hardware FP exceptions except inexact and underflow which are
     considered to be normal, not errors. */
     if (err) {
         printf_s("could not set FP control word\n");
-        exit (-1);
+        std::exit (EXIT_FAILURE);
     }
-#endif
 
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
     handConsole = GetConsoleWindow();            // get handle for console window

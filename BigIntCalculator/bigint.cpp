@@ -14,6 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
+#include <cfenv>
 
 static BigInteger Base;     // work area
 static limb approxInv[MAX_LEN];
@@ -453,20 +454,35 @@ void BigIntPowerIntExp(const BigInteger &base, int exponent, BigInteger &Power) 
 is an integer it is not exact, and also for large values only at best the 1st
 15 significant digits of the result are accurate. */
 void expBigInt(BigInteger &bigInt, double logar) {
-    double e = std::exp(logar);
+    std::fenv_t envp ;
+    unsigned int control_word; /* save current state of fp control word here */
+    errno_t err;
+
+    std::fegetenv(&envp);  /* save current floating point environment */
+    std::feclearexcept(FE_OVERFLOW);
+    /* trap hardware FP exceptions except inexact and underflow which are
+    considered to be normal, not errors, and overflow which is handled by using an 
+    alternative method */
+    err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW | _EM_OVERFLOW, MCW_EM);
+    if (err) {
+        printf_s("could not set FP control word\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    double e = std::exp(logar);  /* get e^logar directly */
     auto rv = std::fpclassify(e);  // check for overflow
     
     if (rv != FP_INFINITE && rv != FP_NAN) {
         bigInt = e;  /* note: the assignment statement uses DoubleToBigInt to
                     convert floating point to BigInteger */
     }
-    else 
+    else {
         /* simple approach didn't work, but more complicated method below handles
          much larger numbers. The strategy is to split the calculation into two parts.
          One part uses Big Integers only and so avoids floating point overflow. 
          The other part uses floating point, but the maximum number size is limited. 
          Mathematically this method is sound, but in practise it is less accurate. */
-    {
+    
         BigInteger base=1;   
         base <<= 128;        //  new base for logs = 2^128
         double logb = logar / (std::log(2.0)*128);  // convert log to new base
@@ -484,6 +500,8 @@ void expBigInt(BigInteger &bigInt, double logar) {
         fracBI = frac;    // convert to integer      
         bigInt = bigInt * fracBI;
     }
+    std::feclearexcept(FE_OVERFLOW);
+    std::fesetenv(&envp);  /* restore previous FP environment */
 }
 
 
