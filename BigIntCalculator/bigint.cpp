@@ -17,7 +17,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <cfenv>
 
-
 static BigInteger Base;     // work area
 static limb approxInv[MAX_LEN];
 static limb adjustedArgument[MAX_LEN];

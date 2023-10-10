@@ -49,7 +49,7 @@ struct counters {
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
-	int pari = 0;          // found by Parilib
+	int paric = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int power = 0;		   // perfect power
@@ -509,7 +509,7 @@ Repeated factors: No or Yes
 		temp.siqs   = this->siqs;    // SIQS
 		temp.tdiv   = this->tdiv;    // trial division
 		temp.yafu   = this->yafu;    // YAFU
-		temp.pari = this->pari;      // PARI
+		temp.paric  = this->pari;    // PARI
 		return temp;
 	}
 

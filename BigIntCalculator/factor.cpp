@@ -852,8 +852,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 			size_t fsave = Factors.f.size();
 			bool rv; 
-			/* msieve and yafu should never both be set. At this point one of them 
-			should be set. */
+			/* one and only one of msieve, yafu and Pari should be set.*/
 			if (msieve)  
 				rv = callMsieve(Zpower, Factors);
 			else if (yafu)

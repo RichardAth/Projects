@@ -543,7 +543,7 @@ static void printSummary(void) {
     double elSec;
     /* print column headings */
     printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
-    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv \n");
+    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv pari \n");
     for (auto res : results) {
         /* truncate elapsed time to nearest second */
         sec = (long long)std::floor(res.time); // convert to an integer
@@ -563,8 +563,8 @@ static void printSummary(void) {
         printf_s("    %3d %3d %3d %3d %3d %3d ",
             res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
             res.ctrs.pm1, res.ctrs.ecm);
-        printf_s("%3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
-            res.ctrs.msieve);
+        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+            res.ctrs.msieve, res.ctrs.paric);
     }
 
     if (verbose > 0) {
