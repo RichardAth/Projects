@@ -695,7 +695,8 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
     summary sum;    // save summary of test
 
     auto start = std::clock();	// used to measure execution time
-    double end, elapsed;
+    clock_t end;
+    double elapsed;
 
     sum.numsize = (int)ComputeNumDigits(x3, 10);
 
@@ -1554,7 +1555,7 @@ static void doTests3(void) {
         aBI = a;             /* convert Znum to BigInteger*/
         bBI = aBI.sqRoot();  /* get square root of big integer, use DA's function */
         BigtoZ(bm, bBI);     /* convert BigInteger to Znum */
-        std::cout << "sqrt(" << a << ") = " << b << '\n';
+        std::cout << "sqrt(" << a << ") = " << b << " = "<< bBI << '\n';
         assert(bm == b);      /* check that both square roots have the same value */
     }
 
@@ -2943,7 +2944,7 @@ static void initialise(int argc, char *argv[]) {
     int version[4]; /* version info from .exe file (taken from .rc resource file) */
     std::string modified;  /* date & time program last modified */
 
-    f.UnEx = 1;        /* set unhandled exception 'filter' */
+    //f.UnEx = 1;        /* set unhandled exception 'filter' */
     f.abort = 1;       /* trap abort (as a signal) */
     f.sigterm = 1;     /* trap terminate signal */
     f.sigill = 1;      /* trap 'illegal' signal */
@@ -3105,8 +3106,9 @@ int main(int argc, char *argv[]) {
                 SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 
             myGetline(expr);  /* get input from stdin */
-            if (breakSignal)
+            if (breakSignal) {
                 break;    /* Program interrupted: ctrl-c or ctrl-break */
+            }
 
             if (expr.empty()) {
                 Sleep(1000);       
@@ -3192,6 +3194,8 @@ int main(int argc, char *argv[]) {
 
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
+        if (breakSignal)
+            std::cout << "program execution interrupted \n";
         if (lang)
             std::cout << "¡Adiós!";
         else

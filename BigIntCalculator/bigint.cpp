@@ -12,9 +12,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+#pragma fenv_access(on)
 
 #include "pch.h"
 #include <cfenv>
+
 
 static BigInteger Base;     // work area
 static limb approxInv[MAX_LEN];
@@ -458,8 +460,8 @@ void expBigInt(BigInteger &bigInt, double logar) {
     unsigned int control_word; /* save current state of fp control word here */
     errno_t err;
 
-    std::fegetenv(&envp);  /* save current floating point environment */
-    std::feclearexcept(FE_OVERFLOW);
+    err = std::fegetenv(&envp);  /* save current floating point environment */
+    err = std::feclearexcept(FE_OVERFLOW);
     /* trap hardware FP exceptions except inexact and underflow which are
     considered to be normal, not errors, and overflow which is handled by using an 
     alternative method */

@@ -1,4 +1,7 @@
+#pragma fenv_access(on)
+
 #include "pch.h"
+#include <cfenv>
 
 //#include <csetjmp>
 #include <csignal>
@@ -19,6 +22,8 @@
  
 #include <minidumpapiset.h>
 #include "diagnostic.h"
+
+#undef max   /* remove max defined in windows.h because of name clash */
 
 bool breakSignal = false;
 
@@ -309,17 +314,19 @@ const char* FPEcodeToTxt(int num) {
 
     switch (num) {
     case FPE_INVALID:
-        return "invalid";
+        return "invalid";      /* result of an operation is ill-defined */
     case FPE_DENORMAL:
-        return "denormal";
-    case FPE_ZERODIVIDE:
+        return "denormal";     /* operation results in a denormalized float */
+    case FPE_ZERODIVIDE:   
         return "Divide by zero";
     case FPE_OVERFLOW:
-        return "Overflow";
+        return "Overflow";     /* result of an operation is too large to be 
+                                  represented as a float*/
     case FPE_UNDERFLOW:
-        return "underflow";
-    case FPE_INEXACT:
-        return "inexact";
+        return "underflow";    /* result of an operation is too small to be 
+                                  represented as a normalized float*/
+    case FPE_INEXACT:          
+        return "inexact";      /* the result was rounded */
     case FPE_UNEMULATED:
         return "unemulated";
     case FPE_SQRTNEG:
@@ -376,21 +383,39 @@ FPE_SQRTNEG			0x88
 FPE_STACKOVERFLOW	0x8a
 FPE_STACKUNDERFLOW	0x8b
 FPE_EXPLICITGEN     0x8c // raise(SIGFPE);
+FPE_MULTIPLE_TRAPS  0x8d
+FPE_MULTIPLE_FAULTS 0x8e
 */
 void SigfpeHandler(int sig, int num) {
     const char *msg = NULL;
+ 
     if (num == FPE_INEXACT || num == FPE_UNDERFLOW)
         return;  /* ignore these signals */
 
     msg = FPEcodeToTxt(num);
     /* strictly speaking, should not call I/O routines here, but it seems to work OK */
     fprintf_s(stderr, "\nreceived FPE signal %d %s \n", sig, msg);
+    if (verbose > 0) {
+        int except = std::fetestexcept(FE_ALL_EXCEPT);
+        if (except & FE_DIVBYZERO)
+            std::cerr << "FE divide by zero set \n";
+        if (except & FE_INEXACT)
+            std::cerr << "FE inexact set \n";
+        if (except & FE_INVALID)
+            std::cerr << "FE invalid set \n";
+        if (except & FE_OVERFLOW)
+            std::cerr << "FE overflow set \n";
+        if (except & FE_UNDERFLOW)
+            std::cerr << "FE underflow set \n";
+    }
     StackTrace2();
     EXCEPTION_POINTERS *ep = (EXCEPTION_POINTERS *)_pxcptinfoptrs;
     createMiniDump(ep);
     Beep(1200, 1000);   // beep at 1200 Hz for 1 second
+    auto err = std::feclearexcept(FE_ALL_EXCEPT);   /* attempt to clear all exceptions */
+    assert(err == 0);
+
     std::cout << "Press ENTER to continue...";
-#undef max   /* remove max defined in windows.h because of name clash */
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     return;
@@ -853,13 +878,17 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
     int rcode;
     int code = ep->ExceptionRecord->ExceptionCode;
 
-    //if (code == EXCEPTION_FLT_DENORMAL_OPERAND ||
-    //	code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
-    //	code == EXCEPTION_FLT_INEXACT_RESULT ||
-    //	code == EXCEPTION_FLT_OVERFLOW ||
-    //	code == EXCEPTION_FLT_UNDERFLOW ||
-    //	code == EXCEPTION_FLT_INVALID_OPERATION)
-    //	return EXCEPTION_CONTINUE_EXECUTION;
+    if (code == EXCEPTION_FLT_DENORMAL_OPERAND ||
+        code == EXCEPTION_FLT_DIVIDE_BY_ZERO ||
+        code == EXCEPTION_FLT_INEXACT_RESULT ||
+        code == EXCEPTION_FLT_OVERFLOW ||
+        code == EXCEPTION_FLT_UNDERFLOW ||
+        code == EXCEPTION_FLT_INVALID_OPERATION) {
+        fprintf_s(stderr, "Unhandled Exception handler entered for floating point error \n");
+        breakSignal = true;     /* Main program can check this. Allows it to minimise
+                 strange behaviour before it terminates */
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
 
     rcode = filter(code, ep);
     return EXCEPTION_EXECUTE_HANDLER;  /* override return code from filter */
