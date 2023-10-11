@@ -24,6 +24,7 @@ can handle maximum length numbers */
 #define HALF_INT_RANGE (1 << (BITS_PER_INT_GROUP - 1))
 //#define FOURTH_INT_RANGE      0x20000000
 #define HALF_INT_RANGE_U      0x40000000U
+#define INT_RANGE_U 0x80000000U
 #define MAX_INT_NBR ((int)((1U << BITS_PER_INT_GROUP)-1))
 #define MAX_INT_NBR_U         0x7FFFFFFFU
 #define LIMB_RANGE (1U<<BITS_PER_GROUP)
@@ -38,7 +39,7 @@ bool BigNbrIsZero(const limb value[], int nbrLength);
 int BigNbrLen(const long long Nbr[], int nbrLen);
 void ChSignBigNbr(int nbr[], int length);
 void ChSignBigNbrB(int nbr[], int length);
-void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen);
+void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen, int *remainder);
 void DivideZnumByMaxPowerOf2(int& ShRight, Znum& number);
 double getMantissa(const limb *ptrLimb, int nbrLimbs);
 long long JacobiSymbol(long long upper, long long lower);

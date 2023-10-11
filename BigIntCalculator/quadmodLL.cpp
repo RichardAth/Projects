@@ -353,6 +353,7 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
     int lenBytes;
     int correctBits;
     int nbrLimbs;
+    int rem;
     // First approximation to inverse of square root.
     // If value is ...0001b, the inverse of square root is ...01b.
     // If value is ...1001b, the inverse of square root is ...11b.
@@ -372,7 +373,7 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
         AddBigNbr(tmp2.limbs, tmp1.limbs, tmp2.limbs, nbrLimbs);
         MultBigNbr(tmp2.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs);
         std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
-        DivBigNbrByInt(tmp1.limbs, 2, sqrRoot.limbs, nbrLimbs);
+        DivBigNbrByInt(tmp1.limbs, 2, sqrRoot.limbs, nbrLimbs, &rem);
         correctBits--;
     }
     // Get square root of ValCOdd from its inverse by multiplying by ValCOdd.

@@ -93,13 +93,15 @@ void MultBigNbr(const limb pFactor1[], const limb pFactor2[], limb pProd[], int 
     //*(ptrProd + 1) = (int)floor(dAccumulator / dRangeLimb);
 }
 
-/* Quotient = Dividend/divisor */
-void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen)
+/* Quotient = Dividend/divisor. The quotient is rounded towards zero 
+(i.e. truncation division). If divisor is 0 a divide-by-zero error will occur.
+the remainder is returned in rem */
+void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbrLen, int *rem)
 {
     int ctr;
     int remainder = 0;
-    double dDivisor = (double)divisor;  // assume divisor > 0
-    double dLimb = 0x80000000;
+    double dDivisor = (double)abs(divisor);  // assume divisor != 0
+    double dLimb = INT_RANGE_U;
     for (ctr = nbrLen - 1; ctr >= 0; ctr--)
     {
         double dDividend, dQuotient;
@@ -116,6 +118,7 @@ void DivBigNbrByInt(const limb Dividend[], int divisor, limb Quotient[], int nbr
         }
         Quotient[ctr] = quotient;
     }
+    *rem = remainder;
 }
 
 

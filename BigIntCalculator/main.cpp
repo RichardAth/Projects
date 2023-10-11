@@ -1246,7 +1246,7 @@ static void doTests3(void) {
     Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
     limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
     limb one[MAX_LEN];
-    int numLen = MAX_LEN-2, l2;
+    int numLen = MAX_LEN-2, l2, exp;
 
     BigInteger aBI, a1BI, bBI, amBI, pBI;
 
@@ -1335,6 +1335,21 @@ static void doTests3(void) {
         BigtoZ(p, pBI);                 // p = pBI = aBI % bBI
         if (p != (a%b))               // verify modulus
             std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+
+        l2 = (int)BigToLL(bBI, exp);  /* create a 'random' 32 bit integer */
+        pBI = aBI / l2;
+        BigtoZ(p, pBI);
+        if (p != (a / l2))
+            std::cout << "p = " << p << "\na/l2 = " << a / l2 << '\n';
+        pBI = -aBI / l2;
+        BigtoZ(p, pBI);
+        if (p != (-a / l2))
+            std::cout << "p = " << p << "\n-a/l2 = " << -a / l2 << '\n';
+
+        pBI = aBI % l2;
+        BigtoZ(p, pBI);
+        if (p != a%l2)
+            std::cout << "p = " << p << "\na%l2 = " << a%l2 << " = " << a << '%' << l2 << '\n';
 
         /* check BigtoLL function */
         int exp;
