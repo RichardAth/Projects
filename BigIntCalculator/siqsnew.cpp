@@ -221,13 +221,13 @@ static void MultZnumByIntModN(const Znum& Nbr1, int Nbr2, Znum& Prod, const Znum
 static void showMatrixSize(char *SIQSInfoText, int rows, int cols)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, lang ? "Resolviendo la matriz de congruencias de " : "Solving ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, rows);   // Show number of rows.
-	strcpy(ptrText, " X ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, " X ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, cols);   // Show number of columns.
-	strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
+	std::strcpy(ptrText, lang ? " usando el algoritmo de Lanczos en bloques.\n" :
 		" congruence matrix using Block Lanczos algorithm.\n");
 
 	printf_s("%s", ptrLowerText);
@@ -244,14 +244,14 @@ static void upOneLine(void) {
 static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 {
 	char *ptrText = ptrLowerText;  // Point after number that is being factored.
-	strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, lang ? "Parámetros de SIQS: " : "SIQS parameters: ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, nbrFactorBasePrimes);   // Show number of primes in factor base.
-	strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, lang ? " primos, límite de la criba: " : " primes, sieve limit: ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, SieveLimit);  // Show sieve limit.
 	ptrSIQSStrings = ptrText;
-	strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
+	std::strcpy(ptrText, lang ? "\nBuscando el mejor multiplicador de Knuth-Schroeppel...\n" :
 		"\nSearching for Knuth-Schroeppel multiplier...\n");
 	printf_s("%s", ptrLowerText);
 }
@@ -260,14 +260,14 @@ static void InitSIQSStrings(int SieveLimit, int nbrFactorBasePrimes)
 static void getMultAndFactorBase(int multiplier, int FactorBase)
 {
 	char *ptrText = ptrSIQSStrings;
-	strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, lang ? "\nMultiplicador: " : "\nMultiplier: ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, multiplier);  // Show Knuth-Schroeppel multiplier.
-	strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, lang ? ", base de factores: " : ", factor base: ");
+	ptrText += std::strlen(ptrText);
 	int2dec(&ptrText, FactorBase);  // Show factor base.
-	strcpy(ptrText, "\n");
-	ptrText += strlen(ptrText);
+	std::strcpy(ptrText, "\n");
+	ptrText += std::strlen(ptrText);
 	ptrSIQSStrings = ptrText;
 }
 
@@ -286,14 +286,14 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 
 		GetDHMS(&ptrText, elapsedTime);
 	if (lang) {  // español
-		ptrText += sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
+		ptrText += std::sprintf(ptrText, "%5d congruencias halladas con %5d primos diferentes.\n"
 			"Relaciones: %5d completas y %5d obtenidas de %6d parciales.\n"
 			"progreso = %2d%%. ",
 			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
 			totalPartials, percentage);
 	}
 	else {  // english
-		ptrText += sprintf(ptrText, "%5d congruences found with %5d different primes \n"
+		ptrText += std::sprintf(ptrText, "%5d congruences found with %5d different primes \n"
 			"Relations: %5d full and %5d found from %6d partials.\n"
 			"progress = %2d%%. ",
 			congruencesFound, nbrPrimesUsed, smoothsFound, partialsFound, 
@@ -301,12 +301,12 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	}
 
 	if (timeSieve > 1 && congruencesFound > 10) {
-		strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
-		ptrText += strlen(ptrText);
+		std::strcpy(ptrText, lang ? "Fin de la criba en " : "End sieve in ");
+		ptrText += std::strlen(ptrText);
 		GetDHMS(&ptrText, u);      // print estimated time to completion
 	}
 
-	strcpy(ptrText, "\n");
+	std::strcpy(ptrText, "\n");
 
 	if (first) {
 		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -422,11 +422,11 @@ static void PerformSiqsSieveStage(PrimeSieveData primeSieveData[],
 		}
 		F4 = F2;
 		while (F4 * 2 <= F3) {
-			memcpy(SieveArray + F4, SieveArray, F4 * sizeof(*SieveArray));
+			std::memcpy(SieveArray + F4, SieveArray, F4 * sizeof(*SieveArray));
 			F4 *= 2;
 		}
 
-		memcpy(SieveArray + F4, SieveArray, (F3 - F4) * sizeof(*SieveArray));
+		std::memcpy(SieveArray + F4, SieveArray, (F3 - F4) * sizeof(*SieveArray));
 
 		if (F3 == X1 + 1) {
 			break;  /* <<<<<<<<<<< only exit from for loop */
@@ -1881,7 +1881,7 @@ static bool PartialRelationFound(
 			// duplicates.
 			mergeArrays(aindex, nbrFactorsA, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
 			rowMatrixBbeforeMerge[0] = nbrColumns = rowMatrixB[LENGTH_OFFSET];
-			memcpy(&rowMatrixBbeforeMerge[1], &rowMatrixB[1], nbrColumns * sizeof(int));
+			std::memcpy(&rowMatrixBbeforeMerge[1], &rowMatrixB[1], nbrColumns * sizeof(int));
 			mergeArrays(rowPartials, nbrFactorsPartial, rowMatrixB, rowMatrixBbeforeMerge, rowSquares);
 			nbrSquares = rowSquares[0];
 			for (index = 1; index < nbrSquares; index++)
@@ -2140,7 +2140,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	matrixPartial.resize(MAX_PRIMES * 8);
 	primeSieveData.resize(MAX_PRIMES + 3);
 	/* allocate storage for ther arrays */
-	ag = (AG*)calloc(1, sizeof(AG));
+	ag = (AG*)std::calloc(1, sizeof(AG));
 	assert(ag != nullptr);
 	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
@@ -2579,7 +2579,7 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 			}
 			if (column == 0)
 			{                // Singleton not found: move row upwards.
-				memcpy(&matrixB[row - delta][0], &matrixB[row][0], sizeof(int) * MAX_FACTORS_RELATION);
+				std::memcpy(&matrixB[row - delta][0], &matrixB[row][0], sizeof(int) * MAX_FACTORS_RELATION);
 				vectLeftHandSide[row - delta] = vectLeftHandSide[row];
 				//memcpy(vectLeftHandSide[row - delta], vectLeftHandSide[row], sizeof(vectLeftHandSide[0]));
 			}
@@ -2615,7 +2615,7 @@ static bool LinearAlgebraPhase(
 #if DEBUG_SIQS
 	{
 		int i;
-		printf("******* Linear Algebra Phase ************\n");
+		printf_s("******* Linear Algebra Phase ************\n");
 		for (j = 0; j < matrixBLength; j++)
 		{
 			char *ptrOutput = output;
@@ -2627,9 +2627,9 @@ static bool LinearAlgebraPhase(
 				*ptrOutput++ = ',';
 			}
 			*ptrOutput = 0;
-			printf("%s\n", output);
+			printf_s("%s\n", output);
 		}
-		//    exit(0);
+		//    std::exit(0);
 	}
 #endif
 	// Get new number of rows after erasing singletons.
@@ -2726,7 +2726,7 @@ static bool InsertNewRelation(
 			*ptrOutput++ = ',';
 		}
 		*ptrOutput = 0;
-		printf(" rowMatrixB = %s\n", output);
+		printf_s(" rowMatrixB = %s\n", output);
 	}
 	if (++nn == 3018)
 	{
@@ -2776,7 +2776,7 @@ static bool InsertNewRelation(
 	MultZnumModN(biU, biT, biR, zModulus);  // biR = biU * biT
 
 	// Add relation to matrix B.
-	memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
+	std::memcpy(&matrixB[congruencesFound][0], &rowMatrixB[0], nbrColumns * sizeof(int));
 
 	vectLeftHandSide[congruencesFound] = biR;
 	congruencesFound++;
@@ -3059,11 +3059,11 @@ static void BlockLanczos(void)
 #if DEBUG_SIQS
 	{
 		char *ptrOutput = output;
-		strcpy(ptrOutput, "MatrixBLength = ");
-		ptrOutput += strlen(ptrOutput);
+		std::strcpy(ptrOutput, "MatrixBLength = ");
+		ptrOutput += std::strlen(ptrOutput);
 		int2dec(&ptrOutput, matrixBLength);
 		*ptrOutput = 0;
-		printf("%s\n", output);
+		printf_s("%s\n", output);
 	}
 #endif
 	for (;;) {
@@ -3075,15 +3075,15 @@ static void BlockLanczos(void)
 			char SIQSInfo[200];
 			char *ptrText = SIQSInfo;
 			oldTimeElapsed = elapsedTime;
-			//strcpy(ptrText, "4\n");
-			//ptrText += strlen(ptrText);
+			//std::strcpy(ptrText, "4\n");
+			//ptrText += std::strlen(ptrText);
 			GetDHMS(&ptrText, elapsedTime / 10);
-			strcpy(ptrText, "  ");
-			ptrText += strlen(ptrText);
-			strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
-			ptrText += strlen(ptrText);
+			std::strcpy(ptrText, "  ");
+			ptrText += std::strlen(ptrText);
+			std::strcpy(ptrText, lang ? "Progreso del álgebra lineal: " : "Linear algebra progress: ");
+			ptrText += std::strlen(ptrText);
 			int2dec(&ptrText, stepNbr * 3200 / matrixRows);
-			strcpy(ptrText, "%\n");
+			std::strcpy(ptrText, "%\n");
 
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -3127,10 +3127,10 @@ static void BlockLanczos(void)
 
 		  /* Selection of S(i) and W(i) */
 
-		memcpy(matrixTemp, matrixWinv2, sizeof(matrixTemp));
-		memcpy(matrixWinv2, matrixWinv1, sizeof(matrixTemp));
-		memcpy(matrixWinv1, matrixWinv, sizeof(matrixTemp));
-		memcpy(matrixWinv, matrixTemp, sizeof(matrixTemp));
+		std::memcpy(matrixTemp, matrixWinv2, sizeof(matrixTemp));
+		std::memcpy(matrixWinv2, matrixWinv1, sizeof(matrixTemp));
+		std::memcpy(matrixWinv1, matrixWinv, sizeof(matrixTemp));
+		std::memcpy(matrixWinv, matrixTemp, sizeof(matrixTemp));
 
 		mask = 1;
 		for (j = 31; j >= 0; j--) {
@@ -3214,14 +3214,14 @@ static void BlockLanczos(void)
 		char *ptrOutput = output;
 		if (stepNbr < 200)
 		{
-			strcpy(ptrOutput, "Step #");
-			ptrOutput += strlen(ptrOutput);
+			std::strcpy(ptrOutput, "Step #");
+			ptrOutput += std::strlen(ptrOutput);
 			int2dec(&ptrOutput, stepNbr);
-			strcpy(ptrOutput, ": matrixWinv1[0] = ");
-			ptrOutput += strlen(ptrOutput);
+			std::strcpy(ptrOutput, ": matrixWinv1[0] = ");
+			ptrOutput += std::strlen(ptrOutput);
 			int2dec(&ptrOutput, matrixWinv1[0]);
 			*ptrOutput = 0;
-			printf("%s\n", output);
+			printf_s("%s\n", output);
 		}
 #endif
 		if (stepNbr >= 3) {
@@ -3283,21 +3283,21 @@ static void BlockLanczos(void)
 		}
 		/* cycle arrays:
 		  V2 <- V1, V1 <- V, V <- Calc3, Calc3 <- V2*/
-		memcpy(ag->matrixTemp2, ag->matrixV2, sizeof(ag->matrixTemp2));
-		memcpy(ag->matrixV2, ag->matrixV1, sizeof(ag->matrixV2));
-		memcpy(ag->matrixV1, ag->matrixV, sizeof(ag->matrixV1));
-		memcpy(ag->matrixV, ag->matrixCalc3, sizeof(ag->matrixV));
-		memcpy(ag->matrixCalc3, ag->matrixTemp2, sizeof(ag->matrixCalc3));
+		std::memcpy(ag->matrixTemp2, ag->matrixV2, sizeof(ag->matrixTemp2));
+		std::memcpy(ag->matrixV2, ag->matrixV1, sizeof(ag->matrixV2));
+		std::memcpy(ag->matrixV1, ag->matrixV, sizeof(ag->matrixV1));
+		std::memcpy(ag->matrixV, ag->matrixCalc3, sizeof(ag->matrixV));
+		std::memcpy(ag->matrixCalc3, ag->matrixTemp2, sizeof(ag->matrixCalc3));
 		/* Vt2V0 <- Vt1V0, Vt1V0 <- VtV0, VtV0 <- Calc2, Calc2 <- Vt2V0*/
-		memcpy(matrixTemp, matrixVt2V0, sizeof(matrixTemp));
-		memcpy(matrixVt2V0, matrixVt1V0, sizeof(matrixVt2V0));
-		memcpy(matrixVt1V0, matrixVtV0, sizeof(matrixVt1V0));
-		memcpy(matrixVtV0, matrixCalc2, sizeof(matrixVtV0));
-		memcpy(matrixCalc2, matrixTemp, sizeof(matrixCalc2));
+		std::memcpy(matrixTemp, matrixVt2V0, sizeof(matrixTemp));
+		std::memcpy(matrixVt2V0, matrixVt1V0, sizeof(matrixVt2V0));
+		std::memcpy(matrixVt1V0, matrixVtV0, sizeof(matrixVt1V0));
+		std::memcpy(matrixVtV0, matrixCalc2, sizeof(matrixVtV0));
+		std::memcpy(matrixCalc2, matrixTemp, sizeof(matrixCalc2));
 		/* swap Vt1AV1 and VtAV */
-		memcpy(matrixTemp, matrixVt1AV1, sizeof(matrixTemp));
-		memcpy(matrixVt1AV1, matrixVtAV, sizeof(matrixVt1AV1));
-		memcpy(matrixVtAV, matrixTemp, sizeof(matrixVtAV));
+		std::memcpy(matrixTemp, matrixVt1AV1, sizeof(matrixTemp));
+		std::memcpy(matrixVt1AV1, matrixVtAV, sizeof(matrixVt1AV1));
+		std::memcpy(matrixVtAV, matrixTemp, sizeof(matrixVtAV));
 	} /* end while */
 
 	  /* Find matrix V1:V2 = B * (X-Y:V) */
@@ -3504,7 +3504,7 @@ static void sieveThread(Znum &result) {
 				rowPrimeSieveData0 = &primeSieveData[i];
 				rowPrimeSieveData->value = rowPrimeSieveData0->value;
 				rowPrimeSieveData->modsqrt = rowPrimeSieveData0->modsqrt;
-				memcpy(rowPrimeSieveData->Bainv2, rowPrimeSieveData0->Bainv2, sizeof(rowPrimeSieveData0->Bainv2));
+				std::memcpy(rowPrimeSieveData->Bainv2, rowPrimeSieveData0->Bainv2, sizeof(rowPrimeSieveData0->Bainv2));
 			}
 		}
 		//    threadArray[threadNumber] = Thread.currentThread();

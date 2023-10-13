@@ -16,7 +16,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <map>
 #include <intrin.h>
-#include "showtime.h"
 
 #undef min                 // use std::min
 
@@ -584,7 +583,7 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
 		for (long long count = 1; count <= cycle_size && factor <= 1; count++) {
 			/* even if x*x overflows, the function as a whole still works OK */
 			x = (x*x + 1) % num;
-			factor = gcd(abs(x - x_fixed), num);
+			factor = gcd( std::abs(x - x_fixed), num);
 		}
 		if (factor == num) {
 			/* there is a small possibility that PollardFactor won't work,
@@ -652,7 +651,7 @@ long long int PollardRho(long long int n, int depth)
 		y = (modPowerLL(y, 2, n) + c + n) % n;
 
 		/* check gcd of |x-y| and n */
-		d = gcd(abs(x - y), n);
+		d = gcd( std::abs(x - y), n);
 
 		/* retry if the algorithm fails to find prime factor
 		 * with chosen x and c */
@@ -853,8 +852,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 
 			size_t fsave = Factors.f.size();
 			bool rv; 
-			/* msieve and yafu should never both be set. At this point one of them 
-			should be set. */
+			/* one and only one of msieve, yafu and Pari should be set.*/
 			if (msieve)  
 				rv = callMsieve(Zpower, Factors);
 			else if (yafu)
@@ -1528,7 +1526,6 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 
 /* store factors for larger numbers */
 std::map<Znum, fList> savedFactors;
-//std::_Tree_iterator<std::_Tree_val<std::_Tree_simple_types<std::pair<const Znum, fList>>>> ref;
 long long SFhitcount = 0;     /* number of 'hits' searching savedFactors */
 long long SFmisscount = 0;   /* number of 'misses' searching savedFactors */
 

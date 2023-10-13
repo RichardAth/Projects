@@ -76,14 +76,16 @@ std::string attsound = "c:/Windows/Media/chimes.wav";
 
 
 /* display last error in a message box. lpszFunction should be a pointer to text 
-containing the function name. */
+containing the function name. 
+See https://learn.microsoft.com/en-us/windows/win32/debug/retrieving-the-last-error-code */
 void ErrorDisp(const char *lpszFunction)
 {
     // Retrieve the system error message for the last-error code
 
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
-    DWORD dw = GetLastError();
+    DWORD dw = GetLastError(); /* GetLastError gets the last error that was set 
+                                  by a Windows API function */
     if (dw == 0)
         return;   /* no error so just return */
 
@@ -100,7 +102,7 @@ void ErrorDisp(const char *lpszFunction)
     // Display the error message
 
     lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-        (lstrlen((LPCTSTR)lpMsgBuf) + strlen(lpszFunction) + 40) * sizeof(TCHAR));
+        (lstrlen((LPCTSTR)lpMsgBuf) + std::strlen(lpszFunction) + 40) * sizeof(TCHAR));
     StringCchPrintf((LPTSTR)lpDisplayBuf,
         LocalSize(lpDisplayBuf) / sizeof(TCHAR),
         TEXT("%S failed with error %d: %s"),
@@ -118,10 +120,10 @@ const char * myTime(void) {
     static char timestamp[10];   // time in format hh:mm:ss
     struct tm newtime;
 
-    const time_t current = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+    const time_t current = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
     localtime_s(&newtime, &current);    // convert time to tm structure
     /* convert time to hh:mm:ss */
-    strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
+    std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
     return timestamp;
 }
 
@@ -137,9 +139,9 @@ static char* getHex(Znum Bi_Nbr) {
         hexbuffer = mpz_get_str(NULL, 16, ZT(Bi_Nbr));
         if (!(hexbuffer[0] >= '0' && hexbuffer[0] <= '7')) {
             /* we need to insert a zero. move everything down 1 byte*/
-            hexbuffer = (char *)realloc(hexbuffer, strlen(hexbuffer) + 2);
+            hexbuffer = (char *)std::realloc(hexbuffer, std::strlen(hexbuffer) + 2);
             assert(hexbuffer != NULL);
-            memmove(&hexbuffer[1], &hexbuffer[0], strlen(hexbuffer) + 1); 
+            std::memmove(&hexbuffer[1], &hexbuffer[0], std::strlen(hexbuffer) + 1); 
             hexbuffer[0] = '0';
         }
     }
@@ -204,7 +206,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
     }
     if (buffer[0] == '-')   // if number is -ve
         msglen--;
-    free(buffer);		// avoid memory leakage
+    std::free(buffer);		// avoid memory leakage
     std::cout << nbrOutput;
     if (msglen > 24 && size)
         if (lang) std::cout << " (" << msglen << " dígitos)";
@@ -262,8 +264,8 @@ long long lltPriCnt = 0;   /* count no of Mersenne numbers determined to be prim
 
 /* get floor(sqrt(n))*/
 unsigned long long llSqrt(const unsigned long long n) {
-    double root = sqrt((double)n);
-    unsigned long long  iroot = llround(root);
+    double root = std::sqrt((double)n);
+    unsigned long long  iroot = std::llround(root);
     while (iroot*iroot > n)
         iroot--;
     return iroot;
@@ -306,14 +308,14 @@ void generatePrimes(unsigned long long int max_val) {
         if (verbose > 0)
             if (lang)
                 printf_s("número esperado de primos es %.0f \n", 
-                    (double)max_val / (log((double)max_val) - 1));
+                    (double)max_val / (std::log((double)max_val) - 1));
             else
                 printf_s("Expected no of primes is %.0f\n",
-                (double)max_val / (log((double)max_val) - 1));
-        if (primeList != NULL) free(primeList);
-        plist_size = (size_t)((double)max_val / (log((double)max_val) - 1)) * 102 / 100;
+                (double)max_val / (std::log((double)max_val) - 1));
+        if (primeList != NULL) std::free(primeList);
+        plist_size = (size_t)((double)max_val / (std::log((double)max_val) - 1)) * 102 / 100;
         // add 2% for safety
-        primeList = (unsigned long long *)malloc(plist_size * sizeof(long long));
+        primeList = (unsigned long long *)std::malloc(plist_size * sizeof(long long));
         assert(primeList != NULL);
         prime_list_count = 1;
         primeList[0] = 2;  // put 1st prime into list
@@ -455,7 +457,7 @@ static void strToUpper(const std::string &s, std::string &d) {
     if (&d != &s)
         d.resize(s.size());  // resize d unless it's the same string as s
     for (size_t ix = 0; ix < s.size(); ix++)
-        d[ix] = toupper(s[ix]);
+        d[ix] = std::toupper(s[ix]);
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format */
@@ -492,7 +494,7 @@ void PrintTimeUsed(double elapsed, const std::string &msg) {
 /* remove spaces, tabs, etc  from msg (\t, \r, \n, \v   and \f)*/
 static void removeBlanks(std::string &msg) {
     for (size_t ix = 0; ix < msg.size(); ix++) {
-        if ((unsigned char)msg[ix] <= 0x7f && isspace(msg[ix])) {     // look for spaces, tabs, etc
+        if ((unsigned char)msg[ix] <= 0x7f &&  std::isspace(msg[ix])) {     // look for spaces, tabs, etc
             msg.erase(ix, 1);      // remove space character
             ix--;  // adjust index to take account of removed blank
         }
@@ -501,10 +503,10 @@ static void removeBlanks(std::string &msg) {
 
 /* remove initial & trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
 void removeInitTrail(std::string &msg) {
-    while (!msg.empty() && isspace(msg.front())) {
+    while (!msg.empty() &&  std::isspace(msg.front())) {
         msg.erase(0, 1);      // remove 1st space character
     }
-    while (!msg.empty() && isspace(msg.back())) {
+    while (!msg.empty() &&  std::isspace(msg.back())) {
         msg.resize(msg.size() - 1);  /* remove trailing spaces */
     }
 }
@@ -514,9 +516,9 @@ void removeIntSpace(std::string& msg) {
     if (msg.empty())
         return;
     for (int i = 1; i < (msg.size() - 1);) {
-        if (isdigit(msg[i - 1]) && isspace(msg[i]) && 
-            (isdigit(msg[i + 1]) || isspace(msg[i+1]))) {
-            msg.erase(i, 1);  /* remove space between 2 digits*/
+        if ( std::isdigit(msg[i - 1]) &&  std::isspace(msg[i]) && 
+            ( std::isdigit(msg[i + 1]) ||  std::isspace(msg[i+1]))) {
+            msg.erase(i, 1);  /* remove space between 2 digits, or remove 1 of 2 consecutive spaces */
         }
         else
             i++;  /* advance to next char if no space */
@@ -541,7 +543,7 @@ static void printSummary(void) {
     double elSec;
     /* print column headings */
     printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
-    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv \n");
+    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv pari \n");
     for (auto res : results) {
         /* truncate elapsed time to nearest second */
         sec = (long long)std::floor(res.time); // convert to an integer
@@ -561,8 +563,8 @@ static void printSummary(void) {
         printf_s("    %3d %3d %3d %3d %3d %3d ",
             res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
             res.ctrs.pm1, res.ctrs.ecm);
-        printf_s("%3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
-            res.ctrs.msieve);
+        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+            res.ctrs.msieve, res.ctrs.paric);
     }
 
     if (verbose > 0) {
@@ -580,7 +582,7 @@ static void doFactors(const Znum &Result, bool test) {
     bool rv;
 
     if (test)
-        start = clock();	// used to measure execution time
+        start = std::clock();	// used to measure execution time
 
     /* call DA´s magic function to factorise Result */
     if (factorFlag > 1)
@@ -666,7 +668,7 @@ static void doFactors(const Znum &Result, bool test) {
                     //}
                 }
             }
-            auto end = clock(); 
+            auto end = std::clock(); 
             double elapsed = (double)end - start;
             PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " :"time used = ");
 
@@ -692,8 +694,9 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
     long long totalFactors = 0;
     summary sum;    // save summary of test
 
-    auto start = clock();	// used to measure execution time
-    double end, elapsed;
+    auto start = std::clock();	// used to measure execution time
+    clock_t end;
+    double elapsed;
 
     sum.numsize = (int)ComputeNumDigits(x3, 10);
 
@@ -787,7 +790,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
         else
             std::cout << "test " << testnum << " completed at ";
 
-        end = clock();              // measure amount of time used
+        end = std::clock();              // measure amount of time used
         elapsed = (double)end - start;
         PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
         sum.time = elapsed / CLOCKS_PER_SEC;
@@ -805,7 +808,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
         sum.totalFacs = 1;
         sum.sndFac = 0;
         sum.testNum = testnum;
-        end = clock();              // measure amount of time used
+        end = std::clock();              // measure amount of time used
         elapsed = (double)end - start;
         PrintTimeUsed(elapsed, lang ? "Tiempo transcurrido = " : "time used = ");
         sum.time = elapsed / CLOCKS_PER_SEC;
@@ -925,7 +928,7 @@ static void doTests(void) {
 
     results.clear();
 
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
     for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 
         auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
@@ -1055,7 +1058,7 @@ static void doTests(void) {
     ComputeExpr("n(10^20+477)*n(10^24)*n(10^22)", x3, asgCt);
     factortest(x3, testcnt);
 
-    auto end = clock();   // measure amount of time used
+    auto end = std::clock();   // measure amount of time used
     double elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "Factorisation tests completed. Time used= ");
     printSummary();
@@ -1136,7 +1139,7 @@ static void get_RSA(Znum &x, gmp_randstate_t &state, const long long bits) {
 
     /* keep generating random strong primes till we get a pair that produces
     a product of about the right size. */
-    while (abs(NoOfBits(x)-bits) >2) {
+    while ( std::abs(NoOfBits(x)-bits) >2) {
         gordon(p, state, bits / 2);
         gordon(q, state, bits / 2);
         x = p * q;
@@ -1163,11 +1166,11 @@ static void doTests2(const std::vector<std::string> &p) {
 
  
     if (p.size() >= 3)
-        p1 = atoi(p[2].data());
+        p1 = std::atoll(p[2].data());
     if (p.size() >= 4)
-        p2 = atoi(p[3].data());
+        p2 = std::atoll(p[3].data());
     if (p.size() >= 5)
-        p3 = atoi(p[4].data());
+        p3 = std::atoll(p[4].data());
 
     if (p1 <= 0 ) {
         std::cout << "Use default 2 for number of tests \n";
@@ -1194,7 +1197,7 @@ static void doTests2(const std::vector<std::string> &p) {
         gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
     
 
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
 
     results.clear();
 
@@ -1210,7 +1213,7 @@ static void doTests2(const std::vector<std::string> &p) {
         results.back().testNum = i;
     }
 
-    auto end = clock();   // measure amount of time used
+    auto end = std::clock();   // measure amount of time used
     double elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "All tests completed. Time used = ");
     printSummary();
@@ -1221,16 +1224,16 @@ static void doTests2(const std::vector<std::string> &p) {
 
 /* generate large random number, up to 128 bits */
 static void largeRand(Znum &a) {
-    a = ((long long)rand() << 32) + rand();
+    a = ((long long)std::rand() << 32) + std::rand();
     a <<= 64;
-    a += ((long long)rand() << 32) + rand();
+    a += ((long long)std::rand() << 32) + std::rand();
 }
 
 /* generate extra large number, about size*32 bits */
 static void XlargeRand(Znum& a, int size) {
     a = 1;
     for (int c = 1; c <= size; c++) {
-        a *= rand();
+        a *= std::rand();
     }
 }
 
@@ -1243,16 +1246,16 @@ static void doTests3(void) {
     Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
     limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
     limb one[MAX_LEN];
-    int numLen = MAX_LEN-2, l2;
+    int numLen = MAX_LEN-2, l2, exp;
 
     BigInteger aBI, a1BI, bBI, amBI, pBI;
 
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
 
-    memset(one, 0, MAX_LEN * sizeof(limb));
+    std::memset(one, 0, MAX_LEN * sizeof(limb));
     one[0] = 1;                   /* set value of one to 1 */
 
-    srand(421040034);               // seed random number generator 
+    std::srand(421040034);               // seed random number generator 
     
     /* check basic arithmetic operators for BigIntegers */
     a = 1291;        // set starting values (increased each time round loop)
@@ -1333,6 +1336,21 @@ static void doTests3(void) {
         if (p != (a%b))               // verify modulus
             std::cout << "p = " << p << "\na%b = " << a % b << '\n';
 
+        l2 = (int)BigToLL(bBI, exp);  /* create a 'random' 32 bit integer */
+        pBI = aBI / l2;
+        BigtoZ(p, pBI);
+        if (p != (a / l2))
+            std::cout << "p = " << p << "\na/l2 = " << a / l2 << '\n';
+        pBI = -aBI / l2;
+        BigtoZ(p, pBI);
+        if (p != (-a / l2))
+            std::cout << "p = " << p << "\n-a/l2 = " << -a / l2 << '\n';
+
+        pBI = aBI % l2;
+        BigtoZ(p, pBI);
+        if (p != a%l2)
+            std::cout << "p = " << p << "\na%l2 = " << a%l2 << " = " << a << '%' << l2 << '\n';
+
         /* check BigtoLL function */
         int exp;
         a1 = BigToLL(aBI, exp);  // a1 * 2^exp = aBI
@@ -1402,7 +1420,7 @@ static void doTests3(void) {
         b *= -129218;
     }
 
-    auto end = clock();              // measure amount of time used
+    auto end = std::clock();              // measure amount of time used
     double elapsed = (double)end - start;
     std::cout << "test stage 1 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
     
@@ -1436,7 +1454,7 @@ static void doTests3(void) {
         assert(a1 == a);
     }
 
-    end = clock();              // measure amount of time used
+    end = std::clock();              // measure amount of time used
     elapsed = (double)end - start;
     std::cout << "test stage 2 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
@@ -1465,11 +1483,13 @@ static void doTests3(void) {
             e1 = mpz_get_d_2exp(&e1l, ZT(p));
             e2 = mpz_get_d_2exp(&e2l, ZT(am));
             assert(e1l == e2l);   // check power of 2 exponent is correct
-            relErrf = abs(e1 - e2) / e1;   /* should be less than 10E-14 */
-            relerror = (10'000'000'000'000'000LL * error) / p;  /* error ratio * 10^15 */
-            /* print log base 10 of p, then error ratio */
-            std::cout << " pdb = " << pdb / std::log(10)
-                << " error = " << relErrf <<  " relerror = " << relerror << '\n';
+            relErrf = std::abs(e1 - e2) / e1;   /* should be less than 10E-14 */
+            if (relErrf > 10E-13) {
+                relerror = (10'000'000'000'000'000LL * error) / p;  /* error * 10^15 */
+                /* print log base 10 of p, then error ratio */
+                std::cout << " pdb = " << pdb / std::log(10)
+                    << " error ratio = " << relErrf << " error*10^15 = " << relerror << '\n';
+            }
         }
     }
 
@@ -1500,10 +1520,10 @@ static void doTests3(void) {
             break;
         }
         p *= (long long)rand() * 2 + 3;
-        p2 *= rand();
+        p2 *= std::rand();
     }
     std::cout << "division test " << l2 << " cycles\n";
-    end = clock();              // measure amount of time used
+    end = std::clock();              // measure amount of time used
     elapsed = (double)end - start;
     std::cout << "test stage 3 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 
@@ -1522,7 +1542,7 @@ static void doTests3(void) {
         ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
         while (modL[numLen - 1] == 0)
             numLen--;                    // adjust length i.e. remove leading zeros
-        memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
+        std::memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
         NumberLength = numLen;
         GetMontgomeryParms(numLen);
         XlargeRand(a, c);				     // get large random number a
@@ -1538,9 +1558,21 @@ static void doTests3(void) {
         LimbstoZ(al2, a1, numLen);       // copy value to a1 (Znum)
         assert(a == a1);                 // check that all these conversions work properly
     }
-    end = clock();              // measure amount of time used
+    end = std::clock();              // measure amount of time used
     elapsed = (double)end - start;
     std::cout << "test stage 4 completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
+
+    /* test square root function */
+    a = 1;
+    for (int i = 1; i <= 20; i++) {
+        a *= std::rand();
+        b = sqrt(a);         /* get square root of Znum, use Boost Library function */
+        aBI = a;             /* convert Znum to BigInteger*/
+        bBI = aBI.sqRoot();  /* get square root of big integer, use DA's function */
+        BigtoZ(bm, bBI);     /* convert BigInteger to Znum */
+        std::cout << "sqrt(" << a << ") = " << b << " = "<< bBI << '\n';
+        assert(bm == b);      /* check that both square roots have the same value */
+    }
 
     //largeRand(mod);				     // get large random number  b
     //mod |= 1;                         /* make sure b is odd */
@@ -1593,26 +1625,80 @@ static void doTests3(void) {
     ////LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
     ////assert(p2 == p);
 
-    end = clock();              // measure amount of time used
+    end = std::clock();              // measure amount of time used
     elapsed = (double)end - start;
     std::cout << "tests completed  time used= " << elapsed / CLOCKS_PER_SEC << " seconds\n";
 }
 #endif
 
-/* tests for r3 function */
-/* see http://oeis.org/A002102 */
+/* tests for r3 function. This test exploits the fact that R3 and R3h calculate
+the same value by completely different methods. R3 is too slow to be practical
+for numbers greater than about 11 digits, but R3h requires that pari/GP has 
+been installed. */
+/* see https://oeis.org/A005875 
+Command format is TEST 11 [p1[,p2[,p3]]] where
+p1 is the number of tests,
+p2 is the size of the numbers to be processed in bits,
+if p3 <= 1 use fixed random seed value (default)
+if p3 = 2 use truly random seed value
+if p3 > 2  use p3 as the seed value*/
+static void doTestsB(const std::vector<std::string> &p) {
+    int i;
+    auto start = std::clock();	// used to measure execution time
+    long long p1 = 0;  // number of tests; must be greater than 0, default is 20
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 48)
+    long long p3 = 0;
+    long long xl;
+    unsigned long long rv;
+    gmp_randstate_t state;  /* use gmp/mpir random number generator */
+    Znum x, rv3;
+    /* convert parameters to binary integers */
+    if (p.size() >= 3)
+        p1 = std::atoll(p[2].data());
+    if (p.size() >= 4)
+        p2 = std::atoll(p[3].data());
+    if (p.size() >= 5)
+        p3 = std::atoll(p[4].data());
+    /* check whether parameter values are within acceptable ranges */
+    if (p1 <= 0) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+    if (p2 <= 7 || p2 >41) {
+        std::cout << "Use default 32 for number size in bits \n";
+        p2 = 32;
+    }
+    /* use value of p3 to seed the the 'random' number generator */
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    if (p3 <= 1)
+        gmp_randseed_ui(state, 756128234);
+    /* fixed seed means that the exact same tests can be repeated provided
+       that the same size of number is used each time */
+    else if (p3 == 2) {
+        std::random_device rd;   // non-deterministic generator
+        unsigned long long seedval = rd();
+        std::cout << "random generator seed value = " << seedval << '\n';
+        gmp_randseed_ui(state, seedval);
+        }
+        else
+            gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
 
-extern unsigned __int64 R2(const unsigned __int64 n);
-
-//static void doTests4(void) {
-//	generatePrimes(2000);
-//	for (int i = 0; i <= 9992; i++) {
-//		auto rv2 = R2(i);
-//		auto rv = R3(i);
-//		printf_s("%4d %4lld %4lld ", i, rv2, rv);
-//		std::cout << '\n';
-//	}
-//}
+    for (i = 1; i <= p1; i++) {
+        mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
+        xl = MulPrToLong(x);
+        rv = R3(xl);
+        rv3 = R3h(x);
+        if (rv3 != rv || verbose > 1 || p2 >= 37) {
+            std::cout << myTime() <<  " R3(" << xl << ") =" << rv 
+                << "; R3h(" << x << ") = " << rv3 << '\n';
+        }
+    }
+    std::cout << "R3 " << p1 << " tests completed \n";
+    auto end = std::clock();              // measure amount of time used
+    auto elapsed = (double)end - start;
+    PrintTimeUsed(elapsed, " time used = ");
+    return;
+}
 
 /* test factorisation of mersenne numbers see https://en.wikipedia.org/wiki/Mersenne_prime
 this test will take about 2.5 hours 
@@ -1623,7 +1709,7 @@ static void doTests4(void) {
     Znum m;
 
     results.clear();
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
     if (primeListMax < 1000)
         generatePrimes(393203);
 
@@ -1638,7 +1724,7 @@ static void doTests4(void) {
         if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
             std::cout << "2^" << primeList[px] << " - 1 is prime \n";
     }
-    auto end = clock();              // measure amount of time used
+    auto end = std::clock();              // measure amount of time used
     auto elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "tests completed time used = ");
     printSummary();           // print summary 1 line per test
@@ -1724,7 +1810,7 @@ static void doTests6(bool usesMsieve = true) {
     int testcnt = 1;
 
     results.clear();
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
 
     mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
     m--;                // get 2^p -1
@@ -1772,7 +1858,7 @@ static void doTests6(bool usesMsieve = true) {
     msieve = msievesave;
     Pari = Parisave;
 
-    auto end = clock();              // measure amount of time used
+    auto end = std::clock();              // measure amount of time used
     auto elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "tests completed time used = ");
     printSummary();           // print 1 line per test
@@ -1788,10 +1874,10 @@ static void doTests7(const std::vector<std::string> &p) {
 #else
     int limit = 12000; /* find 1st 23 Mersenne primes, test 1438 primes */
 #endif
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
 
     if (p.size() >= 3)
-        limit = atoi(p[2].data());
+        limit = std::atoi(p[2].data());
     if (limit < 0 || limit > 120000) {
         std::cout << "limit out of range; use 12000 \n";
         limit = 12000;
@@ -1818,7 +1904,7 @@ static void doTests7(const std::vector<std::string> &p) {
     for (auto p : mPrimes) {
         std::cout << p << ", ";
     }
-    putchar('\n');
+    std::putchar('\n');
     long long other = (long long)i - (lltPriCnt+ lltTdivCnt+ lltCmpCnt);
     printf_s("%5.2f%% primes found by llt \n", 100.0 *lltPriCnt / i);
     if (lltTdivCnt != 0)
@@ -1828,7 +1914,7 @@ static void doTests7(const std::vector<std::string> &p) {
     if (other != 0)
         printf_s("%5.2f%% other \n", 100.0*other / i);
 
-    auto end = clock();              // measure amount of time used
+    auto end = std::clock();              // measure amount of time used
     auto elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
@@ -1872,19 +1958,21 @@ void writeIni(void) {
     newStr.close();
 
       // delete any previous .old
-    int rc = remove(oldFname.c_str());
+    int rc = std::remove(oldFname.c_str());
     if (rc != 0 && errno != ENOENT) {
-        perror("could not remove BigIntCalculator.old file ");
+        std::perror("could not remove BigIntCalculator.old file ");
     }
     // rename .ini as .old
     int rv = rename(iniFname.c_str(), oldFname.c_str());   
     if (rv == 0 || errno == ENOENT) {
         int rv2 = rename(newFname.c_str(), iniFname.c_str());   // .new -> .ini
         if (rv2 != 0)
-            perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+            std::perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
+        else if (verbose > 0)
+            std::cout << myTime() << " BigIntCalculator.ini written to disk \n";
     }
     else
-        perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
+        std::perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
 }
 
 /* read the .ini file and update paths. 
@@ -1912,13 +2000,13 @@ static void processIni(const char * arg) {
     std::ifstream iniStr(iniFname, std::ios::in);  // open .ini file
     if (!iniStr.is_open()) {
         /* can't open .ini file - make one from scratch */
-        const time_t currtime = time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+        const time_t currtime = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
         struct tm mytime;
         char timestamp[23];   // date & time in format "dd/mm/yyyy at hh:mm:ss"
 
         localtime_s(&mytime, &currtime);  // convert to tm format
         /* convert to dd/mm/yyyy hh:mm:ss */
-        strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &mytime);
+        std::strftime(timestamp, sizeof(timestamp), "%d/%m/%C%y at %H:%M:%S", &mytime);
         buffer = "%file originally created on ";
         buffer += timestamp;     //  "dd/mm/yyyy at hh:mm:ss"
         inifile.push_back(buffer);
@@ -2015,7 +2103,7 @@ static int ifCommand(const std::string &command) {
     }
 
     /* move ixx2 to next non-blank character */
-    for (ixx2++; ixx2 < command.size() && isblank(command[ixx2]); ixx2++);
+    for (ixx2++; ixx2 < command.size() &&  std::isblank(command[ixx2]); ixx2++);
     if (command.substr(ixx2) == "STOP") {
         if (result != 0)
             return 1;
@@ -2032,7 +2120,7 @@ static int ifCommand(const std::string &command) {
         size_t ex1Start=ixx2+4, ex1End, ex2Start, ex2End;
 
         /* move ex1Start to next non-blank character */
-        for (ex1Start=ixx2+4; ex1Start < command.size() && isblank(command[ex1Start]); 
+        for (ex1Start=ixx2+4; ex1Start < command.size() &&  std::isblank(command[ex1Start]); 
             ex1Start++);
     
         if (ex1Start >= command.size() || command[ex1Start] != '(') {
@@ -2058,7 +2146,7 @@ static int ifCommand(const std::string &command) {
         }
 
         /* move ex2Start to next non-blank character if any */
-        for (ex2Start = ex1End + 1; ex2Start < command.size() && isblank(command[ex2Start]);
+        for (ex2Start = ex1End + 1; ex2Start < command.size() &&  std::isblank(command[ex2Start]);
             ex2Start++);
         if (ex2Start < command.size()) {
             /* still some unprocessed characters */
@@ -2068,7 +2156,7 @@ static int ifCommand(const std::string &command) {
                 return -1;
             }
             ex2Start += 4;   /* move past ELSE */
-            for (; ex2Start < command.size() && isblank(command[ex2Start]); ex2Start++);
+            for (; ex2Start < command.size() &&  std::isblank(command[ex2Start]); ex2Start++);
             if (ex2Start >= command.size() || command[ex2Start] != '(') {
                 std::cout << "ELSE not followed by ( \n";
                 return -1;  /* no ( after ELSE so invalid */
@@ -2512,9 +2600,9 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
             if (b_ck == BST_CHECKED)
-                lang = TRUE;
+                lang = TRUE;    /* select Spanish */
             if (b_ck == BST_UNCHECKED)
-                lang = FALSE;
+                lang = FALSE;   /* select English */
             return FALSE;
 
         case group_size_int:
@@ -2612,7 +2700,7 @@ static int processCmd(std::string command) {
         p.push_back(token);
         token = strtok_s(nullptr, seps, &next);
     }
-    if (p.size() >= 2 && isdigit(p[1][0]))
+    if (p.size() >= 2 &&  std::isdigit(p[1][0]))
         p1 = std::atoi(p[1].data());  /* if p[1] is a decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
@@ -2657,7 +2745,7 @@ static int processCmd(std::string command) {
              return 1;
          }
 
-         char ttype = toupper(p[1][0]);  /* print help message? */
+         char ttype = std::toupper(p[1][0]);  /* print help message? */
          if (ttype == 'H') {
              std::cout << "Test command format: \n"
                  << "      Test    (with no parameters) do basic tests of calculator and factorisation \n"
@@ -2672,7 +2760,10 @@ static int processCmd(std::string command) {
                  << "      Test 8                       test error handling \n"
                  << "      Test 9                       test modular square root (use \"TEST 9 H\" for more info.\n"
                  << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
-                 << "                   where p1 is the number of tests and p2 is the number size in bits \n";
+                 << "                   where p1 is the number of tests and p2 is the number size in bits \n"
+                 << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n";
+
              return 1;
          }
 
@@ -2725,6 +2816,11 @@ static int processCmd(std::string command) {
        
             doTestsA(p);   /* test quadratic modular equation solver  */
             return 1;
+         }
+
+         case 11:   /* R3 tests*/ {
+             doTestsB(p);
+             return 1;
          }
 
          default:
@@ -2790,7 +2886,7 @@ static int processCmd(std::string command) {
                             continue;   /* THEN or ELSE expression has been evaluated */
                         else
                             throw std::logic_error("unknown return code");
-                        abort();  /* where are we? */
+                        std::abort();  /* where are we? */
                     }
                     /* recalculate each stored expression */
                     rv = ComputeMultiExpr(expr, result);
@@ -2821,7 +2917,7 @@ static int processCmd(std::string command) {
                             continue;   /* THEN or ELSE expression has been evaluated */
                         else
                             throw std::logic_error ("unknown return code");
-                            abort();  /* where are we? */
+                            std::abort();  /* where are we? */
                     }
 
                     /* recalculate each stored expression */
@@ -2858,13 +2954,12 @@ static void initialise(int argc, char *argv[]) {
     char VSversion[100] = { 0 };  /* visual studio version*/
     size_t vslen = 0;             /* no of chars in visual studio version */
     flags f = { 0,0,0, 0,0,0, 0,0,0, 0,0,0 };
-#ifndef BIGNBR
     unsigned int control_word; /* save current state of fp control word here */
-#endif
+    errno_t err;
     int version[4]; /* version info from .exe file (taken from .rc resource file) */
     std::string modified;  /* date & time program last modified */
 
-    f.UnEx = 1;        /* set unhandled exception 'filter' */
+    //f.UnEx = 1;        /* set unhandled exception 'filter' */
     f.abort = 1;       /* trap abort (as a signal) */
     f.sigterm = 1;     /* trap terminate signal */
     f.sigill = 1;      /* trap 'illegal' signal */
@@ -2874,20 +2969,18 @@ static void initialise(int argc, char *argv[]) {
     /* only seems to work properly if compiled in debug mode */
     f.InvParam = 1;    /* trap invalid parameters on library calls */
 #endif
-    //f.sigfpe = 1;      /* trap floating point error signal */
+    f.sigfpe = 1;      /* trap floating point error signal */
     SetProcessExceptionHandlers(f);
 
     /* if we trap floating point errors we trap  _EM_INVALID in mpir prime test
         functions that actually work OK */
-#ifndef BIGNBR
     err = _controlfp_s(&control_word, _EM_INEXACT | _EM_UNDERFLOW, MCW_EM);
     /* trap hardware FP exceptions except inexact and underflow which are
     considered to be normal, not errors. */
     if (err) {
         printf_s("could not set FP control word\n");
-        exit (-1);
+        std::exit (EXIT_FAILURE);
     }
-#endif
 
     hConsole = GetStdHandle(STD_OUTPUT_HANDLE);  // get handle for stdout
     handConsole = GetConsoleWindow();            // get handle for console window
@@ -2895,7 +2988,7 @@ static void initialise(int argc, char *argv[]) {
     {
         fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
         Beep(750, 1000);
-        exit (EXIT_FAILURE);
+        std::exit (EXIT_FAILURE);
     }
 
     VersionInfo(argv[0], version, modified); /* get version info from .exe file */
@@ -2906,7 +2999,7 @@ static void initialise(int argc, char *argv[]) {
 
 #ifdef __GNUC__
     printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-    setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
+    std::setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
 
 #ifdef _MSC_FULL_VER
@@ -2919,10 +3012,10 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     ver %= 100000;                        // remove next 2 digits
     std::cout << ver << '\n';             // last 5 digits
 
-    auto lc = setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
+    auto lc = std::setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
 
-    printf_s("locale is now: %s\n", setlocale(LC_ALL, NULL));
+    printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
         << '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
 
@@ -2991,7 +3084,7 @@ static void myGetline(std::string &expr) {
             return;
         }
         strToUpper(cont, cont);   // convert to UPPER CASE 
-        while (!cont.empty() && isspace(cont.back())) {
+        while (!cont.empty() &&  std::isspace(cont.back())) {
             cont.resize(cont.size() - 1);   /* remove trailing space */
         }
         expr.resize(expr.size() - 1); /* remove trailing \ char */
@@ -3028,8 +3121,9 @@ int main(int argc, char *argv[]) {
                 SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
 
             myGetline(expr);  /* get input from stdin */
-            if (breakSignal)
+            if (breakSignal) {
                 break;    /* Program interrupted: ctrl-c or ctrl-break */
+            }
 
             if (expr.empty()) {
                 Sleep(1000);       
@@ -3057,7 +3151,7 @@ int main(int argc, char *argv[]) {
             }
 
             /* input is not a valid command; assume it is an expression */
-            auto start = clock();	// used to measure execution time
+            auto start = std::clock();	// used to measure execution time
             removeIntSpace(expr);   /* remove spaces between digits */
             rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 
@@ -3092,14 +3186,14 @@ int main(int argc, char *argv[]) {
                             std::cout << roots[i] << ", ";
                         }
                     }
-                    putchar('\n');
+                    std::putchar('\n');
                     std::cout << "found " << roots.size() << " results \n";
                 }
                 if (asgCt != 0)
                     printvars(""); /* print variables names & values */
             }
 
-            auto end = clock();   // measure amount of time used
+            auto end = std::clock();   // measure amount of time used
             double elapsed = (double)end - start;
             PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " : "time used = ");
             // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
@@ -3115,12 +3209,14 @@ int main(int argc, char *argv[]) {
 
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
+        if (breakSignal)
+            std::cout << "program execution interrupted \n";
         if (lang)
             std::cout << "¡Adiós!";
         else
             std::cout << "Goodbye \n";
         if (!VSrun)
-            system("PAUSE");  /* "press any key to continue ..." (unless program 
+             std::system("PAUSE");  /* "press any key to continue ..." (unless program 
                              started from Visual Studio) */
         return EXIT_SUCCESS;  // EXIT command entered
     }
@@ -3137,7 +3233,7 @@ int main(int argc, char *argv[]) {
         Beep(1200, 1000);              // sound at 1200 Hz for 1 second
         std::cout << "Press ENTER to continue...";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     catch (const char *str) {
@@ -3149,7 +3245,7 @@ int main(int argc, char *argv[]) {
         Beep(1200, 1000);              // sound at 1200 Hz for 1 second
         std::cout << "Press ENTER to continue...";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     catch (int e) {
@@ -3161,7 +3257,7 @@ int main(int argc, char *argv[]) {
         Beep(1200, 1000);              // sound at 1200 Hz for 1 second
         std::cout << "Press ENTER to continue...";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
 
     }
 
@@ -3177,6 +3273,6 @@ int main(int argc, char *argv[]) {
         Beep(1200, 1000);              // sound at 1200 Hz for 1 second
         std::cout << "Press ENTER to continue...";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 }

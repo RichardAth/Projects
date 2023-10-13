@@ -3,17 +3,15 @@
 
 #undef min  /* undefine min defined in windows.h */
 
-extern int verbose;
-
 /* _AMD64_ 1 definition neeeded if windows.h is not included */
-#ifdef _M_AMD64
-#ifndef _AMD64_
-#define _AMD64_ 1
-#endif
-#endif
-#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
-#include <intsafe.h>
-#include <intrin.h>
+//#ifdef _M_AMD64
+//#ifndef _AMD64_
+//#define _AMD64_ 1
+//#endif
+//#endif
+//#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
+//#include <intsafe.h>
+//#include <intrin.h>
 
 
 
@@ -452,7 +450,7 @@ also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
 >= sqrt(n).
 example: R2(4) = 4; 2^2+0, 0+2^2, (-2)^2+0, 0+(-2)^2 */
-static unsigned __int64 R2(const unsigned __int64 n) {
+unsigned __int64 R2(const unsigned __int64 n) {
     if (n == 0)
         return 1;
     if (n % 4 == 3)
@@ -478,7 +476,7 @@ static unsigned __int64 R2(const unsigned __int64 n) {
             b *= (Rfactors.factorlist[i][1] + 1);
         }
     }
-    if (verbose >= 1) {
+    if (verbose >= 2) {
         std::cout << "R2(" << n << ") = " << 4 * b << '\n';
     }
     return 4 * b;
@@ -559,7 +557,7 @@ unsigned __int64 R3(__int64 n) {
         else
             sum += 2 * R2(n - k * k);
         if ((k & 0x3fff) == 0) {
-            printf_s("%s R3: %.2f%% done \n", myTime(), 100.0 * double(k) / sqrt(n));
+            printf_s("%s R3(%lld): %.2f%% done \r", myTime(), n, 100.0 * double(k) / sqrt(n));
         }
     }
     sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2
@@ -633,7 +631,7 @@ size_t DivisorList(unsigned __int64 tnum, std::vector <__int64> &divlist) {
         for (int i = 0; i < noofdivs; i++) {
             printf_s("%lld ", divlist[i]);
         }
-        putchar('\n');*/
+        std::putchar('\n');*/
 #endif
     return noofdivs;
 }
@@ -666,7 +664,7 @@ static void dumpCache(__int64 n, std::map <__int64, std::vector<unsigned __int64
         for (auto it2 : it.second) {
             printf_s(" %3lld,", it2);
         }
-        putchar('\n');
+        std::putchar('\n');
     }
 }
 

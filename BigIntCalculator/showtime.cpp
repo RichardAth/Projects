@@ -17,11 +17,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma warning(disable : 4996)
 
-extern int lang;
-
 /* get clock time in 1/10th of a second */
 double tenths(void) {
-	clock_t now = clock();
+	clock_t now = std::clock();
 	return (double)now / (CLOCKS_PER_SEC / 10); ;
 }
 
@@ -31,7 +29,7 @@ output format is "nd nnh nnm nns"*/
 void GetDHMS(char **pptrText, int seconds) {
 	char *ptrText = *pptrText;
 	
-	auto len = sprintf(ptrText, "%dd %2dh %2dm %2ds \n", seconds / 86400, 
+	auto len = std::sprintf(ptrText, "%dd %2dh %2dm %2ds \n", seconds / 86400, 
 		(seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60);
 	*pptrText += len-1;    // pointer points at null terminator
 }
@@ -43,7 +41,7 @@ void GetDHMSt(char **pptrText, int tenths) {
 	char *ptrText = *pptrText;
 	int seconds = tenths / 10;
 
-	auto len = sprintf(ptrText, "%dd %2dh %2dm %2d.%ds \n", seconds / 86400,
+	auto len = std::sprintf(ptrText, "%dd %2dh %2dm %2d.%ds \n", seconds / 86400,
 		(seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60,
 		tenths%10);
 	*pptrText += len - 1;    // pointer points at null terminator

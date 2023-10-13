@@ -420,7 +420,7 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     //	for (int i = 0; i < numdiv; i++) {
     //		gmp_printf("%Zd ", divlist[i]);
     //	}
-    //	putchar('\n');
+    //	std::putchar('\n');
     //}
 #endif
     return numdiv;
@@ -606,7 +606,7 @@ static retCode ComputeBack(const Znum &n, Znum &p) {
             return retCode::EXPR_OK;
         }
     }
-    abort();   //should never get here!!
+    std::abort();   //should never get here!!
 }
 
 /* calculate the number of primes <= value */
@@ -676,7 +676,7 @@ static uint64_t PrimePi(const Znum &Zn) {
     if (primeListMax >= n)
         return (PrimePiC(n));
 
-    const auto v = (unsigned long long)sqrt(n);
+    const auto v = (unsigned long long)std::sqrt(n);
 
     // about sqrt(n) * 12 bytes, for n = 10^12 => 12 MByte 
     std::vector<uint64_t> higher(v + 2, 0);
@@ -823,8 +823,6 @@ static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
     num /= sq;  // adjust value of num
 }
 
-
-extern unsigned __int64 R3(__int64 n);
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
 be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875.txt*/
@@ -1046,11 +1044,11 @@ Znum llt(const Znum& p) {
      Update 11/7/2021; using neither trial division nor  mpz-probab_prime_p is fastest.
      LL test is in fact faster than miller-rabin even when MR is limitied to 2 rounds. */
     if (verbose > 1) {
-        t1 = clock();
+        t1 = std::clock();
         /* use trial division if verbose > 1 because this can give some factors,
         whereas the other tests only show whether n is prime or composite */
         int rv = lltTrialDiv(n, exp);
-        t2 = clock();
+        t2 = std::clock();
         printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
         if (rv == 0) {
             std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
@@ -1062,7 +1060,7 @@ Znum llt(const Znum& p) {
     tmp = 4;
     int nchars = 0;
     if (verbose > 0)
-        t2 = clock();
+        t2 = std::clock();
     for (long long i = 0; i < exp - 2; i++) {
         tmp *= tmp;
         tmp -= 2;
@@ -1073,11 +1071,11 @@ Znum llt(const Znum& p) {
                 printf_s("\b");    // erase previous output
             nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
                 (double)i * 100.0 / (exp - 2));
-            fflush(stdout);
+            std::fflush(stdout);
         }
     }
     if (verbose > 0) {
-        t3 = clock();
+        t3 = std::clock();
         printf_s(lang ? "\ntiempo usado por llt = %.2f sec \n" : "\ntime used by llt = %.2f sec \n",
             (double)(t3 - t2) / CLOCKS_PER_SEC);
     }
@@ -1648,7 +1646,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                 gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
                 for (Znum r : roots)
                     gmp_printf("%Zd, ", r);
-                putchar('\n');
+                std::putchar('\n');
             }
         }
         /* the result can be: no solution: roots is empty
@@ -1673,7 +1671,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                 gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
                 for (Znum r : roots)
                     gmp_printf("%Zd, ", r);
-                putchar('\n');
+                std::putchar('\n');
             }
         }
         /* the result can be: no solution: roots is empty
@@ -1747,7 +1745,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
 
     default:
-        abort();	// should never get here
+        std::abort();	// should never get here
     }
 
     return retcode;
@@ -1821,7 +1819,7 @@ static void printTokens(const std::vector <token> expr) {
         }
 
         default:
-            abort(); /* unrecognised token */
+            std::abort(); /* unrecognised token */
         }
     }
     std::cout << '\n';
@@ -1838,9 +1836,9 @@ static void operSearch(const std::string &expr, int &opcode) {
     opcode = -1;
     for (int ix = 0; ix < sizeof(operators) / sizeof(operators[0]); ix++) {
         /* use case-insensitive compare */
-        if (_strnicmp(expr.data(), operators[ix].oper, strlen(operators[ix].oper)) == 0) {
+        if (_strnicmp(expr.data(), operators[ix].oper, std::strlen(operators[ix].oper)) == 0) {
             opcode = ix;
-            if (operators[ix].operCode == opCode::comb && isalpha(expr[1]))
+            if (operators[ix].operCode == opCode::comb && std::isalpha(expr[1]))
                 break;  /* if 'C' in expr is followed by another letter it can't be the C operator */
             else
                 return;
@@ -2128,7 +2126,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                 break;
             }
         default:
-            abort(); /* unrecognised token */
+            std::abort(); /* unrecognised token */
         }
     }
 
@@ -2202,7 +2200,7 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
             //for (auto c : expr) {
             //	printf_s("%2x", c);
             //}
-            //putchar('\n');
+            //std::putchar('\n');
         }
     }
 
@@ -2243,7 +2241,7 @@ retCode ComputeMultiExpr(std::string expr, Znum result) {
             else {
                 /* print names of variables assigned values */
                 for (size_t ix = 0; ix < subExpr.size() && asgCt > 0; ix++) {
-                    putchar(subExpr[ix]);
+                    std::putchar(subExpr[ix]);
                     if (subExpr[ix] == '=')
                         asgCt--;
                 }
@@ -2276,14 +2274,14 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
 
     while (exprIndex < expr.length()) {
         nxtToken.typecode = types::error;   /* should be replaced later by valid code */
-        int charValue = toupper(expr[exprIndex]);
+        int charValue = std::toupper(expr[exprIndex]);
 
         /* skip blanks */
-        while (exprIndex <= (expr.length()) && isspace(charValue)) {
+        while (exprIndex <= (expr.length()) &&  std::isspace(charValue)) {
             exprIndex++;
             if (exprIndex >= expr.length())
                 break;
-            charValue = toupper(expr[exprIndex]);
+            charValue = std::toupper(expr[exprIndex]);
         }
         if (exprIndex >= expr.length())
             break;
@@ -2298,7 +2296,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
             //nxtToken.numops = opr[(int)nxtToken.oper].numOps;
             nxtToken.numops = operators[opIndex].numOps;
             nxtToken.value = 0;
-            exprIndex += (int)strlen(operators[opIndex].oper);  // move index to next char after operator
+            exprIndex += (int)std::strlen(operators[opIndex].oper);  // move index to next char after operator
             if (operators[opIndex].operCode == opCode::fact) {
                 nxtToken.value = 1;
                 while (expr.substr(exprIndex, 1) == "!") {
@@ -2323,7 +2321,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
             /* convert number from ascii to Znum */
             int exprIndexAux = exprIndex;
             if (charValue == '0' && exprIndexAux < expr.length() - 2 &&
-                toupper(expr[exprIndexAux + 1]) == 'X')
+                 std::toupper(expr[exprIndexAux + 1]) == 'X')
             {  // hexadecimal
                 std::vector<char> digits;
                 exprIndexAux++;
@@ -2373,13 +2371,13 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
         else {
             for (ptrdiff_t ix = 0; ix < sizeof(functionList)/sizeof(functionList[0]); ix++) {
                 if (_strnicmp(&expr[exprIndex],
-                    functionList[ix].fname, strlen(functionList[ix].fname)) == 0) {
+                    functionList[ix].fname, std::strlen(functionList[ix].fname)) == 0) {
                     /* we have a match to a function name */
                     nxtToken.typecode = types::func;
                     nxtToken.function = int(ix);        /* save index into functionList*/
                     nxtToken.numops = functionList[ix].NoOfParams;     
                     nxtToken.oper = functionList[ix].fCode;  
-                    exprIndex += (int)strlen(functionList[ix].fname); 
+                    exprIndex += (int)std::strlen(functionList[ix].fname); 
                                 /* move exprIndex past function name */
                     goto next;  /* go to finish processing this token, then 
                                 process rest of expr */
@@ -2465,7 +2463,7 @@ static int set_uvar(const char *name, const Znum &data) {
     int i;
 
     for (i = 0; i < uvars.num; i++) {
-        if (strcmp(uvars.vars[i].name, name) == 0) {
+        if (std::strcmp(uvars.vars[i].name, name) == 0) {
             uvars.vars[i].data =  data;
             return 0;
         }
@@ -2481,7 +2479,7 @@ static int get_uvar(const char *name, Znum data)
     int i;
 
     for (i = 0; i < uvars.num; i++) {
-        if (strcmp(uvars.vars[i].name, name) == 0) 	{
+        if (std::strcmp(uvars.vars[i].name, name) == 0) 	{
             data=  uvars.vars[i].data;
             return i;
         }
@@ -2497,13 +2495,13 @@ static void free_uvars() {
     uvars.alloc = 0;
 }
 void printvars(std::string name) {
-    while (name.size() > 0 && isblank(name[0])) {
+    while (name.size() > 0 &&  std::isblank(name[0])) {
         name.erase(0, 1);  /* remove leading spaces */
     }
     if (uvars.num == 0)
         printf_s("No user variables defined \n");
     else
         for (int i = 0; i < uvars.num; i++)
-            if (name.size() == 0 || strcmp(uvars.vars[i].name, name.c_str()) == 0)
+            if (name.size() == 0 || std::strcmp(uvars.vars[i].name, name.c_str()) == 0)
             gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
  }

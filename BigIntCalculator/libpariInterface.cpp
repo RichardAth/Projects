@@ -1,8 +1,10 @@
+#pragma fenv_access(on)
+
 #include "pch.h"
+#include <cfenv>
 
 //#include "pari.h"
 extern std::string PariPath;
-extern HWND handConsole;      /* handle to console window */
 
 
 /* stuff below copied from pari headers, to avoid including humungous pari.h etc*/
@@ -57,8 +59,6 @@ enum {
     t_INFINITY = 25
 };
 /* end of stuff from pari headers */
-
-#define ZT(a) a.backend().data()  /* access mpz_t within a Znum (Boost mpz_int)*/
 
 bool fRunTimeLinkSuccess = false;    /* true when links to parilib set up */
 bool stackinit = false;              /* true when pari stack is initialised */
@@ -163,8 +163,8 @@ static void specinit() {
             std::cerr << "could not access dll for PARI \n";
             std::cerr << "To install libpari go to"
                 " https ://pari.math.u-bordeaux.fr/download.html \n";
-            system("PAUSE");
-            abort();
+            std::system("PAUSE");
+            std::abort();
         }
 
         else {
@@ -233,8 +233,8 @@ static void specinit() {
                 nullptr == pari_close_ref || nullptr == pari_version_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
-                system("PAUSE");
-                abort();
+                std::system("PAUSE");
+                std::abort();
             }
 
             fRunTimeLinkSuccess = true; /* flag to prevent code above being excuted again  */
@@ -247,7 +247,7 @@ static void specinit() {
         stackinit = true;
         if (verbose > 0) {
             pari_print_version_ref();  /* print some info from libpari dll */
-            printf("Pari stack initialised. avma = %p\n", *avma_ref);
+            printf_s("Pari stack initialised. avma = %p\n", *avma_ref);
         }
         pariVersion = pari_version_ref(); /* returns the version number as a PARI object, 
                       a t_VEC with three t_INT and one t_STR component. */
@@ -357,7 +357,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
     }
 
     default:
-        abort();  /* unsupported GEN type */
+        std::abort();  /* unsupported GEN type */
     }
 }
 
@@ -380,17 +380,29 @@ static GEN MPtoGEN(const mpz_t &num) {
 }
 
 /* calculate R3 using Hurwitz class number. Let libpari do the heavy lifting. 
-Note: n is intentionally a copy of the original value. This copy is modified. */
+Note: n is intentionally a copy of the original value. This copy is modified. 
+see https://oeis.org/A005875 */
 Znum R3h(Znum n) {
     mpz_t num, denom, result;
     double hxd;
     GEN x, hx;
     Znum r;
+    std::fenv_t envp;
+    unsigned int control_word; /* save current state of fp control word here */
 
     if (n == 0)
         return 1;   /* easiest to make n = 0 a special case*/
 
-    specinit();   /* initialise as required*/
+    /* need to prevent libpari from raising FP exceptions */
+    int err = std::fegetenv(&envp);  /* save current floating point environment*/ 
+                                  /* and set 'non-stop' FP exception handling */
+    err = _controlfp_s(&control_word, MCW_EM, MCW_EM);
+    if (err) {
+        printf_s("could not set FP control word\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    specinit();   /* initialise for libpari as required*/
     ulong* av = *avma_ref;  /* save address of available memory */
     mpz_inits(num, denom, result, nullptr);
 
@@ -433,14 +445,17 @@ Znum R3h(Znum n) {
         break;
 
     default:   /* n%8 = 0 or 4 */
-        abort();   /* should never happen */
+        std::abort();   /* should never happen */
     }
 
     mpz_clears(num, denom, result, nullptr);  /* avoid memory leakage */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
+
+    std::feclearexcept(FE_ALL_EXCEPT);  /* clear any FP exception flags*/
+    std::fesetenv(&envp);               /* restore saved FP environment */
     return r;            /* return result */
 }
 
@@ -481,11 +496,22 @@ static void TrealToMP(const GEN x, mpf_t value) {
 but h(n) * 12 always is. 
 see https://oeis.org/A259825 */
 Znum Hclassno12(const Znum &n) {
-
     double rvd;
     Znum num, denom;
+    std::fenv_t envp;
+    unsigned int control_word; /* save current state of fp control word here */
+
     if (n == 0)
         return -1;   /* correct, but parilib does not work? */
+
+    /* need to prevent libpari from raising FP exceptions */
+    int err = std::fegetenv(&envp);  /* save current floating point environment*/
+    /* and set 'non-stop' FP exception handling */
+    err = _controlfp_s(&control_word, MCW_EM, MCW_EM);
+    if (err) {
+        printf_s("could not set FP control word\n");
+        std::exit(EXIT_FAILURE);
+    }
 
     specinit();  /* initialise as required*/
     ulong* av = *avma_ref;
@@ -500,8 +526,10 @@ Znum Hclassno12(const Znum &n) {
 
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
+    std::feclearexcept(FE_ALL_EXCEPT);  /* clear any FP exception flags*/
+    std::fesetenv(&envp);               /* restore saved FP environment */
 
     return (num * 12) / denom;  /* division is always exact; remainder = 0 */
 }
@@ -509,6 +537,17 @@ Znum Hclassno12(const Znum &n) {
 /* get class number. flag = 0 for Shanks method, 1 to use Euler products */
 Znum classno(const Znum& n, int flag) {
     Znum num;
+    std::fenv_t envp;
+    unsigned int control_word; /* save current state of fp control word here */
+
+    /* need to prevent libpari from raising FP exceptions */
+    int err = std::fegetenv(&envp);  /* save current floating point environment*/
+    /* and set 'non-stop' FP exception handling */
+    err = _controlfp_s(&control_word, MCW_EM, MCW_EM);
+    if (err) {
+        printf_s("could not set FP control word\n");
+        std::exit(EXIT_FAILURE);
+    }
 
     specinit();    /* initialise as required*/
     ulong* av = *avma_ref;
@@ -519,16 +558,22 @@ Znum classno(const Znum& n, int flag) {
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
+    std::feclearexcept(FE_ALL_EXCEPT);  /* clear any FP exception flags*/
+    std::fesetenv(&envp);               /* restore saved FP environment */
+
     return num;
 }
 
 /* ramanujantau(n): compute the value of Ramanujan's tau function at n, assuming the GRH.
 Algorithm in O(n^{1/2+eps}). 
-see https://oeis.org/A000594 and https://en.wikipedia.org/wiki/Ramanujan_tau_function*/
+see https://oeis.org/A000594 and https://en.wikipedia.org/wiki/Ramanujan_tau_function */
 Znum tau(const Znum& n) {
     Znum num;
+
+    if (n < 1)
+        return 0;  /* tau is not defined for n < 1 */
 
     specinit();    /* initialise as required*/
     ulong* av = *avma_ref;
@@ -550,13 +595,15 @@ Znum tau(const Znum& n) {
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
 
 /* if flag=1 return the Stirling number of the first kind s(n, k), 
-if flag=2, return the Stirling number of the second kind S(n, k). */
+* see https://oeis.org/A008275
+if flag=2, return the Stirling number of the second kind S(n, k). 
+see https://oeis.org/A008277 */
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     Znum num;
 
@@ -571,7 +618,7 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     InttoMP(retval, ZT(num));  /* convert result to Znums */
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
@@ -687,6 +734,6 @@ void parifactor(const Znum& n, fList &factors) {
     }
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
-        printf("used %lld bytes on pari stack \n", (long long)diff);
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
 }

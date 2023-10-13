@@ -125,9 +125,9 @@ static void delfile(const char * FileName)
 	auto  fsize = fileStat.st_size / 1024;
 	std::cout << FileName << " size is " << fsize << " KB \n";
 
-	int rc = remove(fname.data());
+	int rc = std::remove(fname.data());
 	if (rc != 0 && errno != ENOENT) {
-		perror("could not remove file ");
+		std::perror("could not remove file ");
 	}
 	else std::cout << "removed file: " << FileName << '\n';
 }
@@ -211,24 +211,24 @@ bool callMsieve(const Znum &num, fList &Factors) {
 	size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
 	numStr.resize(numdigits + 5);             // resize buffer
 	mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
-	numStr.resize(strlen(&numStr[0]));        // get exact size of string in bufer
+	numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
 	if (verbose > 0) {
 		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
 	}
 
-	int rc = remove(MsieveLogPath.data());
+	int rc = std::remove(MsieveLogPath.data());
 	if (rc != 0 && errno != ENOENT) {
-		perror("could not remove old Mseive log file ");
+		std::perror("could not remove old Mseive log file ");
 	}
 	delfile("msieve.log");
 	delfile("msieve.dat");
 
-	rv = system(command.data());             // start msieve;
+	rv = std::system(command.data());             // start msieve;
 
 	/* get control back when msieve has finished */
 	if (rv ==  -1) {
-		std::cout << "cannot start msieve errno = " << errno << '\n';
+		std::perror( "cannot start msieve ");
 		return false;
 	}
 	else if (rv != 0) {
@@ -258,7 +258,7 @@ and 193707721 is the factor itself in decimal.*/
 		if (buffer[26] == 'p') {      // ignore log entry unless it's a prime factor
 			             // note: some other log entries also have a 'p' in this position
 			int  len = 0;  
-			for (i = 27; isdigit(buffer[i]); i++)  // get number of ascii digits in factor
+			for (i = 27; std::isdigit(buffer[i]); i++)  // get number of ascii digits in factor
 				len = len * 10 + (buffer[i] - '0');
 			if (len == 0)
 				continue;                    // p not followed by a number

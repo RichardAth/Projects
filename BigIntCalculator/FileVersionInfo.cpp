@@ -38,7 +38,8 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	auto BufLen = GetFileVersionInfoSizeA(path, &handle); /* get size needed for data */
 	if (BufLen == 0) {
 		auto ecode = GetLastError();
-		std::cerr << "can't get version info size; error code = " << ecode << '\n';
+		std::cerr << "can't get version info size; error code = " << ecode 
+			<< " = " << std::system_category().message(ecode) << '\n';
 		return;
 	}
 
@@ -73,7 +74,7 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 		auto ftime = fileStat.st_mtime;  // time last modified in time_t format
 		localtime_s(&ftimetm, &ftime);   // convert to tm format
 		/* convert to dd/mm/yyyy  at hh:mm:ss */
-		strftime(&modified[0], 25, "%d/%m/%C%y at %H:%M:%S", &ftimetm);
+		std::strftime(&modified[0], 25, "%d/%m/%C%y at %H:%M:%S", &ftimetm);
 	}
 	else
 		std::cout << path << " not found \n";

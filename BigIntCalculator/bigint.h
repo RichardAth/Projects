@@ -64,7 +64,7 @@ public:
 			result.sign = SIGN_POSITIVE;
 		return result;
 	}
-	long long lldata() const { /* convert to long long */
+	long long lldata() /* convert to long long */ const {
 		int noOfLimbs;
 		long long rv = 0;
 		for (noOfLimbs = nbrLimbs - 1; noOfLimbs >= 0; noOfLimbs--) {
@@ -75,12 +75,12 @@ public:
 			rv = -rv;
 		return rv;  // no check for overflow; just return last 64 bits
 	}
-	double fpoint() const { /* convert to double */
+	double fpoint() /* convert to double */ const {
 		double rv = getMantissa(limbs + nbrLimbs, nbrLimbs);
 		if (sign == SIGN_NEGATIVE)
 			rv = -rv;
 		if (nbrLimbs > 1) {
-			rv *= pow(LIMB_RANGE, nbrLimbs - 1);
+			rv *= std::pow(LIMB_RANGE, nbrLimbs - 1);
 		}
 		auto c = fpclassify(rv);
 		if (c == FP_INFINITE) {
@@ -106,7 +106,7 @@ public:
 			return *this;		// if lhs == rhs do nothing
 		nbrLimbs = other.nbrLimbs;
 		sign = other.sign;
-		memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
+		std::memcpy(limbs, other.limbs, nbrLimbs * sizeof(int));
 		while (nbrLimbs > 1 && limbs[nbrLimbs - 1] == 0) {
 			nbrLimbs--;  // remove any leading zeros
 		}
@@ -211,6 +211,7 @@ public:
 	friend void BigIntXor(const BigInteger* firstArg, const BigInteger* secondArg,
 		BigInteger* result);
 
+	/* overloads where 2nd operand is a bigInteger */
 	BigInteger  operator +  (const BigInteger &b) const {
 		return BigIntAdd(*this, b);
 	}
@@ -244,6 +245,7 @@ public:
 		return *this = BigIntRemainder(*this, b);
 	}
 
+	/* overloads where 2nd operand is an int */
 	int         operator %  (int divisor) const {
 		return getRemainder(*this, divisor);
 	}
@@ -316,6 +318,29 @@ public:
 		return *this;
 	}
 
+	/* bitwise or */
+	BigInteger operator | (const BigInteger& b) const {
+		BigInteger result;
+		BigIntOr(this, &b, &result);
+		return result;
+	}
+	BigInteger operator |= (const BigInteger& b) {
+		BigIntOr(this, &b, this);
+		return *this;
+	}
+
+	/* bitwise xor */
+	BigInteger operator ^ (const BigInteger& b) const {
+		BigInteger result;
+		BigIntXor(this, &b, &result);
+		return result;
+	}
+	BigInteger operator ^= (const BigInteger& b) {
+		BigIntXor(this, &b, this);
+		return *this;
+	}
+
+	/* shift operators */
 	BigInteger operator << (const int b) const {
 		BigInteger temp;
 		shiftBI(*this, b, temp);
@@ -404,7 +429,7 @@ void IntArray2BigInteger(const int* ptrValues, /*@out@*/BigInteger* bigint);
 void DivideBigNbrByMaxPowerOf2(int* pShRight, limb* number, int* pNbrLimbs);
 void BigInteger2IntArray(/*@out@*/int* ptrValues, const BigInteger* bigint);
 void BigIntPowerOf2(BigInteger* pResult, int exponent);
-void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen);
+void AddBigNbr     (const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen);
 void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLen);
 void BigIntDivideBy2(BigInteger* nbr);
 

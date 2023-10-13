@@ -71,7 +71,7 @@ const struct _json_value json_value_none;
 
 static unsigned char hex_value(json_char c)
 {
-    if (isdigit((unsigned char)c))
+    if ( std::isdigit((unsigned char)c))
         return c - '0';
 
     switch (c) {
@@ -105,13 +105,13 @@ typedef struct
 static void* default_alloc(size_t size, int zero, void* user_data)
 {
     (void)user_data; /* ignore unused-parameter warn */
-    return zero ? calloc(1, size) : malloc(size);
+    return zero ? std::calloc(1, size) : std::malloc(size);
 }
 
 static void default_free(void* ptr, void* user_data)
 {
     (void)user_data; /* ignore unused-parameter warn */
-    free(ptr);
+    std::free(ptr);
 }
 
 static void* json_alloc(json_state* state, size_t size, int zero)
@@ -278,7 +278,7 @@ static json_value* json_parse_ex(json_settings* settings,
     error[0] = '\0';
     end = (json + length);
 
-    memcpy(&state.settings, settings, sizeof(json_settings));
+    std::memcpy(&state.settings, settings, sizeof(json_settings));
 
     if (!state.settings.mem_alloc)
         state.settings.mem_alloc = default_alloc;
@@ -306,7 +306,7 @@ static json_value* json_parse_ex(json_settings* settings,
             {
                 if (!b)
                 {
-                    sprintf(error, "%u:%u: Unexpected EOF in string", line_and_col);
+                    std::sprintf(error, "%u:%u: Unexpected EOF in string", line_and_col);
                     goto e_failed;
                 }
 
@@ -332,7 +332,7 @@ static json_value* json_parse_ex(json_settings* settings,
                             (uc_b3 = hex_value(*++state.ptr)) == 0xFF ||
                             (uc_b4 = hex_value(*++state.ptr)) == 0xFF)
                         {
-                            sprintf(error, "%u:%u: Invalid character value `%c`", line_and_col, b);
+                            std::sprintf(error, "%u:%u: Invalid character value `%c`", line_and_col, b);
                             goto e_failed;
                         }
 
@@ -349,7 +349,7 @@ static json_value* json_parse_ex(json_settings* settings,
                                 (uc_b3 = hex_value(*++state.ptr)) == 0xFF ||
                                 (uc_b4 = hex_value(*++state.ptr)) == 0xFF)
                             {
-                                sprintf(error, "%u:%u: Invalid character value `%c`", line_and_col, b);
+                                std::sprintf(error, "%u:%u: Invalid character value `%c`", line_and_col, b);
                                 goto e_failed;
                             }
 
@@ -484,7 +484,7 @@ static json_value* json_parse_ex(json_settings* settings,
                     {
                         if (!b)
                         {
-                            sprintf(error, "%u:%u: Unexpected EOF in block comment", line_and_col);
+                            std::sprintf(error, "%u:%u: Unexpected EOF in block comment", line_and_col);
                             goto e_failed;
                         }
 
@@ -501,13 +501,13 @@ static json_value* json_parse_ex(json_settings* settings,
                 {
                     if (!(flags & (flag_seek_value | flag_done)) && top->type != json_object)
                     {
-                        sprintf(error, "%u:%u: Comment not allowed here", line_and_col);
+                        std::sprintf(error, "%u:%u: Comment not allowed here", line_and_col);
                         goto e_failed;
                     }
 
                     if (++state.ptr == end)
                     {
-                        sprintf(error, "%u:%u: EOF unexpected", line_and_col);
+                        std::sprintf(error, "%u:%u: EOF unexpected", line_and_col);
                         goto e_failed;
                     }
 
@@ -522,7 +522,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         continue;
 
                     default:
-                        sprintf(error, "%u:%u: Unexpected `%c` in comment opening sequence", line_and_col, b);
+                        std::sprintf(error, "%u:%u: Unexpected `%c` in comment opening sequence", line_and_col, b);
                         goto e_failed;
                     };
                 }
@@ -540,7 +540,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                 default:
 
-                    sprintf(error, "%u:%u: Trailing garbage: `%c`",
+                    std::sprintf(error, "%u:%u: Trailing garbage: `%c`",
                         line_and_col, b);
 
                     goto e_failed;
@@ -560,7 +560,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         flags = (flags & ~(flag_need_comma | flag_seek_value)) | flag_next;
                     else
                     {
-                        sprintf(error, "%u:%u: Unexpected `]`", line_and_col);
+                        std::sprintf(error, "%u:%u: Unexpected `]`", line_and_col);
                         goto e_failed;
                     }
 
@@ -577,7 +577,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         }
                         else
                         {
-                            sprintf(error, "%u:%u: Expected `,` before `%c`",
+                            std::sprintf(error, "%u:%u: Expected `,` before `%c`",
                                 line_and_col, b);
 
                             goto e_failed;
@@ -593,7 +593,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         }
                         else
                         {
-                            sprintf(error, "%u:%u: Expected `:` before `%c`",
+                            std::sprintf(error, "%u:%u: Expected `:` before `%c`",
                                 line_and_col, b);
 
                             goto e_failed;
@@ -678,14 +678,14 @@ static json_value* json_parse_ex(json_settings* settings,
 
                     default:
 
-                        if (isdigit((unsigned char)b) || b == '-')
+                        if ( std::isdigit((unsigned char)b) || b == '-')
                         {
                             if (!new_value(&state, &top, &root, &alloc, json_integer))
                                 goto e_alloc_failure;
 
                             if (!state.first_pass)
                             {
-                                while (isdigit((unsigned char)b) || b == '+' || b == '-'
+                                while ( std::isdigit((unsigned char)b) || b == '+' || b == '-'
                                     || b == 'e' || b == 'E' || b == '.')
                                 {
                                     if ((++state.ptr) == end)
@@ -720,7 +720,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         }
                         else
                         {
-                            sprintf(error, "%u:%u: Unexpected `%c` when seeking value", line_and_col, b);
+                            std::sprintf(error, "%u:%u: Unexpected `%c` when seeking value", line_and_col, b);
                             goto e_failed;
                         }
                     };
@@ -741,7 +741,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                         if (flags & flag_need_comma)
                         {
-                            sprintf(error, "%u:%u: Expected `,` before `\"`", line_and_col);
+                            std::sprintf(error, "%u:%u: Expected `,` before `\"`", line_and_col);
                             goto e_failed;
                         }
 
@@ -766,7 +766,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         } /* FALLTHRU */
 
                     default:
-                        sprintf(error, "%u:%u: Unexpected `%c` in object", line_and_col, b);
+                        std::sprintf(error, "%u:%u: Unexpected `%c` in object", line_and_col, b);
                         goto e_failed;
                     };
 
@@ -775,7 +775,7 @@ static json_value* json_parse_ex(json_settings* settings,
                 case json_integer:
                 case json_double:
 
-                    if (isdigit((unsigned char)b))
+                    if ( std::isdigit((unsigned char)b))
                     {
                         ++num_digits;
 
@@ -785,7 +785,7 @@ static json_value* json_parse_ex(json_settings* settings,
                             {
                                 if (flags & flag_num_zero)
                                 {
-                                    sprintf(error, "%u:%u: Unexpected `0` before `%c`", line_and_col, b);
+                                    std::sprintf(error, "%u:%u: Unexpected `0` before `%c`", line_and_col, b);
                                     goto e_failed;
                                 }
 
@@ -839,7 +839,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                         if (!num_digits)
                         {
-                            sprintf(error, "%u:%u: Expected digit before `.`", line_and_col);
+                            std::sprintf(error, "%u:%u: Expected digit before `.`", line_and_col);
                             goto e_failed;
                         }
 
@@ -857,11 +857,11 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             if (!num_digits)
                             {
-                                sprintf(error, "%u:%u: Expected digit after `.`", line_and_col);
+                                std::sprintf(error, "%u:%u: Expected digit after `.`", line_and_col);
                                 goto e_failed;
                             }
 
-                            top->u.dbl += num_fraction / pow(10.0, num_digits);
+                            top->u.dbl += num_fraction / std::pow(10.0, num_digits);
                         }
 
                         if (b == 'e' || b == 'E')
@@ -885,11 +885,11 @@ static json_value* json_parse_ex(json_settings* settings,
                     {
                         if (!num_digits)
                         {
-                            sprintf(error, "%u:%u: Expected digit after `e`", line_and_col);
+                            std::sprintf(error, "%u:%u: Expected digit after `e`", line_and_col);
                             goto e_failed;
                         }
 
-                        top->u.dbl *= pow(10.0, (flags & flag_num_e_negative ? -num_e : num_e));
+                        top->u.dbl *= std::pow(10.0, (flags & flag_num_e_negative ? -num_e : num_e));
                     }
 
                     if (flags & flag_num_negative)
@@ -970,17 +970,17 @@ static json_value* json_parse_ex(json_settings* settings,
 
 e_unknown_value:
 
-    sprintf(error, "%u:%u: Unknown value", line_and_col);
+    std::sprintf(error, "%u:%u: Unknown value", line_and_col);
     goto e_failed;
 
 e_alloc_failure:
 
-    strcpy(error, "Memory allocation failure");
+    std::strcpy(error, "Memory allocation failure");
     goto e_failed;
 
 e_overflow:
 
-    sprintf(error, "%u:%u: Too long (caught overflow)", line_and_col);
+    std::sprintf(error, "%u:%u: Too long (caught overflow)", line_and_col);
     goto e_failed;
 
 e_failed:
@@ -988,9 +988,9 @@ e_failed:
     if (error_buf)
     {
         if (*error)
-            strcpy(error_buf, error);
+            std::strcpy(error_buf, error);
         else
-            strcpy(error_buf, "Unknown error");
+            std::strcpy(error_buf, "Unknown error");
     }
 
     if (state.first_pass)
@@ -1016,7 +1016,7 @@ json_value* json_parse(const json_char* json, size_t length)
     json_settings settings = { 0 };
     rv = json_parse_ex(&settings, json, length, error);
     if (rv == NULL)
-        printf("error: %s \n", error);
+        printf_s("error: %s \n", error);
     return rv;
 }
 

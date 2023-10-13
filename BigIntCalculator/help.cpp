@@ -100,7 +100,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_SYSCOMMAND:             /* 0x112 */
     case WM_CHANGEUISTATE:          /* 0x127 */
     case WM_UPDATEUISTATE:          /* 0x128 */
-    case WM_QUERYUISTATE:           /* 0x129*/
+    case WM_QUERYUISTATE:           /* 0x129 */
     case WM_CTLCOLORBTN:            /* 0x135 */
     case WM_CTLCOLORDLG:            /* 0x136 */
     case WM_CTLCOLORSTATIC:         /* 0x138 */
@@ -109,6 +109,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
     case WM_LBUTTONUP:              /* 0x202 */
     case WM_CAPTURECHANGED:         /* 0x215 */
     case WM_MOVING:                 /* 0x216 */
+    case WM_DEVICECHANGE:           /* 0X219 */
     case WM_ENTERSIZEMOVE:          /* 0x231*/
     case WM_EXITSIZEMOVE:           /* 0x232 */
     case WM_IME_SETCONTEXT:         /* 0x281 */
@@ -144,7 +145,7 @@ static long long helpdiag(void) {
 
 
 /*search the docfile for the required help topic. The topic can be specified in
-the command parameter. If this is empty the topic can be selected via a dialog box;
+the command parameter. If this is not present the topic can be selected via a dialog box;
 the required entry is specified by hResp.radiobutton.
 Just search the file for the heading, and print everything until the next
 heading is found.
@@ -165,6 +166,9 @@ void helpfunc(const std::vector<std::string>& command)
     std::string helptopic;
     int lineCount = 0;
 
+    /* list of topics that can be selected (usually via the help dialog box). 
+       If new topics are addded to the help file the dialog box and associated 
+       functions should also be updated. */
     const char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
             "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
             "PARI", "AYUDA" };
@@ -221,18 +225,18 @@ retry:
     /* doc file has been opened successfully */
     /* change stdout mode to support unicode (need to use wprintf, not printf)
     this allows multi-byte charactes to be printed */
-    fflush(stdout);
+    std::fflush(stdout);
     int oldmode = _setmode(_fileno(stdout), _O_U8TEXT);
     if (verbose > 0)
         wprintf_s(L"searching for help on '%S'\n", helptopic.c_str());
 
     /* exit this loop when reached EOF or the next topic after the one required
     is reached */
-    while (!feof(doc)) {
+    while (!std::feof(doc)) {
 
-        char* rv = fgets(str, sizeof(str), doc);   //read a line
+        char* rv = std::fgets(str, sizeof(str), doc);   //read a line
         if (rv == NULL)
-            if (feof(doc)) {
+            if (std::feof(doc)) {
                 break;
             }
             else {
@@ -248,21 +252,21 @@ retry:
             int d1 = (unsigned char)str[1] - BOM[1];
             int d2 = (unsigned char)str[2] - BOM[2];
             if (d == 0 && d1 == 0 && d2 == 0) {
-                memmove(str, str + 3, strlen(str) - 2);  /* remove BOM */
+                 std::memmove(str, str + 3, std::strlen(str) - 2);  /* remove BOM */
                 UTF8 = true;
             }
         }
 
         //is this a header?
-        if ((str[0] == '[') && (str[strlen(str) - 2] == ']')) {
+        if ((str[0] == '[') && (str[std::strlen(str) - 2] == ']')) {
 
             if (printtopic)
                 break;  /* we have reached the start of the next topic, so exit
                            Only print 1 topic per help command */
 
                            //does it match our topic?
-            str[strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-            if (strstr(helptopic.c_str(), str + 1) != NULL)
+            str[std::strlen(str) - 2] = '\0'; /* overwrite ']' with null */
+            if (std::strstr(helptopic.c_str(), str + 1) != NULL)
                 /* we get a match if the topic between [ and ] is contained
                 anywhere in helptopic */
                 printtopic = true;   /* we have found the required topic*/
@@ -274,7 +278,7 @@ retry:
                 if (lineCount > 27) {
                     std::wcout << L"** More (y/n) ? ";  /* pause every 27 lines of output */
                     std::getline(std::cin, expr);
-                    expr[0] = toupper(expr[0]);
+                    expr[0] = std::toupper(expr[0]);
                     if (expr[0] != 'Y')
                         break;
                     else
@@ -286,9 +290,9 @@ retry:
         }
     }
 
-    if (feof(doc)) {
+    if (std::feof(doc)) {
         if (printtopic)
-            wprintf(L"\n");   /* contrary to the POSIX standard, the last line of the file
+            std::wprintf(L"\n");   /* contrary to the POSIX standard, the last line of the file
                             may not end with newline */
         else
             if (lang)
@@ -297,8 +301,8 @@ retry:
                 wprintf_s(L"Help for %S not found \n", helptopic.c_str());
     }
     /* change stdout back to normal */
-    fflush(stdout);
+    std::fflush(stdout);
     _setmode(_fileno(stdout), oldmode);
-    fclose(doc);
+    std::fclose(doc);
     return;
 }

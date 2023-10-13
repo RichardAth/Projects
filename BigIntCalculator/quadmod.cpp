@@ -17,14 +17,11 @@
 // along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include "pch.h"
-
 #include <Mmsystem.h >   // for sound effects
-
 #include "expression.h"
 #include "quadmodLL.h"
 
 extern std::string attsound;   // for sound effects
-
 extern int groupSize;
 
 char output[300000];
@@ -76,7 +73,7 @@ static int Show(const BigInteger* num, const char* str, int t)
         {    // num is not 1 or -1.
             *ptrOutput = ' ';
             ptrOutput++;
-            Bin2Dec(&ptrOutput, num->limbs, num->nbrLimbs, groupSize);
+            Bin2DecV2(&ptrOutput, num->limbs, num->nbrLimbs, groupSize);
         }
         copyStr(&ptrOutput, str);
         return t | 1;
@@ -132,17 +129,17 @@ static void Solution(const BigInteger* value, const BigInteger * pValA,
     copyStr(&ptrOutput, "\n");
 
     if (verbose > 1) {
-        printf("solution nbr %4d ", SolNbr);
+        printf_s("solution nbr %4d ", SolNbr);
         PrintBigInteger(value, 0);
-        printf("\na = ");
+        printf_s("\na = ");
         PrintBigInteger(pValA, 0);
-        printf(", b= ");
+        printf_s(", b= ");
         PrintBigInteger(pValB, 0);
-        printf(", c= ");
+        printf_s(", c= ");
         PrintBigInteger(pValC, 0); 
-        printf(", n= ");
+        printf_s(", n= ");
         PrintBigInteger(pValN, 0);
-        putchar('\n');
+        std::putchar('\n');
     }
 #ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
@@ -159,15 +156,15 @@ static void solms(const BigInteger* value, const BigInteger* pValA,
     if (verbose > 1) {
         SolNbr++;
         gmp_printf("solution nbr %4d %Zd ", SolNbr, vZ);
-        printf("\na = ");
+        printf_s("\na = ");
         PrintBigInteger(pValA, groupSize);
-        printf(", b= ");
+        printf_s(", b= ");
         PrintBigInteger(pValB, groupSize);
-        printf(", c= ");
+        printf_s(", c= ");
         PrintBigInteger(pValC, groupSize);
-        printf(", n= ");
+        printf_s(", n= ");
         PrintBigInteger(pValN, groupSize);
-        putchar('\n');
+        std::putchar('\n');
     }
 #ifdef _DEBUG
     checkSolution(value, pValA, pValB, pValC, pValN);
@@ -234,8 +231,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
             Aux2 = Aux1 / Aux0;        //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
             Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
-        //BigIntNegate(&sqrtDiscriminant, &sqrtDiscriminant);
-        BigIntChSign(&sqrtDiscriminant);
+        BigIntNegate(sqrtDiscriminant);
         Aux1 = sqrtDiscriminant - ValB; //BigIntSubt(&sqrtDiscriminant, &ValB, &Aux1);
         Aux2 = Aux1 % Aux0;             //(void)BigIntRemainder(&Aux1, &Aux0, &Aux2);
         if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))
@@ -319,7 +315,7 @@ and n = modulus. The parameters are supplied as text, which can be numbers or
 numerical expressions. The modulus has to be factored, so if it is too large
 the factorisation can take an excessive length of time. The results are placed in 
 the output buffer */
-static void quadmodText(const char* aText, const char* bText, const char* cText,
+static retCode quadmodText(const char* aText, const char* bText, const char* cText,
     const char* modText, int groupLength)
 {
     groupSize = groupLength; /* used for formatting the output */
@@ -332,21 +328,21 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
     {
         std::cout << (lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ") ;
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(bText, &ValB, false);  /* convert b from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente lineal: " : "Linear coefficient: ");
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(cText, &ValC, false);   /* convert c from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Término independiente: " : "Constant coefficient: ");
         textError(rc);
-        return;
+        return rc;
     }
     rc = ComputeExpression(modText, &ValN, false);   /* convert mod from text to BigInteger */
     if ((rc == retCode::EXPR_OK) && (ValN.sign == SIGN_NEGATIVE))
@@ -357,7 +353,7 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
     {
         std::cout << (lang ? "Módulo: " : "Modulus: ");
         textError(rc);
-        return;
+        return rc;
     }
     if (ptrOutput == output)
     {    // No errors found. send ax² + bx +c = 0 (mod n) to output buffer.
@@ -395,6 +391,7 @@ static void quadmodText(const char* aText, const char* bText, const char* cText,
 
     copyStr(&ptrOutput, lang ? COPYRIGHT_SPANISH : COPYRIGHT_ENGLISH);
     copyStr(&ptrOutput, "\n");
+    return retCode::EXPR_OK;
 }
 
 /* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
@@ -404,51 +401,55 @@ int quadModEqn(const std::vector<std::string>& p) {
     char A[50], B[50], C[50], N[50];
     try {
         if (lang) {
-            printf("Resolución de ecuaciones cuadráticas modulares \n");
-            printf("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
+            printf_s("Resolución de ecuaciones cuadráticas modulares \n");
+            printf_s("Esta aplicación resuelve ecuaciones de la forma ax² + bx + c ≡ 0"
                 " (mod n) donde la incógnita entera x se encuentra en el rango"
                 " 0 ≤ x < n.\n");
-            printf("En particular, puede hallar raíces cuadradasmodulares si ingresa "
+            printf_s("En particular, puede hallar raíces cuadradasmodulares si ingresa "
                 " a = -1, b = 0, c = número cuya raíz se desea hallar y n = módulo.\n");
 
-            printf("ingrese el valor para A: ");
+            printf_s("ingrese el valor para A: ");
         }
         else { /* english */
-            printf("Quadratic Modular Equation Solver\n");
-            printf("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
+            printf_s("Quadratic Modular Equation Solver\n");
+            printf_s("solve equations of the form Ax² + Bx + C ≡ 0 (mod N) where"
                 " the unknown integer x is in the range 0 <= x < N. \n");
-            printf("In particular, it can find modular square roots by setting "
+            printf_s("In particular, it can find modular square roots by setting "
                 "A = -1, B = 0, C = number whose root we want to find and N = modulus.\n");
 
-            printf("Enter value for A: ");
+            printf_s("Enter value for A: ");
         }
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(A, sizeof(A), stdin);
-        if (A[strlen(A) - 1] == '\n') A[strlen(A) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(A, sizeof(A), stdin);
+        if (A[std::strlen(A) - 1] == '\n') A[std::strlen(A) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para B: " : "Enter value for B: ");
+        printf_s((lang) ? "ingrese el valor para B: " : "Enter value for B: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(B, sizeof(B), stdin);
-        if (B[strlen(B) - 1] == '\n') B[strlen(B) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(B, sizeof(B), stdin);
+        if (B[std::strlen(B) - 1] == '\n') B[std::strlen(B) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
+        printf_s((lang) ? "ingrese el valor para C: " : "Enter value for C: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(C, sizeof(C), stdin);
-        if (C[strlen(C) - 1] == '\n') C[strlen(C) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(C, sizeof(C), stdin);
+        if (C[std::strlen(C) - 1] == '\n') C[std::strlen(C) - 1] = '\0'; /* remove trailing \n */
 
-        printf((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
+        printf_s((lang) ? "ingrese el valor para N: " : "Enter value for N: ");
         PlaySoundA(attsound.c_str(), NULL,
             SND_FILENAME | SND_NODEFAULT | SND_ASYNC | SND_NOSTOP);
-        fgets(N, sizeof(N), stdin);
-        if (N[strlen(N) - 1] == '\n') N[strlen(N) - 1] = '\0'; /* remove trailing \n */
+        std::fgets(N, sizeof(N), stdin);
+        if (N[std::strlen(N) - 1] == '\n') N[std::strlen(N) - 1] = '\0'; /* remove trailing \n */
 
-        quadmodText(A, B, C, N, groupSize);
-        printf("%s\n", output);   /* print output buffer, which contains the input 
+        auto rc = quadmodText(A, B, C, N, groupSize);
+        if (rc == retCode::EXPR_OK) {
+            printf_s("%s\n", output);   /* print output buffer, which contains the input
                                   parameters as well as the solutions */
-        return EXIT_SUCCESS;
+            return EXIT_SUCCESS;
+        }
+        else
+            return EXIT_FAILURE;
     }
     /* code below catches C++ 'throw' type exceptions */
     catch (const std::exception& e) {
@@ -528,9 +529,9 @@ void doTestsA(const std::vector<std::string> &p) {
     Znum a, b, c, n=0;
 
     if (p.size() >= 3)
-        p1 = atoi(p[2].data());
+        p1 = std::atoll(p[2].data());
     if (p.size() >= 4)
-        p2 = atoi(p[3].data());
+        p2 = std::atoll(p[3].data());
     if (p1 <= 0) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
@@ -544,7 +545,7 @@ void doTestsA(const std::vector<std::string> &p) {
     /* fixed seed means that the exact same tests can be repeated provided
        that the same size of number is used each time */
 
-    auto start = clock();	// used to measure execution time
+    auto start = std::clock();	// used to measure execution time
     SetCallbacksForSolveEquation(solms);
 
     for (int i = 1; i <= p1; i++) {
@@ -565,7 +566,7 @@ void doTestsA(const std::vector<std::string> &p) {
                     std::cout << roots[j] << ", ";
 
                 }
-                putchar('\n');
+                std::putchar('\n');
                 for (int j = 0; j < roots.size(); j++)
                     checkSolution(roots[j], a, b, c, n);
             }
@@ -587,7 +588,7 @@ void doTestsA(const std::vector<std::string> &p) {
                         std::cout << roots[j] << ", ";
                         
                     }
-                    putchar('\n'); 
+                    std::putchar('\n'); 
                     for (int j = 0; j < roots.size(); j++)
                         checkSolution(roots[j], a, b, c, n);
                 }
@@ -599,7 +600,7 @@ void doTestsA(const std::vector<std::string> &p) {
         }
     }
 
-    auto end = clock();   // measure amount of time used
+    auto end = std::clock();   // measure amount of time used
     double elapsed = (double)end - start;
     PrintTimeUsed(elapsed, "All tests completed. Time used = ");
     gmp_randclear(state);  // clear state - avoid memory leakage
