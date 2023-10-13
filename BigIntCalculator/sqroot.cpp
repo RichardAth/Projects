@@ -222,25 +222,31 @@ void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
     lenBytes = (length + 1) / 2 * (int)sizeof(limb);
     (void)std::memset(sqRoot, 0, lenBytes);
     if (index <= 1)
-    {                // Argument is small, so compute directly its square root.
+    {                // Argument is small (1 limb), so compute directly its square root.
         if (index == 0)
         {
             *sqRoot = (int)floor(sqrt(*argument) + 0.000001);
         }
         else
-        {
+        {   /* argument has two limbs. */
             limb square[3];   // MultBigNbr routine uses an extra limb for result.
+            long long llsquare;
             double dArg = *argument + (double)*(argument + 1) * (double)LIMB_RANGE;
-            dArg = floor(sqrt(dArg + 0.5));
+            dArg = floor(sqrt(dArg + 0.5)); /* get approximate square root */
             if (dArg == (double)LIMB_RANGE)
             {
                 dArg = (double)MAX_VALUE_LIMB;
             }
             *sqRoot = (int)dArg;
-            MultBigNbr(sqRoot, sqRoot, square, 1);
+            llsquare = (long long)*sqRoot * (*sqRoot);
+            square[0] = (int)llsquare & MAX_VALUE_LIMB;
+            llsquare >>= BITS_PER_GROUP;
+            square[1] = llsquare & MAX_VALUE_LIMB;
+            assert(llsquare <= MAX_VALUE_LIMB);
+            //MultBigNbr(sqRoot, sqRoot, square, 1);
             if ((square[1] > *(argument + 1)) ||
                 ((square[1] == *(argument + 1)) && (square[0] > *argument)))
-            {
+            {   /*if sqRoot^2 > argument, decrease it */
                 *sqRoot--;
             }
         }

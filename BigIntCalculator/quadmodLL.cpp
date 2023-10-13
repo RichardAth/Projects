@@ -348,6 +348,7 @@ static void SolveModularLinearEquation(const BigInteger * pValA, const BigIntege
 // To compute the square root, compute the inverse of sqrt,
 // so only multiplications are used.
 // f(x) = invsqrt(x), f_{n+1}(x) = f_n * (3 - x*f_n^2)/2
+// uses external variables sqrRoot, ValCOdd, tmp1, tmp2
 static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
 {
     int lenBytes;
@@ -364,27 +365,29 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
     {   // Compute f(x) = invsqrt(x), f_{n+1}(x) = f_n * (3 - x*f_n^2)/2
         correctBits *= 2;
         nbrLimbs = (correctBits / BITS_PER_GROUP) + 1;
-        MultBigNbr(sqrRoot.limbs, sqrRoot.limbs, tmp2.limbs, nbrLimbs);
-        MultBigNbr(tmp2.limbs, ValCOdd.limbs, tmp1.limbs, nbrLimbs);
-        ChSignBigNbr(tmp1.limbs, nbrLimbs);
+        multiply(sqrRoot.limbs, sqrRoot.limbs, tmp2.limbs, nbrLimbs, nullptr); // tmp2 = sqrRoot*sqrRoot
+        multiply(tmp2.limbs, ValCOdd.limbs, tmp1.limbs, nbrLimbs, nullptr);   //tmp1 = tmp2 * ValCOdd
+        ChSignBigNbr(tmp1.limbs, nbrLimbs);    /* tmp1 = -tmp1 */
         lenBytes = nbrLimbs * (int)sizeof(limb);
-        (void)memset(tmp2.limbs, 0, lenBytes);
-        tmp2.limbs[0] = 3;
-        AddBigNbr(tmp2.limbs, tmp1.limbs, tmp2.limbs, nbrLimbs);
-        MultBigNbr(tmp2.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs);
-        std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
-        DivBigNbrByInt(tmp1.limbs, 2, sqrRoot.limbs, nbrLimbs, &rem);
+        (void)memset(tmp2.limbs, 0, lenBytes);  /* tmp2 = 0 */
+        tmp2.limbs[0] = 3;                      /* tmp2 = 3 */
+        AddBigNbr(tmp2.limbs, tmp1.limbs, tmp2.limbs, nbrLimbs);  /* tmp2 += tmp1 */
+        multiply(tmp2.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs, nullptr);  /* tmp1 = tmp2*sqrRoot */
+        std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);     /* sqrRoot = tmp1 */
+        DivBigNbrByInt(tmp1.limbs, 2, sqrRoot.limbs, nbrLimbs, &rem); /* sqrRoot = Tmp1/2 */
         correctBits--;
     }
     // Get square root of ValCOdd from its inverse by multiplying by ValCOdd.
-    MultBigNbr(ValCOdd.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs);
+    multiply(ValCOdd.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs, nullptr);
     lenBytes = nbrLimbs * (int)sizeof(limb);
-    std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);
+    std::memcpy(sqrRoot.limbs, tmp1.limbs, lenBytes);  /* sqrRoot = tmp1*/
     setNbrLimbs(&sqrRoot);
-    for (int ctr = 0; ctr < (bitsCZero / 2); ctr++)
-    {
-        sqrRoot *= 2; //BigIntMultiplyBy2(&sqrRoot);
-    }
+    if ((bitsCZero / 2) > 0)
+        sqrRoot <<= (bitsCZero / 2);
+    //for (int ctr = 0; ctr < (bitsCZero / 2); ctr++)
+    //{  /* sqrRoot *= 2^(bitsCZero / 2) */
+    //    sqrRoot *= 2; //BigIntMultiplyBy2(&sqrRoot);
+    //}
 }
 
 // Find quadratic solution of Quadr*x^2 + Linear*x + Const = 0 (mod 2^exponent)
@@ -561,7 +564,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         tmp1 = *pValB;  // CopyBigInt(&tmp1, pValB);
         BigIntDivideBy2(&tmp1);               // b/2
         tmp1 *= tmp2;       // (void)BigIntMultiply(&tmp1, &tmp2, &tmp1);  // b/2a
-        BigIntChSign(&tmp1);                  // -b/2a
+        BigIntNegate(tmp1);                  // -b/2a
         tmp1 &= K1; // BigIntAnd(&tmp1, &K1, &tmp1);         // -b/2a mod 2^expon
         tmp2 = tmp1 + sqrRoot;  // BigIntAdd(&tmp1, &sqrRoot, &tmp2);
         quad.Solution1[factorIndex] = tmp2 & K1; // BigIntAnd(&tmp2, &K1, &quad.Solution1[factorIndex]);
@@ -1013,7 +1016,7 @@ static void QuadraticTermMultipleOfP(int expon, int factorIndex,
     TestNbr[NumberLength] = 0;
     GetMontgomeryParms(NumberLength);
     BigIntModularDivision(pValC, pValB, &prime, ptrSolution); /* Solution = C/B (mod prime) */
-    BigIntChSign(ptrSolution);  // BigIntNegate(ptrSolution, ptrSolution);
+    BigIntNegate(*ptrSolution);  
     if (ptrSolution->sign == SIGN_NEGATIVE)
     {
         *ptrSolution += prime; // BigIntAdd(ptrSolution, &prime, ptrSolution);

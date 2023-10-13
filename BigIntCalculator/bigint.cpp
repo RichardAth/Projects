@@ -411,14 +411,13 @@ BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor
         Remainder = Dividend;
         return Remainder;
     }
-    Base = Dividend / Divisor;    // Get quotient of division.
     if (Divisor.nbrLimbs == 1) {
-        Base *= Divisor.limbs[0];   /* use multiplication by integer if possible*/
-        if (Divisor.sign == SIGN_NEGATIVE)
-            BigIntNegate(Base) ;    /* flip sign of base if divisor is -ve */
+        /* use quick method if divisor is small */
+        Remainder = getRemainder(Dividend, Divisor.limbs[0]);
+        return Remainder;
     }
-    else
-        Base = Base*Divisor;   /* use long multiplication if divisor has more than 1 limb. */
+    Base = Dividend / Divisor;    // Get quotient of division.
+    Base = Base*Divisor;   /* use long multiplication if divisor has more than 1 limb. */
     return Dividend - Base;
 }
 
@@ -563,7 +562,8 @@ void BigIntDivide2(BigInteger &pArg) {
     }
 }
 
-/* arg = arg*2^power. Throw exception if product is too large */
+/* arg = arg*2^power. Throw exception if product is too large. 
+(shiftBI does the same. May be more efficient?)*/
 static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 {
     int ctr;
@@ -1152,8 +1152,7 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
     else if (nbrLimbsDivisor == 1)
     {   // Divisor is small: use divide by int.
         // Sign of quotient is determined later.
-        Quotient = Dividend; 
-        Quotient /= Divisor.limbs[0];   
+         Quotient = Dividend/Divisor.limbs[0];
     }
     else {
         int index;
@@ -1332,13 +1331,13 @@ BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor) {
     return Quotient;
 }
 
-/* Return Dividend/Divisor. Used for operator overloading. The remainder will
-have the same sign as the dividend and the quotient is rounded towards zero */
-BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
-    BigInteger Quotient;
+/* calculate quotient and remainder of division by integer. The remainder will
+have the same sign as the dividend and the quotient is rounded towards zero. */
+void BigIntDivRem(const BigInteger& Dividend, const int Divisor, 
+    BigInteger &Quotient, int &rem) {
     int len = Dividend.nbrLimbs;
-    int rem;
-    DivBigNbrByInt(Dividend.limbs,  std::abs(Divisor), Quotient.limbs, len, &rem);
+    DivBigNbrByInt(Dividend.limbs, std::abs(Divisor), Quotient.limbs, len, &rem);
+    /* now set the correct signs for quotient and remainder */
     if (Divisor >= 0)
         if (Dividend.sign == SIGN_POSITIVE) {
             Quotient.sign = SIGN_POSITIVE;
@@ -1361,8 +1360,8 @@ BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
         len--;  // remove any leading zeros
     Quotient.nbrLimbs = len;
 
-#ifdef _DEBUG    /* recheck quotient and remainder using Znums */
- {  Znum divz, Qz;
+#ifdef _DEBUG    /* (Debug only) recheck quotient and remainder using Znums */
+    {  Znum divz, Qz;
     BigtoZ(divz, Dividend);
     BigtoZ(Qz, Quotient);
     if (Qz != divz / Divisor)
@@ -1372,9 +1371,17 @@ BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
     if (rem != (divz % Divisor))
         std::cout << "BigIntDivideInt error: remainder expected " << divz % Divisor
         << " got " << rem << '\n';
- }
+    }
 #endif
+    return;
+}
 
+/* Return Dividend/Divisor. Used for operator overloading. The remainder will
+have the same sign as the dividend and the quotient is rounded towards zero */
+BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor) {
+    BigInteger Quotient;
+    int rem;
+    BigIntDivRem(Dividend, Divisor, Quotient, rem);
     return Quotient;
 }
 
@@ -1384,45 +1391,8 @@ will have the same sign as the dividend and the quotient is rounded towards zero
 the remainder rather than the quotient. */
 int getRemainder(const BigInteger& Dividend, int Divisor) {
     BigInteger Quotient;
-    int len = Dividend.nbrLimbs;
     int rem;
-    DivBigNbrByInt(Dividend.limbs, std::abs(Divisor), Quotient.limbs, len, &rem);
-    if (Divisor >= 0)
-        if (Dividend.sign == SIGN_POSITIVE) {
-            Quotient.sign = SIGN_POSITIVE;
-        }
-        else {  /* dividend is -ve, divisor is +ve */
-            Quotient.sign = SIGN_NEGATIVE;
-            if (rem > 0)
-                rem = -rem;
-        }
-    else   // Divisor is -ve
-        if (Dividend.sign == SIGN_POSITIVE)
-            Quotient.sign = SIGN_NEGATIVE;  /* dividend is +ve, divisor is -ve */
-        else {
-            Quotient.sign = SIGN_POSITIVE;  /* dividend and divisor both -ve */
-            if (rem > 0)
-                rem = -rem;
-        }
-
-    while (len > 1 && Quotient.limbs[len - 1] == 0)
-        len--;  // remove any leading zeros
-    Quotient.nbrLimbs = len;
-
-#ifdef _DEBUG 
-    {  Znum divz, Qz;  /* recheck quotient and remainder using Znums */
-    BigtoZ(divz, Dividend);
-    BigtoZ(Qz, Quotient);
-    if (Qz != divz / Divisor)
-        std::cout << "GetRemainder error: Quotient expected " << divz / Divisor
-        << " got " << Qz << '\n'
-        << " Dividend = " << Dividend << " divisor = " << Divisor << '\n';
-    if (rem != (divz % Divisor))
-        std::cout << "GetRemainder error: remainder expected " << divz % Divisor
-        << " got " << rem << '\n';
-    }
-#endif
-
+    BigIntDivRem(Dividend, Divisor, Quotient, rem);
     return rem;
 }
 

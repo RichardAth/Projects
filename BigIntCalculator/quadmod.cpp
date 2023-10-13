@@ -231,8 +231,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
             Aux2 = Aux1 / Aux0;        //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
             Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
-        //BigIntNegate(&sqrtDiscriminant, &sqrtDiscriminant);
-        BigIntChSign(&sqrtDiscriminant);
+        BigIntNegate(sqrtDiscriminant);
         Aux1 = sqrtDiscriminant - ValB; //BigIntSubt(&sqrtDiscriminant, &ValB, &Aux1);
         Aux2 = Aux1 % Aux0;             //(void)BigIntRemainder(&Aux1, &Aux0, &Aux2);
         if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))

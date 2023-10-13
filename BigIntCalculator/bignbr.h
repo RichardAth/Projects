@@ -22,7 +22,7 @@ can handle maximum length numbers */
 #define BITS_PER_GROUP_MINUS_1 30
 #define BITS_PER_INT_GROUP 31
 #define HALF_INT_RANGE (1 << (BITS_PER_INT_GROUP - 1))
-//#define FOURTH_INT_RANGE      0x20000000
+#define FOURTH_INT_RANGE      0x20000000
 #define HALF_INT_RANGE_U      0x40000000U
 #define INT_RANGE_U 0x80000000U
 #define MAX_INT_NBR ((int)((1U << BITS_PER_INT_GROUP)-1))
