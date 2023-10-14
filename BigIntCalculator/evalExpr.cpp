@@ -166,8 +166,8 @@ enum class opCode {
     fn_minfact,           /* smallest factor */
     fn_maxfact,           /* largest factor */
     fn_ispow,             /* check if perfect power */
-    fn_modsqrtNew,           /* modular square root */
-    fn_modsqrt,        /* modular square root using Tonelli-Shanks */
+    fn_modsqrtNew,        /* modular square root */
+    fn_modsqrt,           /* modular square root using Tonelli-Shanks */
     fn_invtot,            /* inverse totient */
     fn_divisors,          /* list of divisors */
     fn_primroot,          /* lowest primitive root */

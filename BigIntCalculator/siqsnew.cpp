@@ -1151,35 +1151,35 @@ static void TrialDivisionSub(int Divisor, const int NumberLengthDividend,
 		/* no break */
 	case 6:     // {biR5 - biR0} <- {biR5 - biR0} / divis
 		dDivid = (double)biR[5] + dRem*dLimbMult;
-		dQuot = floor(dDivid / dCurrentPrime);
+		dQuot = std::floor(dDivid / dCurrentPrime);
 		dRem = dDivid - dQuot * dCurrentPrime;
 		biR[5] = (int)dQuot;
 		/* no break */
 	case 5:     // {biR4 - biR0} <- {biR4 - biR0} / divis
 		dDivid = (double)biR[4] + dRem*dLimbMult;
-		dQuot = floor(dDivid / dCurrentPrime);
+		dQuot = std::floor(dDivid / dCurrentPrime);
 		dRem = dDivid - dQuot * dCurrentPrime;
 		biR[4] = (int)dQuot;
 		/* no break */
 	case 4:     // {biR3 - biR0} <- {biR3 - biR0} / divis
 		dDivid = (double)biR[3] + dRem*dLimbMult;
-		dQuot = floor(dDivid / dCurrentPrime);
+		dQuot = std::floor(dDivid / dCurrentPrime);
 		dRem = dDivid - dQuot * dCurrentPrime;
 		biR[3] = (int)dQuot;
 		/* no break */
 	case 3:     // {biR2 - biR0} <- {biR2 - biR0} / divis
 		dDivid = (double)biR[2] + dRem*dLimbMult;
-		dQuot = floor(dDivid / dCurrentPrime);
+		dQuot = std::floor(dDivid / dCurrentPrime);
 		dRem = dDivid - dQuot * dCurrentPrime;
 		biR[2] = (int)dQuot;
 		/* no break */
 	case 2:     // {biR1 - biR0} <- {biR1 - biR0} / divis
 		dDivid = (double)biR[1] + dRem*dLimbMult;
-		dQuot = floor(dDivid / dCurrentPrime);
+		dQuot = std::floor(dDivid / dCurrentPrime);
 		dRem = dDivid - dQuot * dCurrentPrime;
 		biR[1] = (int)dQuot;
 		dDivid = (double)biR[0] + dRem*dLimbMult;
-		biR[0] = (int)floor(dDivid / dCurrentPrime);
+		biR[0] = (int)std::floor(dDivid / dCurrentPrime);
 	}
 
 	/* check whether most significant limb is zero */
@@ -1252,7 +1252,7 @@ static bool TrialDivisionSubA(const int index,
 		dRem += biR[0];
 
 		double dCurrentPrime = (double)Divisor;
-		if (dRem != floor(dRem / dCurrentPrime)*dCurrentPrime)
+		if (dRem != std::floor(dRem / dCurrentPrime)*dCurrentPrime)
 		{                     // Number is not a multiple of prime.
 			if (expParity != 0)
 			{
@@ -1431,7 +1431,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 					if (NumberLengthDividend == 1) {       // Number fits in a double
 						double dDivid = (double)biR[1] * (double)(1U << BITS_PER_INT_GROUP)
 							+ (double)biR[0];
-						int sqrtDivid = (int)(floor(sqrt(dDivid)));
+						int sqrtDivid = (int)(std::floor(std::sqrt(dDivid)));
 						fullRemainder = true;
 						for (; index < nbrFactorBasePrimes; index++) {
 							rowPrimeSieveData = primeSieveData + index;
@@ -1475,13 +1475,13 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 									fullRemainder = true;
 								}
 								else {
-									if (dDivid != floor(dDivid / Divisor) * Divisor) {
+									if (dDivid != std::floor(dDivid / Divisor) * Divisor) {
 										break;
 									}
 								}
 
 								dDivid /= Divisor;
-								sqrtDivid = (int)(floor(sqrt(dDivid))) + 1;
+								sqrtDivid = (int)(std::floor(std::sqrt(dDivid))) + 1;
 								expParity = 1 - expParity;
 								if (expParity == 0) {
 									rowSquares[nbrSquares++] = (int)Divisor;
@@ -1558,7 +1558,7 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 					if (NumberLengthDividend == 1) {       // Number fits in a double
 						double dDivid = (double)biR[1] * (double)(1U << BITS_PER_INT_GROUP)
 							+ (double)biR[0];
-						int sqrtDivid = (int)(floor(sqrt(dDivid)));
+						int sqrtDivid = (int)(std::floor(std::sqrt(dDivid)));
 						fullRemainder = true;
 						for (; index < nbrFactorBasePrimes; index++) {
 							rowPrimeSieveData = primeSieveData + index;
@@ -1604,13 +1604,13 @@ static int DoTrialDivision(PrimeSieveData *primeSieveData,
 									fullRemainder = true;
 								}
 								else {
-									if (dDivid != floor(dDivid / Divisor) * Divisor) {
+									if (dDivid != std::floor(dDivid / Divisor) * Divisor) {
 										break;
 									}
 								}
 
 								dDivid /= Divisor;
-								sqrtDivid = (int)floor(sqrt(dDivid));
+								sqrtDivid = (int)std::floor(std::sqrt(dDivid));
 								expParity = 1 - expParity;
 								if (expParity == 0) {
 									rowSquares[nbrSquares++] = (int)Divisor;
@@ -2147,7 +2147,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	//  threadArray = new Thread[numberThreads];
 	Temp = logZnum(zN);
 	/* increased number of primes on 17/6/2019 in line with DA's calculator */
-	nbrFactorBasePrimes = (int)exp(sqrt(Temp * log(Temp)) * 0.363 - 1);
+	nbrFactorBasePrimes = (int)std::exp(std::sqrt(Temp * std::log(Temp)) * 0.363 - 1);
 	if (nbrFactorBasePrimes > MAX_PRIMES)
 		nbrFactorBasePrimes = MAX_PRIMES;
 
@@ -2300,19 +2300,19 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			rowPrimeTrialDivisionData->exp[0] = (int)dBase;  // (2^BITS_PER_INT_GROUP) mod currentPrime
 			dCurrentPrime = (double)currentPrime;
 			dPower = dBase * dBase;
-			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
+			dPower -= std::floor(dPower / dCurrentPrime)*dCurrentPrime;
 			rowPrimeTrialDivisionData->exp[1] = (int)dPower; // (2^BITS_PER_INT_GROUP)^2 mod currentPrime
 			dPower *= dBase;
-			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
+			dPower -= std::floor(dPower / dCurrentPrime)*dCurrentPrime;
 			rowPrimeTrialDivisionData->exp[2] = (int)dPower; // (2^BITS_PER_INT_GROUP)^3 mod currentPrime
 			dPower *= dBase;
-			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
+			dPower -= std::floor(dPower / dCurrentPrime)*dCurrentPrime;
 			rowPrimeTrialDivisionData->exp[3] = (int)dPower; // (2^BITS_PER_INT_GROUP)^4 mod currentPrime
 			dPower *= dBase;
-			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
+			dPower -= std::floor(dPower / dCurrentPrime)*dCurrentPrime;
 			rowPrimeTrialDivisionData->exp[4] = (int)dPower; // (2^BITS_PER_INT_GROUP)^5 mod currentPrime
 			dPower *= dBase;
-			dPower -= floor(dPower / dCurrentPrime)*dCurrentPrime;
+			dPower -= std::floor(dPower / dCurrentPrime)*dCurrentPrime;
 			rowPrimeTrialDivisionData->exp[5] = (int)dPower; // (2^BITS_PER_INT_GROUP)^6 mod currentPrime
 
 			if ((currentPrime & 3) == 3) {
@@ -2322,13 +2322,13 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 				SqrRootMod =
 					(int)modPowerLL(NbrMod * 2, (currentPrime - 5) / 8, currentPrime);
 				dRem = (double)2 * NbrMod * (double)SqrRootMod;
-				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+				dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod - 1;
-				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+				dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)NbrMod;
-				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+				dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 				dRem = dRem * (double)SqrRootMod;
-				dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+				dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 				SqrRootMod = (int)dRem;
 			}
 			else {
@@ -2353,26 +2353,26 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 				Y = Z;
 				X = (int)modPowerLL(NbrMod, (Q - 1) / 2, currentPrime);
 				dBase = (double)NbrMod * (double)X;
-				V = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+				V = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 				dBase = (double)V * (double)X;
-				W = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+				W = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 
 				while (W != 1) {
 					T1 = 0;
 					D = W;
 					while (D != 1) {
 						dBase = (double)D * (double)D;
-						D = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+						D = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 						T1++;
 					}
 					D = (int)modPowerLL(Y, 1LL << (E - T1 - 1), currentPrime);
 					dBase = (double)D * (double)D;
-					Y1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+					Y1 = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 					E = T1;
 					dBase = (double)V * (double)D;
-					V1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+					V1 = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 					dBase = (double)W * (double)Y1;
-					W1 = (int)(dBase - floor(dBase / dCurrentPrime)*dCurrentPrime);
+					W1 = (int)(dBase - std::floor(dBase / dCurrentPrime)*dCurrentPrime);
 					Y = Y1;
 					V = V1;
 					W = W1;
@@ -2416,7 +2416,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	dNumberToFactor *= multiplier;
 	smallPrimeUpperLimit = j + 1;
-	threshold = (int) (log(sqrt(dNumberToFactor) * SieveLimit /
+	threshold = (int) (std::log(std::sqrt(dNumberToFactor) * SieveLimit /
 				(FactorBase * 64) /
 					primeSieveData[j + 1].value
 				) / log(3) + 0x81
@@ -2435,7 +2435,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	}
 
 	nbrPrimes2 = nbrFactorBasePrimes - 4;
-	Prod = sqrt(2 * dNumberToFactor) / (double)SieveLimit;
+	Prod = std::sqrt(2 * dNumberToFactor) / (double)SieveLimit;
 
 	fact = (int)pow(Prod, 1 / (float)nbrFactorsA);
 	for (i = 2;; i++) {
@@ -3040,15 +3040,15 @@ static void BlockLanczos(void)
 	for (ptrMatrixV = &ag->matrixV[matrixBLength - 1]; ptrMatrixV >= ag->matrixV; ptrMatrixV--)
 	{
 		double dSeed2 = (dSeed * dMult + dAdd);
-		dSeed2 -= floor(dSeed2 / dDivisor) * dDivisor;
+		dSeed2 -= std::floor(dSeed2 / dDivisor) * dDivisor;
 		*ptrMatrixXmY-- = (int)dSeed + (int)dSeed2;
 		dSeed = (dSeed2 * dMult + dAdd);
-		dSeed -= floor(dSeed / dDivisor) * dDivisor;
+		dSeed -= std::floor(dSeed / dDivisor) * dDivisor;
 		dSeed2 = (dSeed * dMult + dAdd);
-		dSeed2 -= floor(dSeed2 / dDivisor) * dDivisor;
+		dSeed2 -= std::floor(dSeed2 / dDivisor) * dDivisor;
 		*ptrMatrixV = (int)dSeed + (int)dSeed2;
 		dSeed = (dSeed2 * dMult + dAdd);
-		dSeed -= floor(dSeed / dDivisor) * dDivisor;
+		dSeed -= std::floor(dSeed / dDivisor) * dDivisor;
 	}
 	// Compute matrix Vt(0) * V(0)
 	MatrTranspMult(matrixBLength, ag->matrixV, ag->matrixV, matrixVtV0);
@@ -3611,7 +3611,7 @@ static void sieveThread(Znum &result) {
 
 					twiceInverseA = inverseA << 1;       // and twice this value.
 					dRem = (double)twiceInverseA * (double)rowPrimeSieveData->modsqrt;
-					dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+					dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 					rowPrimeSieveData->difsoln = (int)dRem;
 #if 0 // DEBUG_SIQS
 					if (debug_ctr < 500) {
@@ -3735,7 +3735,7 @@ static void sieveThread(Znum &result) {
 			}
 			dRem = (double)inverseA * (double)(rowPrimeSieveData0->modsqrt + RemB) +
 				(double)SieveLimit;
-			dRem -= floor(dRem / dCurrentPrime)*dCurrentPrime;
+			dRem -= std::floor(dRem / dCurrentPrime)*dCurrentPrime;
 			rowPrimeSieveData->soln1 = (int)dRem;
 #if 0 // DEBUG_SIQS
 			if (debug_ctr < 1000) {
@@ -3869,7 +3869,7 @@ static int SQUFOF(long N, int queue[])
 	{
 		N3 <<= 1;
 	}
-	sqrt = sqrt(N);
+	sqrt = std::sqrt(N);
 	S = (int)sqrt;
 	if ((long)(S + 1)*(long)(S + 1) <= N)
 	{
@@ -3886,11 +3886,11 @@ static int SQUFOF(long N, int queue[])
 	Q1 = 1;
 	P = S;
 	Q = (int)N - P*P;
-	L = (int)(2 * sqrt(2 * sqrt));
+	L = (int)(2 * std::sqrt(2 * sqrt));
 	queueHead = 0;
 	queueTail = 0;
 
-	sqrt = sqrt(N3);
+	sqrt = std::sqrt(N3);
 	S3 = (int)sqrt;
 	if ((long)(S3 + 1)*(long)(S3 + 1) <= N3)
 	{
@@ -3907,7 +3907,7 @@ static int SQUFOF(long N, int queue[])
 	Q13 = 1;
 	P3 = S3;
 	Q3 = (int)N3 - P3*P3;
-	L3 = (int)(2 * sqrt(2 * sqrt));
+	L3 = (int)(2 * std::sqrt(2 * sqrt));
 	queueHead3 = 100;
 	queueTail3 = 100;
 
@@ -3943,7 +3943,7 @@ static int SQUFOF(long N, int queue[])
 		Q = t;
 		P = P1;
 		{
-			r = (int)sqrt(Q);
+			r = (int)std::sqrt(Q);
 			if (r*r == Q)
 			{
 				queueIndex = queueTail;
@@ -4088,7 +4088,7 @@ static int SQUFOF(long N, int queue[])
 		Q3 = t3;
 		P3 = P13;
 		{
-			r3 = (int)sqrt(Q3);
+			r3 = (int)std::sqrt(Q3);
 			if (r3*r3 == Q3)
 			{
 				queueIndex3 = queueTail3;

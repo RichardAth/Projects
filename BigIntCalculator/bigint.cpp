@@ -526,18 +526,18 @@ double logBigInt (const BigInteger &pBigInt) {
     double logar;
     nbrLimbs = pBigInt.nbrLimbs;
     if (nbrLimbs == 1) {
-        logar = log((double)(pBigInt.limbs[0]));
+        logar = std::log((double)(pBigInt.limbs[0]));
     }
     else {
         double value = pBigInt.limbs[nbrLimbs - 2] +
             (double)pBigInt.limbs[nbrLimbs - 1] * LIMB_RANGE;
         if (nbrLimbs == 2) {
-            logar = log(value);
+            logar = std::log(value);
         }
         else {
-            logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3] / LIMB_RANGE);
+            logar = std::log(value + (double)pBigInt.limbs[nbrLimbs - 3] / LIMB_RANGE);
         }
-        logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
+        logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*std::log(2);
     }
     return logar;
 }
@@ -776,7 +776,7 @@ values that follow. Also uses global value NumberLength for number of ints. */
 //		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
 //		assert(nbrLimbs == bigint.nbrLimbs);
 //		ptrValues[0] = nbrLimbs;
-//		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
+//		std::memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
 //	}
 //}
 
