@@ -16,6 +16,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 #include "pch.h"
 #include <map>
 #include <intrin.h>
+#include <numeric>
 
 #undef min                 // use std::min
 
@@ -549,7 +550,7 @@ note use of long long ints to avoid overflow.
 u and v are UNSIGNED, caller must use llabs or similar if necessary.
 Note: mathematically gcd(a,b) = gcd(-a,b) = gcd(b,-a) = gcd (-a,-b)
 Note: GCD (greatest common denominator) is also known as HCF (Highest Common Factor).
-*/
+An alternative is to use the std::gcd function from the <numerics> library */
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v)
 {
 	unsigned char result=0;
@@ -651,7 +652,7 @@ long long int PollardRho(long long int n, int depth)
 		y = (modPowerLL(y, 2, n) + c + n) % n;
 
 		/* check gcd of |x-y| and n */
-		d = gcd( std::abs(x - y), n);
+		d = std::gcd( std::abs(x - y), n);
 
 		/* retry if the algorithm fails to find prime factor
 		 * with chosen x and c */

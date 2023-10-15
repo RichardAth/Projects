@@ -600,8 +600,6 @@ static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     int ctr;
-    /*const limb *ptrLimbs1 = Nbr1.limbs;
-    const limb *ptrLimbs2 = Nbr2.limbs;*/
     auto N1Limbs = Nbr1.nbrLimbs;
     auto N2Limbs = Nbr2.nbrLimbs;
     while (N1Limbs > 1)
@@ -656,7 +654,7 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
         if (N1Limbs == 1 && Nbr1.limbs[0] == 0 && Nbr2.limbs[0] == 0) {
             return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
         }
-        else return (Nbr1.sign == SIGN_NEGATIVE);
+        else return (Nbr1.sign == SIGN_NEGATIVE); /* Nbr1 < 0 & Nbr2 >= 0 */
     }
 
     /* numbers have same sign */
@@ -680,7 +678,7 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     return false;  // Numbers are equal.
 }
 
-/* calculate GCD of arg1 & arg2*/
+/* calculate GCD of arg1 & arg2. Use Base and Power as working space */
 void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
 {
     int nbrLimbs1 = Arg1.nbrLimbs;
@@ -1408,7 +1406,7 @@ bool BigIntIsZero(const BigInteger* value)
     return false;      // Number is not zero.
 }
 
-/* change -ve to +ve and vice versa */
+/* change -ve to +ve and vice versa. Does the same job as BigIntNegate  */
 void BigIntChSign(BigInteger* value)
 {
     if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
@@ -1508,6 +1506,7 @@ void BigIntPowerOf2(BigInteger* pResult, int exponent)
     pResult->sign = SIGN_POSITIVE;
 }
 
+/* Sum = Nbr1 + Nbr2 */
 void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen)
 {
     unsigned int carry = 0U;
