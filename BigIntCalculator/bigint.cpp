@@ -526,18 +526,18 @@ double logBigInt (const BigInteger &pBigInt) {
     double logar;
     nbrLimbs = pBigInt.nbrLimbs;
     if (nbrLimbs == 1) {
-        logar = log((double)(pBigInt.limbs[0]));
+        logar = std::log((double)(pBigInt.limbs[0]));
     }
     else {
         double value = pBigInt.limbs[nbrLimbs - 2] +
             (double)pBigInt.limbs[nbrLimbs - 1] * LIMB_RANGE;
         if (nbrLimbs == 2) {
-            logar = log(value);
+            logar = std::log(value);
         }
         else {
-            logar = log(value + (double)pBigInt.limbs[nbrLimbs - 3] / LIMB_RANGE);
+            logar = std::log(value + (double)pBigInt.limbs[nbrLimbs - 3] / LIMB_RANGE);
         }
-        logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*log(2);
+        logar += (double)((nbrLimbs - 2)*BITS_PER_GROUP)*std::log(2);
     }
     return logar;
 }
@@ -600,8 +600,6 @@ static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
 bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     int ctr;
-    /*const limb *ptrLimbs1 = Nbr1.limbs;
-    const limb *ptrLimbs2 = Nbr2.limbs;*/
     auto N1Limbs = Nbr1.nbrLimbs;
     auto N2Limbs = Nbr2.nbrLimbs;
     while (N1Limbs > 1)
@@ -656,7 +654,7 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
         if (N1Limbs == 1 && Nbr1.limbs[0] == 0 && Nbr2.limbs[0] == 0) {
             return false; // Both numbers are zero i.e Nbr1 not less than Nbr2
         }
-        else return (Nbr1.sign == SIGN_NEGATIVE);
+        else return (Nbr1.sign == SIGN_NEGATIVE); /* Nbr1 < 0 & Nbr2 >= 0 */
     }
 
     /* numbers have same sign */
@@ -680,7 +678,7 @@ bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     return false;  // Numbers are equal.
 }
 
-/* calculate GCD of arg1 & arg2*/
+/* calculate GCD of arg1 & arg2. Use Base and Power as working space */
 void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
 {
     int nbrLimbs1 = Arg1.nbrLimbs;
@@ -776,7 +774,7 @@ values that follow. Also uses global value NumberLength for number of ints. */
 //		int nbrLimbs = getNbrLimbs(bigint.limbs); //nbrLimbs <= NumberLength
 //		assert(nbrLimbs == bigint.nbrLimbs);
 //		ptrValues[0] = nbrLimbs;
-//		memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
+//		std::memcpy(ptrValues + 1, srcLimb, nbrLimbs * sizeof(ptrValues[0]));
 //	}
 //}
 
@@ -1408,7 +1406,7 @@ bool BigIntIsZero(const BigInteger* value)
     return false;      // Number is not zero.
 }
 
-/* change -ve to +ve and vice versa */
+/* change -ve to +ve and vice versa. Does the same job as BigIntNegate  */
 void BigIntChSign(BigInteger* value)
 {
     if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
@@ -1508,6 +1506,7 @@ void BigIntPowerOf2(BigInteger* pResult, int exponent)
     pResult->sign = SIGN_POSITIVE;
 }
 
+/* Sum = Nbr1 + Nbr2 */
 void AddBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen)
 {
     unsigned int carry = 0U;

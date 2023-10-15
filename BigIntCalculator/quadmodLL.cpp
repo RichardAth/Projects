@@ -321,7 +321,7 @@ static void SolveModularLinearEquation(const BigInteger * pValA, const BigIntege
         // ptrSolution1 <- -ValC / ValB
         if (pValB->sign == pValC->sign)
         {  /* change  sign of Solution1 */
-            (void)memset(Aux2.limbs, 0, NumberLengthBytes);
+            std::memset(Aux2.limbs, 0, NumberLengthBytes);
             SubtractBigNbr(Aux2.limbs, ptrSolution1->limbs, ptrSolution1->limbs, NumberLength);
         }
         // Discard bits outside number in most significant limb.
@@ -369,7 +369,7 @@ static void ComputeSquareRootModPowerOf2(int expon, int bitsCZero)
         multiply(tmp2.limbs, ValCOdd.limbs, tmp1.limbs, nbrLimbs, nullptr);   //tmp1 = tmp2 * ValCOdd
         ChSignBigNbr(tmp1.limbs, nbrLimbs);    /* tmp1 = -tmp1 */
         lenBytes = nbrLimbs * (int)sizeof(limb);
-        (void)memset(tmp2.limbs, 0, lenBytes);  /* tmp2 = 0 */
+        std::memset(tmp2.limbs, 0, lenBytes);  /* tmp2 = 0 */
         tmp2.limbs[0] = 3;                      /* tmp2 = 3 */
         AddBigNbr(tmp2.limbs, tmp1.limbs, tmp2.limbs, nbrLimbs);  /* tmp2 += tmp1 */
         multiply(tmp2.limbs, sqrRoot.limbs, tmp1.limbs, nbrLimbs, nullptr);  /* tmp1 = tmp2*sqrRoot */
@@ -402,7 +402,7 @@ static void findQuadraticSolution(BigInteger* pSolution, int exponent)
     limb* ptrSolution = pSolution->limbs;
     BigIntPowerOf2(&Aux0, expon);    /* Aux0 = 2^exponent */
     bytesLen = Aux0.nbrLimbs * (int)sizeof(limb);
-    (void)memset(pSolution->limbs, 0, bytesLen);
+    std::memset(pSolution->limbs, 0, bytesLen);
     while (expon > 0)
     {
         expon--;
@@ -519,12 +519,12 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         if (NumberLength > ValAOdd.nbrLimbs)
         {   /* extra leading limbs are set to zero */
             int lenBytes = (NumberLength - ValAOdd.nbrLimbs) * (int)sizeof(int);
-            (void)memset(&ValAOdd.limbs[ValAOdd.nbrLimbs], 0, lenBytes);
+            std::memset(&ValAOdd.limbs[ValAOdd.nbrLimbs], 0, lenBytes);
         }
         if (NumberLength > tmp2.nbrLimbs)
         {     /* extra leading limbs are set to zero */
             int lenBytes = (NumberLength - tmp2.nbrLimbs) * (int)sizeof(int);
-            (void)memset(&tmp2.limbs[tmp2.nbrLimbs], 0, lenBytes);
+            std::memset(&tmp2.limbs[tmp2.nbrLimbs], 0, lenBytes);
         }
         ComputeInversePower2(ValAOdd.limbs, tmp2.limbs, tmp1.limbs);
         ValCOdd *= tmp2;     // (void)BigIntMultiply(&ValCOdd, &tmp2, &ValCOdd);
@@ -762,7 +762,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
         }
         // Convert from Montgomery to standard notation.
         NumberLengthBytes = NumberLength * (int)sizeof(limb);
-        (void)memset(Aux[4].limbs, 0, NumberLengthBytes); // Convert power to standard notation.
+        std::memset(Aux[4].limbs, 0, NumberLengthBytes); // Convert power to standard notation.
         Aux[4].limbs[0] = 1;
         modmult(Aux[4].limbs, toConvert, toConvert);
         UncompressLimbsBigInteger(toConvert, &SqrtDisc);
@@ -913,7 +913,7 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
     if (discriminant == 0)  // (BigIntIsZero(&discriminant))
     {     // Discriminant is zero.
         int lenBytes = nbrLimbs * (int)sizeof(limb);
-        (void)memset(sqrRoot.limbs, 0, lenBytes);
+        std::memset(sqrRoot.limbs, 0, lenBytes);
         sqrRoot.nbrLimbs = 1;            /* added 31/10/22 */
         sqrRoot.sign = SIGN_POSITIVE;    /* added 31/10/22 */
     }
@@ -930,7 +930,7 @@ static bool SolveQuadraticEqModPowerOfP(int expon, int factorIndex,
         if (nbrLimbs > discriminant.nbrLimbs)
         {
             int lenBytes = (nbrLimbs - discriminant.nbrLimbs) * (int)sizeof(limb);
-            (void)memset(&discriminant.limbs[nbrLimbs], 0, lenBytes);
+            std::memset(&discriminant.limbs[nbrLimbs], 0, lenBytes);
         }
         Aux[3] = discriminant % prime;     // (void)BigIntRemainder(&discriminant, &prime, &Aux[3]);
         if (Aux[3].sign == SIGN_NEGATIVE)  {

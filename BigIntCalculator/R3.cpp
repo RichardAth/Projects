@@ -444,7 +444,7 @@ void squareFree(__int64 &n, __int64 &sq, factorsS &sqf) {
 }
 
 /* calculate the number of ways an integer n can be expressed as the sum of 2
-squares x^2 and y^2. This version id for numbers < 2^64.
+squares x^2 and y^2. This version is for numbers < 2^64.
 see http://mathworld.wolfram.com/SumofSquaresFunction.html,
 also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
@@ -557,7 +557,7 @@ unsigned __int64 R3(__int64 n) {
         else
             sum += 2 * R2(n - k * k);
         if ((k & 0x3fff) == 0) {
-            printf_s("%s R3(%lld): %.2f%% done \r", myTime(), n, 100.0 * double(k) / sqrt(n));
+            printf_s("%s R3(%lld): %.2f%% done \r", myTime(), n, 100.0 * double(k) / std::sqrt(n));
         }
     }
     sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2

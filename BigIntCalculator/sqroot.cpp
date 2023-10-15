@@ -57,7 +57,7 @@ bool isPerfectSquare(__int64 x) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    long long s = std::llround(sqrt(x));  // slightly faster than intSqrt
+    long long s = std::llround(std::sqrt(x));  // slightly faster than intSqrt
     //long long s = intSqrt(x);
     return (s * s == x);
 }
@@ -87,7 +87,7 @@ bool isPerfectSquare(__int64 x, __int64 &ss) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    s = std::llround(sqrt(x));  // slightly faster than intSqrt
+    s = std::llround(std:: sqrt(x));  // slightly faster than intSqrt
     ss = s << (ix / 2);
     return (s * s == x);
 }
@@ -225,14 +225,14 @@ void squareRoot(const limb* argument, limb* sqRoot, int len, int* pLenSqRoot)
     {                // Argument is small (1 limb), so compute directly its square root.
         if (index == 0)
         {
-            *sqRoot = (int)floor(sqrt(*argument) + 0.000001);
+            *sqRoot = (int)std::floor(std::sqrt(*argument) + 0.000001);
         }
         else
         {   /* argument has two limbs. */
             limb square[3];   // MultBigNbr routine uses an extra limb for result.
             long long llsquare;
             double dArg = *argument + (double)*(argument + 1) * (double)LIMB_RANGE;
-            dArg = floor(sqrt(dArg + 0.5)); /* get approximate square root */
+            dArg = std::floor(std::sqrt(dArg + 0.5)); /* get approximate square root */
             if (dArg == (double)LIMB_RANGE)
             {
                 dArg = (double)MAX_VALUE_LIMB;

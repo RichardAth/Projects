@@ -166,7 +166,7 @@ public:
 
 	friend BigInteger BigIntAdd(const BigInteger &Addend1, const BigInteger &Addend2);
 	friend BigInteger BigIntSubt(const BigInteger &Minuend, const BigInteger &Subtrahend);
-	friend void BigIntNegate(BigInteger &pDest);
+	friend void BigIntNegate(BigInteger &pDest);  /* Dest = -Dest */
 	friend BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor);
 	friend BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor);
 	friend BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2);
@@ -195,7 +195,6 @@ public:
 	friend void BigIntegerToLimbs(/*@out@*/limb ptrValues[],
 		/*@in@*/const BigInteger &bigint, int NumLen);
 	//friend int PowerCheck(const BigInteger &pBigNbr, BigInteger &pBase);
-	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
 	friend long long BigToLL(const BigInteger &num, int &exp);
@@ -416,11 +415,11 @@ public:
 		BigInteger Btemp = b;
 		return !TestBigNbrLess(*this, Btemp);
 	}
-};
+};  /* end of BigInteger class definition */
 
 bool BigIntIsZero(const BigInteger* value);
-void BigIntChSign(BigInteger* value);
-void BigIntAbs(BigInteger* value);
+void BigIntChSign(BigInteger* value);   /* does same job as BigIntNegate */
+void BigIntAbs(BigInteger* value);  /* if value is -ve, change its sign */
 void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
 void PrintBigInteger(const BigInteger* pBigInt, int groupLength);
 void copyStr(char** pptrString, const char* stringToCopy);

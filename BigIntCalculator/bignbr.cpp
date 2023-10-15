@@ -263,7 +263,7 @@ double logZnum(const Znum &BigInt) {
     long BiExp;
 #endif
     BigId = mpz_get_d_2exp(&BiExp, ZT(BigInt)); // BigId * 2^BiExp = BigInt 
-    double logval = log(BigId) + BiExp * log(2);
+    double logval = std::log(BigId) + BiExp * std::log(2);
     return logval;
 }
 /* get log of Znum in base b */
