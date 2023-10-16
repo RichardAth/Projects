@@ -421,7 +421,7 @@ static void genfile(const std::string &numStr) {
 	if (rv != 0) {
 		if (errno != 0) {
 			std::perror("error opening batch file");
-			abort();
+			std::abort();
 		}
 	}
 
@@ -614,7 +614,7 @@ static void save_value(json_value* value, const int index, int depth) {
 		break;
 
 	default:
-		abort();   /* WTF? */
+		std::abort();   /* WTF? */
 	}
 }
 

@@ -2142,7 +2142,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	/* allocate storage for ther arrays */
 	ag = (AG*)std::calloc(1, sizeof(AG));
 	assert(ag != nullptr);
-	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
+	std::memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
 	//  threadArray = new Thread[numberThreads];
 	Temp = logZnum(zN);
@@ -2163,7 +2163,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	zModulus = zN;
 	zTestNbr2 = zModulus; // = N
-	memset(matrixPartialHashIndex, 0xFF, sizeof(matrixPartialHashIndex));
+	std::memset(matrixPartialHashIndex, 0xFF, sizeof(matrixPartialHashIndex));
 
 #ifdef __EMSCRIPTEN__
 	InitSIQSStrings(SieveLimit, nbrFactorBasePrimes);
@@ -2539,12 +2539,12 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 	int *rowMatrixB;
 	int matrixBlength = matrixBLength;
 
-	memset(ag->newColumns, 0, matrixBlength * sizeof(int));
+	std::memset(ag->newColumns, 0, matrixBlength * sizeof(int));
 	// Find singletons in matrixB storing in array vectExpParity the number
 	// of primes in each column.
 	do {   // The singleton removal phase must run until there are no more
 		   // singletons to erase.
-		memset(ag->vectExpParity, 0, matrixBLength * sizeof(limb));
+		std::memset(ag->vectExpParity, 0, matrixBLength * sizeof(limb));
 		for (row = matrixBlength - 1; row >= 0; row--)
 		{                  // Traverse all rows of the matrix.
 			rowMatrixB = &matrixB[row][0];
@@ -2646,7 +2646,7 @@ static bool LinearAlgebraPhase(
 
 		biT = 1; 
 		biR = 1; 
-		memset(ag->vectExpParity, 0, matrixBlen * sizeof(ag->vectExpParity[0]));
+		std::memset(ag->vectExpParity, 0, matrixBlen * sizeof(ag->vectExpParity[0]));
 
 		for (row = matrixBlen - 1; row >= 0; row--) {
 			if ((ag->matrixV[row] & mask) != 0) {
@@ -2903,7 +2903,7 @@ static void MultiplyAByMatrix(int *Matr, int *TempMatr, int *ProdMatr) {
 	int *rowMatrixB;
 
 	/* Compute TempMatr = B * Matr */
-	memset(TempMatr, 0, matrixBLength * sizeof(int));
+	std::memset(TempMatr, 0, matrixBLength * sizeof(int));
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int rowValue;
 		rowMatrixB = &matrixB[row][0];
@@ -3023,13 +3023,13 @@ static void BlockLanczos(void)
 	int *rowMatrixB, *ptrMatrixV, *ptrMatrixXmY;
 
 	newDiagonalSSt = oldDiagonalSSt = -1;
-	memset(matrixWinv, 0, sizeof(matrixWinv));
-	memset(matrixWinv1, 0, sizeof(matrixWinv1));
-	memset(matrixWinv2, 0, sizeof(matrixWinv2));
-	memset(matrixVtV0, 0, sizeof(matrixVtV0));
-	memset(matrixVt1V0, 0, sizeof(matrixVt1V0));
-	memset(matrixVt2V0, 0, sizeof(matrixVt2V0));
-	memset(matrixVt1AV1, 0, sizeof(matrixVt1AV1));
+	std::memset(matrixWinv, 0, sizeof(matrixWinv));
+	std::memset(matrixWinv1, 0, sizeof(matrixWinv1));
+	std::memset(matrixWinv2, 0, sizeof(matrixWinv2));
+	std::memset(matrixVtV0, 0, sizeof(matrixVtV0));
+	std::memset(matrixVt1V0, 0, sizeof(matrixVt1V0));
+	std::memset(matrixVt2V0, 0, sizeof(matrixVt2V0));
+	std::memset(matrixVt1AV1, 0, sizeof(matrixVt1AV1));
 
 	/* Initialize matrix X-Y and matrix V_0 with random data */
 	dSeed = (double)123456789;
@@ -3492,7 +3492,7 @@ static void sieveThread(Znum &result) {
 	unsigned char positive;
 	int inverseA, twiceInverseA;
 
-	biLinearCoeff = 0; //memset(biLinearCoeff, 0, sizeof(biLinearCoeff));
+	biLinearCoeff = 0; //std::memset(biLinearCoeff, 0, sizeof(biLinearCoeff));
 					   //  synchronized(amodq)
 	{
 		if (threadNumber == 0) {

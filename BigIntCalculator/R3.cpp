@@ -3,18 +3,6 @@
 
 #undef min  /* undefine min defined in windows.h */
 
-/* _AMD64_ 1 definition neeeded if windows.h is not included */
-//#ifdef _M_AMD64
-//#ifndef _AMD64_
-//#define _AMD64_ 1
-//#endif
-//#endif
-//#define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
-//#include <intsafe.h>
-//#include <intrin.h>
-
-
-
 // calculate x^n
 constexpr __int64 power(const __int64 x, unsigned int n) {
     __int64 p = x, pnew = 0;  // p is a power of x

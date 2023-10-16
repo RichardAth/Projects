@@ -1524,7 +1524,7 @@ static void doTests3(void) {
                 << "\ngot      " << b1;
             break;
         }
-        p *= (long long)rand() * 2 + 3;
+        p *= (long long)std::rand() * 2 + 3;
         p2 *= std::rand();
     }
     std::cout << "division test " << l2 << " cycles\n";
@@ -3064,7 +3064,9 @@ static void myGetline(std::string &expr) {
 
     std::getline(std::cin, expr);    // expression may include spaces
     if (std::cin.fail() || std::cin.bad()) {
+        std::cin.clear();
         expr.erase();
+        std::cerr << "error reading from stdin \n";
         return;   /* error reading from stdin */
     }
 
@@ -3116,6 +3118,9 @@ int main(int argc, char *argv[]) {
 
         /* start of main loop. Normal exit is via EXIT command */
         while (true) {
+            if (fpeReRegister) {
+                ReRegister();  /* re-register the Floating Point error signal handler */
+            }
             if (lang == 0) {
                 printf_s("enter expression to be processed, or HELP, EXIT, SET or QMES\n");
             }

@@ -340,7 +340,7 @@ static void add3(limb *x3, limb *z3, const limb *x2, const limb *z2,
 	modmult(TX, TX,  UZ);                                 //  UZ = 4*(x1*x2-z1*z2)^2
 	SubtBigNbrModN(TZ, UX, TX, TestNbr, NumberLength);   // TX = 2*(x2*z1-x1*z2)
 	modmult(TX, TX, UX);                                 // UX = 4*(x2*z1-x1*z2)^2
-	if (!memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x != x3
+	if (!std::memcmp(x, x3, NumberLength * sizeof(limb))) {  // if x != x3
 		std::memcpy(TZ, x, NumberLength * sizeof(limb));       // TZ = x
 		std::memcpy(TX,  UZ, NumberLength * sizeof(limb));     // TX = UZ = 4*(x1*x2-z1*z2)^2
 		modmult(z, TX,  UZ);                              // UZ = z*TX

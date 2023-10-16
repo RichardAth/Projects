@@ -35,7 +35,7 @@ void GetMontgomeryParms(const Znum &Nval) {
 	}
 	else {
 		std::cout << "Modulus must not be zero\n";
-		exit(EXIT_FAILURE);
+		std::exit(EXIT_FAILURE);
 	}
 }
 

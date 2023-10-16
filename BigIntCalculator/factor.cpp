@@ -15,7 +15,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include <map>
-#include <intrin.h>
 #include <numeric>
 
 #undef min                 // use std::min

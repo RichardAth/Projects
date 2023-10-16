@@ -166,7 +166,6 @@ uint64 measure_processor_speed(void)
             :"0"(code1), "2"(code2) : "%rsi")
 
 #elif defined(_MSC_VER)
-#include <intrin.h>
 #define HAS_CPUID
 #define CPUID(code, a, b, c, d)	\
     {	int _z[4]; \
