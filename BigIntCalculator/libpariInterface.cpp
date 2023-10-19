@@ -142,6 +142,7 @@ static paristack_setsizeX paristack_setsize_ref;
 static G_G               factor_ref;
 static v_v               pari_close_ref;
 static pari_versionX     pari_version_ref;
+static G_G               quaddisc_ref;
 
 /* forward reference */
 static void InttoMP(const GEN x, mpz_t value);
@@ -209,6 +210,7 @@ static void specinit() {
             factor_ref = (G_G)GetProcAddress(hinstLib, "factor");
             pari_close_ref = (v_v)GetProcAddress(hinstLib, "pari_close");
             pari_version_ref = (pari_versionX)GetProcAddress(hinstLib, "pari_version");
+            quaddisc_ref =(G_G)GetProcAddress(hinstLib, "quaddisc");
 
             /* check that all function pointers were set up successfully */
             if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
@@ -230,7 +232,8 @@ static void specinit() {
                 nullptr == qfbclassno_ref || nullptr == avma_ref ||
                 nullptr == set_avma_ref || nullptr == tau_ref ||
                 nullptr == stirling_ref || nullptr == factor_ref ||
-                nullptr == pari_close_ref || nullptr == pari_version_ref) {
+                nullptr == pari_close_ref || nullptr == pari_version_ref ||
+                nullptr == quaddisc_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
                 std::system("PAUSE");
@@ -616,6 +619,22 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     long long f = MulPrToLong(flag);
     GEN retval = stirling_ref(ln, lm, f);  /* get stirling number */
     InttoMP(retval, ZT(num));  /* convert result to Znums */
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
+    return num;
+}
+
+Znum quaddisc(const Znum& n) {
+    Znum num;
+    specinit();     /* initialise as required*/
+    GEN ng = MPtoGEN(ZT(n));
+    GEN retval;
+
+    ulong* av = *avma_ref;
+    retval = quaddisc_ref(ng);
+    InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)
         printf_s("used %lld bytes on pari stack \n", (long long)diff);

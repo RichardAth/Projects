@@ -200,7 +200,7 @@ retry:
     if (ecode != 0) {
         /* failed to open the help file*/
         char buffer[80];
-        _strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
+        strerror_s(buffer, sizeof(buffer), ecode); /* convert errno to a text messsage */
         fprintf_s(stderr, "fopen error: %s\n", buffer);
         fprintf_s(stderr, "help file not found\n");
 

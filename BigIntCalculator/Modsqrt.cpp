@@ -672,14 +672,13 @@ void doTests9(const std::vector<std::string> & p) {
 				"does timed tests of modular square root \n\n";
 			return;
 		}
-		int timec = _strnicmp(p[2].c_str(), "time", 4);
-		if (timec == 0) {
+
+		if (p[2] == "TIME") {
 			test9timer(p);   /* 1st parameter is "time", other parameters passed on */
 			return;
 		}
 
-		int cmp = _strnicmp(p[2].c_str(), "new", 3);
-		newb = (cmp == 0);  // true if 1st parameter = "new"
+		newb = (p[2] == "NEW");  // true if 1st parameter = "new"
 	}
 	auto start = std::clock();	// used to measure execution time
 	for (long long m = 2; m <= 2000; m++) {
@@ -687,7 +686,7 @@ void doTests9(const std::vector<std::string> & p) {
 			rv &= test9once(a, m, roots, newb);
 		}
 		if (m % 100 == 0)
-			std::cout << m + 1 << " tests completed \r";
+			std::cout << m*(m-1) << " tests completed \r";
 	}
 
 	//rv &= test9once(99, 107, roots, newb);      // roots are 45 and 62

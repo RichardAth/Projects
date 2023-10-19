@@ -453,7 +453,7 @@ void textError(retCode rc) {
 
 /* convert s to UPPER CASE in d.  d could be the same string as s 
 similar to _strupr in c */
-static void strToUpper(const std::string &s, std::string &d) {
+void strToUpper(const std::string &s, std::string &d) {
     if (&d != &s)
         d.resize(s.size());  // resize d unless it's the same string as s
     for (size_t ix = 0; ix < s.size(); ix++)
@@ -3136,7 +3136,7 @@ int main(int argc, char *argv[]) {
             }
 
             if (expr.empty()) {
-                Sleep(1000);       
+                Sleep(1000);         /* wait 1 second */
                 continue;            /* no input */
             }
 

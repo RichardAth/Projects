@@ -194,6 +194,7 @@ static void inifile(const std::string &param) {
 	std::string iniFname;
 
 	std::string buffer;
+	std::string bufferUc;  /* upper-case copy of buffer */
 	std::string ggnfsPath;
 	int lineNo = 1;
 	int ggnfsLine = -1;
@@ -222,12 +223,15 @@ static void inifile(const std::string &param) {
 			std::cout << iniFname << " opened \n";
 		}
 		while (std::getline(iniStr, buffer)) {
-			if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
+			strToUpper(buffer, bufferUc);
+			if (bufferUc.substr(0,10) == "GGNFS_DIR=") {
+			//if (_strnicmp("ggnfs_dir=", buffer.c_str(), 10) == 0) {
 				ggnfsLine = lineNo;
 				ggnfsPath = buffer.substr(10); // copy path following '=' character
 			}
 
-			if ((_strnicmp("%print", buffer.c_str(), 6) == 0) || (verbose > 0))
+			if (bufferUc.substr(0,6) == "%PRINT") 
+			//if ((_strnicmp("%print", buffer.c_str(), 6) == 0) || (verbose > 0))
 				std::cout << lineNo << ": " << buffer << '\n';
 
 			inifile.push_back(buffer);
@@ -680,13 +684,18 @@ static void process_value_s(json_value* value, int depth, const char* name,
 
 /* returns -1 for read error, +1 for parsing error, otherwise
 treats each line as a separate json record; parses it and stores
-selected fields of last record in a decoded form. */
+selected fields of last record in a decoded form. 
+fp is a file pointer for the json file, 
+the number of records in the json file is returned in counter, 
+the name_list contains the names of json fields we are interested in, 
+and num is the number being factored. */
 static int process_file_s(FILE* fp, int* counter, const char* name_list[],
 	const int name_list_size, const Znum& num) {
 	char* string_p = NULL;
 	char buffer[4096] = "";
 	json_char* json = NULL;
 	json_value* value = NULL;
+	bool parseOK = true;
 
 	*counter = 0;  /* counts number of records in file */
 	for (;;) {
@@ -697,13 +706,15 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
 			json_value_free(value);  /* avoid memory leakage */
 			value = json_parse(json, std::strlen(buffer));
 			if (value == NULL) {
-				std::fprintf(stderr, "Unable to parse data\n");
-				return(1);
+				std::fprintf(stderr, "Unable to parse data for record %d \n", *counter + 1);
+				parseOK = false;
 			}
+			else
+				parseOK = true;
 			(*counter)++;  /* count number of records */
 		}
 		else {   /* error or end-of-file */
-			if (std::feof(fp)) {
+			if (std::feof(fp) && parseOK) {
 				/* process last record read */
 				factors.clear();
 				for (int index = 0; index < name_list_size; index++)
@@ -713,6 +724,8 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
 					sanityCheck(ToBeFactored, factors, num);
 				break;    /* normal exit */
 			}
+			else if (!parseOK)
+				return 1;  /* return error */
 			else {
 				std::perror("YAFU: fgets error");
 				return(-1);
@@ -722,7 +735,8 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
 	return(0);  /* normal exit */
 }
 
-/* returns -1 for read error, +1 for parsing error, 0 for succcess*/
+/* returns -1 for read error, +1 for parsing error, 0 for succcess.
+num is the number being factored. */
 static int process_json_file_main(const Znum& num) {
 	FILE* fp;
 	char filename[MAX_PATH] = "";
@@ -730,6 +744,7 @@ static int process_json_file_main(const Znum& num) {
 	int file_size;
 	int counter = 0;
 	int rv;
+	/* names of fields in the json file that are relevant. */
 	const char* name_list[] = { "input-decimal", "factors-prime" };
 	DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, filename);
 	assert(rv2 != 0);

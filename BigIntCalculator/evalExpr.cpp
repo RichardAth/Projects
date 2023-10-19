@@ -174,6 +174,7 @@ enum class opCode {
     fn_popcnt,            /* poulation count AKA Hamming weight */
     fn_hamdist,           /* hamming distance i.e. number of bits that differ between a and b */
     fn_gf,                /* Gauss Factorial */
+    fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
     fn_invalid = -1,
 };
 
@@ -213,6 +214,7 @@ const static struct functions functionList[]{
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
     "PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
+    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/
     "POPCNT",    1,  opCode::fn_popcnt,     // population count
     "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
     "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
@@ -1742,6 +1744,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;
         return GaussFact(p[0], result);
+    }
+
+    case opCode::fn_quaddisc: /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/ {
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;
+        result = quaddisc(p[0]);
+        break;
     }
 
     default:
