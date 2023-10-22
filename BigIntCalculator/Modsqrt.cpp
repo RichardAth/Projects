@@ -562,14 +562,14 @@ static void test9timer(const std::vector <std::string>& p) {
 
 	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */
 	if (p.size() >= 4) {
-		p2d = std::atoi(p[3].c_str());  /* convert to binary */
+		p2d = std::stoi(p[3]);  /* convert to binary */
 	}
 	if (p2d < 10) {
 		std::cout << "Use default 10 for number size in bits \n";
 		p2d = 10;
 	}
 	if (p.size() >= 5) 
-		p3d = std::atoi(p[4].c_str());  /* convert to binary */
+		p3d = std::stoi(p[4]);  /* convert to binary */
 	if (p3d < 5) {
 		std::cout << "Use default 5 for number of tests \n";
 		p3d = 5;

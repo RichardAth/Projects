@@ -37,9 +37,7 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 
 	auto BufLen = GetFileVersionInfoSizeA(path, &handle); /* get size needed for data */
 	if (BufLen == 0) {
-		auto ecode = GetLastError();
-		std::cerr << "can't get version info size; error code = " << ecode 
-			<< " = " << std::system_category().message(ecode) << '\n';
+		ErrorDisp(__FUNCTION__);
 		return;
 	}
 

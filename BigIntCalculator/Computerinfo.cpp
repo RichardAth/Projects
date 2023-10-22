@@ -447,7 +447,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         }
     }
     ptrdiff_t ix = 0;
-    while (ix < 64 &&  std::isblank(CPUBrandString[ix]))
+    while (ix < 64 &&  std::isspace(CPUBrandString[ix]))
         ix++;        /* find 1st non-blank character */
     strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
     // Display all the information in user-friendly format.

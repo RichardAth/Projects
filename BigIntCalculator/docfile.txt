@@ -78,7 +78,8 @@ Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer
                   m such that a^m ≡ 1   (mod n) for every integer a between 1 
                   and n that is coprime to n. Also known as the reduced totient
                   function.
-Dedekind(n)     : Dedekind psi function.
+Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime 
+                  factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   1 for probable prime, 2 for definite prime. 

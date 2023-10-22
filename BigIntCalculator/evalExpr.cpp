@@ -2504,7 +2504,7 @@ static void free_uvars() {
     uvars.alloc = 0;
 }
 void printvars(std::string name) {
-    while (name.size() > 0 &&  std::isblank(name[0])) {
+    while (name.size() > 0 &&  std::isspace(name[0])) {
         name.erase(0, 1);  /* remove leading spaces */
     }
     if (uvars.num == 0)

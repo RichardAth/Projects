@@ -251,7 +251,7 @@ DWORD StackTrace2(void)
     char * builder;
     size_t bIx = 0;
     const size_t bIxMax = 10000;
-    builder = (char *)calloc(bIxMax, 1);
+    builder = (char *)std::calloc(bIxMax, 1);
     do {
         if (frame.AddrPC.Offset != 0) {
             std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
@@ -994,7 +994,7 @@ void testerrors(void) {
 #pragma warning(disable : 6387)
             // warning C6387: 'argument 1' might be '0': this does
             // not adhere to the specification for the function 'printf'
-            int rc = printf(formatString);
+            int rc = printf_s(formatString);
 #pragma warning(default : 6387)   
             printf_s("return code from printf_s is %d \n", rc);
             break;

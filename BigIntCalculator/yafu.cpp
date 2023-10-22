@@ -602,7 +602,7 @@ static void save_value(json_value* value, const int index, int depth) {
 	sp = value->u.string.ptr;
 	rv = mpz_set_str(ZT(numValue), sp, 10); /* convert ascii decimal to binary */
 	if (rv != 0) {
-		fprintf(stderr, "YAFU: json: invalid value: not a decimal number: %s \n", sp);
+		std::fprintf(stderr, "YAFU: json: invalid value: not a decimal number: %s \n", sp);
 		return;
 	}
 	switch (index) {
@@ -684,7 +684,7 @@ static void process_value_s(json_value* value, int depth, const char* name,
 
 /* returns -1 for read error, +1 for parsing error, otherwise
 treats each line as a separate json record; parses it and stores
-selected fields of last record in a decoded form. 
+selected fields of last record in a decoded form,  and returns 0 
 fp is a file pointer for the json file, 
 the number of records in the json file is returned in counter, 
 the name_list contains the names of json fields we are interested in, 
@@ -810,8 +810,7 @@ bool callYafu(const Znum& num, fList& Factors) {
 
 	/* get control back when YAFU has finished */
 	if (rv == -1) {
-#pragma warning(suppress : 4996)
-		std::cout << "cannot start YAFU: " << std::strerror(errno) << '\n';
+		std::perror( "cannot start YAFU");
 		return false;
 	}
 	else if (rv != 0) {

@@ -165,7 +165,7 @@ static char* getHex(Znum Bi_Nbr) {
             obuff.insert(obuff.begin(), 'f');
         }
         /* copy text from local STL string to global C-style string */
-        hexbuffer = (char *)malloc(obuff.size() + 1);
+        hexbuffer = (char *)std::malloc(obuff.size() + 1);
         assert(hexbuffer != NULL);
         strncpy_s(hexbuffer, obuff.size(), obuff.c_str(), _TRUNCATE);
     }
@@ -299,7 +299,7 @@ void generatePrimes(unsigned long long int max_val) {
     
     if (primeFlags != NULL) delete []primeFlags;	// if generatePrimes has been called before
                                                 // clear out old prime list
-    //primeFlags = (uint32_t*)calloc((max_val / 16) + 1, 1);
+    //primeFlags = (uint32_t*)std::calloc((max_val / 16) + 1, 1);
     primeFlags = new bool[max_val / 2 + 1]{ 0 };
     assert(primeFlags != NULL);
     
@@ -1651,7 +1651,7 @@ static void doTestsB(const std::vector<std::string> &p) {
     int i;
     auto start = std::clock();	// used to measure execution time
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
-    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 48)
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 41)
     long long p3 = 0;
     long long xl;
     unsigned long long rv;
@@ -1882,7 +1882,7 @@ static void doTests7(const std::vector<std::string> &p) {
     auto start = std::clock();	// used to measure execution time
 
     if (p.size() >= 3)
-        limit = std::atoi(p[2].data());
+        limit = std::stoi(p[2]);
     if (limit < 0 || limit > 120000) {
         std::cout << "limit out of range; use 12000 \n";
         limit = 12000;
@@ -2108,7 +2108,7 @@ static int ifCommand(const std::string &command) {
     }
 
     /* move ixx2 to next non-blank character */
-    for (ixx2++; ixx2 < command.size() &&  std::isblank(command[ixx2]); ixx2++);
+    for (ixx2++; ixx2 < command.size() &&  std::isspace(command[ixx2]); ixx2++);
     if (command.substr(ixx2) == "STOP") {
         if (result != 0)
             return 1;
@@ -2125,7 +2125,7 @@ static int ifCommand(const std::string &command) {
         size_t ex1Start=ixx2+4, ex1End, ex2Start, ex2End;
 
         /* move ex1Start to next non-blank character */
-        for (ex1Start=ixx2+4; ex1Start < command.size() &&  std::isblank(command[ex1Start]); 
+        for (ex1Start=ixx2+4; ex1Start < command.size() &&  std::isspace(command[ex1Start]); 
             ex1Start++);
     
         if (ex1Start >= command.size() || command[ex1Start] != '(') {
@@ -2151,7 +2151,7 @@ static int ifCommand(const std::string &command) {
         }
 
         /* move ex2Start to next non-blank character if any */
-        for (ex2Start = ex1End + 1; ex2Start < command.size() &&  std::isblank(command[ex2Start]);
+        for (ex2Start = ex1End + 1; ex2Start < command.size() &&  std::isspace(command[ex2Start]);
             ex2Start++);
         if (ex2Start < command.size()) {
             /* still some unprocessed characters */
@@ -2161,7 +2161,7 @@ static int ifCommand(const std::string &command) {
                 return -1;
             }
             ex2Start += 4;   /* move past ELSE */
-            for (; ex2Start < command.size() &&  std::isblank(command[ex2Start]); ex2Start++);
+            for (; ex2Start < command.size() &&  std::isspace(command[ex2Start]); ex2Start++);
             if (ex2Start >= command.size() || command[ex2Start] != '(') {
                 std::cout << "ELSE not followed by ( \n";
                 return -1;  /* no ( after ELSE so invalid */
@@ -2706,7 +2706,7 @@ static int processCmd(std::string command) {
         token = strtok_s(nullptr, seps, &next);
     }
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
-        p1 = std::atoi(p[1].data());  /* if p[1] is a decimal number set p1 to value */
+        p1 = std::stoi(p[1]);  /* if p[1] is a decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -2991,7 +2991,7 @@ static void initialise(int argc, char *argv[]) {
     handConsole = GetConsoleWindow();            // get handle for console window
     if (hConsole == INVALID_HANDLE_VALUE)
     {
-        fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
+        ErrorDisp(__FUNCTION__);
         Beep(750, 1000);
         std::exit (EXIT_FAILURE);
     }

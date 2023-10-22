@@ -743,7 +743,7 @@ static enum eEcmResult ecmCurve(const Znum &zN, Znum &Zfactor) {
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 				{
-					fprintf_s(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+					ErrorDisp(__FUNCTION__);
 					Beep(750, 1000);
 				}
 				coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates

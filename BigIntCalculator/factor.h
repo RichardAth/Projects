@@ -131,7 +131,9 @@ public:
 		return result;
 	}
 
-	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and e=exponent.*/
+	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and 
+	e=exponent. See https://oeis.org/A001615 
+	and https://en.wikipedia.org/wiki/Dedekind_psi_function*/
 	Znum dedekind() const {
 		// this only works if factorisation is complete!
 		Znum result = 1, term;
@@ -397,7 +399,7 @@ Repeated factors: No or Yes
 				else
 					for (int j = 1; j <= (*i).exponent; j++)
 						result += buffer; // concatenate factor
-				free(buffer);
+				std::free(buffer);
 				buffer = NULL;
 			}
 		else  /* start with smallest factor */
@@ -408,7 +410,7 @@ Repeated factors: No or Yes
 				else
 					for (int j = 1; j <= i.exponent; j++)
 						result += buffer;  // concatenate factor
-				free(buffer);
+				std::free(buffer);
 				buffer = NULL;
 			}
 		mpz_set_str(ZT(rvalue), result.data(), 10); /* convert back from a string to a number */

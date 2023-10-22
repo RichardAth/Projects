@@ -311,7 +311,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	if (first) {
 		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 		{
-			fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+			ErrorDisp(__FUNCTION__);
 			Beep(750, 1000);
 		}
 		coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
@@ -2113,7 +2113,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	first = true;
 	if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 	{
-		fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+		ErrorDisp(__FUNCTION__);
 		Beep(750, 1000);
 	}
 
@@ -2153,7 +2153,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	/* SieveLimit is rounded down to a multiple of 8.
 	if zN = 10^95 SieveLimit is about 130,768. */
-	SieveLimit = (int)exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
+	SieveLimit = (int)std::exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
 	if (SieveLimit > MAX_SIEVE_LIMIT)
 	{
 		SieveLimit = MAX_SIEVE_LIMIT;
@@ -2194,7 +2194,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			adjustment[j] *= (4.0e0);        // ln(4)
 		if (mod == 5)
 			adjustment[j] *= (2.0e0);         // ln(2)
-		adjustment[j] -= log((double)arrmult[j]) / (2.0e0);
+		adjustment[j] -= std::log((double)arrmult[j]) / (2.0e0);
 	}
 
 	/* set up adjustment array*/
@@ -2208,7 +2208,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
 		int jacobi = (int)modPower(NbrMod, halfCurrentPrime, currentPrime);
 		double dp = (double)currentPrime;
-		double logp = log(dp) / dp;
+		double logp = std::log(dp) / dp;
 
 		for (j = 0; j<sizeof(arrmult) / sizeof(arrmult[0]); j++) {
 			if (arrmult[j] == currentPrime) {
@@ -2399,7 +2399,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	largePrimeUpperBound = 100 * FactorBase;
 
 	dlogNumberToFactor = logZnum(zN); 	// find logarithm of number to factor.
-	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
+	dNumberToFactor = std::exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);  // append Mult & Factor base to SIQS string
@@ -2419,9 +2419,9 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	threshold = (int) (std::log(std::sqrt(dNumberToFactor) * SieveLimit /
 				(FactorBase * 64) /
 					primeSieveData[j + 1].value
-				) / log(3) + 0x81
+				) / std::log(3) + 0x81
 			);
-	firstLimit = (int)(log(dNumberToFactor) / 3);
+	firstLimit = (int)(std::log(dNumberToFactor) / 3);
 	for (secondLimit = firstLimit; secondLimit < nbrFactorBasePrimes; secondLimit++) {
 		if (primeSieveData[secondLimit].value * 2 > SieveLimit) {
 			break;
@@ -3088,7 +3088,7 @@ static void BlockLanczos(void)
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 				{
-					fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+					ErrorDisp(__FUNCTION__);
 					Beep(750, 1000);
 				}
 				coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
