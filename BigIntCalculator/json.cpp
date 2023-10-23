@@ -145,7 +145,7 @@ static int new_value(json_state* state,
 
         switch (value->type)
         {
-        case json_array:
+        case json_array: {
 
             if (value->u.array.length == 0)
                 break;
@@ -158,8 +158,8 @@ static int new_value(json_state* state,
 
             value->u.array.length = 0;
             break;
-
-        case json_object:
+        }
+        case json_object: {
 
             if (value->u.object.length == 0)
                 break;
@@ -180,8 +180,8 @@ static int new_value(json_state* state,
 
             value->u.object.length = 0;
             break;
-
-        case json_string:
+        }
+        case json_string: {
 
             if (!(value->u.string.ptr = (json_char*)json_alloc
             (state, (value->u.string.length + 1) * sizeof(json_char), 0)))
@@ -191,7 +191,7 @@ static int new_value(json_state* state,
 
             value->u.string.length = 0;
             break;
-
+        }
         default:
             break;
         };
@@ -638,7 +638,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'true'*/
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -655,7 +655,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'false' */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -669,7 +669,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'null' */
                         if (!new_value(&state, &top, &root, &alloc, json_null))
                             goto e_alloc_failure;
 

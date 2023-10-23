@@ -69,7 +69,7 @@ static void print_depth_shift(int depth)
 {
     int j;
     for (j = 0; j < depth; j++) {
-        printf(" ");
+        printf("  ");
     }
 }
 
@@ -279,6 +279,9 @@ int process_file_s(FILE* fp, int* counter,
         }
         else {   /* error or end-of-file */
             if (feof(fp)) {
+#ifdef _DEBUG
+                process_value(value, 0);
+#endif
                 /* process last record read */
                 factors.clear();
                 for (int index = 0; index < name_list_size; index++)

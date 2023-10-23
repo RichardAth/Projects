@@ -6,6 +6,8 @@
 #define __STDC_WANT_LIB_EXT1__ 1  /* ask for printf_s etc */
 #include <cstdio>
 #include <cstring>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <vector>
 #include <cctype>
 #include <ctime>

@@ -32,12 +32,12 @@
 #pragma warning(disable : 4996)
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <sys/stat.h>
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
+#include <cstring>
+#include <cctype>
+#include <cmath>
 
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L

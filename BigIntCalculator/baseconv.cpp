@@ -353,8 +353,8 @@ std::ostream  &operator<<(std::ostream  &s, const BigInteger  &n) {
     static std::string  buffer;   /* using std::string takes care of memory 
                                   management without risking memory leaks */
     buffer.clear();
-    int length = n.nbrLimbs * BITS_PER_GROUP; // get length in bits
-    double buflen = (double)length*std::log10(2);  // get length in decimal digits
+    int length = n.nbrLimbs * BITS_PER_GROUP; // get length in bits ≈ log2(n)
+    double buflen = (double)length*std::log10(2);  // get length in decimal digits ≈ log10(n)
     buflen = buflen * 7 / 6 + 5; // allow for space every 6 digits + sign + trailing null
     buffer.resize((size_t)buflen);  // N.B. buffer larger than needed is OK, but 
                                    // too small could be disastrous
@@ -369,8 +369,8 @@ void PrintBigInteger(const BigInteger* pBigInt, int groupLength) {
     std::string  buffer;   /* using std::string takes care of memory
                                 management without risking memory leaks */
     buffer.clear();
-    int length = pBigInt->nbrLimbs * BITS_PER_GROUP; // get length in bits
-    double buflen = (double)length * std::log10(2);  // get length in decimal digits
+    int length = pBigInt->nbrLimbs * BITS_PER_GROUP; // get length in bits ≈ log2(n)
+    double buflen = (double)length * std::log10(2);  // get length in decimal digits ≈ log10(n)
     buflen = buflen * 7 / 6 + 5; // allow for space every 6 digits + sign + trailing null
     buffer.resize((size_t)buflen);  // N.B. buffer larger than needed is OK, but 
     // too small could be disastrous
