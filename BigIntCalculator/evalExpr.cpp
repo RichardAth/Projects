@@ -175,6 +175,7 @@ enum class opCode {
     fn_hamdist,           /* hamming distance i.e. number of bits that differ between a and b */
     fn_gf,                /* Gauss Factorial */
     fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
+    fn_eulerfrac,         /* Euler number E_n */
     fn_invalid = -1,
 };
 
@@ -199,6 +200,7 @@ const static struct functions functionList[]{
     "SUMDIVS",   1,  opCode::fn_sumdivs,
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
     "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+    "EULERFRAC", 1,  opCode::fn_eulerfrac,  /* Euler number E_n */
     "SQRT",      1,  opCode::fn_sqrt,
     "NUMDIGITS", 2,  opCode::fn_numdigits,
     "NUMDIVS",   1,  opCode::fn_numdivs,
@@ -534,8 +536,8 @@ static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
     // there is no built-in shift operator for Znums, so it is simulated
     // using multiplication or division
     if (shift > 0) {
-        if (NoOfBits(first) + shift > 66439) // more than 66439 bits -> more than 20,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (NoOfBits(first) + shift > 99940) // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         mpz_mul_2exp(ZT(result), ZT(first), shift);
         return retCode::EXPR_OK;
     }
@@ -1103,8 +1105,8 @@ static retCode GaussFact(const Znum& num, Znum &result) {
         if (gcd(i, num) == 1) {
             result *= i;
             resultsize = NoOfBits(result);
-            if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-                return retCode::INTERM_TOO_HIGH;
+            if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+                return retCode::INTERIM_TOO_HIGH;
         }
     }
     return retCode::EXPR_OK;
@@ -1155,8 +1157,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::multiply: {
         auto resultsize = NoOfBits(p[0]) + NoOfBits(p[1]);
-        if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         result = p[0] * p[1];
         return retCode::EXPR_OK;
     }
@@ -1175,8 +1177,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::EXPONENT_NEGATIVE;
         long long exp = MulPrToLong(p[1]);
         auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
-        if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         mpz_pow_ui(ZT(result), ZT(p[0]), exp);
         return retCode::EXPR_OK;
     }
@@ -1259,18 +1261,18 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         long long t2 = MulPrToLong(p[1]);
         if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
             /* more than 20,000 digits in base 10 */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
 
         mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
         if (ZT(result)->_mp_size > 1039)
             /* more than 20,000 digits in base 10 */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
 
         return retCode::EXPR_OK;
     }
     case opCode::prim: /* primorial */ {
         if (p[0] > 46340)
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;  /* result would exceed 20,000 digits */
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;
 
@@ -1392,7 +1394,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     case opCode::fn_fib: /* fibonacci */ {	
         if (p[0] > 95700 || p[0] < -95700)
         {  /* result would exceed 20,000 digits */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
         }
         long long temp = MulPrToLong(ZT(p[0]));
         bool neg = false;
@@ -1409,9 +1411,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 0) {
             return retCode::NUMBER_TOO_LOW;
         }
-        if (p[0] > 95700)
-        {
-            return retCode::INTERM_TOO_HIGH;
+        if (p[0] > 95700)  {
+            return retCode::INTERIM_TOO_HIGH; /* result would exceed 20,000 digits */
         }
         long long temp = MulPrToLong(p[0]);
         mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
@@ -1745,11 +1746,22 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         return GaussFact(p[0], result);
     }
-
     case opCode::fn_quaddisc: /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/ {
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;
         result = quaddisc(p[0]);
+        break;
+    }
+    case opCode::fn_eulerfrac : /* /* Euler number E_n */ {
+        if (p[0] < 0)
+            return retCode::NUMBER_TOO_LOW;
+        if (!isEven(p[0])) {
+            result = 0;  /* If n is odd the Euler number E(n) is zero */
+            break;
+        }
+        if (p[0] > 9022)
+            return retCode::INTERIM_TOO_HIGH; /* result would exceed 30,000 digits */
+        result = eulerfrac(p[0]);
         break;
     }
 

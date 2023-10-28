@@ -2,6 +2,8 @@
 
 #include "json.h"
 
+extern char lastValidNameFound[];
+
 /* forward declarations */
 static void process_value_s(json_value* value, int depth, const char* name,
     const int index);
@@ -701,7 +703,8 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
     char* string_p = NULL;
     char buffer[4096] = "";
     json_char* json = NULL;
-    json_value* value = NULL;
+    json_value* value = NULL;  /* pointer to a structure that contains the parsed 
+                                info from the JSON record*/
     bool parseOK = false;
 
     *counter = 0;  /* counts number of records in file */
@@ -720,6 +723,8 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
                     std::fprintf(stderr, "Unable to parse data for record %d \n", *counter + 1);
                     parseOK = false;
                     printf_s("JSON record contents: \n%s \n", buffer);  /* print raw data */
+                    printf_s("last valid object name found in record = %s \n",
+                        lastValidNameFound);
                     return 1;  /* return error */
                 }
                 else {
@@ -731,15 +736,16 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
                     if (!factors.empty())
                         sanityCheck(ToBeFactored, factors, num);
                     json_value_free(value);  /* avoid memory leakage */
+                    value = nullptr;  /* avoid dangling pointer */
                     break;    /* normal exit */
                 }
-            }
+            }  /* end of normal EOF processing*/
             else {
                 std::perror("YAFU: fgets error");
                 return(-1);
             }
-        }
-    }
+        } 
+    } /* end of for-loop */
     return(0);  /* normal exit */
 }
 

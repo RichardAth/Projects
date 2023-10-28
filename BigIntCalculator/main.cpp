@@ -131,7 +131,8 @@ const char * myTime(void) {
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
-prefixing the output with '0' or 'f' when necessary. */
+prefixing the output with '0' or 'f' when necessary. For -ve numbers, the
+output is is in 2s complement format. */
 static char* getHex(Znum Bi_Nbr) {
     static char *hexbuffer = NULL;  // IMPORTANT. This must be a static variable!
     std::string obuff;
@@ -164,7 +165,7 @@ static char* getHex(Znum Bi_Nbr) {
             /* we need to insert an f */
             obuff.insert(obuff.begin(), 'f');
         }
-        /* copy text from local STL string to global C-style string */
+        /* copy text from local STL string to static C-style string */
         hexbuffer = (char *)std::malloc(obuff.size() + 1);
         assert(hexbuffer != NULL);
         strncpy_s(hexbuffer, obuff.size(), obuff.c_str(), _TRUNCATE);
@@ -382,7 +383,7 @@ void textError(retCode rc) {
         std::cout << (lang ? "Número muy grande \n" :
             "Number too high \n");
         break;
-    case retCode::INTERM_TOO_HIGH:
+    case retCode::INTERIM_TOO_HIGH:
         std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
             "Intermediate number too high (more than 20000 digits)\n");
         break;
@@ -1642,8 +1643,8 @@ for numbers greater than about 11 digits, but R3h requires that pari/GP has
 been installed. */
 /* see https://oeis.org/A005875 
 Command format is TEST 11 [p1[,p2[,p3]]] where
-p1 is the number of tests,
-p2 is the size of the numbers to be processed in bits,
+p1 is the number of tests, default is 20
+p2 is the size of the numbers to be processed in bits, (default is 32, maximum is 41)
 if p3 <= 1 use fixed random seed value (default)
 if p3 = 2 use truly random seed value
 if p3 > 2  use p3 as the seed value*/

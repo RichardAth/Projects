@@ -70,6 +70,7 @@ Znum Pariv1, Pariv2, Pariv3;
 /* typedefs for access to libpari functions */
 typedef      GEN(__cdecl* G_GG)     (GEN x, GEN y);  /* used for all funtions of the form GEN f(GEN x, GEN y) */
 typedef      GEN(__cdecl* G_G)      (GEN x);         /* used for all funtions of the form GEN f(GEN x) */
+typedef      GEN(__cdecl* G_l)      (long long);      /* used for fungions of the form GEN f(long x) */
 typedef     void(__cdecl* v_v) (void);               /* used for functions of the form void f(void) */
 typedef     void(__cdecl* pari_initX)(size_t, ulong);    /*void    pari_init(size_t parisize, ulong maxprime);*/
 //typedef     void(__cdecl* pari_stack_initX)(pari_stack* s, size_t size, void** data);
@@ -143,6 +144,7 @@ static G_G               factor_ref;
 static v_v               pari_close_ref;
 static pari_versionX     pari_version_ref;
 static G_G               quaddisc_ref;
+static G_l               eulerfrac_ref;
 
 /* forward reference */
 static void InttoMP(const GEN x, mpz_t value);
@@ -211,6 +213,7 @@ static void specinit() {
             pari_close_ref = (v_v)GetProcAddress(hinstLib, "pari_close");
             pari_version_ref = (pari_versionX)GetProcAddress(hinstLib, "pari_version");
             quaddisc_ref =(G_G)GetProcAddress(hinstLib, "quaddisc");
+            eulerfrac_ref =(G_l)GetProcAddress(hinstLib, "eulerfrac");
 
             /* check that all function pointers were set up successfully */
             if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
@@ -233,7 +236,7 @@ static void specinit() {
                 nullptr == set_avma_ref || nullptr == tau_ref ||
                 nullptr == stirling_ref || nullptr == factor_ref ||
                 nullptr == pari_close_ref || nullptr == pari_version_ref ||
-                nullptr == quaddisc_ref) {
+                nullptr == quaddisc_ref || nullptr == eulerfrac_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
                 std::system("PAUSE");
@@ -634,6 +637,27 @@ Znum quaddisc(const Znum& n) {
 
     ulong* av = *avma_ref;
     retval = quaddisc_ref(ng);
+    InttoMP(retval, ZT(num));
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
+    return num;
+}
+/* Euler number E(n). See https://en.wikipedia.org/wiki/Euler_numbers
+ and https://oeis.org/A122045 If n is odd the Euler number is zero */
+Znum eulerfrac(const Znum& n) {
+
+    if (!isEven(n))
+        return 0;  /* If n is odd the Euler number is zero */
+
+    Znum num;
+    specinit();     /* initialise as required*/
+    long long nl = MulPrToLong(n);
+    GEN retval;
+    ulong* av = *avma_ref;
+
+    retval = eulerfrac_ref(nl);
     InttoMP(retval, ZT(num));
     ptrdiff_t diff = av - *avma_ref;
     if (verbose > 1)

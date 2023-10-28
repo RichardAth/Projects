@@ -7,7 +7,7 @@ enum class retCode
 {
 	NUMBER_TOO_LOW = -100,
 	NUMBER_TOO_HIGH,
-	INTERM_TOO_HIGH,
+	INTERIM_TOO_HIGH,
 	DIVIDE_BY_ZERO,
 	PAREN_MISMATCH,
 	SYNTAX_ERROR,
@@ -107,6 +107,7 @@ Znum classno(const Znum& n, int flag);
 Znum tau(const Znum& n);
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
 Znum quaddisc(const Znum& n);
+Znum eulerfrac(const Znum& n);
 
 /* quadmod.cpp */
 void doTestsA(const std::vector<std::string>& params);   /* quadratic modular equation solver */
