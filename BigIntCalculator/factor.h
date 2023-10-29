@@ -147,6 +147,21 @@ public:
 		return result;
 	}
 
+	/* returns true if every prime factor has an exponent 2 or more, otherwise
+	returns false. Equivalently, a powerful number is the product of a square and a cube. 
+	Powerful numbers are also known as squareful, square-full, or 2-full. 
+	See https://en.wikipedia.org/wiki/Powerful_number 
+	and https://oeis.org/A001694 */
+	bool powerful() const {
+		if (this->f.empty())/* this only works if factorisation is complete! */
+			return false;   
+		for (auto i : this->f) {
+			if (i.exponent < 2)
+				return false;
+		}
+		return true;
+	}
+
 /* find  Carmichael function λ(n) See Wikpedia
 https://en.wikipedia.org/wiki/Carmichael_function#Computing_%CE%BB(n)_with_Carmichael's_theorem
 AKA reduced totient function. 

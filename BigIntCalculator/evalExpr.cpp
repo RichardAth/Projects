@@ -176,6 +176,7 @@ enum class opCode {
     fn_gf,                /* Gauss Factorial */
     fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
     fn_eulerfrac,         /* Euler number E_n */
+    fn_powerful,          /* test wether powerful or not */
     fn_invalid = -1,
 };
 
@@ -216,6 +217,7 @@ const static struct functions functionList[]{
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
     "PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
+    "POWERFUL",  1,  opCode::fn_powerful,    /* powerful number */
     "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/
     "POPCNT",    1,  opCode::fn_popcnt,     // population count
     "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
@@ -330,6 +332,19 @@ static Znum ComputeTotient(const Znum &n) {
         return tot;
     }
     else return 0;
+}
+
+/* return true if n is a powerful AKA squareful number */
+static bool powerful(const Znum& n) {
+    fList factorlist;
+
+    if (n == 1)
+        return true;
+    auto rv = factorise(n, factorlist, nullptr);
+    if (rv) {
+        return  factorlist.powerful();
+    }
+    else return false;
 }
 
 /*calculate Dedekind psi function for n as the product of p^(e-1)*(p+1)
@@ -1224,10 +1239,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = 0;
         return retCode::EXPR_OK;
     }
-    case opCode::shl: {
+    case opCode::shl: /* left shift */ {
         return ShiftLeft(p[0], p[1], result);
     }
-    case opCode::shr: {
+    case opCode::shr: /* right shift */ {
         // invert sign of shift
         return ShiftLeft(p[0], -p[1], result);
     }
@@ -1322,20 +1337,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
 
-    case opCode::fn_totient: {			// totient
+    case opCode::fn_totient: /* Euler's totient */ {
         if (p[0] < 1) 
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeTotient(p[0]);
         break;
     }
-    case opCode::fn_dedekind: {			// dedekind psi
+    case opCode::fn_dedekind: /* dedekind psi */ {	
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeDedekind(p[0]);
         break;
     }
 
-    case opCode::fn_carmichael: {			// reduced totient
+    case opCode::fn_carmichael: /* reduced totient */ {
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeCarmichael(p[0]);
@@ -1459,7 +1474,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = FactConcat(p[0], p[1]);
         break;
     }
-    case opCode::fn_r2: {
+    case opCode::fn_r2: /* number of ways an integer n can be expressed as the sum of 2
+                  squares x^2 and y^2. */ {
         result = R2(p[0]);
         break;
     }
@@ -1480,7 +1496,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = R3h((p[0]));
         break;
     }
-    case opCode::fn_hurwitz: {
+    case opCode::fn_hurwitz: /* returns 12 x hurwitz class number */ {
         if (mpz_sizeinbase(ZT(p[0]), 10) >35)
             return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
         if (p[0] < 0)
@@ -1509,8 +1525,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
         break;
     }
-    case opCode::fn_tau: {
-        result = tau(p[0]); /* Ramanujan's tau function */
+    case opCode::fn_tau:  /* Ramanujan's tau function */ {
+        result = tau(p[0]); 
         break;
     }
     case opCode::fn_stirling: {
@@ -1530,7 +1546,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
 
         result = llt(p[0]);
-        if (verbose > 0 || p[0] >= 216091) {
+        if (verbose > 0 || p[0] >= 216091) {  /* 2^216091-1 is the 31st Mersenne prime.
+                    As of 2023, there are 51 known Mersenne primes. */
             if (result == 1)
                 std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
             else
@@ -1752,7 +1769,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = quaddisc(p[0]);
         break;
     }
-    case opCode::fn_eulerfrac : /* /* Euler number E_n */ {
+    case opCode::fn_eulerfrac : /* Euler number E_n */ {
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;
         if (!isEven(p[0])) {
@@ -1762,6 +1779,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] > 9022)
             return retCode::INTERIM_TOO_HIGH; /* result would exceed 30,000 digits */
         result = eulerfrac(p[0]);
+        break;
+    }
+    case opCode::fn_powerful:  /* powerful number? */ {
+        if (p[0] < 0)
+            return retCode::NUMBER_TOO_LOW;
+        if (powerful(p[0]))
+            result = -1;   /* have a powerful number*/
+        else
+            result = 0;    /* not a powerful number */
         break;
     }
 
