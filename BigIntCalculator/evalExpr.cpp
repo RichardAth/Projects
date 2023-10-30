@@ -189,64 +189,69 @@ struct  functions {
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operator. 
- Function names must also not conflict with commands. 
- Longer names must come before short ones that start with the same letters to 
- avoid mismatches */
+ Function names should also not conflict with commands. Names are not case-
+ sensitive.  Longer names must be listed before short ones that start with the 
+ same letters to avoid mismatches e.g. FACTCONCAT before F, ISPOWERFUL before 
+ ISPOW, BPSW before B, etc*/
 const static struct functions functionList[]{
-    "MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
-    "MODINV",    2,  opCode::fn_modinv,
-    "TOTIENT",   1,  opCode::fn_totient,
-    "CARMICHAEL",1,  opCode::fn_carmichael,
-    "DEDEKIND",  1,  opCode::fn_dedekind,
-    "SUMDIVS",   1,  opCode::fn_sumdivs,
-    "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
-    "EULERFRAC", 1,  opCode::fn_eulerfrac,  /* Euler number E_n */
-    "SQRT",      1,  opCode::fn_sqrt,
-    "NUMDIGITS", 2,  opCode::fn_numdigits,
-    "NUMDIVS",   1,  opCode::fn_numdivs,
-    "NROOT",     2,  opCode::fn_nroot,
-    "REVDIGITS", 2,  opCode::fn_revdigits,
-    "ISPRIME",   1,	 opCode::fn_isprime,
-    "NUMFACT",   1,  opCode::fn_numfact,
-    "MINFACT",   1,  opCode::fn_minfact,
-    "MAXFACT",   1,  opCode::fn_maxfact,
-    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
-    "MODSQRT",   2,  opCode::fn_modsqrt, // find x such that x^2 = a mod p
-    "DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
+  // names are approximately in alpabetical order, but longer names withe same
+  // starting letter(s) come before shorter ones
+  // name, number of parameters, code   
+    "APRCL",     1,  opCode::fn_aprcl,         // APR-CL prime test
+    "ABS",       1,  opCode::fn_abs,           /* absolute value */
+    "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
+    "B",         1,  opCode::fn_pp,			   // previous prime
+    "CLASSNO",   1,  opCode::fn_classno,       // class number
+    "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
+    "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
+    "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
+    "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
-    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
-    "PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
-    "POWERFUL",  1,  opCode::fn_powerful,    /* powerful number */
-    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/
-    "POPCNT",    1,  opCode::fn_popcnt,     // population count
-    "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
-    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
-    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
-    "ABS",       1,          opCode::fn_abs,    /* absolute value */
-    "GF",        1,  opCode::fn_gf,            /* Gauss factorial*/
     "F",         1,  opCode::fn_fib,			// fibonacci
-    "LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
-    "LE",		 2,  opCode::fn_legendre,
+    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
+    "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
+    "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
+    "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
+    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
+    "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
+    "ISPRIME",   1,	 opCode::fn_isprime,
+    "ISPOW",     1,  opCode::fn_ispow,
     "JA",		 2,  opCode::fn_jacobi,
     "KR",		 2,  opCode::fn_kronecker,
+    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
+    "LLT",	     1,  opCode::fn_llt,            // lucas-Lehmer test
+    "LE",		 2,  opCode::fn_legendre,
     "L",         1,  opCode::fn_luc,			// Lucas Number
-    "PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
-    "P",         1,  opCode::fn_part,			// number of partitions
+    "MAXFACT",   1,  opCode::fn_maxfact,
+    "MINFACT",   1,  opCode::fn_minfact,
+    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
+    "MODSQRT",   2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
+    "MODPOW",    3,  opCode::fn_modpow,  		
+    "MODINV",    2,  opCode::fn_modinv,
+    "NUMDIGITS", 2,  opCode::fn_numdigits,
+    "NUMDIVS",   1,  opCode::fn_numdivs,       /* number of divisors */
+    "NUMFACT",   1,  opCode::fn_numfact,
+    "NROOT",     2,  opCode::fn_nroot,
     "N",         1,  opCode::fn_np,			// next prime
-    "BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
-    "B",         1,  opCode::fn_pp,			// previous prime
+    "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
+    "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
+    "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
+    "P",         1,  opCode::fn_part,	    // number of partitions
+
+    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
+                                               quadratic field Q(sqrt(x))*/
+    "REVDIGITS", 2,  opCode::fn_revdigits,
     "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
-    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
                                             // calculated using hurwitz class number
+    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
-    "ISPOW",     1,  opCode::fn_ispow,
-    "HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
-    "CLASSNO",   1,  opCode::fn_classno,    // class number
+    "SUMDIGITS", 2,  opCode::fn_sumdigits,
+    "SUMDIVS",   1,  opCode::fn_sumdivs,
+    "SQRT",      1,  opCode::fn_sqrt,
+    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+    "TOTIENT",   1,  opCode::fn_totient,
     "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
-
 };
 
 /* list of operators.  */
@@ -1782,7 +1787,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
     case opCode::fn_powerful:  /* powerful number? */ {
-        if (p[0] < 0)
+        if (p[0] <= 0)
             return retCode::NUMBER_TOO_LOW;
         if (powerful(p[0]))
             result = -1;   /* have a powerful number*/

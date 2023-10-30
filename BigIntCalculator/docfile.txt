@@ -97,13 +97,14 @@ APRCL(n)        : Adleman-Pomerance-Rumely primality test. returns zero if n is
                   definite prime. WARNING: very slow for large numbers 
                   e.g. 20s for 400 digits
                   If the number is > 6021 digits it reverts to the BPSW test.
-POWERFUL(n)     : returns -1 if n is a powerful number, 0 if not. A number is
+ISPOWERFUL(n)   : returns -1 if n is a powerful number, 0 if not. A number is
                   powerful if and only if every prime factor has an exponent 2 or 
                   more. Equivalently, a powerful number is the product of a 
                   square and a cube.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n)      : Sum of positive divisors of n either prime or composite.
-Divisors(n)     : Get list of divisors of n, either prime or composite. 
+Divisors(n)     : Get list of divisors of n, either prime or composite. The value
+                  returned is the number of divisors (same as numdivs)
 NumDigits(n, r) : Number of digits of n in base r.
 SumDigits(n, r) : Sum of digits of n in base r.
 RevDigits(n, r) : finds the value obtained by writing backwards the digits of n 
@@ -139,7 +140,7 @@ CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n
                   not a perfect square. For +ve n, n must be < 730,000,000 to avoid
                   pari stack overflow.
 TAU(x)          : Ramanujan's tau function
-STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
+STIRLING(n, k, f): if f = 1 return the Stirling number of the first kind s(n,k), 
                   if f = 2, return the Stirling number of the second kind S(n,k).
                   n and k must be less than 2^63.
 LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.

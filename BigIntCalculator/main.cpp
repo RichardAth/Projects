@@ -855,6 +855,7 @@ static void doTests(void) {
         "f(60)",	            1548008755920,   // fibonacci
         "l(60)",                3461452808002,   // lucas number
         "n(123456789)",             123456791,   // prime after n
+        "b(123456789)",             123456761,   // prime before n
         "p(150)",	              40853235313,   // number of partitions
         "modinv(7, 19)",                   11,   // modular inverse
         "7* 11 % 19",                       1,   // verfy modinv in previous test
@@ -864,6 +865,7 @@ static void doTests(void) {
         "totient(201)",		              132,
         "carmichael(201)",                 66,
         "numdivs(7!)",                     60,
+        "divisors(7!)",                    60,   /* number of divisors */
         "sumdivs(7!)",                  19344,
         "numdigits(123456789, 6)",         11,
         "sumdigits(123456789, 6)",         19,
@@ -888,6 +890,7 @@ static void doTests(void) {
         "R3(49)",                        54,
         "R3H(49)",                       54,
         "R2(585)",                       16,
+        "R2P(585)",                       2,
         "SQRT(1234320)",               1110,
         "NROOT(2861381721051424,5)",   1234,
         "LLT(3217)",                      1,  // 2^3217-1 is prime
@@ -924,12 +927,20 @@ static void doTests(void) {
         "hclass(999)",                   384,   /* hurwitz class number*/
         "classno(1000001)",               94,   /* class number */
         "gf(21)",                47297536000,   /* gauss factorial */
-        "carmichael(497)",             210,     /* carmichael function */
-        "numdivs(116)",                  6,     /* number of divisors*/
-        "sumdivs(116)",                210,
-        "invtot(132)",                 161,
-        "popcnt(123456789)",            16,     /* number of 1-bits */
-        "tau(9)",                  -113643,  /* Ramanujan's tau function */
+        "carmichael(497)",              210,     /* carmichael function */
+        "numdivs(116)",                   6,     /* number of divisors*/
+        "sumdivs(116)",                 210,
+        "invtot(132)",                  161,     /* smallest number whose totient is 132 */
+        "popcnt(123456789)",             16,     /* number of 1-bits */
+        "tau(9)",                   -113643,  /* Ramanujan's tau function */
+        "abs(-99)",                      99,  /* absolute value*/
+        "dedekind(999)",               1368,  /* Dedekind psi function */
+        "eulerfrac(14)",         -199360981,  /* Euler number E(x) */
+        "hamdist(64,67)",                 2,  /* hamming distance */
+        "ispowerful(8)",                 -1,
+        "ispowerful(10)",                 0,
+        "quaddisc(23334)",            93336,
+        "stirling(11,2,1)",       -10628640,
     };
 
     results.clear();
