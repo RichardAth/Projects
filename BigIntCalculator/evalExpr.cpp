@@ -177,25 +177,26 @@ enum class opCode {
     fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
     fn_eulerfrac,         /* Euler number E_n */
     fn_powerful,          /* test wether powerful or not */
+    fn_fundamental,       /* test wether x is a fundamental discriminant or not*/
     fn_invalid = -1,
 };
 
 
 struct  functions {
-    char fname[11];        // maximum name length 10 chars (allow for null terminator)
+    char fname[14];        // maximum name length 13 chars (allow for null terminator)
     int  NoOfParams;       // number of parameters 
     opCode  fCode;        // integer code for function
 };
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
- AND, OR, XOR because this would conflict with the operator. 
+ AND, OR, XOR because this would conflict with the operators. 
  Function names should also not conflict with commands. Names are not case-
  sensitive.  Longer names must be listed before short ones that start with the 
  same letters to avoid mismatches e.g. FACTCONCAT before F, ISPOWERFUL before 
  ISPOW, BPSW before B, etc*/
 const static struct functions functionList[]{
-  // names are approximately in alpabetical order, but longer names withe same
-  // starting letter(s) come before shorter ones
+  // names are approximately in alphabetical order, but longer names with the same
+  // starting letter(s) come before shorter ones.
   // name, number of parameters, code   
     "APRCL",     1,  opCode::fn_aprcl,         // APR-CL prime test
     "ABS",       1,  opCode::fn_abs,           /* absolute value */
@@ -213,6 +214,7 @@ const static struct functions functionList[]{
     "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
     "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
+    "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
     "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
     "ISPRIME",   1,	 opCode::fn_isprime,
     "ISPOW",     1,  opCode::fn_ispow,
@@ -350,6 +352,42 @@ static bool powerful(const Znum& n) {
         return  factorlist.powerful();
     }
     else return false;
+}
+
+/* return true if n is a fundamental discriminant, otherwise false.
+see https://en.wikipedia.org/wiki/Fundamental_discriminant */
+static bool isFundamental(const Znum& n) {
+/*  D is a fundamental discriminant if and only if one of the following 
+statements holds:
+    D ≡ 1 (mod 4) and is square-free,
+    D = 4m, where m ≡ 2 or 3 (mod 4) and m is square-free. */
+    if (n == 0 || n== -1)
+        return false;
+    if (n == 1)
+        return true;
+    long long remainder = mpz_fdiv_ui(ZT(n), 4);  /* get modulus. Note use of floor division.
+                                                     This is important if n is -ve. */
+    fList f;
+
+    if (remainder == 1) {
+        if (factorise(n, f, nullptr))
+            return f.squarefree();
+        else
+            return false;  /* could not factorise */
+    }
+
+    if (remainder == 0) {  /* if n is a multiple of 4 */
+        Znum m = n >> 2;    /* divide n by 4 */
+        remainder = mpz_fdiv_ui(ZT(m), 4);  /* get modulus */
+        if (remainder == 2 || remainder == 3) {
+            if (factorise(m, f, nullptr))
+                return f.squarefree();
+            else
+                return false;  /* could not factorise */
+        }
+        else return false; /* remainder is not 2 or 3 */
+    }
+    else return false; /* n is not 0 or 1 modulo 4 */
 }
 
 /*calculate Dedekind psi function for n as the product of p^(e-1)*(p+1)
@@ -1795,7 +1833,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = 0;    /* not a powerful number */
         break;
     }
-
+    case opCode::fn_fundamental: /* fundamental discriminant */ {
+        if (isFundamental(p[0]))
+            result = -1;     /* it is a fundamental discriminant*/
+        else
+            result = 0;      /* not a fundamental discriminant */
+        break;
+    }
     default:
         std::abort();	// should never get here
     }

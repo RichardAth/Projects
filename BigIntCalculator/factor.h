@@ -162,6 +162,18 @@ public:
 		return true;
 	}
 
+	/* returns true if every prime factor has an exponent 1, otherwise returns false
+	(the opposite of powerful). */
+	bool squarefree() const {
+		if (this->f.empty())/* this only works if factorisation is complete! */
+			return false;
+		for (auto i : this->f) {
+			if (i.exponent >1)
+				return false;
+		}
+		return true;
+	}
+
 /* find  Carmichael function λ(n) See Wikpedia
 https://en.wikipedia.org/wiki/Carmichael_function#Computing_%CE%BB(n)_with_Carmichael's_theorem
 AKA reduced totient function. 

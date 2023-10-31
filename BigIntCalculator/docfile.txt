@@ -101,6 +101,7 @@ ISPOWERFUL(n)   : returns -1 if n is a powerful number, 0 if not. A number is
                   powerful if and only if every prime factor has an exponent 2 or 
                   more. Equivalently, a powerful number is the product of a 
                   square and a cube.
+ISFUNDAMENTAL(n): returns -1 if n is a Fundamental Discriminant, otherwise 0.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n)      : Sum of positive divisors of n either prime or composite.
 Divisors(n)     : Get list of divisors of n, either prime or composite. The value

@@ -941,6 +941,10 @@ static void doTests(void) {
         "ispowerful(10)",                 0,
         "quaddisc(23334)",            93336,
         "stirling(11,2,1)",       -10628640,
+        "isfundamental(32901)",          -1,  /* fundamental discriminant */
+        "isfundamental(32900)",           0,
+        "isfundamental(-9859)",          -1,
+        "isfundamental(-9858)",           0,
     };
 
     results.clear();
