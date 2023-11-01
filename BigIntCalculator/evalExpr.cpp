@@ -176,8 +176,9 @@ enum class opCode {
     fn_gf,                /* Gauss Factorial */
     fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
     fn_eulerfrac,         /* Euler number E_n */
-    fn_powerful,          /* test wether powerful or not */
-    fn_fundamental,       /* test wether x is a fundamental discriminant or not*/
+    fn_powerful,          /* test whether powerful or not */
+    fn_fundamental,       /* test whether x is a fundamental discriminant or not*/
+    fn_polygonal,         /* test whether x is a polygonal number */
     fn_invalid = -1,
 };
 
@@ -215,6 +216,7 @@ const static struct functions functionList[]{
     "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
     "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
+    "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
     "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
     "ISPRIME",   1,	 opCode::fn_isprime,
     "ISPOW",     1,  opCode::fn_ispow,
@@ -318,8 +320,8 @@ struct token {
     size_t userIx;  /* index into user variable list (only when typecode = uservar) */
     short numops;   /* number of operands/parameters */
 };
-
-static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
+/* forward reference */
+static retCode tokenise(const std::string expr, std::vector <token>& tokens, int& asgCt);
 
 // returns true if num is a perfect square.
 static bool isPerfectSquare(const Znum &num) {
@@ -1170,6 +1172,29 @@ static retCode GaussFact(const Znum& num, Znum &result) {
     return retCode::EXPR_OK;
 }
 
+/* return true if x is an s-gonal number, otherwise false. s = 3 for a
+triangular number, 4 for a square number, etc. If n is given set it 
+to N if x is the N-th s-gonal number. See 
+https://en.wikipedia.org/wiki/Polygonal_number */
+static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr) {
+    Znum disc, num, denom, N;
+    disc = (8 * (s-2) * x) + (s-4) * (s-4);
+    if (isPerfectSquare(disc)) {
+        num = sqrt(disc) + s - 4;
+        denom = 2 * (s - 2);
+        N = num / denom;
+        assert(num % denom == 0);
+        if (n != nullptr && N <= LLONG_MAX)
+            *n = MulPrToLong(N);
+        if (verbose > 0) {
+            std::cout << x << " is the " << N << "-th " << s << "-gonal number \n";
+        }
+        return true;
+    }
+    else
+        return false;  /* not a polygonal number */
+}
+
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
@@ -1399,7 +1424,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeCarmichael(p[0]);
         break;
     }
-    case opCode::fn_numdivs: {		// NUMDIVS
+    case opCode::fn_numdivs: /* number of divisors */ {
         if (p[0] < 1) {
             return retCode::NUMBER_TOO_LOW;
         }
@@ -1838,6 +1863,16 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = -1;     /* it is a fundamental discriminant*/
         else
             result = 0;      /* not a fundamental discriminant */
+        break;
+    }
+    case opCode::fn_polygonal: /* polygonal number */ {
+        long long N;
+        if (p[0] < 1 || p[1] < 3)
+            return retCode::NUMBER_TOO_LOW;
+        if (isPolygonal(p[0], p[1], &N))
+            result = -1;     /* it is a polygonal number*/
+        else
+            result = 0;      /* not a polygonal number */
         break;
     }
     default:

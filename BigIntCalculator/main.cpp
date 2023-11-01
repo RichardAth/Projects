@@ -945,6 +945,11 @@ static void doTests(void) {
         "isfundamental(32900)",           0,
         "isfundamental(-9859)",          -1,
         "isfundamental(-9858)",           0,
+        "ispolygonal(1,3)",              -1, /* 1 is a polygonal number for any polygon */
+        "ispolygonal(2,3)",               0,
+        "ispolygonal(449920,10000)",     -1,
+        "ispolygonal(449921,10000)",      0,
+
     };
 
     results.clear();
@@ -2722,7 +2727,7 @@ static int processCmd(std::string command) {
         token = strtok_s(nullptr, seps, &next);
     }
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
-        p1 = std::stoi(p[1]);  /* if p[1] is a decimal number set p1 to value */
+        p1 = std::stoi(p[1]);  /* if p[1] is a +ve decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -2751,9 +2756,13 @@ static int processCmd(std::string command) {
     case 5: /* S */ { 
         lang = 1; return 1; }	          // spanish (Español)
     case 6: /* F */ { 
-         if (p.size() >= 2)
-            factorFlag = p1;
-         std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
+        if (p.size() >= 2) {
+            if (p1 != INT_MIN)
+                factorFlag = p1;
+            else
+                return 0;  /* not a valid command */
+        }
+        std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
         return 1; }  
     case 7: /* X */ { 
         hexPrFlag = true; return 1; }         // hexadecimal output
