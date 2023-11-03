@@ -287,6 +287,14 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
+
+/* divide x by 2^p, return modulus and quotient. */
+long long divremp2(const Znum x, const int p, Znum & quot) {
+	assert(p > 0 && p <= 63);
+	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
+	return mpz_fdiv_ui(ZT(x), 2 << p);
+}
+
 std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
@@ -328,7 +336,8 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 #endif
 
 	// Simple case
-	if (prime % 4 == 3) {
+	if (mpz_fdiv_ui(ZT(prime), 4) == 3) { /* Lagrange solution */
+	//if ((prime & 3) == 3) {  
 		R = modPower(a, (prime + 1) / 4, prime);
 		result.push_back(R);
 		result.push_back(prime - R);
@@ -336,6 +345,21 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
+	if (mpz_fdiv_ui(ZT(prime), 8) == 5) { /* Legendre solution */
+	//if ((prime & 7) == 5) { 
+		Znum v, i;
+		v = modPower((2 * a), (prime - 5) / 8, prime);
+		//i = (2 * a * v * v) % prime;
+		i = modMult(2 * a, v * v, prime);
+		//R = (a * v * (i - 1)) % prime;
+		R = modMult(a * v, i - 1, prime);
+		result.push_back(R);
+		result.push_back(prime - R);
+		printroots(a, prime, result);
+		return result;
+	}
+
+	/* if we drop through to here , prime%8 = 1*/
 	// Tonelli-Shanks step 1: Factor prime - 1 of the form q * 2 ^ s(with Q odd)
 	q = prime - 1;
 	s = 0;
@@ -562,14 +586,14 @@ static void test9timer(const std::vector <std::string>& p) {
 
 	/* convert p2 & p3 to binary. Use default values if p2 or p3 not supplied or invalid */
 	if (p.size() >= 4) {
-		p2d = std::atoi(p[3].c_str());  /* convert to binary */
+		p2d = std::stoi(p[3]);  /* convert to binary */
 	}
 	if (p2d < 10) {
 		std::cout << "Use default 10 for number size in bits \n";
 		p2d = 10;
 	}
 	if (p.size() >= 5) 
-		p3d = std::atoi(p[4].c_str());  /* convert to binary */
+		p3d = std::stoi(p[4]);  /* convert to binary */
 	if (p3d < 5) {
 		std::cout << "Use default 5 for number of tests \n";
 		p3d = 5;
@@ -672,14 +696,13 @@ void doTests9(const std::vector<std::string> & p) {
 				"does timed tests of modular square root \n\n";
 			return;
 		}
-		int timec = _strnicmp(p[2].c_str(), "time", 4);
-		if (timec == 0) {
+
+		if (p[2] == "TIME") {
 			test9timer(p);   /* 1st parameter is "time", other parameters passed on */
 			return;
 		}
 
-		int cmp = _strnicmp(p[2].c_str(), "new", 3);
-		newb = (cmp == 0);  // true if 1st parameter = "new"
+		newb = (p[2] == "NEW");  // true if 1st parameter = "new"
 	}
 	auto start = std::clock();	// used to measure execution time
 	for (long long m = 2; m <= 2000; m++) {
@@ -687,7 +710,7 @@ void doTests9(const std::vector<std::string> & p) {
 			rv &= test9once(a, m, roots, newb);
 		}
 		if (m % 100 == 0)
-			std::cout << m + 1 << " tests completed \r";
+			std::cout << m*(m-1) << " tests completed \r";
 	}
 
 	//rv &= test9once(99, 107, roots, newb);      // roots are 45 and 62

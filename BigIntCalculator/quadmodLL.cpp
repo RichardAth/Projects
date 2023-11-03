@@ -737,7 +737,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
                 std::putchar('\n');
             }
             // Step 5
-            while (memcmp(Aux[9].limbs, MontgomeryMultR1, NumberLengthBytes) != 0)
+            while (std::memcmp(Aux[9].limbs, MontgomeryMultR1, NumberLengthBytes) != 0)
             {
                 // Step 6
                 int k = 0;
@@ -746,7 +746,7 @@ static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
                 {
                     k++;
                     modmult(Aux[10].limbs, Aux[10].limbs, Aux[10].limbs);
-                } while (memcmp(Aux[10].limbs, MontgomeryMultR1, NumberLengthBytes) != 0);
+                } while (std::memcmp(Aux[10].limbs, MontgomeryMultR1, NumberLengthBytes) != 0);
                 // Step 7
                 std::memcpy(Aux[11].limbs, Aux[5].limbs, NumberLengthBytes); // d
                 for (int ctr = 0; ctr < (r - k - 1); ctr++)

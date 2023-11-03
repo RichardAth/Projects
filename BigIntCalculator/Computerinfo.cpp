@@ -166,7 +166,6 @@ uint64 measure_processor_speed(void)
             :"0"(code1), "2"(code2) : "%rsi")
 
 #elif defined(_MSC_VER)
-#include <intrin.h>
 #define HAS_CPUID
 #define CPUID(code, a, b, c, d)	\
     {	int _z[4]; \
@@ -448,7 +447,7 @@ static int extended_cpuid(char* CPUidstr, int* cachelinesize, char* bSSE41Extens
         }
     }
     ptrdiff_t ix = 0;
-    while (ix < 64 &&  std::isblank(CPUBrandString[ix]))
+    while (ix < 64 &&  std::isspace(CPUBrandString[ix]))
         ix++;        /* find 1st non-blank character */
     strcpy_s(CPUidstr, 64 - ix, CPUBrandString + ix);
     // Display all the information in user-friendly format.

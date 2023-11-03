@@ -15,7 +15,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include <map>
-#include <intrin.h>
 #include <numeric>
 
 #undef min                 // use std::min
@@ -738,7 +737,8 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 	}
 }
 
-/* factorise toFactor; factor list returned in Factors. */
+/* factorise toFactor; factor list returned in Factors. 
+returns false only if ecm returns an error. */
 static bool factor(const Znum &toFactor, fList &Factors) {
 	long long testP;
 	const long long MaxP = 393'203;  // use 1st  33333 primes

@@ -32,12 +32,12 @@
 #pragma warning(disable : 4996)
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <sys/stat.h>
-#include <string.h>
-#include <ctype.h>
-#include <math.h>
+#include <cstring>
+#include <cctype>
+#include <cmath>
 
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
@@ -68,6 +68,7 @@
 typedef unsigned int json_uchar;
 
 const struct _json_value json_value_none;
+char lastValidNameFound[256] = { '\0' };
 
 static unsigned char hex_value(json_char c)
 {
@@ -444,6 +445,8 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             top->u.object.values[top->u.object.length].name
                                 = (json_char*)top->_reserved.object_mem;
+
+                            strncpy(lastValidNameFound, (char*)top->_reserved.object_mem, sizeof(lastValidNameFound));
 
                             top->u.object.values[top->u.object.length].name_length
                                 = string_length;

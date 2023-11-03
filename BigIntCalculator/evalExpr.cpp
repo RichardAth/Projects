@@ -174,73 +174,90 @@ enum class opCode {
     fn_popcnt,            /* poulation count AKA Hamming weight */
     fn_hamdist,           /* hamming distance i.e. number of bits that differ between a and b */
     fn_gf,                /* Gauss Factorial */
+    fn_quaddisc,          /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x)) */
+    fn_eulerfrac,         /* Euler number E_n */
+    fn_powerful,          /* test whether powerful or not */
+    fn_fundamental,       /* test whether x is a fundamental discriminant or not*/
+    fn_polygonal,         /* test whether x is a polygonal number */
+    fn_squarefree,        /* test whether x is squarefree or not */
     fn_invalid = -1,
 };
 
 
 struct  functions {
-    char fname[11];        // maximum name length 10 chars (allow for null terminator)
+    char fname[14];        // maximum name length 13 chars (allow for null terminator)
     int  NoOfParams;       // number of parameters 
     opCode  fCode;        // integer code for function
 };
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
- AND, OR, XOR because this would conflict with the operator. 
- Function names must also not conflict with commands. 
- Longer names must come before short ones that start with the same letters to 
- avoid mismatches */
+ AND, OR, XOR because this would conflict with the operators. 
+ Function names should also not conflict with commands. Names are not case-
+ sensitive.  Longer names must be listed before short ones that start with the 
+ same letters to avoid mismatches e.g. FACTCONCAT before F, ISPOWERFUL before 
+ ISPOW, BPSW before B, etc*/
 const static struct functions functionList[]{
-    "MODPOW",    3,  opCode::fn_modpow,  		// name, number of parameters, code
-    "MODINV",    2,  opCode::fn_modinv,
-    "TOTIENT",   1,  opCode::fn_totient,
-    "CARMICHAEL",1,  opCode::fn_carmichael,
-    "DEDEKIND",  1,  opCode::fn_dedekind,
-    "SUMDIVS",   1,  opCode::fn_sumdivs,
-    "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
-    "SQRT",      1,  opCode::fn_sqrt,
-    "NUMDIGITS", 2,  opCode::fn_numdigits,
-    "NUMDIVS",   1,  opCode::fn_numdivs,
-    "NROOT",     2,  opCode::fn_nroot,
-    "REVDIGITS", 2,  opCode::fn_revdigits,
-    "ISPRIME",   1,	 opCode::fn_isprime,
-    "NUMFACT",   1,  opCode::fn_numfact,
-    "MINFACT",   1,  opCode::fn_minfact,
-    "MAXFACT",   1,  opCode::fn_maxfact,
-    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
-    "MODSQRT",   2,  opCode::fn_modsqrt, // find x such that x^2 = a mod p
-    "DIVISORS",  1,  opCode::fn_divisors,   // list of divisors    
+  // names are approximately in alphabetical order, but longer names with the same
+  // starting letter(s) come before shorter ones.
+  // name, number of parameters, code   
+    "APRCL",     1,  opCode::fn_aprcl,         // APR-CL prime test
+    "ABS",       1,  opCode::fn_abs,           /* absolute value */
+    "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
+    "B",         1,  opCode::fn_pp,			   // previous prime
+    "CLASSNO",   1,  opCode::fn_classno,       // class number
+    "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
+    "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
+    "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
+    "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
-    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
-    "PrimRoot",  1,  opCode::fn_primroot,       /* smallest primitive root */
-    "POPCNT",    1,  opCode::fn_popcnt,     // population count
-    "HAMDIST",   2,  opCode::fn_hamdist,    // Hamming distance
-    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
-    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
-    "ABS",       1,          opCode::fn_abs,    /* absolute value */
-    "GF",        1,  opCode::fn_gf,            /* Gauss factorial*/
     "F",         1,  opCode::fn_fib,			// fibonacci
-    "LLT",	     1,  opCode::fn_llt,           // lucas-Lehmer test
-    "LE",		 2,  opCode::fn_legendre,
+    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
+    "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
+    "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
+    "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
+    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
+    "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
+    "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
+    "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
+    "ISSQUAREFREE",1, opCode::fn_squarefree,    /* squarefree number */
+    "ISPRIME",   1,	 opCode::fn_isprime,
+    "ISPOW",     1,  opCode::fn_ispow,
     "JA",		 2,  opCode::fn_jacobi,
     "KR",		 2,  opCode::fn_kronecker,
+    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
+    "LLT",	     1,  opCode::fn_llt,            // lucas-Lehmer test
+    "LE",		 2,  opCode::fn_legendre,
     "L",         1,  opCode::fn_luc,			// Lucas Number
-    "PI",		 1,  opCode::fn_primePi,		// prime-counting function. PI must come before P
-    "P",         1,  opCode::fn_part,			// number of partitions
+    "MAXFACT",   1,  opCode::fn_maxfact,
+    "MINFACT",   1,  opCode::fn_minfact,
+    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
+    "MODSQRT",   2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
+    "MODPOW",    3,  opCode::fn_modpow,  		
+    "MODINV",    2,  opCode::fn_modinv,
+    "NUMDIGITS", 2,  opCode::fn_numdigits,
+    "NUMDIVS",   1,  opCode::fn_numdivs,       /* number of divisors */
+    "NUMFACT",   1,  opCode::fn_numfact,
+    "NROOT",     2,  opCode::fn_nroot,
     "N",         1,  opCode::fn_np,			// next prime
-    "BPSW",      1,  opCode::fn_bpsw,       // Baillie-Pomerance-Selfridge-Wagstaff
-    "B",         1,  opCode::fn_pp,			// previous prime
+    "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
+    "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
+    "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
+    "P",         1,  opCode::fn_part,	    // number of partitions
+
+    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
+                                               quadratic field Q(sqrt(x))*/
+    "REVDIGITS", 2,  opCode::fn_revdigits,
     "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
-    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
                                             // calculated using hurwitz class number
+    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "APRCL",     1,  opCode::fn_aprcl,      // APR-CL prime test
-    "ISPOW",     1,  opCode::fn_ispow,
-    "HCLASS",    1,  opCode::fn_hurwitz,    // hurwitz class number
-    "CLASSNO",   1,  opCode::fn_classno,    // class number
+    "SUMDIGITS", 2,  opCode::fn_sumdigits,
+    "SUMDIVS",   1,  opCode::fn_sumdivs,
+    "SQRT",      1,  opCode::fn_sqrt,
+    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+    "TOTIENT",   1,  opCode::fn_totient,
     "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
-
 };
 
 /* list of operators.  */
@@ -305,8 +322,8 @@ struct token {
     size_t userIx;  /* index into user variable list (only when typecode = uservar) */
     short numops;   /* number of operands/parameters */
 };
-
-static retCode tokenise(const std::string expr, std::vector <token> &tokens, int &asgCt);
+/* forward reference */
+static retCode tokenise(const std::string expr, std::vector <token>& tokens, int& asgCt);
 
 // returns true if num is a perfect square.
 static bool isPerfectSquare(const Znum &num) {
@@ -326,6 +343,55 @@ static Znum ComputeTotient(const Znum &n) {
         return tot;
     }
     else return 0;
+}
+
+/* return true if n is a powerful AKA squareful number */
+static bool powerful(const Znum& n) {
+    fList factorlist;
+
+    if (n == 1)
+        return true;
+    auto rv = factorise(n, factorlist, nullptr);
+    if (rv) {
+        return  factorlist.powerful();
+    }
+    else return false;
+}
+
+/* return true if n is a fundamental discriminant, otherwise false.
+see https://en.wikipedia.org/wiki/Fundamental_discriminant */
+static bool isFundamental(const Znum& n) {
+/*  D is a fundamental discriminant if and only if one of the following 
+statements holds:
+    D ≡ 1 (mod 4) and is square-free,
+    D = 4m, where m ≡ 2 or 3 (mod 4) and m is square-free. */
+    if (n == 0 || n== -1)
+        return false;
+    if (n == 1)
+        return true;
+    long long remainder = mpz_fdiv_ui(ZT(n), 4);  /* get modulus. Note use of floor division.
+                                                     This is important if n is -ve. */
+    fList f;
+
+    if (remainder == 1) {
+        if (factorise(n, f, nullptr))
+            return f.squarefree();
+        else
+            return false;  /* could not factorise */
+    }
+
+    if (remainder == 0) {  /* if n is a multiple of 4 */
+        Znum m = n >> 2;    /* divide n by 4 */
+        remainder = mpz_fdiv_ui(ZT(m), 4);  /* get modulus */
+        if (remainder == 2 || remainder == 3) {
+            if (factorise(m, f, nullptr))
+                return f.squarefree();
+            else
+                return false;  /* could not factorise */
+        }
+        else return false; /* remainder is not 2 or 3 */
+    }
+    else return false; /* n is not 0 or 1 modulo 4 */
 }
 
 /*calculate Dedekind psi function for n as the product of p^(e-1)*(p+1)
@@ -532,8 +598,8 @@ static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
     // there is no built-in shift operator for Znums, so it is simulated
     // using multiplication or division
     if (shift > 0) {
-        if (NoOfBits(first) + shift > 66439) // more than 66439 bits -> more than 20,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (NoOfBits(first) + shift > 99940) // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         mpz_mul_2exp(ZT(result), ZT(first), shift);
         return retCode::EXPR_OK;
     }
@@ -1101,11 +1167,34 @@ static retCode GaussFact(const Znum& num, Znum &result) {
         if (gcd(i, num) == 1) {
             result *= i;
             resultsize = NoOfBits(result);
-            if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-                return retCode::INTERM_TOO_HIGH;
+            if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+                return retCode::INTERIM_TOO_HIGH;
         }
     }
     return retCode::EXPR_OK;
+}
+
+/* return true if x is an s-gonal number, otherwise false. s = 3 for a
+triangular number, 4 for a square number, etc. If n is given set it 
+to N if x is the N-th s-gonal number. See 
+https://en.wikipedia.org/wiki/Polygonal_number */
+static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr) {
+    Znum disc, num, denom, N;
+    disc = (8 * (s-2) * x) + (s-4) * (s-4);
+    if (isPerfectSquare(disc)) {
+        num = sqrt(disc) + s - 4;
+        denom = 2 * (s - 2);
+        N = num / denom;
+        assert(num % denom == 0);
+        if (n != nullptr && N <= LLONG_MAX)
+            *n = MulPrToLong(N);   /* return value of n */
+        if (verbose > 0) {
+            std::cout << x << " is the " << N << "-th " << s << "-gonal number \n";
+        }
+        return true;
+    }
+    else
+        return false;  /* not a polygonal number */
 }
 
 /* process one operator with 1 or 2 operands.
@@ -1153,8 +1242,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::multiply: {
         auto resultsize = NoOfBits(p[0]) + NoOfBits(p[1]);
-        if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         result = p[0] * p[1];
         return retCode::EXPR_OK;
     }
@@ -1173,8 +1262,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::EXPONENT_NEGATIVE;
         long long exp = MulPrToLong(p[1]);
         auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
-        if (resultsize > 99960)  // more than 99960 bits -> more than 30,000 decimal digits
-            return retCode::INTERM_TOO_HIGH;
+        if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
+            return retCode::INTERIM_TOO_HIGH;
         mpz_pow_ui(ZT(result), ZT(p[0]), exp);
         return retCode::EXPR_OK;
     }
@@ -1220,10 +1309,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = 0;
         return retCode::EXPR_OK;
     }
-    case opCode::shl: {
+    case opCode::shl: /* left shift */ {
         return ShiftLeft(p[0], p[1], result);
     }
-    case opCode::shr: {
+    case opCode::shr: /* right shift */ {
         // invert sign of shift
         return ShiftLeft(p[0], -p[1], result);
     }
@@ -1257,18 +1346,18 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         long long t2 = MulPrToLong(p[1]);
         if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
             /* more than 20,000 digits in base 10 */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
 
         mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
         if (ZT(result)->_mp_size > 1039)
             /* more than 20,000 digits in base 10 */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
 
         return retCode::EXPR_OK;
     }
     case opCode::prim: /* primorial */ {
         if (p[0] > 46340)
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;  /* result would exceed 20,000 digits */
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;
 
@@ -1318,26 +1407,26 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
 
-    case opCode::fn_totient: {			// totient
+    case opCode::fn_totient: /* Euler's totient */ {
         if (p[0] < 1) 
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeTotient(p[0]);
         break;
     }
-    case opCode::fn_dedekind: {			// dedekind psi
+    case opCode::fn_dedekind: /* dedekind psi */ {	
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeDedekind(p[0]);
         break;
     }
 
-    case opCode::fn_carmichael: {			// reduced totient
+    case opCode::fn_carmichael: /* reduced totient */ {
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;;
         result = ComputeCarmichael(p[0]);
         break;
     }
-    case opCode::fn_numdivs: {		// NUMDIVS
+    case opCode::fn_numdivs: /* number of divisors */ {
         if (p[0] < 1) {
             return retCode::NUMBER_TOO_LOW;
         }
@@ -1390,7 +1479,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     case opCode::fn_fib: /* fibonacci */ {	
         if (p[0] > 95700 || p[0] < -95700)
         {  /* result would exceed 20,000 digits */
-            return retCode::INTERM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH;
         }
         long long temp = MulPrToLong(ZT(p[0]));
         bool neg = false;
@@ -1407,9 +1496,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 0) {
             return retCode::NUMBER_TOO_LOW;
         }
-        if (p[0] > 95700)
-        {
-            return retCode::INTERM_TOO_HIGH;
+        if (p[0] > 95700)  {
+            return retCode::INTERIM_TOO_HIGH; /* result would exceed 20,000 digits */
         }
         long long temp = MulPrToLong(p[0]);
         mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
@@ -1456,7 +1544,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = FactConcat(p[0], p[1]);
         break;
     }
-    case opCode::fn_r2: {
+    case opCode::fn_r2: /* number of ways an integer n can be expressed as the sum of 2
+                  squares x^2 and y^2. */ {
         result = R2(p[0]);
         break;
     }
@@ -1477,7 +1566,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = R3h((p[0]));
         break;
     }
-    case opCode::fn_hurwitz: {
+    case opCode::fn_hurwitz: /* returns 12 x hurwitz class number */ {
         if (mpz_sizeinbase(ZT(p[0]), 10) >35)
             return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
         if (p[0] < 0)
@@ -1506,8 +1595,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = mpz_jacobi(ZT(p[0]), ZT(p[1]));
         break;
     }
-    case opCode::fn_tau: {
-        result = tau(p[0]); /* Ramanujan's tau function */
+    case opCode::fn_tau:  /* Ramanujan's tau function */ {
+        result = tau(p[0]); 
         break;
     }
     case opCode::fn_stirling: {
@@ -1527,7 +1616,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
 
         result = llt(p[0]);
-        if (verbose > 0 || p[0] >= 216091) {
+        if (verbose > 0 || p[0] >= 216091) {  /* 2^216091-1 is the 31st Mersenne prime.
+                    As of 2023, there are 51 known Mersenne primes. */
             if (result == 1)
                 std::cout << "*** 2^" << p[0] << " -1 is prime! ***\n";
             else
@@ -1742,6 +1832,68 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;
         return GaussFact(p[0], result);
+    }
+    case opCode::fn_quaddisc: /* quaddisc(x): discriminant of the quadratic field Q(sqrt(x))*/ {
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;
+        result = quaddisc(p[0]);
+        break;
+    }
+    case opCode::fn_eulerfrac : /* Euler number E_n */ {
+        if (p[0] < 0)
+            return retCode::NUMBER_TOO_LOW;
+        if (!isEven(p[0])) {
+            result = 0;  /* If n is odd the Euler number E(n) is zero */
+            break;
+        }
+        if (p[0] > 9022)
+            return retCode::INTERIM_TOO_HIGH; /* result would exceed 30,000 digits */
+        result = eulerfrac(p[0]);
+        break;
+    }
+    case opCode::fn_powerful:  /* powerful number? */ {
+        if (p[0] <= 0)
+            return retCode::NUMBER_TOO_LOW;
+        if (powerful(p[0]))
+            result = -1;   /* have a powerful number*/
+        else
+            result = 0;    /* not a powerful number */
+        break;
+    }
+    case opCode::fn_fundamental: /* fundamental discriminant */ {
+        if (isFundamental(p[0]))
+            result = -1;     /* it is a fundamental discriminant*/
+        else
+            result = 0;      /* not a fundamental discriminant */
+        break;
+    }
+    case opCode::fn_polygonal: /* polygonal number */ {
+        long long N;
+        if (p[0] < 1 || p[1] < 3)
+            return retCode::NUMBER_TOO_LOW;
+        if (isPolygonal(p[0], p[1], &N))
+            result = -1;     /* it is a polygonal number*/
+        else
+            result = 0;      /* not a polygonal number */
+        break;
+    }
+    case opCode::fn_squarefree: /* square-free number */ {
+        fList f;
+        if (p[0] == 0) {
+            result = 0;
+            break;
+        }
+        if (factorise(p[0], f, nullptr)) {
+            if (f.squarefree())
+                result = -1;     /* it is a square-free number*/
+            else
+                result = 0; /* not square-free */
+            break;
+        }
+        else {
+            result = 0;      /* not factorised  */
+            break;
+        }
     }
 
     default:
@@ -2495,7 +2647,7 @@ static void free_uvars() {
     uvars.alloc = 0;
 }
 void printvars(std::string name) {
-    while (name.size() > 0 &&  std::isblank(name[0])) {
+    while (name.size() > 0 &&  std::isspace(name[0])) {
         name.erase(0, 1);  /* remove leading spaces */
     }
     if (uvars.num == 0)

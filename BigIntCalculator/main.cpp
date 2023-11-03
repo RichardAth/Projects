@@ -131,7 +131,8 @@ const char * myTime(void) {
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
-prefixing the output with '0' or 'f' when necessary. */
+prefixing the output with '0' or 'f' when necessary. For -ve numbers, the
+output is is in 2s complement format. */
 static char* getHex(Znum Bi_Nbr) {
     static char *hexbuffer = NULL;  // IMPORTANT. This must be a static variable!
     std::string obuff;
@@ -164,8 +165,8 @@ static char* getHex(Znum Bi_Nbr) {
             /* we need to insert an f */
             obuff.insert(obuff.begin(), 'f');
         }
-        /* copy text from local STL string to global C-style string */
-        hexbuffer = (char *)malloc(obuff.size() + 1);
+        /* copy text from local STL string to static C-style string */
+        hexbuffer = (char *)std::malloc(obuff.size() + 1);
         assert(hexbuffer != NULL);
         strncpy_s(hexbuffer, obuff.size(), obuff.c_str(), _TRUNCATE);
     }
@@ -299,7 +300,7 @@ void generatePrimes(unsigned long long int max_val) {
     
     if (primeFlags != NULL) delete []primeFlags;	// if generatePrimes has been called before
                                                 // clear out old prime list
-    //primeFlags = (uint32_t*)calloc((max_val / 16) + 1, 1);
+    //primeFlags = (uint32_t*)std::calloc((max_val / 16) + 1, 1);
     primeFlags = new bool[max_val / 2 + 1]{ 0 };
     assert(primeFlags != NULL);
     
@@ -382,7 +383,7 @@ void textError(retCode rc) {
         std::cout << (lang ? "Número muy grande \n" :
             "Number too high \n");
         break;
-    case retCode::INTERM_TOO_HIGH:
+    case retCode::INTERIM_TOO_HIGH:
         std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
             "Intermediate number too high (more than 20000 digits)\n");
         break;
@@ -453,7 +454,7 @@ void textError(retCode rc) {
 
 /* convert s to UPPER CASE in d.  d could be the same string as s 
 similar to _strupr in c */
-static void strToUpper(const std::string &s, std::string &d) {
+void strToUpper(const std::string &s, std::string &d) {
     if (&d != &s)
         d.resize(s.size());  // resize d unless it's the same string as s
     for (size_t ix = 0; ix < s.size(); ix++)
@@ -854,6 +855,7 @@ static void doTests(void) {
         "f(60)",	            1548008755920,   // fibonacci
         "l(60)",                3461452808002,   // lucas number
         "n(123456789)",             123456791,   // prime after n
+        "b(123456789)",             123456761,   // prime before n
         "p(150)",	              40853235313,   // number of partitions
         "modinv(7, 19)",                   11,   // modular inverse
         "7* 11 % 19",                       1,   // verfy modinv in previous test
@@ -863,6 +865,7 @@ static void doTests(void) {
         "totient(201)",		              132,
         "carmichael(201)",                 66,
         "numdivs(7!)",                     60,
+        "divisors(7!)",                    60,   /* number of divisors */
         "sumdivs(7!)",                  19344,
         "numdigits(123456789, 6)",         11,
         "sumdigits(123456789, 6)",         19,
@@ -887,6 +890,7 @@ static void doTests(void) {
         "R3(49)",                        54,
         "R3H(49)",                       54,
         "R2(585)",                       16,
+        "R2P(585)",                       2,
         "SQRT(1234320)",               1110,
         "NROOT(2861381721051424,5)",   1234,
         "LLT(3217)",                      1,  // 2^3217-1 is prime
@@ -923,12 +927,31 @@ static void doTests(void) {
         "hclass(999)",                   384,   /* hurwitz class number*/
         "classno(1000001)",               94,   /* class number */
         "gf(21)",                47297536000,   /* gauss factorial */
-        "carmichael(497)",             210,     /* carmichael function */
-        "numdivs(116)",                  6,     /* number of divisors*/
-        "sumdivs(116)",                210,
-        "invtot(132)",                 161,
-        "popcnt(123456789)",            16,     /* number of 1-bits */
-        "tau(9)",                  -113643,  /* Ramanujan's tau function */
+        "carmichael(497)",              210,     /* carmichael function */
+        "numdivs(116)",                   6,     /* number of divisors*/
+        "sumdivs(116)",                 210,
+        "invtot(132)",                  161,     /* smallest number whose totient is 132 */
+        "popcnt(123456789)",             16,     /* number of 1-bits */
+        "tau(9)",                   -113643,  /* Ramanujan's tau function */
+        "abs(-99)",                      99,  /* absolute value*/
+        "dedekind(999)",               1368,  /* Dedekind psi function */
+        "eulerfrac(14)",         -199360981,  /* Euler number E(x) */
+        "hamdist(64,67)",                 2,  /* hamming distance */
+        "ispowerful(8)",                 -1,
+        "ispowerful(10)",                 0,
+        "quaddisc(23334)",            93336,
+        "stirling(11,2,1)",       -10628640,
+        "isfundamental(32901)",          -1,  /* fundamental discriminant */
+        "isfundamental(32900)",           0,
+        "isfundamental(-9859)",          -1,
+        "isfundamental(-9858)",           0,
+        "ispolygonal(1,3)",              -1, /* 1 is a polygonal number for any polygon */
+        "ispolygonal(2,3)",               0,
+        "ispolygonal(449920,10000)",     -1,
+        "ispolygonal(449921,10000)",      0,
+        "issquarefree(99998)",           -1,
+        "issquarefree(99999)",            0,
+
     };
 
     results.clear();
@@ -1524,7 +1547,7 @@ static void doTests3(void) {
                 << "\ngot      " << b1;
             break;
         }
-        p *= (long long)rand() * 2 + 3;
+        p *= (long long)std::rand() * 2 + 3;
         p2 *= std::rand();
     }
     std::cout << "division test " << l2 << " cycles\n";
@@ -1642,8 +1665,8 @@ for numbers greater than about 11 digits, but R3h requires that pari/GP has
 been installed. */
 /* see https://oeis.org/A005875 
 Command format is TEST 11 [p1[,p2[,p3]]] where
-p1 is the number of tests,
-p2 is the size of the numbers to be processed in bits,
+p1 is the number of tests, default is 20
+p2 is the size of the numbers to be processed in bits, (default is 32, maximum is 41)
 if p3 <= 1 use fixed random seed value (default)
 if p3 = 2 use truly random seed value
 if p3 > 2  use p3 as the seed value*/
@@ -1651,7 +1674,7 @@ static void doTestsB(const std::vector<std::string> &p) {
     int i;
     auto start = std::clock();	// used to measure execution time
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
-    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 48)
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 32, maximum is 41)
     long long p3 = 0;
     long long xl;
     unsigned long long rv;
@@ -1882,7 +1905,7 @@ static void doTests7(const std::vector<std::string> &p) {
     auto start = std::clock();	// used to measure execution time
 
     if (p.size() >= 3)
-        limit = std::atoi(p[2].data());
+        limit = std::stoi(p[2]);
     if (limit < 0 || limit > 120000) {
         std::cout << "limit out of range; use 12000 \n";
         limit = 12000;
@@ -2108,7 +2131,7 @@ static int ifCommand(const std::string &command) {
     }
 
     /* move ixx2 to next non-blank character */
-    for (ixx2++; ixx2 < command.size() &&  std::isblank(command[ixx2]); ixx2++);
+    for (ixx2++; ixx2 < command.size() &&  std::isspace(command[ixx2]); ixx2++);
     if (command.substr(ixx2) == "STOP") {
         if (result != 0)
             return 1;
@@ -2125,7 +2148,7 @@ static int ifCommand(const std::string &command) {
         size_t ex1Start=ixx2+4, ex1End, ex2Start, ex2End;
 
         /* move ex1Start to next non-blank character */
-        for (ex1Start=ixx2+4; ex1Start < command.size() &&  std::isblank(command[ex1Start]); 
+        for (ex1Start=ixx2+4; ex1Start < command.size() &&  std::isspace(command[ex1Start]); 
             ex1Start++);
     
         if (ex1Start >= command.size() || command[ex1Start] != '(') {
@@ -2151,7 +2174,7 @@ static int ifCommand(const std::string &command) {
         }
 
         /* move ex2Start to next non-blank character if any */
-        for (ex2Start = ex1End + 1; ex2Start < command.size() &&  std::isblank(command[ex2Start]);
+        for (ex2Start = ex1End + 1; ex2Start < command.size() &&  std::isspace(command[ex2Start]);
             ex2Start++);
         if (ex2Start < command.size()) {
             /* still some unprocessed characters */
@@ -2161,7 +2184,7 @@ static int ifCommand(const std::string &command) {
                 return -1;
             }
             ex2Start += 4;   /* move past ELSE */
-            for (; ex2Start < command.size() &&  std::isblank(command[ex2Start]); ex2Start++);
+            for (; ex2Start < command.size() &&  std::isspace(command[ex2Start]); ex2Start++);
             if (ex2Start >= command.size() || command[ex2Start] != '(') {
                 std::cout << "ELSE not followed by ( \n";
                 return -1;  /* no ( after ELSE so invalid */
@@ -2706,7 +2729,7 @@ static int processCmd(std::string command) {
         token = strtok_s(nullptr, seps, &next);
     }
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
-        p1 = std::atoi(p[1].data());  /* if p[1] is a decimal number set p1 to value */
+        p1 = std::stoi(p[1]);  /* if p[1] is a +ve decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -2735,9 +2758,13 @@ static int processCmd(std::string command) {
     case 5: /* S */ { 
         lang = 1; return 1; }	          // spanish (Español)
     case 6: /* F */ { 
-         if (p.size() >= 2)
-            factorFlag = p1;
-         std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
+        if (p.size() >= 2) {
+            if (p1 != INT_MIN)
+                factorFlag = p1;
+            else
+                return 0;  /* not a valid command */
+        }
+        std::cout << (lang ? "factor establecido como " : "factor set to ") << factorFlag << '\n';
         return 1; }  
     case 7: /* X */ { 
         hexPrFlag = true; return 1; }         // hexadecimal output
@@ -2991,7 +3018,7 @@ static void initialise(int argc, char *argv[]) {
     handConsole = GetConsoleWindow();            // get handle for console window
     if (hConsole == INVALID_HANDLE_VALUE)
     {
-        fprintf_s(stderr, "GetStdHandle failed with %d at line %d\n", GetLastError(), __LINE__);
+        ErrorDisp(__FUNCTION__);
         Beep(750, 1000);
         std::exit (EXIT_FAILURE);
     }
@@ -3064,7 +3091,9 @@ static void myGetline(std::string &expr) {
 
     std::getline(std::cin, expr);    // expression may include spaces
     if (std::cin.fail() || std::cin.bad()) {
+        std::cin.clear();
         expr.erase();
+        std::cerr << "error reading from stdin \n";
         return;   /* error reading from stdin */
     }
 
@@ -3116,6 +3145,9 @@ int main(int argc, char *argv[]) {
 
         /* start of main loop. Normal exit is via EXIT command */
         while (true) {
+            if (fpeReRegister) {
+                ReRegister();  /* re-register the Floating Point error signal handler */
+            }
             if (lang == 0) {
                 printf_s("enter expression to be processed, or HELP, EXIT, SET or QMES\n");
             }
@@ -3131,7 +3163,7 @@ int main(int argc, char *argv[]) {
             }
 
             if (expr.empty()) {
-                Sleep(1000);       
+                Sleep(1000);         /* wait 1 second */
                 continue;            /* no input */
             }
 

@@ -199,10 +199,7 @@ retry:
     errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
     if (ecode != 0) {
         /* failed to open the help file*/
-        char buffer[80];
-        _strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
-        fprintf_s(stderr, "fopen error: %s\n", buffer);
-        fprintf_s(stderr, "help file not found\n");
+        std::perror("fopen error: help file not found");
 
         while (std::toupper(expr[0]) != 'Y') {
             std::cout << "Do you want to search for the help file? (Y/N) \n";
@@ -240,9 +237,7 @@ retry:
                 break;
             }
             else {
-                char buffer[80];
-                _strerror_s(buffer, sizeof(buffer), NULL); /* convert errno to a text messsage */
-                fprintf_s(stderr, "fgets error: %s\n", buffer);
+                std::perror("fgets error reading Help file");
                 break;
             }
 

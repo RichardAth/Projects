@@ -131,7 +131,9 @@ public:
 		return result;
 	}
 
-	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and e=exponent.*/
+	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and 
+	e=exponent. See https://oeis.org/A001615 
+	and https://en.wikipedia.org/wiki/Dedekind_psi_function*/
 	Znum dedekind() const {
 		// this only works if factorisation is complete!
 		Znum result = 1, term;
@@ -143,6 +145,33 @@ public:
 			result *= term;
 		}
 		return result;
+	}
+
+	/* returns true if every prime factor has an exponent 2 or more, otherwise
+	returns false. Equivalently, a powerful number is the product of a square and a cube. 
+	Powerful numbers are also known as squareful, square-full, or 2-full. 
+	See https://en.wikipedia.org/wiki/Powerful_number 
+	and https://oeis.org/A001694 */
+	bool powerful() const {
+		if (this->f.empty())/* this only works if factorisation is complete! */
+			return false;   
+		for (auto i : this->f) {
+			if (i.exponent < 2)
+				return false;
+		}
+		return true;
+	}
+
+	/* returns true if every prime factor has an exponent 1, otherwise returns false
+	(the opposite of powerful). */
+	bool squarefree() const {
+		if (this->f.empty())/* this only works if factorisation is complete! */
+			return false;
+		for (auto i : this->f) {
+			if (i.exponent >1)
+				return false;
+		}
+		return true;
 	}
 
 /* find  Carmichael function λ(n) See Wikpedia
@@ -397,7 +426,7 @@ Repeated factors: No or Yes
 				else
 					for (int j = 1; j <= (*i).exponent; j++)
 						result += buffer; // concatenate factor
-				free(buffer);
+				std::free(buffer);
 				buffer = NULL;
 			}
 		else  /* start with smallest factor */
@@ -408,7 +437,7 @@ Repeated factors: No or Yes
 				else
 					for (int j = 1; j <= i.exponent; j++)
 						result += buffer;  // concatenate factor
-				free(buffer);
+				std::free(buffer);
 				buffer = NULL;
 			}
 		mpz_set_str(ZT(rvalue), result.data(), 10); /* convert back from a string to a number */

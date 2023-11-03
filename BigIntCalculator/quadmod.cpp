@@ -54,7 +54,7 @@ static retCode ComputeExpression(const char* exprA, BigInteger* result, bool dum
     if (rv)
         return rc;  /* pass back return code too */
     else
-        return retCode::INTERM_TOO_HIGH;
+        return retCode::INTERIM_TOO_HIGH;
 }
 
 static int Show(const BigInteger* num, const char* str, int t)
@@ -200,49 +200,44 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
             }
         }
     }
-    else
-    {                       // Quadratic Equation
+    else {                       // Quadratic Equation
       // The discriminant is b^2 - 4.a.c  = (ValB * ValB - 4 * ValA * ValC).
         // the soulution formula is (-b +/- sqrt(b^2 - 4.a.c))/2a
-        Aux0 = ValB * ValB;         // (void)BigIntMultiply(&ValB, &ValB, &Aux0);
+        Aux0 = ValB * ValB;         // aux0 = b^2
         Aux1 = ValA * ValC;         // (void)BigIntMultiply(&ValA, &ValC, &Aux1);
-        Aux1 *= 4;                  // multint(&Aux1, &Aux1, 4);
-        discriminant = Aux0 - Aux1; // BigIntSubt(&Aux0, &Aux1, &discriminant);
-        if (discriminant.sign == SIGN_NEGATIVE)
-        {        // No integer solutions.
-            return;
+        Aux1 *= 4;                  // aux1 = 4ac  
+        discriminant = Aux0 - Aux1; // discriminant = B^2 - 4ac
+        if (discriminant.sign == SIGN_NEGATIVE)  {        
+            return;  // No real solutions.
         }
         // Set sqrtDiscriminant to square root of discriminant.
-        //squareRoot(discriminant.limbs, sqrtDiscriminant.limbs, discriminant.nbrLimbs, &sqrtDiscriminant.nbrLimbs);
         sqrtDiscriminant = discriminant.sqRoot();
         sqrtDiscriminant.sign = SIGN_POSITIVE;
         Aux0 = sqrtDiscriminant * sqrtDiscriminant; // (void)BigIntMultiply(&sqrtDiscriminant, &sqrtDiscriminant, &Aux0);
-        if (Aux0 != discriminant)
-            //BigIntSubt(&Aux0, &discriminant, &Aux0);
-            //if (!BigIntIsZero(&Aux0))
-        {  // discriminant has no integer square root.
-            return;
+        if (Aux0 != discriminant) {  
+            return;   // discriminant has no integer square root.
         }
-        Aux0 = ValA * 2;                // multint(&Aux0, &ValA, 2);    // Denominator
-        Aux1 = sqrtDiscriminant - ValB; // BigIntSubt(&sqrtDiscriminant, &ValB, &Aux1);
-        Aux2 = Aux1 % Aux0;             //(void)BigIntRemainder(&Aux1, &Aux0, &Aux2);
-        if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))
+        Aux0 = ValA * 2;                //  Denominator
+        Aux1 = sqrtDiscriminant - ValB; // Aux1 = -b +sqrt(b^2 -4ac)
+        Aux2 = Aux1 % Aux0;             // get remainder
+        if (Aux2 == 0)                  // is Aux1 an exact multiple of Aux0?
         {      // (sqrtDiscriminant-ValB)/(2*ValA) is integer: it is a solution.
-            Aux2 = Aux1 / Aux0;        //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
+            Aux2 = Aux1 / Aux0;        // Aux2 is a solution
             Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
         BigIntNegate(sqrtDiscriminant);
-        Aux1 = sqrtDiscriminant - ValB; //BigIntSubt(&sqrtDiscriminant, &ValB, &Aux1);
-        Aux2 = Aux1 % Aux0;             //(void)BigIntRemainder(&Aux1, &Aux0, &Aux2);
-        if (Aux2 == 0)                  //(BigIntIsZero(&Aux2))
+        Aux1 = sqrtDiscriminant - ValB; // Aux1 = -b -sqrt(b^2 -4ac)
+        Aux2 = Aux1 % Aux0;             // get remainder
+        if (Aux2 == 0)                  // is Aux1 an exact multiple of Aux0?
         {      // (-sqrtDiscriminant-ValB)/(2*ValA) is integer: it is a solution.
-            Aux2 = Aux1 / Aux0;         //(void)BigIntDivide(&Aux1, &Aux0, &Aux2);
+            Aux2 = Aux1 / Aux0;         // Aux2 is a solution
             Solution(&Aux2, &ValA, &ValB, &ValC, &ValN);
         }
     }
     SolNbr = 1;
 }
 
+/* send error message to stdout */
 static void textErrorQuadMod(retCode rc){
     textError(rc);
 }
@@ -267,7 +262,7 @@ static void ModulusIsNotZero(BigInteger& ValA, BigInteger& ValB, BigInteger& Val
     GcdAll.sign = SIGN_POSITIVE;
     Aux0 = ValC % GcdAll;   // (void)BigIntRemainder(&ValC, &GcdAll, &Aux0);
     if (Aux0 != 0)          //(!BigIntIsZero(&Aux0))
-    {  // ValC must be multiple of gcd(ValA, ValB).
+    {  // ValC must be multiple of gcd(ValA, ValB, ValC).
        // Otherwise go out because there are no solutions.
         return;
     }
@@ -314,7 +309,7 @@ modular square roots by setting a = -1, b = 0, c = number whose root we want to 
 and n = modulus. The parameters are supplied as text, which can be numbers or
 numerical expressions. The modulus has to be factored, so if it is too large
 the factorisation can take an excessive length of time. The results are placed in 
-the output buffer */
+the output buffer and return EXPR_OK if no errors detected. */
 static retCode quadmodText(const char* aText, const char* bText, const char* cText,
     const char* modText, int groupLength)
 {
@@ -396,7 +391,8 @@ static retCode quadmodText(const char* aText, const char* bText, const char* cTe
 
 /* solve quadratic modular equation a⁢x² + b⁢x + c ≡ 0 (mod n). 
 expressions for a, b, c, and n are entered as text and converted to numbers,
-then the equation is solved. Returns 0 for success, 1 if an exception is thrown. */
+then the equation is solved. Returns 0 for success, 1 if an exception is thrown,
+or if any error is detected */
 int quadModEqn(const std::vector<std::string>& p) {
     char A[50], B[50], C[50], N[50];
     try {

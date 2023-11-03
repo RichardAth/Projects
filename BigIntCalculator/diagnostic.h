@@ -1,6 +1,7 @@
 #pragma once
 
 extern bool breakSignal;
+extern bool fpeReRegister;
 
 /* flags used to control action of SetProcessExceptionHandlers() function */
 struct flags {
@@ -56,3 +57,6 @@ long filter2(struct _EXCEPTION_POINTERS *ep);
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void);
+
+/* re-register the FP error signal handler */
+void ReRegister(void);

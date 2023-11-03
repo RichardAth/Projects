@@ -59,6 +59,9 @@ typedef boost::multiprecision::mpz_int Znum;
   * USAGE: ./test_json <json_file>
   */
 
+extern char lastValidNameFound[];
+
+
 /* forward declarations */
 static void process_value(json_value* value, int depth);
 static void process_value_s(json_value* value, int depth, const char* name,
@@ -69,7 +72,7 @@ static void print_depth_shift(int depth)
 {
     int j;
     for (j = 0; j < depth; j++) {
-        printf(" ");
+        printf("  ");
     }
 }
 
@@ -272,13 +275,19 @@ int process_file_s(FILE* fp, int* counter,
             json_value_free(value);  /* avoid memory leakage */
             value = json_parse(json, strlen(buffer));
             if (value == NULL) {
-                fprintf(stderr, "Unable to parse data\n");
+                fprintf(stderr, "Unable to parse data: last valid name found = %s \n",
+                    lastValidNameFound);
                 return(1);
             }
+            
+#ifdef _DEBUG
+            process_value(value, 0);
+#endif
              (*counter)++;  /* count number of records */
         }
         else {   /* error or end-of-file */
             if (feof(fp)) {
+
                 /* process last record read */
                 factors.clear();
                 for (int index = 0; index < name_list_size; index++)

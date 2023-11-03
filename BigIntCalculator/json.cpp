@@ -68,7 +68,9 @@
 typedef unsigned int json_uchar;
 
 const struct _json_value json_value_none;
+char lastValidNameFound[256] = { '\0' };  /* may be useful if a parsing error occurs */
 
+/* convert hex digit from ascii to binary */
 static unsigned char hex_value(json_char c)
 {
     if ( std::isdigit((unsigned char)c))
@@ -85,6 +87,7 @@ static unsigned char hex_value(json_char c)
     }
 }
 
+/* return true if if value would overflow if digit b were added to it */
 static int would_overflow(json_int_t value, json_char b)
 {
     return ((JSON_INT_MAX - (b - '0')) / 10) < value;
@@ -145,7 +148,7 @@ static int new_value(json_state* state,
 
         switch (value->type)
         {
-        case json_array:
+        case json_array: {
 
             if (value->u.array.length == 0)
                 break;
@@ -158,8 +161,8 @@ static int new_value(json_state* state,
 
             value->u.array.length = 0;
             break;
-
-        case json_object:
+        }
+        case json_object: {
 
             if (value->u.object.length == 0)
                 break;
@@ -180,8 +183,8 @@ static int new_value(json_state* state,
 
             value->u.object.length = 0;
             break;
-
-        case json_string:
+        }
+        case json_string: {
 
             if (!(value->u.string.ptr = (json_char*)json_alloc
             (state, (value->u.string.length + 1) * sizeof(json_char), 0)))
@@ -191,7 +194,7 @@ static int new_value(json_state* state,
 
             value->u.string.length = 0;
             break;
-
+        }
         default:
             break;
         };
@@ -447,6 +450,9 @@ static json_value* json_parse_ex(json_settings* settings,
 
                             top->u.object.values[top->u.object.length].name_length
                                 = string_length;
+                            /* save copy of name (might be useful if error occurs) */
+                            strncpy_s(lastValidNameFound, sizeof(lastValidNameFound), 
+                                (char*)top->_reserved.object_mem, _TRUNCATE);
 
                             (*(json_char**)&top->_reserved.object_mem) += string_length + 1;
                         }
@@ -638,7 +644,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'true'*/
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -655,7 +661,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'false' */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -669,7 +675,7 @@ static json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* found 'null' */
                         if (!new_value(&state, &top, &root, &alloc, json_null))
                             goto e_alloc_failure;
 
@@ -730,7 +736,7 @@ static json_value* json_parse_ex(json_settings* settings,
             {
                 switch (top->type)
                 {
-                case json_object:
+                case json_object: {
 
                     switch (b)
                     {
@@ -771,11 +777,11 @@ static json_value* json_parse_ex(json_settings* settings,
                     };
 
                     break;
-
+                }
                 case json_integer:
-                case json_double:
+                case json_double: {
 
-                    if ( std::isdigit((unsigned char)b))
+                    if (std::isdigit((unsigned char)b))
                     {
                         ++num_digits;
 
@@ -902,7 +908,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                     flags |= flag_next | flag_reproc;
                     break;
-
+                }
                 default:
                     break;
                 };

@@ -311,7 +311,7 @@ static void ShowSIQSInfo(int timeSieve, int congruencesFound, int matrixBLength,
 	if (first) {
 		if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 		{
-			fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+			ErrorDisp(__FUNCTION__);
 			Beep(750, 1000);
 		}
 		coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
@@ -2113,7 +2113,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	first = true;
 	if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 	{
-		fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+		ErrorDisp(__FUNCTION__);
 		Beep(750, 1000);
 	}
 
@@ -2142,7 +2142,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	/* allocate storage for ther arrays */
 	ag = (AG*)std::calloc(1, sizeof(AG));
 	assert(ag != nullptr);
-	memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
+	std::memset(ag->primesUsed, 0, MAX_PRIMES * sizeof(char));
 
 	//  threadArray = new Thread[numberThreads];
 	Temp = logZnum(zN);
@@ -2153,7 +2153,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	/* SieveLimit is rounded down to a multiple of 8.
 	if zN = 10^95 SieveLimit is about 130,768. */
-	SieveLimit = (int)exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
+	SieveLimit = (int)std::exp(8.5 + 0.015 * Temp) & 0xFFFFFFF8;
 	if (SieveLimit > MAX_SIEVE_LIMIT)
 	{
 		SieveLimit = MAX_SIEVE_LIMIT;
@@ -2163,7 +2163,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 
 	zModulus = zN;
 	zTestNbr2 = zModulus; // = N
-	memset(matrixPartialHashIndex, 0xFF, sizeof(matrixPartialHashIndex));
+	std::memset(matrixPartialHashIndex, 0xFF, sizeof(matrixPartialHashIndex));
 
 #ifdef __EMSCRIPTEN__
 	InitSIQSStrings(SieveLimit, nbrFactorBasePrimes);
@@ -2194,7 +2194,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 			adjustment[j] *= (4.0e0);        // ln(4)
 		if (mod == 5)
 			adjustment[j] *= (2.0e0);         // ln(2)
-		adjustment[j] -= log((double)arrmult[j]) / (2.0e0);
+		adjustment[j] -= std::log((double)arrmult[j]) / (2.0e0);
 	}
 
 	/* set up adjustment array*/
@@ -2208,7 +2208,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 		/* jacobi = NbrMod ^ HalfCurrentPrime % currentPrime */
 		int jacobi = (int)modPower(NbrMod, halfCurrentPrime, currentPrime);
 		double dp = (double)currentPrime;
-		double logp = log(dp) / dp;
+		double logp = std::log(dp) / dp;
 
 		for (j = 0; j<sizeof(arrmult) / sizeof(arrmult[0]); j++) {
 			if (arrmult[j] == currentPrime) {
@@ -2399,7 +2399,7 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	largePrimeUpperBound = 100 * FactorBase;
 
 	dlogNumberToFactor = logZnum(zN); 	// find logarithm of number to factor.
-	dNumberToFactor = exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
+	dNumberToFactor = std::exp(dlogNumberToFactor);   // convert NbrToFactor to floating point
 
 #ifdef __EMSCRIPTEN__
 	getMultAndFactorBase(multiplier, FactorBase);  // append Mult & Factor base to SIQS string
@@ -2419,9 +2419,9 @@ void FactoringSIQS(const Znum &zN, Znum &Factor) {
 	threshold = (int) (std::log(std::sqrt(dNumberToFactor) * SieveLimit /
 				(FactorBase * 64) /
 					primeSieveData[j + 1].value
-				) / log(3) + 0x81
+				) / std::log(3) + 0x81
 			);
-	firstLimit = (int)(log(dNumberToFactor) / 3);
+	firstLimit = (int)(std::log(dNumberToFactor) / 3);
 	for (secondLimit = firstLimit; secondLimit < nbrFactorBasePrimes; secondLimit++) {
 		if (primeSieveData[secondLimit].value * 2 > SieveLimit) {
 			break;
@@ -2539,12 +2539,12 @@ static int EraseSingletons(int nbrFactorBasePrimes) {
 	int *rowMatrixB;
 	int matrixBlength = matrixBLength;
 
-	memset(ag->newColumns, 0, matrixBlength * sizeof(int));
+	std::memset(ag->newColumns, 0, matrixBlength * sizeof(int));
 	// Find singletons in matrixB storing in array vectExpParity the number
 	// of primes in each column.
 	do {   // The singleton removal phase must run until there are no more
 		   // singletons to erase.
-		memset(ag->vectExpParity, 0, matrixBLength * sizeof(limb));
+		std::memset(ag->vectExpParity, 0, matrixBLength * sizeof(limb));
 		for (row = matrixBlength - 1; row >= 0; row--)
 		{                  // Traverse all rows of the matrix.
 			rowMatrixB = &matrixB[row][0];
@@ -2646,7 +2646,7 @@ static bool LinearAlgebraPhase(
 
 		biT = 1; 
 		biR = 1; 
-		memset(ag->vectExpParity, 0, matrixBlen * sizeof(ag->vectExpParity[0]));
+		std::memset(ag->vectExpParity, 0, matrixBlen * sizeof(ag->vectExpParity[0]));
 
 		for (row = matrixBlen - 1; row >= 0; row--) {
 			if ((ag->matrixV[row] & mask) != 0) {
@@ -2903,7 +2903,7 @@ static void MultiplyAByMatrix(int *Matr, int *TempMatr, int *ProdMatr) {
 	int *rowMatrixB;
 
 	/* Compute TempMatr = B * Matr */
-	memset(TempMatr, 0, matrixBLength * sizeof(int));
+	std::memset(TempMatr, 0, matrixBLength * sizeof(int));
 	for (row = matrixBLength - 1; row >= 0; row--) {
 		int rowValue;
 		rowMatrixB = &matrixB[row][0];
@@ -3023,13 +3023,13 @@ static void BlockLanczos(void)
 	int *rowMatrixB, *ptrMatrixV, *ptrMatrixXmY;
 
 	newDiagonalSSt = oldDiagonalSSt = -1;
-	memset(matrixWinv, 0, sizeof(matrixWinv));
-	memset(matrixWinv1, 0, sizeof(matrixWinv1));
-	memset(matrixWinv2, 0, sizeof(matrixWinv2));
-	memset(matrixVtV0, 0, sizeof(matrixVtV0));
-	memset(matrixVt1V0, 0, sizeof(matrixVt1V0));
-	memset(matrixVt2V0, 0, sizeof(matrixVt2V0));
-	memset(matrixVt1AV1, 0, sizeof(matrixVt1AV1));
+	std::memset(matrixWinv, 0, sizeof(matrixWinv));
+	std::memset(matrixWinv1, 0, sizeof(matrixWinv1));
+	std::memset(matrixWinv2, 0, sizeof(matrixWinv2));
+	std::memset(matrixVtV0, 0, sizeof(matrixVtV0));
+	std::memset(matrixVt1V0, 0, sizeof(matrixVt1V0));
+	std::memset(matrixVt2V0, 0, sizeof(matrixVt2V0));
+	std::memset(matrixVt1AV1, 0, sizeof(matrixVt1AV1));
 
 	/* Initialize matrix X-Y and matrix V_0 with random data */
 	dSeed = (double)123456789;
@@ -3088,7 +3088,7 @@ static void BlockLanczos(void)
 			if (first) {
 				if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
 				{
-					fprintf(stderr, "** GetConsoleScreenBufferInfo failed with %d!\n", GetLastError());
+					ErrorDisp(__FUNCTION__);
 					Beep(750, 1000);
 				}
 				coordScreen.X = csbi.dwCursorPosition.X;  // save cursor co-ordinates
@@ -3492,7 +3492,7 @@ static void sieveThread(Znum &result) {
 	unsigned char positive;
 	int inverseA, twiceInverseA;
 
-	biLinearCoeff = 0; //memset(biLinearCoeff, 0, sizeof(biLinearCoeff));
+	biLinearCoeff = 0; //std::memset(biLinearCoeff, 0, sizeof(biLinearCoeff));
 					   //  synchronized(amodq)
 	{
 		if (threadNumber == 0) {

@@ -7,7 +7,7 @@ enum class retCode
 {
 	NUMBER_TOO_LOW = -100,
 	NUMBER_TOO_HIGH,
-	INTERM_TOO_HIGH,
+	INTERIM_TOO_HIGH,
 	DIVIDE_BY_ZERO,
 	PAREN_MISMATCH,
 	SYNTAX_ERROR,
@@ -42,6 +42,7 @@ void textError(retCode rc);
 void removeInitTrail(std::string& msg);
 /* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
 void removeIntSpace(std::string& msg);
+void strToUpper(const std::string& s, std::string& d);
 void PrintTimeUsed(double elapsed, const std::string& msg = "");
 void ErrorDisp(const char* lpszFunction);
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
@@ -105,6 +106,8 @@ Znum Hclassno12(const Znum& n);
 Znum classno(const Znum& n, int flag);
 Znum tau(const Znum& n);
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
+Znum quaddisc(const Znum& n);
+Znum eulerfrac(const Znum& n);
 
 /* quadmod.cpp */
 void doTestsA(const std::vector<std::string>& params);   /* quadratic modular equation solver */

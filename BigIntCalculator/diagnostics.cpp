@@ -24,8 +24,11 @@
 #include "diagnostic.h"
 
 #undef max   /* remove max defined in windows.h because of name clash */
+typedef void(*sigh)(int); /* force compiler to accept SigfpeHandler although
+                           it actually has 2 parameters, not 1 */
 
-bool breakSignal = false;
+bool breakSignal = false;    /* set true to inform main loop that a break signal has occurred */
+bool fpeReRegister = false;  /* set true if the FP error signal handler has to be re-registered */
 
 /* used for minidump */
 struct module_data {
@@ -248,7 +251,7 @@ DWORD StackTrace2(void)
     char * builder;
     size_t bIx = 0;
     const size_t bIxMax = 10000;
-    builder = (char *)calloc(bIxMax, 1);
+    builder = (char *)std::calloc(bIxMax, 1);
     do {
         if (frame.AddrPC.Offset != 0) {
             std::string fnName = symbol(process, frame.AddrPC.Offset).undecorated_name();
@@ -415,10 +418,38 @@ void SigfpeHandler(int sig, int num) {
     auto err = std::feclearexcept(FE_ALL_EXCEPT);   /* attempt to clear all exceptions */
     assert(err == 0);
 
-    std::cout << "Press ENTER to continue...";
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    int r = MessageBoxA(handConsole, "Press YES to terminate program, NO to continue",
+        "Floating Point error signalled", MB_YESNO);
+    switch (r) {
+    case IDYES: {  /* YES selected */
+        // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
+        SetThreadExecutionState(ES_CONTINUOUS);
+        std::exit(EXIT_FAILURE);
+    }
+    case IDNO: { /* NO selected */
+        int except = std::fetestexcept(FE_ALL_EXCEPT);
+        if (except & FE_DIVBYZERO)
+            std::cerr << "FE divide by zero set \n";
+        if (except & FE_INEXACT)
+            std::cerr << "FE inexact set \n";
+        if (except & FE_INVALID)
+            std::cerr << "FE invalid set \n";
+        if (except & FE_OVERFLOW)
+            std::cerr << "FE overflow set \n";
+        if (except & FE_UNDERFLOW)
+            std::cerr << "FE underflow set \n";
+        assert(except == 0 || except == FE_INEXACT);
+        //std::signal(SIGFPE, (sigh)SigfpeHandler);  /* re-register signal handler */
 
-    return;
+        std::signal(SIGFPE, SIG_IGN);  /* turn signal handler off, because experience has
+        shown that if it is turned on, when return is executed the instruction causing
+        the error is generally re--executed causing another error signal. We have to
+        hope that other ways of handling FP errors such as testing for NaN or Inf
+        will be sufficient. */
+        fpeReRegister = true;
+        return;
+    }
+    }
 }
 
 void SigabrtHandler(int sig) {
@@ -485,12 +516,13 @@ void SigintHandler(int sig) {
         /* re-register signal handler */
         std::signal(SIGINT, SigintHandler);       // interrupt (Ctrl - C)
         std::signal(SIGBREAK, SigintHandler);     // Ctrl - Break sequence
-        breakSignal = true;     /* Main program can check this. Allows it to minimise
-                        strange behaviour before it terminates */
-        return;  /* main program continues, but cannot get any more input from stdin */
+        //breakSignal = true;     /* Main program can check this. Allows it to minimise */
+                        /* strange behaviour before it terminates */
+        return;  /* main program continues */
     }
 
     default:
+        std::cerr << "invalid response from message box, not YES or No. r = " << r << '\n';
         std::abort();    /* should never get to here!! */
     }
 }
@@ -602,8 +634,7 @@ the interesting stack-frames being gone by the time you do the dump.  */
     function if a signal handler is not registered. If both a SIGFPE signal
     function and a filter function are used, both seem to get called for each 
     floating point error. */
-    typedef void(*sigh)(int); /* force compiler to accept SigfpeHandler although
-                              it actually has 2 parameters, not 1 */
+ 
     if (f.sigfpe)
         std::signal(SIGFPE, (sigh)SigfpeHandler);
 
@@ -893,6 +924,11 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
     rcode = filter(code, ep);
     return EXCEPTION_EXECUTE_HANDLER;  /* override return code from filter */
 }
+/* re-register the FP error signal handler */
+void ReRegister(void) {
+    std::signal(SIGFPE, (sigh)SigfpeHandler);
+    fpeReRegister = false; /* only need to do this once */
+}
 
 /* call this to generate one of a variety of errors; test error handling */
 void testerrors(void) {
@@ -958,7 +994,7 @@ void testerrors(void) {
 #pragma warning(disable : 6387)
             // warning C6387: 'argument 1' might be '0': this does
             // not adhere to the specification for the function 'printf'
-            int rc = printf(formatString);
+            int rc = printf_s(formatString);
 #pragma warning(default : 6387)   
             printf_s("return code from printf_s is %d \n", rc);
             break;

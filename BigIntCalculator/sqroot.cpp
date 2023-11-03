@@ -57,8 +57,7 @@ bool isPerfectSquare(__int64 x) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    long long s = std::llround(std::sqrt(x));  // slightly faster than intSqrt
-    //long long s = intSqrt(x);
+    long long s = std::llround(std::sqrt(x));  
     return (s * s == x);
 }
 
@@ -87,8 +86,10 @@ bool isPerfectSquare(__int64 x, __int64 &ss) {
     if ((x & 0x7) != 1)
         return false;  // not a perfect square
 
-    s = std::llround(std:: sqrt(x));  // slightly faster than intSqrt
+    s = std::llround(std:: sqrt(x));  
     ss = s << (ix / 2);
+    while (ss * ss > x)
+        ss--;  /* if rounding rounds up, reduce ss to floor(sqrt(x)) */
     return (s * s == x);
 }
 
