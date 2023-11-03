@@ -287,6 +287,14 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
+
+/* divide x by 2^p, return modulus and quotient. */
+long long divremp2(const Znum x, const int p, Znum & quot) {
+	assert(p > 0 && p <= 63);
+	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
+	return mpz_fdiv_ui(ZT(x), 2 << p);
+}
+
 std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
@@ -328,7 +336,8 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 #endif
 
 	// Simple case
-	if (prime % 4 == 3) {
+	if (mpz_fdiv_ui(ZT(prime), 4) == 3) { /* Lagrange solution */
+	//if ((prime & 3) == 3) {  
 		R = modPower(a, (prime + 1) / 4, prime);
 		result.push_back(R);
 		result.push_back(prime - R);
@@ -336,6 +345,21 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
+	if (mpz_fdiv_ui(ZT(prime), 8) == 5) { /* Legendre solution */
+	//if ((prime & 7) == 5) { 
+		Znum v, i;
+		v = modPower((2 * a), (prime - 5) / 8, prime);
+		//i = (2 * a * v * v) % prime;
+		i = modMult(2 * a, v * v, prime);
+		//R = (a * v * (i - 1)) % prime;
+		R = modMult(a * v, i - 1, prime);
+		result.push_back(R);
+		result.push_back(prime - R);
+		printroots(a, prime, result);
+		return result;
+	}
+
+	/* if we drop through to here , prime%8 = 1*/
 	// Tonelli-Shanks step 1: Factor prime - 1 of the form q * 2 ^ s(with Q odd)
 	q = prime - 1;
 	s = 0;

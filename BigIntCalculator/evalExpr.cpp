@@ -179,6 +179,7 @@ enum class opCode {
     fn_powerful,          /* test whether powerful or not */
     fn_fundamental,       /* test whether x is a fundamental discriminant or not*/
     fn_polygonal,         /* test whether x is a polygonal number */
+    fn_squarefree,        /* test whether x is squarefree or not */
     fn_invalid = -1,
 };
 
@@ -218,6 +219,7 @@ const static struct functions functionList[]{
     "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
     "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
     "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
+    "ISSQUAREFREE",1, opCode::fn_squarefree,    /* squarefree number */
     "ISPRIME",   1,	 opCode::fn_isprime,
     "ISPOW",     1,  opCode::fn_ispow,
     "JA",		 2,  opCode::fn_jacobi,
@@ -1185,7 +1187,7 @@ static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr)
         N = num / denom;
         assert(num % denom == 0);
         if (n != nullptr && N <= LLONG_MAX)
-            *n = MulPrToLong(N);
+            *n = MulPrToLong(N);   /* return value of n */
         if (verbose > 0) {
             std::cout << x << " is the " << N << "-th " << s << "-gonal number \n";
         }
@@ -1875,6 +1877,25 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = 0;      /* not a polygonal number */
         break;
     }
+    case opCode::fn_squarefree: /* square-free number */ {
+        fList f;
+        if (p[0] == 0) {
+            result = 0;
+            break;
+        }
+        if (factorise(p[0], f, nullptr)) {
+            if (f.squarefree())
+                result = -1;     /* it is a square-free number*/
+            else
+                result = 0; /* not square-free */
+            break;
+        }
+        else {
+            result = 0;      /* not factorised  */
+            break;
+        }
+    }
+
     default:
         std::abort();	// should never get here
     }

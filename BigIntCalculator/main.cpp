@@ -949,6 +949,8 @@ static void doTests(void) {
         "ispolygonal(2,3)",               0,
         "ispolygonal(449920,10000)",     -1,
         "ispolygonal(449921,10000)",      0,
+        "issquarefree(99998)",           -1,
+        "issquarefree(99999)",            0,
 
     };
 
