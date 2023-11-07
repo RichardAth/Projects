@@ -748,7 +748,7 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
             }
             else if (factorlist.sqplustwosq()) {
                 if ((Quad[0] != Quad[1] && Quad[1] != Quad[2]) || Quad[3] != 0)
-                    std::cout << "expected a= b or b = c and d= 0; got: \n"
+                    std::cout << "expected a=b or b=c and d=0; got: \n"
                     << "number = " << x3 << '\n'
                     << "a= " << Quad[0] << '\n'
                     << "b= " << Quad[1] << '\n'
@@ -762,6 +762,14 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
                     if (Quad[3] != 0)
                         std::cout << "expected d= 0; got: \n"
                         << "number = " << x3 << '\n'
+                        << "a= " << Quad[0] << '\n'
+                        << "b= " << Quad[1] << '\n'
+                        << "c= " << Quad[2] << '\n'
+                        << "d= " << Quad[3] << '\n';
+                }
+                else {
+                    if (verbose > 0)
+                        std::cout << "number = a² + b² + c² +d² \n"
                         << "a= " << Quad[0] << '\n'
                         << "b= " << Quad[1] << '\n'
                         << "c= " << Quad[2] << '\n'

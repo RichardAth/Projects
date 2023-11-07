@@ -1,8 +1,5 @@
 ﻿#include "pch.h"
 
-/* forward declaration */
-std::vector <Znum> primeModSqrt(const Znum& aa, const Znum& p);
-
 // calculate x^n. Returns a Big Integer so should be no overflow problem.
 static Znum powerBi(const __int64 x, unsigned __int64 n) {
 	Znum result;
@@ -16,7 +13,6 @@ static Znum pow2bi(unsigned __int64 exp) {
 	mpz_mul_2exp(ZT(result), ZT(result), exp);
 	return result;
 }
-
 
 
 /* find x such that x ≡ a1 (mod n1) and x ≡ a2 (mod n2)
@@ -279,6 +275,27 @@ static std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int 
 			return(ModSqrt2x(c, prime, lambda));
 }
 
+
+/* divide x by 2^p, return modulus and quotient. */
+long long divremp2(const Znum x, const int p, Znum& quot) {
+	assert(p > 0 && p <= 63);
+	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
+	return mpz_fdiv_ui(ZT(x), 2 << p);
+}
+
+/* get result of bitwise and of a and x (a must be +ve) */
+long long ZandInt(const Znum a, long long x) {
+	int sz = ZT(a)->_mp_size;
+	unsigned long long last;   /* value from last limb*/
+	assert(sz >= 0);
+
+	if (sz == 0)
+		return 0;
+	last = ZT(a)->_mp_d[0];
+	last &= x;
+	return last;
+}
+
 /*
 Square root modulo prime number using Tonelli–Shanks algorithm
 Solve the equation given a and prime.
@@ -287,14 +304,6 @@ and return list of solutions. There will be either 0, 1 or 2 solutions
 see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm
 (renamed the solution variable n to a)
 */
-
-/* divide x by 2^p, return modulus and quotient. */
-long long divremp2(const Znum x, const int p, Znum & quot) {
-	assert(p > 0 && p <= 63);
-	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
-	return mpz_fdiv_ui(ZT(x), 2 << p);
-}
-
 std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	std::vector <Znum> result;
 	Znum q, z, e, a;
@@ -318,7 +327,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
-	/* Check solution existence on odd prime. Because prime is prime the Jacobi
+	/* Check solution existence for odd prime. Because it is prime the Jacobi
 	symbol is the same as the Legendre symbol. */
 	if (jacobi(a, prime) != 1) {
 		printroots(a, prime, roots);
@@ -334,10 +343,11 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		assert(x1 == 1);
     }
 #endif
-
-	// Simple case
-	if (mpz_fdiv_ui(ZT(prime), 4) == 3) { /* Lagrange solution */
-	//if ((prime & 3) == 3) {  
+	long long rem = ZandInt(prime, 7);   /* get prime modulo 8 */
+	switch (rem) {
+	case 3:
+	case 7:  /* Lagrange solution */ {
+		//if ((prime & 3) == 3) {  
 		R = modPower(a, (prime + 1) / 4, prime);
 		result.push_back(R);
 		result.push_back(prime - R);
@@ -345,8 +355,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
-	if (mpz_fdiv_ui(ZT(prime), 8) == 5) { /* Legendre solution */
-	//if ((prime & 7) == 5) { 
+	case 5: /* Legendre solution */ { 
 		Znum v, i;
 		v = modPower((2 * a), (prime - 5) / 8, prime);
 		//i = (2 * a * v * v) % prime;
@@ -359,61 +368,65 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
-	/* if we drop through to here , prime%8 = 1*/
-	// Tonelli-Shanks step 1: Factor prime - 1 of the form q * 2 ^ s(with Q odd)
-	q = prime - 1;
-	s = 0;
-	while (isEven(q)) {
-		s += 1;
-		q /= 2;
-	}
-
-	// step 2: Select a z which is a quadratic non resudue modulo prime
-	z = 1;
-	while (jacobi(z, prime) != -1) {
-		z += 1;
-	}
-
-	/* step 3 */
-	m = s;
-	c = modPower(z, q, prime);
-	t = modPower(a, q, prime);
-	R = modPower(a, (q + 1) / 2, prime);
-
-	// Step 4: Search for a solution
-	while (t != 1) {
-		if (t == 0) {
-			R = 0;
-			break;
+	case 1: /* Tonelli-Shanks */ {
+		//  step 1: Factor prime - 1 of the form q * 2 ^ s(with Q odd)
+		q = prime - 1;
+		s = 0;
+		while (isEven(q)) {
+			s += 1;
+			q /= 2;
 		}
-		// Find the lowest i such that t ^ (2 ^ i) = 1 (mod prime)
-		i = 0;
-		e = 1;
-		for (i = 0; i < m; i++) {
-			if (modPower(t, e, prime) == 1)
+
+		// step 2: Select a z which is a quadratic non resudue modulo prime
+		z = 1;
+		while (jacobi(z, prime) != -1) {
+			z += 1;
+		}
+
+		/* step 3 */
+		m = s;
+		c = modPower(z, q, prime);
+		t = modPower(a, q, prime);
+		R = modPower(a, (q + 1) / 2, prime);
+
+		// Step 4: Search for a solution
+		while (t != 1) {
+			if (t == 0) {
+				R = 0;
 				break;
-			e *= 2;  /* e = 2^i */
+			}
+			// Find the lowest i such that t ^ (2 ^ i) = 1 (mod prime)
+			i = 0;
+			e = 1;
+			for (i = 0; i < m; i++) {
+				if (modPower(t, e, prime) == 1)
+					break;
+				e *= 2;  /* e = 2^i */
+			}
+
+			// Update next value to iterate
+			long long temp = m - i - 1;
+
+			b = modPower(c, pow2bi(temp), prime); /* b = c^(2^(m-i-1)) mod prime */
+
+			R = (R * b) % prime;
+			t = (t * b * b) % prime;
+			c = (b * b) % prime;
+			m = i;           /*  i < m, so m decreases each time round */
 		}
-
-		// Update next value to iterate
-		long long temp = m - i - 1;  
-
-		b = modPower(c, pow2bi(temp), prime); /* b = c^(2^(m-i-1)) mod prime */
-
-		R = (R * b) % prime;
-		t = (t * b * b) % prime; 
-		c = (b * b) % prime;
-		m = i;           /*  i < m, so m decreases each time round */
-	}
 
 #ifdef _DEBUG
-	assert((R *R%prime) == a);
+		assert((R * R % prime) == a);
 #endif
 
-	result.push_back(R);
-	result.push_back(prime - R);
-	printroots(a, prime, result);
-	return result;
+		result.push_back(R);
+		result.push_back(prime - R);
+		printroots(a, prime, result);
+		return result;
+	}
+
+	default:   abort();  /* mathematically, it's impossible to get to here. */
+	}
 }
 
 /* Solve the equation given a and m.

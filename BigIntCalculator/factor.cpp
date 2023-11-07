@@ -1034,12 +1034,15 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 /* compute 4 or less values the squares of which add up to prime p.   
 return values in Mult[0] to Mult[3] 
 For odd p:
-if p = 1 (mod 4) p can be expressed as the sum of 2 squares 
-If p = 7 (mod 8) it cannot be expressed as the sum of 3 squares, otherwise it can.
-If it can, at least two of the 3 squares will be equal (ignoring sign). */
+if p = 1 (mod 4) p can be expressed as the sum of 2 squares. 
+If p = 1 or 3 (mod 8) it can be expressed as the sum of 3 squares. Two of the 3
+squares will be equal. 
+If p = 7 (mod 8) it can only be expressed as the sum of 4 squares. */
+
 static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwosq) {
 	Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
 	Znum TestNbr;
+	std::vector<Znum>roots;
 
 	if (p == 2) {   /* Prime factor is 2 */
 		Mult[0] = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
@@ -1048,28 +1051,22 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
 		Mult[3] = 0;
 		return;
 	}
-	else {       /* Prime factor p is not 2 */
+	else  /* Prime factor p is not 2 */ {
 		if ((p & 3) == 1)  /* if p = 1 (mod 4) */ {
+			/* if p = 1 (mod 4) p can be expressed as the sum of 2 squares. */
 			if (sqplustwosq && ((p & 7) == 1)) {
-				/* get p as the sum of 3 squares rather than 2 */
+				/* If p = 1 (mod 8) it can also be expressed as the sum of 3 
+				squares. Two of the 3 squares will be equal. Get p as the sum 
+				of 3 squares rather than 2 */
 				compute3squares(p, Mult);
 				Mult[3] = 0;
 				return;
 			}
 			/* in this case p can be expressed as the sum of 2 squares */
-			q = (p-1)/4; // q = (prime-1)/4
-	  
-			a = 1;
-			do {    // Loop that finds Mult[0]^2 = (-1) mod p
-				a++; 
-				assert(a < p);
-				/* Mult[0] = a^q(mod p) */
-				mpz_powm(ZT(Mult[0]), ZT(a), ZT(q), ZT(p));
-				/* Testnbr = Mult[0]^2 (mod p) */
-				mpz_powm_ui(ZT(TestNbr), ZT(Mult[0]), 2, ZT(p));
-			} while (TestNbr != p-1 && TestNbr != -1);
+			roots = primeModSqrt(-1, p);  /* use Legendre formula or Tonelli-Shanks to get mod sqrt */
+			assert(roots.size() >= 2);
+			Mult[0] = std::min(roots[0], roots[1]);   /* Mult[0]² = p-1(mod p)*/
 
-			Mult[0] = abs(Mult[0]);
 			if (verbose > 1) {
 				std::cout << "4 squares: prime = " << p << " initial Mult[0] = " << Mult[0] << '\n';
 			}
@@ -1120,7 +1117,7 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
 				Mult[0]++;
 				Tmp = Mult[0]*Mult[0] + 1;
 				Tmp = -Tmp;
-				while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult[1]^2 (mod p) */
+				while (Tmp < 0) Tmp += p;   /* Tmp = -1 - Mult[0]^2 (mod p) */
 				mpz_powm(ZT(Tmp1), ZT(Tmp), ZT(q), ZT(p));
 				       // At this moment Tmp1 = (-1 - Mult[0]^2)^((p-1)/2)(Mod p)
 			} while (Tmp1 != 1);  // Continue loop if it is not 1.
@@ -1129,7 +1126,7 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
 
 			q = (p+1)/4;
 
-			// Find Mult[1] <- square root of Tmp1 = Tmp^q (mod p) 
+			// Find Mult[1] <- square root of Tmp1 = Tmp^q (mod p) (Lagrange solution)
 			mpz_powm(ZT(Mult[1]), ZT(Tmp), ZT(q), ZT(p));
 
 			/* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/
