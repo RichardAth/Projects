@@ -24,7 +24,8 @@ static void free_uvars();
 
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
 std::vector <Znum> roots;   /* used by functions that return multiple values */
-bool multiValue = false;
+bool multiValue = false;    /* set to true by functions that return multiple values.
+                               these are: modsqrt, inverseTotient, DivisorList, */
 
 typedef struct        // used for user variables
 {
@@ -39,8 +40,6 @@ struct
     int alloc = 0;            /* space allocated for user variables */
 } uvars;
 
-//user variables
-//uvars_t uvars ;
 
 /* list of operators, arranged in order of priority, order is not exactly the
 same as C or Python. Followed by list of function codes*/
@@ -1183,7 +1182,7 @@ static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr)
     disc = (8 * (s-2) * x) + (s-4) * (s-4);
     if (isPerfectSquare(disc)) {
         num = sqrt(disc) + s - 4;
-        denom = 2 * (s - 2);
+        denom = 2 * (s - 2);  /* N.B. must have s > 2 */
         N = num / denom;
         assert(num % denom == 0);
         if (n != nullptr && N <= LLONG_MAX)
@@ -2301,22 +2300,27 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
 /*
 Added 5/6/2021
 
-   The 'engine'at the heart of the calculator was largely rewritten;
-   It was divided into 3 parts:
-   1.   'Tokenise' all terms in the expression i.e. each number, operator,
-        Function name, bracket & comma is turned into a token. Also check that
-        the opening and closing brackets pair up correctly.
-    2.  Convert to Reverse Polish. This uses the well-known 'shunting' algorithm,
-        but a recursive call to the reverse polish function is made for each
-        function parameter (this also takes care of nested function calls).
-        Also there is a tweak for the factorial, double factorial and primorial
-        functions because the operator follows the number rather than precedes it.
-        Some syntax checks are made but there is no guarantee that all syntax
-        errors will be detected.
-    3.  Calculate the value of the reverse polish sequence. If there is more than
-        one number on the stack at the end, or at any time there are not enough
-        numbers on the stack to perform an operation an error is reported.
-        (this would indicate a syntax error not detected earlier)*/
+The 'engine'at the heart of the calculator was largely rewritten;
+It was divided into 3 parts:
+1.  'Tokenise' all terms in the expression i.e. each number, operator,
+    Function name, bracket & comma is turned into a token. Also check that the 
+    opening and closing brackets pair up correctly.
+2.  Convert to Reverse Polish. This uses the well-known 'shunting' algorithm,
+    but a recursive call to the reverse polish function is made for each
+    function parameter (this also takes care of nested function calls).
+    Also there is a tweak for the factorial, double factorial and primorial
+    functions because the operator follows the number rather than precedes it.
+    Some syntax checks are made but there is no guarantee that all syntax errors 
+    will be detected.
+3.  Calculate the value of the reverse polish sequence. If there is more than
+    one number on the stack at the end, or at any time there are not enough
+    numbers on the stack to perform an operation an error is reported.
+    (this would indicate a syntax error not detected earlier). The value found 
+    is returned in Result, if the return code is EXPR_OK.
+    If the outermost (i.e. the last) operation is evaluating a function that
+    returns multiple values e.g. modsqrt() then the global variable multiValue 
+    is set to 'true' and the full set of return values is returned in global 
+    vector roots */
 retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {
     retCode rv;
     std::vector <token> tokens;

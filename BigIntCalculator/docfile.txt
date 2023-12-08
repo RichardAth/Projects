@@ -207,8 +207,13 @@ The YAFU command controls factorisation using YAFU:
 
    YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
    YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
-   YAFU PATH Displays or changes path used when starting YAFU. The path is saved 
-             in the .ini file so only needs to be set once.
+   YAFU PATH Displays the path used when starting YAFU. The path is saved in the 
+             .ini file so only needs to be set once. It will also verify that the 
+             yafu-X64.exe file exists.
+   YAFU PATH SET will display a windows explorer style window where you can 
+             navigate to the correct folder then click on the yafu exe file. The 
+             new path to the YAFU file will then be saved in the 
+             BigIntCalculator.ini file.
    YAFU OUT  Displays or changes path & file name for YAFU output file. The path
              is saved in the .ini file so only needs to be set once.
    YAFU PLAN <name> 
@@ -216,29 +221,23 @@ The YAFU command controls factorisation using YAFU:
              correspond to the -plan options documented in YAFU's docfile.txt 
              file. The default is NORMAL. This is a convenient way to control 
              the amount of testing using ECM before switching to SIQS or NFS.
-  YAFU TIDY  Deletes a number of files left behind by YAFU. If never deleted, 
+   YAFU TIDY Deletes a number of files left behind by YAFU. If never deleted, 
              the log and json files seem to grow larger indefinately.
 
+   YAFU INI  will check whether the YAFU.ini file exist. If it does it is read 
+             and any ggnfs_dir parameter is found. If ggnfs_dir is found the 
+             path that it contains is checked by checking for the existence of 
+             the gnfs-lasieve4iXXe.exe files, where XX is between 11 and 16. Note 
+             that YAFU INI requires the YAFU path to already be set correctly (by 
+             YAFU PATH or otherwise).
+
+   YAFU INI I allows the ggnfs_dir parameter to be altered or created. It will 
+             display a windows explorer style window where you can navigate to 
+             the correct folder then click on any file. The new path to the ggnfs 
+             files will then be saved in the ggnfs_dir parameter of the YAFU.ini file.
+
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
-back on by the YAFU ON command (which also turns Msieve off). The default path to 
-access YAFU is hard coded in yafu.cpp and should be changed to whatever is appropriate.
-
-The command YAFU PATH will display the current path and verify that the yafu-X64.exe 
-file exists.
-The command YAFU PATH SET will display a windows explorer style window where 
-you can navigate to the correct folder then click on the yafu exe file. The new path 
-to the YAFU file will then be saved in the BigIntCalculator.ini file.
-
-The command YAFU INI will check whether the YAFU.ini file exist. If it does it is
-read and any ggnfs_dir parameter is found. If ggnfs_dir is found the path that it 
-contains is checked by checking for the existence of the gnfs-lasieve4iXXe.exe files,
-where XX is between 11 and 16. Note that YAFU INI requires the YAFU path to already 
-be set correctly (by YAFU PATH or otherwise).
-
-The command YAFU INI I allows the ggnfs_dir parameter to be altered or created. It
-will display a windows explorer style window where you can navigate to the correct 
-folder then click on any file. The new path to the ggnfs files will then be saved
-in the ggnfs_dir parameter of the YAFU.ini file.
+back on by the YAFU ON command (which also turns Msieve off). 
 
 Equivalents to all YAFU commands are available in the dialog box entered via the 
 'SET' command.
