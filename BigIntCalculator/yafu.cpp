@@ -805,6 +805,10 @@ bool callYafu(const Znum& num, fList& Factors) {
     }
 
     size_t numdigits = mpz_sizeinbase(ZT(num), 10);  // get number of decimal digits in num
+    if (numdigits > 500) {
+        std::cout << "number has " << numdigits  << " digits: cannot be factorised using YAFU \n";
+        return false;
+    }
     numStr.resize(numdigits + 5);             // resize buffer
     mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
     numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in buffer
