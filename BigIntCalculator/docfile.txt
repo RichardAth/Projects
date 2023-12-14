@@ -134,10 +134,12 @@ R2P(n)          : Number of ways n can be expressed as the sum of x² + y².
                   e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
                   25 = 5²+0 = 3²+4² so R2P(25) = 2
 R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
-                  (order and sign of x and y are significant) N.B. very slow
+                  (order and sign of x, y and z are significant) N.B. very slow
                   for large numbers e.g. 2 min for a 12 digit number.
 R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
                   (much faster) Currently restricted to n < 10^35.
+R4(n)           : Number of ways n can be expressed as the sum of w² + x² + y² + z². 
+                  (order and sign of w, x, y and z are significant)
 HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
                   n < 10^35. The true HCLASS is not always an integer, but 
                   multiplying by 12 always yields an integer.

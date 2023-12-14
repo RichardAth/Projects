@@ -149,6 +149,7 @@ enum class opCode {
     fn_r2p,
     fn_r3,                /* R3(n) */
     fn_r3h,               /* R3(n) calculated using Hurwitz class number */
+    fn_r4,                /* R4(n) */
     fn_hurwitz,           /* hurwitz class number */
     fn_classno,           /* class number */
     fn_legendre,
@@ -251,6 +252,7 @@ const static struct functions functionList[]{
                                             // calculated using hurwitz class number
     "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
+    "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as wum of 4 squares
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
     "SUMDIVS",   1,  opCode::fn_sumdivs,
     "SQRT",      1,  opCode::fn_sqrt,
@@ -933,6 +935,36 @@ static Znum R3(Znum num) {
     return sum;
 }
 
+/* calculate the number of ways an integer n can be expressed as the sum of 4
+squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y and 
+z can be +ve, 0 or -ve See https://oeis.org/A000118 */
+static Znum R4(Znum num) {
+    if (num < 0)
+        return 0;
+    if (num == 0)
+        return 1;
+
+    fList factorlist;
+    bool odd = true;
+    while (isEven(num)) {
+        odd = false;
+        num >>= 1; /* divide n by 2 if it is even */
+    }
+    
+    /* get factors of num, or of largest odd divisor of num */
+    auto rv = factorise(num, factorlist, nullptr);
+
+
+    /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
+    Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
+    if (odd) {
+        return 8 * factorlist.DivisorSum();  /* divisorSum AKA sigma */
+    }
+    else {  /* original value of num was even */
+        return 24 * factorlist.DivisorSum();
+    }
+}
+
 /* find smallest primitive root of num. return -1 for error 
 see https://en.wikipedia.org/wiki/Primitive_root_modulo_n */
 static Znum primRoot(const Znum &num) {
@@ -1563,6 +1595,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (mpz_sizeinbase(ZT(p[0]), 10) > 35)
             return retCode::NUMBER_TOO_HIGH;  /* very large numbers cause pari stack overflow */
         result = R3h((p[0]));
+        break;
+    }
+    case opCode::fn_r4: {
+        result = R4(p[0]);
         break;
     }
     case opCode::fn_hurwitz: /* returns 12 x hurwitz class number */ {
