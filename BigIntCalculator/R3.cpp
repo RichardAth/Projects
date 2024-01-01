@@ -545,9 +545,13 @@ unsigned __int64 R3(__int64 n) {
         else
             sum += 2 * R2(n - k * k);
         if ((k & 0x3fff) == 0) {
+            /* note use of \r instead of \n. The effect is that each message 
+            overwrites the previous one*/
             printf_s("%s R3(%lld): %.2f%% done \r", myTime(), n, 100.0 * double(k) / std::sqrt(n));
         }
     }
+    if (n >= (0x3fff * 0x3fff))
+        putchar('\n');
     sum += R2(n);  // note: this time (for k=0) we DON'T multiply R2 by 2
     /* we now have sum = R3(n) */
 
@@ -858,4 +862,26 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
     }
 
     return InvTot[n].size();  // return number of numbers in result
+}
+
+/* calculate the number of ways an integer n can be expressed as the sum of 4
+squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y and
+z can be +ve, 0 or -ve See https://oeis.org/A000118
+This is an alternative, slow, method used for testing. */
+long long R4alt(int num) {
+    long long sum = 0;
+    if (num < 0)
+        return 0;
+    if (num == 0)
+        return 1;
+    for (int k = 1; k * k <= num; k++) {
+        if (k * k == num)
+            sum += 2;  // note that num is a perfect square
+        else
+            sum += 2 * MulPrToLong(R3h(num - k*k));
+        /* could use R3 instead of R3h. For numbers up to about 2^25 R3 appears to
+        be as fast as R3h */
+    }
+    sum += MulPrToLong(R3h(num));  // note: this time (for k=0) we DON'T multiply R3 by 2
+    return sum;
 }

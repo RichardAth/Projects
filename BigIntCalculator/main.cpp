@@ -1956,6 +1956,66 @@ static void doTests7(const std::vector<std::string> &p) {
     PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
+static void doTests12(const std::vector<std::string>& p) {
+    int i;
+    auto start = std::clock();	// used to measure execution time
+    long long p1 = 0;  // number of tests; must be greater than 0, default is 20
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 22, maximum is 24)
+    long long p3 = 0;
+    long long xl;
+    unsigned long long rv;
+    gmp_randstate_t state;  /* use gmp/mpir random number generator */
+    Znum x;
+    long long rv3;
+    /* convert parameters to binary integers */
+    if (p.size() >= 3)
+        p1 = std::atoll(p[2].data());
+    if (p.size() >= 4)
+        p2 = std::atoll(p[3].data());
+    if (p.size() >= 5)
+        p3 = std::atoll(p[4].data());
+    /* check whether parameter values are within acceptable ranges */
+    if (p1 <= 0) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+   
+    if (p2 <= 7 || p2 > 25) {
+        std::cout << "Use default 22 for number size in bits \n";
+        p2 = 22;
+    }
+    /* use value of p3 to seed the the 'random' number generator */
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    if (p3 <= 1)
+        gmp_randseed_ui(state, 756128234);
+    /* fixed seed means that the exact same tests can be repeated provided
+       that the same size of number is used each time */
+    else if (p3 == 2) {
+        std::random_device rd;   // non-deterministic generator
+        unsigned long long seedval = rd();
+        std::cout << "random generator seed value = " << seedval << '\n';
+        gmp_randseed_ui(state, seedval);
+    }
+    else
+        gmp_randseed_ui(state, p3); /* use supplied value as random seed value*/
+
+    for (i = 1; i <= p1; i++) {
+        mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
+        xl = MulPrToLong(x);
+        rv = MulPrToLong(R4(x));
+        rv3 = R4alt(xl);  /* alternative way to calculate R4. */
+        if (rv3 != rv || verbose > 0 || p2 >= 37) {
+            std::cout << myTime() << " R4(" << xl << ") =" << rv
+                << "; R4alt(" << x << ") = " << rv3 << '\n';
+        }
+    }
+    std::cout << "R4 " << p1 << " tests completed \n";
+    auto end = std::clock();              // measure amount of time used
+    auto elapsed = (double)end - start;
+    PrintTimeUsed(elapsed, " time used = ");
+    return;
+}
+
 
 std::vector<std::string> inifile;  // copy some contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -2863,6 +2923,10 @@ static int processCmd(std::string command) {
              doTestsB(p);
              return 1;
          }
+
+         case 12: /* R4 tests */
+             doTests12(p);
+             return 1;
 
          default:
              return 0;  /* not a recognised command */
