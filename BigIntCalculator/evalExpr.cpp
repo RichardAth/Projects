@@ -938,7 +938,7 @@ static Znum R3(Znum num) {
 /* calculate the number of ways an integer n can be expressed as the sum of 4
 squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y and 
 z can be +ve, 0 or -ve See https://oeis.org/A000118 */
-static Znum R4(Znum num) {
+Znum R4(Znum num) {
     if (num < 0)
         return 0;
     if (num == 0)

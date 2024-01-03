@@ -96,6 +96,7 @@ retCode ComputeMultiExpr(std::string expr, Znum result);
 void printvars(std::string name);
 extern std::vector <Znum> roots;   /* used by functions that return multiple values */
 Znum llt(const Znum& p);
+Znum R4(Znum num);
 
 /* libpariinterface.cpp */
 void pariParam(const std::vector<std::string>& p);
@@ -131,6 +132,7 @@ int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
 bool isPrime2(unsigned __int64 num);
 size_t inverseTotient(__int64 n, std::vector<unsigned __int64>** result, bool debug,
 	int level, bool dump);
+long long R4alt(int num);
 // calculate a^n%mod   
 unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
 	unsigned __int64 mod);
