@@ -109,7 +109,7 @@ public:
 
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
-	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
+	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 

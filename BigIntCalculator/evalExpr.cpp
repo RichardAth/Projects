@@ -442,7 +442,7 @@ static Znum ComputeNumDivs(const Znum &n) {
 N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
 */
-static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
+static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
     fList f;          /* prime factors of tnum */
     Znum divisors;    /* number of divisors */
@@ -459,6 +459,8 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     }
 
     divisors = f.NoOfDivs();
+    if (divisors > 33333333)
+        return -1;  /* cannot make list of divisors; there are too many */
     numdiv = MulPrToLong(divisors);   /* number of divisors of tnum */
     numfactors = f.fsize();           /* number of unique prime factors of tnum */
     divlist.resize(numdiv);
@@ -741,7 +743,7 @@ static uint64_t PrimePi(const Znum &Zn) {
     unsigned long long n = MulPrToLong(Zn);
 
     if (primeListMax >= n)
-        return (PrimePiC(n));
+        return (PrimePiC(n));  /* search for n in prime list. */
 
     const auto v = (unsigned long long)std::sqrt(n);
 
@@ -953,7 +955,6 @@ Znum R4(Znum num) {
     
     /* get factors of num, or of largest odd divisor of num */
     auto rv = factorise(num, factorlist, nullptr);
-
 
     /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
     Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
@@ -1839,6 +1840,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         }
         result = DivisorList(p[0], roots);
+        if (result < 0)
+            return retCode::INTERIM_TOO_HIGH;
         multiValue = true;     /* indicate multiple return values */
         break;
     }

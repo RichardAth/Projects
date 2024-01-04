@@ -310,7 +310,7 @@ static bool isPrimeMR(unsigned __int64 n)
 }
 
 
-/* get prime factors of tnum */
+/* get prime factors of tnum, using trial division */
 unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
     unsigned  int count = 0, i = 0;
 
@@ -867,7 +867,9 @@ size_t inverseTotient(__int64 n, std::vector<unsigned __int64> **result, bool de
 /* calculate the number of ways an integer n can be expressed as the sum of 4
 squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y and
 z can be +ve, 0 or -ve See https://oeis.org/A000118
-This is an alternative, slow, method used for testing. */
+This is an alternative, slow, method used for testing. It uses an entirely
+different algorithm from the standard R4 function. It is too slow to support 
+large values of n. */
 long long R4alt(int num) {
     long long sum = 0;
     if (num < 0)

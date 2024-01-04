@@ -2003,7 +2003,7 @@ static void doTests12(const std::vector<std::string>& p) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         xl = MulPrToLong(x);
         rv = MulPrToLong(R4(x));
-        rv3 = R4alt(xl);  /* alternative way to calculate R4. */
+        rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
         if (rv3 != rv || verbose > 0 || p2 >= 37) {
             std::cout << myTime() << " R4(" << xl << ") =" << rv
                 << "; R4alt(" << x << ") = " << rv3 << '\n';
