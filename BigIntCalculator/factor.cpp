@@ -787,7 +787,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
 		if (expon > 1) {    /* if factor is a perfect power*/
 			Factors.f[i].Factor = Zpower;
 			Factors.f[i].exponent *= expon;
-			Factors.power++;
+			Factors.powerCnt++;
 		}
 		
 		int result = PrimalityTest(Zpower, testP- 1);

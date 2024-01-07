@@ -598,7 +598,7 @@ static void doFactors(const Znum &Result, bool test) {
             std::cout << (lang? "Cantidad de Divisores = " : "Number of Divisors = ");
             ShowLargeNumber(divisors, groupSize, false, false);
 
-            divisors = factorlist.DivisorSum();
+            divisors = factorlist.DivisorSumOld();
             std::cout << (lang? "\nSuma de divisores     = " : "\nSum of Divisors    = ");
             ShowLargeNumber(divisors, groupSize, false, false);
             divisors = factorlist.totient();
@@ -874,7 +874,7 @@ static void doTests(void) {
         "carmichael(201)",                 66,
         "numdivs(7!)",                     60,
         "divisors(7!)",                    60,   /* number of divisors */
-        "sumdivs(7!)",                  19344,
+        "sumdivs(7!, 1)",               19344,
         "numdigits(123456789, 6)",         11,
         "sumdigits(123456789, 6)",         19,
         "revdigits(1234567890, 10)",  987654321, 
@@ -938,7 +938,7 @@ static void doTests(void) {
         "gf(21)",                47297536000,   /* gauss factorial */
         "carmichael(497)",              210,     /* carmichael function */
         "numdivs(116)",                   6,     /* number of divisors*/
-        "sumdivs(116)",                 210,
+        "sumdivs(116, 1)",              210,
         "invtot(132)",                  161,     /* smallest number whose totient is 132 */
         "popcnt(123456789)",             16,     /* number of 1-bits */
         "tau(9)",                   -113643,  /* Ramanujan's tau function */

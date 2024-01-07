@@ -254,7 +254,7 @@ const static struct functions functionList[]{
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
     "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as wum of 4 squares
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "SUMDIVS",   1,  opCode::fn_sumdivs,
+    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of divisors
     "SQRT",      1,  opCode::fn_sqrt,
     "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
     "TOTIENT",   1,  opCode::fn_totient,
@@ -332,7 +332,7 @@ static bool isPerfectSquare(const Znum &num) {
 }
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1)
-where p=prime factor and e=exponent.*/
+where p=prime factor and e=exponent. See https://oeis.org/A000010 */
 static Znum ComputeTotient(const Znum &n) {
     fList factorlist;
 
@@ -496,15 +496,15 @@ static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 }
 
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1)
- where p=prime factor and e=exponent. */
-static Znum ComputeSumDivs(const Znum &n) {
+ where p=prime factor and e=exponent. See https://oeis.org/A000203 */
+static Znum ComputeSumDivs(const Znum &n, const Znum &x) {
     fList factorlist;
 
     if (n == 1)
         return 1;   // 1 only has 1 divisor. 
     auto rv = factorise(n, factorlist, nullptr);
     if (rv) {
-        auto divisors = factorlist.DivisorSum();
+        auto divisors = factorlist.DivisorSum((int)MulPrToLong(x));
         return divisors;
     }
     else return 0;
@@ -959,10 +959,10 @@ Znum R4(Znum num) {
     /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
     Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
     if (odd) {
-        return 8 * factorlist.DivisorSum();  /* divisorSum AKA sigma */
+        return 8 * factorlist.DivisorSumOld();  /* divisorSum AKA sigma */
     }
     else {  /* original value of num was even */
-        return 24 * factorlist.DivisorSum();
+        return 24 * factorlist.DivisorSumOld();
     }
 }
 
@@ -1465,8 +1465,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeNumDivs(p[0]);
         break;
     }
-    case opCode::fn_sumdivs: {		// SUMDIVS
-        result = ComputeSumDivs(p[0]);
+    case opCode::fn_sumdivs: /* sum of divisors */ {	
+        if (p[0] < 1) {
+            return retCode::NUMBER_TOO_LOW;
+        }
+        if (p[1] < 0)
+            return retCode::EXPONENT_NEGATIVE;
+        if (p[1] > 5)
+            return retCode::EXPONENT_TOO_LARGE;
+        result = ComputeSumDivs(p[0], p[1]);  /* get sum of n-th power of divisors. */
         break;
     }
 

@@ -107,7 +107,8 @@ ISPOLYGONAL(n, s): returns -1 if n is a polygonal number, otherwise 0. s
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
-SumDivs(n)      : Sum of positive divisors of n either prime or composite.
+SumDivs(n, x)   : Sum of xth power of positive divisors of n, either prime or 
+                  composite. if x = 0 the result is the same as the NumDivs function.
 Divisors(n)     : Get list of divisors of n, either prime or composite. The value
                   returned is the number of divisors (same as numdivs)
 NumDigits(n, r) : Number of digits of n in base r.
