@@ -598,7 +598,7 @@ static void doFactors(const Znum &Result, bool test) {
             std::cout << (lang? "Cantidad de Divisores = " : "Number of Divisors = ");
             ShowLargeNumber(divisors, groupSize, false, false);
 
-            divisors = factorlist.DivisorSumOld();
+            divisors = factorlist.DivisorSum();
             std::cout << (lang? "\nSuma de divisores     = " : "\nSum of Divisors    = ");
             ShowLargeNumber(divisors, groupSize, false, false);
             divisors = factorlist.totient();
@@ -609,7 +609,13 @@ static void doFactors(const Znum &Result, bool test) {
                 std::cout << "\nMöbius             = " << mob;
     
             }
-
+            if (Result > 0) {
+                Znum R2p = factorlist.R2p();
+                if (R2p > 0) {  /* show value of R2p only if it is non-zero */
+                    std::cout << "\nR2P = ";
+                    ShowLargeNumber(R2p, groupSize, false, false);
+                }
+            }
             /* show that the number is the sum of 4 or fewer squares. See
             https://www.alpertron.com.ar/4SQUARES.HTM */
             if (Result >= 0)
@@ -938,7 +944,8 @@ static void doTests(void) {
         "gf(21)",                47297536000,   /* gauss factorial */
         "carmichael(497)",              210,     /* carmichael function */
         "numdivs(116)",                   6,     /* number of divisors*/
-        "sumdivs(116, 1)",              210,
+        "sumdivs(116, 1)",              210,     /* sum of divisors */
+        "sumdivs(2627, 3)",     18129674448,     /* sum of cubes of divisors */
         "invtot(132)",                  161,     /* smallest number whose totient is 132 */
         "popcnt(123456789)",             16,     /* number of 1-bits */
         "tau(9)",                   -113643,  /* Ramanujan's tau function */

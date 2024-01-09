@@ -93,7 +93,7 @@ N(n):		Next probable prime after n
 B(n):		Previous probable prime before n
 Totient(n): finds the number of positive integers less than n which are relatively prime to n.
 NumDivs(n): Number of positive divisors of n either prime or composite.
-SumDivs(n): Sum of positive divisors of n either prime or composite.
+SumDivs(n, x): Sum of xth power of positive divisors of n either prime or composite.
 FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
 
 */
@@ -254,7 +254,7 @@ const static struct functions functionList[]{
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
     "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as wum of 4 squares
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of divisors
+    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of nth power of divisors
     "SQRT",      1,  opCode::fn_sqrt,
     "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
     "TOTIENT",   1,  opCode::fn_totient,
@@ -851,7 +851,7 @@ static Znum R2p(const Znum& num) {
         return 0;
     if (num == 0)
         return 1;
-    if (num % 4 == 3)
+    if (num % 4 == 3)  /*  short cut, in some cases */
         return 0;   // at least 1 4k+3 factor has an odd exponent
 
     fList factorlist;
@@ -959,10 +959,10 @@ Znum R4(Znum num) {
     /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
     Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
     if (odd) {
-        return 8 * factorlist.DivisorSumOld();  /* divisorSum AKA sigma */
+        return 8 * factorlist.DivisorSum();  /* divisorSum AKA sigma */
     }
     else {  /* original value of num was even */
-        return 24 * factorlist.DivisorSumOld();
+        return 24 * factorlist.DivisorSum();
     }
 }
 
@@ -1471,13 +1471,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         if (p[1] < 0)
             return retCode::EXPONENT_NEGATIVE;
-        if (p[1] > 5)
+        if (p[1] > INT_MAX)
             return retCode::EXPONENT_TOO_LARGE;
         result = ComputeSumDivs(p[0], p[1]);  /* get sum of n-th power of divisors. */
+        if (result < 0)
+            return retCode::INTERIM_TOO_HIGH;
         break;
     }
 
-    case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+    case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	 
         if (p[1] <= 1)
             return retCode::EXPR_BASE_MUST_BE_POSITIVE;
         result = ComputeSumDigits(p[0], p[1]);

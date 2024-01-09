@@ -339,7 +339,8 @@ also http://oeis.org/A004018 */
 	}
 
 /* The number of representations of n as the sum of two squares ignoring order 
-and signs. see http://oeis.org/A000161 
+and signs. see http://oeis.org/A000161 and 
+https://mathworld.wolfram.com/SumofSquaresFunction.html
 e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 	  25 = 5²+0  = 3²+4² so R2P(25) = 2 
 	  8 = 2² + 2² so R2P(8) =1 */
@@ -369,8 +370,9 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		/* if b is odd the the exponents of ALL prime factors of n other than 2 are even,
 		therefore n is a perfect square, or 2*perfect square */
 			if ((a0 & 1) == 0)
-				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
-				zero would be disallowed as 1 of the squares. */
+				/* mathworld.wolfram suggests using b-1 rather than b+1 here, see equation (17)
+				In effect zero would be disallowed as 1 of the squares, but we prefer the 
+				OEIS version */
 				return (b + 1) / 2;  /* a0 is even i.e. n is a perfect square */
 			else
 				return (b + 1) / 2;  /* a0 is odd i.e. n is a 2*perfect square */
@@ -428,11 +430,13 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 				mpz_pow_ui(ZT(term), ZT(i.Factor), (i.exponent + 1) * n);  // p^(e+1)n
 				term = (term - 1) / (power(i.Factor, n) - 1);	           // (p^(e+1)-1)/(p^n -1)
 				result *= term;
+				if (numLimbs(result) > 1560)
+					return -1;  /* value would exceed 30,000 digits*/
 			}
 			return result;
 		}
 		else
-			return -1;
+			return -1;  /* n is -ve */
 	}
 
 /* Concatenates the prime factors (base 10) of num according to the mode
