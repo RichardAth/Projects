@@ -214,7 +214,7 @@ bool callMsieve(const Znum &num, fList &Factors) {
 	numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in bufer
 	command += numStr;                        // append number to be factored to command line
 	if (verbose > 0) {
-		std::cout << myTime() << " command is: \n" << command << '\n';  // temp
+		std::cout << myTimeP() << " command is: \n" << command << '\n';  // temp
 	}
 
 	int rc = std::remove(MsieveLogPath.data());

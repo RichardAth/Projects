@@ -1079,7 +1079,7 @@ static int lltTrialDiv(const Znum& n, const long long p) {
     else {
         if (verbose > 0)
             printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
-                myTime(), leftBit(2 * ll_limit * p + 1) + 1);
+                myTimeP(), leftBit(2 * ll_limit * p + 1) + 1);
         return 1;  /* no factor found */
     }
 }
@@ -1149,7 +1149,7 @@ Znum llt(const Znum& p) {
         t2 = std::clock();
         printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
         if (rv == 0) {
-            std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
+            std::cout << myTimeP() << " 2^" << exp << " -1 is not prime *** \n";
             return 0;   /* factor found -> n is composite */
         }
     }
@@ -1167,7 +1167,7 @@ Znum llt(const Znum& p) {
         if (verbose > 0 && (i > 0) && (i & 0x7ff) == 0) { /* 7ff = 2047, print msg every 2048 iterations */
             for (int j = 0; j < nchars; j++)
                 printf_s("\b");    // erase previous output
-            nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
+            nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTimeP(), i,
                 (double)i * 100.0 / (exp - 2));
             std::fflush(stdout);
         }

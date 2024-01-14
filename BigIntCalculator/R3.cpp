@@ -547,7 +547,7 @@ unsigned __int64 R3(__int64 n) {
         if ((k & 0x3fff) == 0) {
             /* note use of \r instead of \n. The effect is that each message 
             overwrites the previous one*/
-            printf_s("%s R3(%lld): %.2f%% done \r", myTime(), n, 100.0 * double(k) / std::sqrt(n));
+            printf_s("%s R3(%lld): %.2f%% done \r", myTimeP(), n, 100.0 * double(k) / std::sqrt(n));
         }
     }
     if (n >= (0x3fff * 0x3fff))

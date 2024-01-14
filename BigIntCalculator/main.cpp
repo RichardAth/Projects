@@ -16,6 +16,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include <strsafe.h>
+#include <sysinfoapi.h>
 
 #include <Mmsystem.h >   // for sound effects
 #include "diagnostic.h"
@@ -115,7 +116,7 @@ void ErrorDisp(const char *lpszFunction)
 }
 
 
-/* get time in format hh:mm:ss */
+/* get current time of day in format hh:mm:ss */
 const char * myTime(void) {
     static char timestamp[10];   // time in format hh:mm:ss
     struct tm newtime;
@@ -125,6 +126,25 @@ const char * myTime(void) {
     /* convert time to hh:mm:ss */
     std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
     return timestamp;
+}
+
+/* get current time of day in format hh:mm:ss.msec */
+const char* myTimeP(void) {
+    static char timestamp[15];   // time in format hh:mm:ss.msec
+    FILETIME SystemTimeAsFileTime;
+    SYSTEMTIME   sysTime;
+
+    GetSystemTimePreciseAsFileTime(&SystemTimeAsFileTime);
+
+    if (FileTimeToSystemTime(&SystemTimeAsFileTime, &sysTime)) {
+        sprintf_s(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%03d",
+            sysTime.wHour, sysTime.wMinute, sysTime.wSecond, sysTime.wMilliseconds);
+        return timestamp;
+    }
+    else { 
+        ErrorDisp("__FUNCTION__");
+        return nullptr; 
+    }
 }
 
 
@@ -465,7 +485,7 @@ void strToUpper(const std::string &s, std::string &d) {
 void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (msg.size() > 1)
-        std::cout << myTime() << ' ' << msg;
+        std::cout << myTimeP() << ' ' << msg;
     auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
 
     if (elSec > 10.0)
@@ -708,9 +728,9 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
     sum.numsize = (int)ComputeNumDigits(x3, 10);
 
     if (lang)
-        std::cout << '\n' << myTime() << "Prueba " << testnum << ": factoriza ";
+        std::cout << '\n' << myTimeP() << "Prueba " << testnum << ": factoriza ";
     else
-        std::cout << '\n' << myTime() << " Test " << testnum << ": factorise ";
+        std::cout << '\n' << myTimeP() << " Test " << testnum << ": factorise ";
     ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
@@ -1246,7 +1266,7 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        std::cout << '\n' << myTime() << "  Test " << i << " of " << p1 << '\n';
+        std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
@@ -1733,7 +1753,7 @@ static void doTestsB(const std::vector<std::string> &p) {
         rv = R3(xl);
         rv3 = R3h(x);
         if (rv3 != rv || verbose > 1 || p2 >= 37) {
-            std::cout << myTime() <<  " R3(" << xl << ") =" << rv 
+            std::cout << myTimeP() <<  " R3(" << xl << ") =" << rv 
                 << "; R3h(" << x << ") = " << rv3 << '\n';
         }
     }
@@ -1762,7 +1782,7 @@ static void doTests4(void) {
             std::cout << "remaining tests skipped \n";
             break;
         }
-        std::cout << '\n' << myTime() << " test " << px + 1 << " of " << pmax + 1;
+        std::cout << '\n' << myTimeP() << " test " << px + 1 << " of " << pmax + 1;
         mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
         m--;                // get 2^p -1
         if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
@@ -1932,13 +1952,13 @@ static void doTests7(const std::vector<std::string> &p) {
         Znum p = primeList[i];
         Znum rv = llt(p); /* Return 0 if 2^p-1 is composite, 1 if prime  */
         if (rv == 1) {
-            std::cout << myTime() << " 2^" << primeList[i] << " -1 is prime *** \n";
+            std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is prime *** \n";
             mPrimes.push_back(primeList[i]);
         }
         else if (verbose > 0 || (i & 0x3f) == 0)
             /* \r instead of usual \n means that each messsage overwrites the 
             previous one */
-            std::cout << myTime() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
+            std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
     }
 
     /* print the results */
@@ -1968,7 +1988,8 @@ static void doTests12(const std::vector<std::string>& p) {
     int i;
     auto start = std::clock();	// used to measure execution time
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
-    long long p2 = 0;  // size of numbers to be tested, in bits (default is 22, maximum is 24)
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 22, 
+                       // maximum is 29, also design of R4alt limits p2 to 31)
     long long p3 = 0;
     long long xl;
     unsigned long long rv;
@@ -1988,7 +2009,7 @@ static void doTests12(const std::vector<std::string>& p) {
         p1 = 20;
     }
    
-    if (p2 <= 7 || p2 > 28) {
+    if (p2 <= 7 || p2 > 29) {
         std::cout << "Use default 22 for number size in bits \n";
         p2 = 22;
     }
@@ -2013,7 +2034,7 @@ static void doTests12(const std::vector<std::string>& p) {
         rv = MulPrToLong(R4(x));
         rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
         if (rv3 != rv || verbose > 0 || p2 >= 25) {
-            std::cout << myTime() << " R4(" << xl << ") =" << rv
+            std::cout << myTimeP() << " R4(" << xl << ") =" << rv
                 << "; R4alt(" << x << ") = " << rv3 << '\n';
         }
     }
@@ -2074,7 +2095,7 @@ void writeIni(void) {
         if (rv2 != 0)
             std::perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
         else if (verbose > 0)
-            std::cout << myTime() << " BigIntCalculator.ini written to disk \n";
+            std::cout << myTimeP() << " BigIntCalculator.ini written to disk \n";
     }
     else
         std::perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
@@ -3107,9 +3128,9 @@ static void initialise(int argc, char *argv[]) {
     }
 
     VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-    printf_s(lang? "Bigint calculadora versão %d.%d.%d.%d \n" : 
+    printf_s(lang? "%s Bigint calculadora versão %d.%d.%d.%d \n" : 
            "%s Bigint calculator Version %d.%d.%d.%d \n", 
-        myTime(), version[0], version[1], version[2], version[3]);
+        myTimeP(), version[0], version[1], version[2], version[3]);
     std::cout << (lang? "última modificação em " : "last modified on ") << modified << '\n';
 
 #ifdef __GNUC__

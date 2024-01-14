@@ -456,7 +456,7 @@ static void genfile(const std::string &numStr) {
     buffer += " -of " + outPath + '\n';   
 
     if (verbose > 0) {
-        std::cout << myTime() << " command is: \n" << buffer ;  
+        std::cout << myTimeP() << " command is: \n" << buffer ;  
     }
 
     rv = std::fputs(buffer.data(), batfile);
@@ -830,7 +830,7 @@ bool callYafu(const Znum& num, fList& Factors) {
     }
     buffer += '\n';
     if (verbose > 0) {
-        std::cout << myTime() << " command is: \n" << buffer;
+        std::cout << myTimeP() << " command is: \n" << buffer;
     }
     delfile("", "nfs.dat"); /* if earlier run leaves this file undeleted
                                    it would cause problems */
