@@ -1963,6 +1963,7 @@ static void doTests7(const std::vector<std::string> &p) {
     PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
+/* test R4 function */
 static void doTests12(const std::vector<std::string>& p) {
     int i;
     auto start = std::clock();	// used to measure execution time
@@ -1987,7 +1988,7 @@ static void doTests12(const std::vector<std::string>& p) {
         p1 = 20;
     }
    
-    if (p2 <= 7 || p2 > 25) {
+    if (p2 <= 7 || p2 > 28) {
         std::cout << "Use default 22 for number size in bits \n";
         p2 = 22;
     }
@@ -2011,7 +2012,7 @@ static void doTests12(const std::vector<std::string>& p) {
         xl = MulPrToLong(x);
         rv = MulPrToLong(R4(x));
         rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
-        if (rv3 != rv || verbose > 0 || p2 >= 37) {
+        if (rv3 != rv || verbose > 0 || p2 >= 25) {
             std::cout << myTime() << " R4(" << xl << ") =" << rv
                 << "; R4alt(" << x << ") = " << rv3 << '\n';
         }
@@ -2870,6 +2871,8 @@ static int processCmd(std::string command) {
                  << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
                  << "                   where p1 is the number of tests and p2 is the number size in bits \n"
                  << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n";
 
              return 1;

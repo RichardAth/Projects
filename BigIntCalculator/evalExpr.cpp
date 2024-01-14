@@ -305,9 +305,9 @@ const static struct oper_list operators[]{
       //{ "!!",  opCode::dfact,       0,  true,  false, 1},      // double factorial
         { "!",   opCode::fact,        0,  true,  false, 1},      // multi-factorial
         { "#",   opCode::prim,        0,  true,  false, 1},      // primorial
-        { "(",   opCode::leftb,      99, true,  false, 0},      // left bracket
-        { ")",   opCode::rightb,     -1, true,  false, 0},      // right bracket
-        {"=",    opCode::assign,     12, false, false, 2},      // assignment
+        { "(",   opCode::leftb,      99,  true,  false, 0},      // left bracket
+        { ")",   opCode::rightb,     -1,  true,  false, 0},      // right bracket
+        {"=",    opCode::assign,     12,  false, false, 2},      // assignment
         /* unary - must be the last entry */
         {"U-",   opCode::unary_minus, 1, false, true,  1 },     // unary -
 };
@@ -823,7 +823,7 @@ static Znum  FactConcat(const Znum &mode, const Znum &num) {
 
 /* calculate the number of ways an integer n can be expressed as the sum of 2
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
-*/
+See http://oeis.org/A004018 */
 static Znum R2(const Znum &num) {
     Znum rvz;
     if (num < 0)
@@ -834,7 +834,6 @@ static Znum R2(const Znum &num) {
         return 0;   // at least 1 4k+3 factor has an odd exponent
 
     fList factorlist;
-    Znum b = 1;
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);
@@ -845,7 +844,9 @@ static Znum R2(const Znum &num) {
     return rvz;
 }
 
-/* The number of representations of n as the sum of two squares ignoring order and signs*/
+/* The number of representations of n as the sum of two squares ignoring order and signs
+i.e. Number of partitions of n into 2 (possibly zero) squares.
+see http://oeis.org/A000161 */
 static Znum R2p(const Znum& num) {
     if (num < 0)
         return 0;
@@ -855,7 +856,6 @@ static Znum R2p(const Znum& num) {
         return 0;   // at least 1 4k+3 factor has an odd exponent
 
     fList factorlist;
-    Znum b = 1;
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);

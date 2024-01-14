@@ -344,10 +344,11 @@ F(n)              Fibonacci number Fn
 L(n)              Lucas number Ln = F(n-1) + F(n+1)
 N(n)              Next probable prime after n
 PI(n)             the number of prime numbers less than or equal to n
-P(n)              Unrestricted Partition Number (number of 
-                  decompositions of n into sums of integers without 
-                  regard to order).
-Gcd(m,n)          Greatest common divisor of m and n.
+P(n)              Unrestricted Partition Number (number of decompositions of n 
+                  into sums of integers without regard to order).
+Gcd(m,n, ...)     Greatest common divisor of m, n ....
+Lcm(m, n ...)     Least common multiple of m, n ...
+Abs(n)            absolute value of n
 Modinv(m,n)       inverse of m modulo n, only valid when gcd(m,n)=1.
 Modpow(m,n,r)     finds m^n modulo r. more efficient than (m^n)%r
                   NB. If n is -ve, the value is only defined if the 
@@ -355,27 +356,50 @@ Modpow(m,n,r)     finds m^n modulo r. more efficient than (m^n)%r
                   if gcd(m, r) is 1
 Totient(n)        finds the number of positive integers less than n 
                   which are relatively prime to n.
-Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
+Carmichael(n)     λ(n) of a positive integer n is the smallest positive integer 
                   m such that a^m ≡ 1   (mod n) for every integer a between 1 
                   and n that is coprime to n. Also known as the reduced totient
                   function.
+Dedekind(n)       Dedekind psi function. product of p^(e-1)(p+1) where p=prime
+                  factor and e=exponent
 IsPrime(n)        returns zero if n is not probable prime, -1 if it is.
+BPSW(n)           Baillie-PSW primality test. It returns zero if n is composite,
+                  1 for probable prime, 2 for definite prime.
+                  considered to be 100% reliable for numbers up to 10000 digits
+APRCL(n)          Adleman-Pomerance-Rumely primality test. returns zero if n is
+                  composite, 1 for probable prime (only if BPSW used), 2 for it
+                  definite prime. WARNING: very slow for large numbers
+                  e.g. 20s for 400 digits
+                  If the number is > 6021 digits it reverts to the BPSW test.
+ISPOWERFUL(n)     returns -1 if n is a powerful number, 0 if not. A number is
+                  powerful if and only if every prime factor has an exponent 2 or
+                  more. Equivalently, a powerful number is the product of a
+                  square and a cube.
+ISSQUAREFREE(n)   returns -1 if n is square-free, 0 if not.
+ISFUNDAMENTAL(n)  returns -1 if n is a Fundamental Discriminant, otherwise 0.
+ISPOLYGONAL(n, s) returns -1 if n is a polygonal number, otherwise 0. s
+                  specifies the number of sides to the polygon; s = 3 for triangular,
+                  4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
 NumDivs(n)        Number of positive divisors of n either prime or composite.
 SumDivs(n)        Sum of all positive divisors of n both prime and composite.
+Divisors(n)       Get list of divisors of n, either prime or composite. The value
+                  returned is the number of divisors (same as numdivs)
 NumDigits(n,r)    Number of digits of n in base r.
 SumDigits(n,r)    Sum of digits of n in base r.
 RevDigits(n,r)    finds the value obtained by writing backwards 
                   the digits of n in base r. 
-R2(n)             The number of ways n can be formed as the sum of x^2 + y^2
+R2(n)             The number of ways n can be formed as the sum of x² + y²
                   where x and y are negative, zero, or positive. The order is 
-                  significant e.g. R2(1) = 4. (0 + 1^2, 0 + (-1)^2, 1^2 +0,
-                  (-1)^2 + 0)
-R3(n)             The number of ways n can be formed as the sum of x^2 + y^2 + z^2
+                  significant e.g. R2(1) = 4. (0 + 1², 0 + (-1)², 1² +0,
+                  (-1)² + 0)
+R3(n)             The number of ways n can be formed as the sum of x² + y² + z²
                   where x, y and z are negative, zero, or positive.
                   WARNING: for large n this is very slow
 R3H(n)            Same as R3(n) but using the Hurwitz class number to get
                   the result. Much faster but requires PARI-GP to have been
                   installed.
+R4(n)             Number of ways n can be expressed as the sum of w² + x² + y² + z².
+                  (order and sign of w, x, y and z are significant)
 llt(n)            Do Lucas-Lehmer primality test on 2^n-1.
                   Return 0 if 2^n-1 is composite, 1 if prime
 sqrt(n)           Calculate floor(sqrt(n))
@@ -383,21 +407,48 @@ nroot(x, n)       Calculate nth root of x
 numfact(n)        returns the number of uniqe factors in n
 minfact(n)        returns the value of the smallest factor of n
 maxfact(n)        returns the value of the largest factor of n
-FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the mode m
+FactConcat(m,n)   Concatenates the prime factors of n (base 10) according to the mode m
                   mode    Order of factors    Repeated factors
                   0       Ascending           No
                   1       Descending          No
                   2       Ascending           Yes
                   3       Descending          Yes
-HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
+HCLASS(n)         Hurwitz-Kronecker class number *12. Currently restricted to
                   n < 10^32. The true HCLASS is not always an integer, but 
                   multiplying by 12 always yields an integer.
-CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
+CLASSNO(n)        class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
                   not a perfect square. For +ve n, n must be < 730,000,000 to avoid
                   pari stack overflow.
 TAU(x)          : Ramanujan's tau function
 STIRLING(m, n, f): if f = 1 return the Stirling number of the first kind s(n,k), 
                   if f = 2, return the Stirling number of the second kind S(n,k).
+LE(a,p)           Legendre value for (a/p). Only defined if p is an odd prime.
+                  The result is zero when a is a multiple of p, otherwise it is
+                  one if there is a solution of x² ≡ a (mod p) and it is -1 when
+                  the congruence has no solution.
+JA(a,p)           Jacobi value for (a/p). Extension of Legendre to all odd values of p.
+KR(a,p)           Kronecker value for (a/p); an extension of the Jacobi value to
+                  all values of p
+ISPOW(n)          returns -1 if n is a perfect power, otherwise 0
+MODSQRT(a, p)     returns r such that r² ≡ a (mod p). If no solution exists an error
+                  is reported. Generally there is more than 1 solution in the range 0
+                  to p-1, but only the smallest positive solution is returned.
+PRIMROOT(a)       returns smallest primitive root of a if there is one. Primitive
+                  roots exists if a is 2, 4, an odd prime power, or twice an odd
+                  prime power.
+INVTOT(x)         finds n such that totient(n) = x. There may be no such value, or
+                  many values. x is limited to 10^15 because large values use too
+                  much memory and could hang the PC.
+POPCNT(x)         for x >= 0, counts the number of 1-bits, also known as the
+                  Hamming weight.
+HAMDIST(x, y)     counts the number of bits which differ beween x and y. x and
+                  y must have the same sign.
+GF(x)             Gauss Factorial of x, defined as the product of all positive
+                  numbers < x  that are relatively prime to x. If GF(x) would excceed
+                  30,000 digits an error is generated.
+QUADDISC(x)       Discriminant of quadratic field Q(sqrt(x)).
+EULERFRAC(x)      Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
+
 
 Some functions and operators limit the range of their parameters:
 ^ or ** (exponent)                  0 <= exponent <= 2^31-1, also result is estimated 
@@ -424,15 +475,15 @@ P(n)                                n <= 1000000 (implementation limit, P(100000
 sqrt(n)                             n >= 0
 nroot(x, n)                         if n is even, x >= 0. (If n is odd -ve x is OK)
 
-There are a number of built-in test commands. In all tests the results are
-checked for correctness and a summary of the factorisation results is printed
-after the tests are completed:
+There are a number of built-in test commands. "TEST H" prints a brief summary
+of all the TEST commands. In all tests the results are checked for correctness 
+and a summary of the factorisation results is printed after the tests are completed:
 
 TEST    1st tests most of the calculator functions, then factorises a series of
         numbers. The numbers are chosen to test for various special cases as well
         as normal factorisation. This test is good for regression testing.
 
-TEST2   test factorisation using pseudo-random numbers of a specified size.
+TEST 2  test factorisation using pseudo-random numbers of a specified size.
         Command format is TEST2 [num1[,num[,num3]]] where num1 is the number of 
         tests,  num2 is the size of the numbers to be factored in bits. If num3  
         NE 0 the number to be factored consists of 2 approximately same-sized 
@@ -441,23 +492,23 @@ TEST2   test factorisation using pseudo-random numbers of a specified size.
         two TEST2 commands the same sequence of numbers to be factored is 
         generated. This command is useful for benchmarking factorisation.
 
-TEST3    Tests for the built-in bigintegers. These are based on DA's biginteger 
-         functions but made into a C++ class with arithmetic , shift, compare 
-         operators, etc implemented. However the built-in bigintegers are now 
-         only used in the the built-in ECM & SIQS, which themselves are normally 
-         only used for numbers up to 2^192, so this test is not normally included.
+TEST 3  Tests for the built-in bigintegers. These are based on DA's biginteger 
+        functions but made into a C++ class with arithmetic , shift, compare 
+        operators, etc implemented. However the built-in bigintegers are now 
+        only used in the the built-in ECM & SIQS, which themselves are normally 
+        only used for numbers up to 2^192, so this test is not normally included.
 
-TEST4     test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
-          this test will take over an hour.
+TEST 4  test factorisation of mersenne numbers. See https://en.wikipedia.org/wiki/Mersenne_prime
+        this test will take over an hour.
 
-TEST5     tests using only YAFU for factorisation. Note that these tests bypass the
-          trial division etc normally used and rely on YAFU for all the factorisation.
+TEST 5  tests using only YAFU for factorisation. Note that these tests bypass the
+        trial division etc normally used and rely on YAFU for all the factorisation.
 
-TEST6     tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
+TEST 6  tests using only Msieve for factorisation. Factorise selected Mersenne numbers.
 
-TEST7     tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= num are
-          tested to see whether 2^p-1 is prime or not. The default value for num is
-          12000.   Sample output:
+TEST 7  tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= num are
+        tested to see whether 2^p-1 is prime or not. The default value for num is
+        12000.   Sample output:
 
             test7 87000
             18:47:15 2^2 -1 is prime ***
@@ -495,9 +546,18 @@ TEST7     tests the Lucas-Lehmer function. Format is TEST7 [num]. All primes <= 
             99.67% composites found by llt
             08:40:38 test 7 completed time used =  13h 53 min 23.314sec
 
-          This has found the 1st 28 Mersenne primes in less than 14 hours. The 
-          last of these was originally found in 1982 using a mult-million $ Cray
-          supercomputer. Talk about standing on the shoulders of giants!
+        This has found the 1st 28 Mersenne primes in less than 14 hours. The 
+        last of these was originally found in 1982 using a mult-million $ Cray
+        supercomputer. Talk about standing on the shoulders of giants!
+
+Test 8  test error handling
+Test 9  test modular square root (use "TEST 9 H" for more info.
+Test 10 [p1[,p2]]   
+        test quadratic modular equation solver, where p1 is the number of tests 
+        and p2 is the number size in bits
+
+Test 11 [p1[,p2[,p3]]]  
+        test R3 & R3h functions, where p1 = no of tests, p2 = number size in bits
 
 Test example:
 
@@ -560,9 +620,9 @@ Test Num Size   time      Unique Factors Total Factors     2nd Fac
         one number on the stack at the end, or at any time there are not enough
         numbers on the stack to perform an operation an error is reported.
 
- Added July 2022
+Added July 2022
  
- A number of functions in this calculator have ben implemented using libpari.
+A number of functions in this calculator have ben implemented using libpari.
 These functions are: R3H, HCLASS, CLASSNO, TAU, STIRLING. Although PARI is
 written in C, the coding methods used in PARI are so different from the rest of 
 the calculator that it is easier to link dynamically to the libpari dll and
@@ -572,23 +632,22 @@ MSYSYS2, not Visual Studio, a less common method to link to the dll has to be
 used. 
 
  Dynamic linking does work  but a separate function pointer for each libpari 
- function used has  to be set up.
- So far this has been used to calculate the Hurwitz-Kronecker class number.
+ function used has to be set up.
+ This has been used to calculate the Hurwitz-Kronecker class number.
  The PARI function is very fast, although the algorithm used is a bit mind-blowing.
  A fast method to calculate R3 based on this has also been developed. (The original
  method is desparately slow for numbers of any significant size)
-
- Now also uses Pari library to calculate the class number, Ramanujan's tau function,
- and Stirling numbers (first & second kind)
 
  As an experiment, a feature was added to use Parilib's factor function to factorise
  larger numbers. It turns out to be generally somewhat slower than the built-in 
  ECM and SIQS factorisation.
 
  Similarly to using YAFU or Msieve for factorisation, Pari factorisation is turned 
- on by PARI ON and off by PARI OFF commands. The pari stack is initialised if it
- is required but is NOT closed except by a PARI CLOSE command. (There is no need
- for a PARI OPEN command; it's done automatically if required)
+ on by PARI ON and off by PARI OFF commands. 
+ 
+ The pari stack is initialised if it is required but is NOT closed except by a 
+ PARI CLOSE command. (There is no need for a PARI OPEN command; it's done 
+ automatically if required)
 
  Added 2023
 

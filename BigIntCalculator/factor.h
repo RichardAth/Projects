@@ -339,7 +339,8 @@ also http://oeis.org/A004018 */
 	}
 
 /* The number of representations of n as the sum of two squares ignoring order 
-and signs. see http://oeis.org/A000161 and 
+and signs i.e. Number of partitions of n into 2 (possibly 0) squares. 
+see http://oeis.org/A000161 and 
 https://mathworld.wolfram.com/SumofSquaresFunction.html
 e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 	  25 = 5²+0  = 3²+4² so R2P(25) = 2 

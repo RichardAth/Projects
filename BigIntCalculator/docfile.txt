@@ -362,6 +362,9 @@ TEST 11 [p1[,p2[,p3]]] Test R3 and R3h functions. p1 = mumber of tests,
         If p3 = 2 a truly random seed value is used. 
         If p3 > 2 the value of num3 is used as the 'seed' value. 
 
+TEST 12 [p1[,p2[,p3]]] Test R3 and R3h functions. p1, p2 and p3 are used in the 
+        same way as for TEST 11
+
 Test example:
 
 enter expression to be processed, or HELP, or EXIT
