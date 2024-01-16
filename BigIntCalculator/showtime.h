@@ -21,5 +21,6 @@ void GetDHMS(char **pptrText, int seconds);
 void GetDHMSt(char **pptrText, int tenths);
 
 const char * myTime(void);
+const char* myTimePW(void);
 
-//void showElapsedTime(char **pptrOutput);
+const char* myTimeP();

@@ -31,8 +31,7 @@ enum class retCode
 	EXPR_OK = 0,
 	EXPR_FAIL = 1
 };
-const char* myTime(void);
-const char* myTimeP(void);
+
 long long MulPrToLong(const Znum& x);
 void writeIni(void);
 void generatePrimes(unsigned long long int max_val);

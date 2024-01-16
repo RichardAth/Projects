@@ -558,6 +558,9 @@ Test 10 [p1[,p2]]
 
 Test 11 [p1[,p2[,p3]]]  
         test R3 & R3h functions, where p1 = no of tests, p2 = number size in bits
+		
+Test 12 [p1[,p2[,p3]]]  
+        test R4 function, where p1 = no of tests, p2 = number size in bits
 
 Test example:
 

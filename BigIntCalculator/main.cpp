@@ -115,39 +115,6 @@ void ErrorDisp(const char *lpszFunction)
     // ExitProcess(dw);
 }
 
-
-/* get current time of day in format hh:mm:ss */
-const char * myTime(void) {
-    static char timestamp[10];   // time in format hh:mm:ss
-    struct tm newtime;
-
-    const time_t current = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
-    localtime_s(&newtime, &current);    // convert time to tm structure
-    /* convert time to hh:mm:ss */
-    std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
-    return timestamp;
-}
-
-/* get current time of day in format hh:mm:ss.msec */
-const char* myTimeP(void) {
-    static char timestamp[15];   // time in format hh:mm:ss.msec
-    FILETIME SystemTimeAsFileTime;
-    SYSTEMTIME   sysTime;
-
-    GetSystemTimePreciseAsFileTime(&SystemTimeAsFileTime);
-
-    if (FileTimeToSystemTime(&SystemTimeAsFileTime, &sysTime)) {
-        sprintf_s(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%03d",
-            sysTime.wHour, sysTime.wMinute, sysTime.wSecond, sysTime.wMilliseconds);
-        return timestamp;
-    }
-    else { 
-        ErrorDisp("__FUNCTION__");
-        return nullptr; 
-    }
-}
-
-
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
@@ -238,7 +205,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
 long long MulPrToLong(const Znum &x) {
     long long rv;
     // note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
-    if (x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
+    if (numLimbs(x) <= 1 && x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
         //rv = mpz_get_si(ZT(x)); // convert to normal integer
         rv = ZT(x)->_mp_d[0];     // accessing the limb directly seems to be a lot faster
         if (ZT(x)->_mp_size < 0)  // than calling mpz_get_si
@@ -494,9 +461,9 @@ void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (elSec <= 60.0) {
         if (lang)
-            printf_s("%.4f segundos \n", elSec);
+            printf_s("%.3f segundos \n", elSec);
         else
-            printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
+            printf_s("%.3f seconds \n", elSec);  /* print time used to nearest millisecond */
     }
     else {
         /* round to nearest second */
@@ -3184,6 +3151,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     BOOL iccRV = InitCommonControlsEx(&ccset);
     if (iccRV == FALSE)
         ErrorDisp(__FUNCTION__);
+
     return;
 }
 
