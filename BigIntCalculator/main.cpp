@@ -40,6 +40,9 @@ HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program
 HINSTANCE cH2 = GetModuleHandle(NULL);  /* should contain the same value */
 
 int lang = 0;             // 0 English, 1 = Spanish
+const char EnLocale[] = "en_GB.utf8";   /* locale for English */
+const char SpLocale[] = "es_ES.utf8";   /* locale for Spanish */
+
 bool VSrun = false;       /* set to true if program started from Visual Studio */
 
 bool hexPrFlag = false;		// set true if output is in hex
@@ -2692,10 +2695,16 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
-            if (b_ck == BST_CHECKED)
+            if (b_ck == BST_CHECKED) {
                 lang = TRUE;    /* select Spanish */
-            if (b_ck == BST_UNCHECKED)
+                auto lc = std::setlocale(LC_ALL, SpLocale);
+                printf_s("%s locale is now: %s\n", myDateTime(), lc);
+            }
+            if (b_ck == BST_UNCHECKED) {
                 lang = FALSE;   /* select English */
+                auto lc = std::setlocale(LC_ALL, EnLocale);
+                printf_s("%s locale is now: %s\n", myDateTime(), lc);
+            }
             return FALSE;
 
         case group_size_int:
@@ -2819,9 +2828,17 @@ static int processCmd(std::string command) {
             return 1;
         }
     case 4: /* E */ {
-         lang = 0; return 1; }           // english
+         lang = 0; // english
+         auto lc = std::setlocale(LC_ALL, EnLocale);
+         printf_s("%s locale is now: %s\n", myDateTime(), lc);
+         return 1; 
+    }           
     case 5: /* S */ { 
-        lang = 1; return 1; }	          // spanish (Español)
+        lang = 1; // spanish (Español)
+        auto lc = std::setlocale(LC_ALL, SpLocale);
+        printf_s("%s locale is now: %s\n", myDateTime(), lc);
+        return 1; 
+    }	          
     case 6: /* F */ { 
         if (p.size() >= 2) {
             if (p1 != INT_MIN)
@@ -3097,12 +3114,11 @@ static void initialise(int argc, char *argv[]) {
     VersionInfo(argv[0], version, modified); /* get version info from .exe file */
     printf_s(lang? "%s Bigint calculadora versão %d.%d.%d.%d \n" : 
            "%s Bigint calculator Version %d.%d.%d.%d \n", 
-        myTimeP(), version[0], version[1], version[2], version[3]);
+        myDateTime(), version[0], version[1], version[2], version[3]);
     std::cout << (lang? "última modificação em " : "last modified on ") << modified << '\n';
 
 #ifdef __GNUC__
     printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-    std::setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
 
 #ifdef _MSC_FULL_VER
@@ -3114,9 +3130,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     std::cout << ver / 100000 << '.';    // next 2 digits
     ver %= 100000;                        // remove next 2 digits
     std::cout << ver << '\n';             // last 5 digits
-
-    auto lc = std::setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
+
+    if (lang) {
+        auto lc = std::setlocale(LC_ALL, SpLocale);      // allows non-ascii characters to print
+    }
+    else {
+        auto lc = std::setlocale(LC_ALL, EnLocale);      // allows non-ascii characters to print
+    }
 
     printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR

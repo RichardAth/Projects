@@ -109,3 +109,24 @@ const char* myTimeP()
 	sprintf_s(timestamp + offset, sizeof(timestamp) - offset, ".%03lld", current_milliseconds);
 	return timestamp;
 }
+
+
+/* get current date & time as Www dd/mm/yyyy hh:mm:ss 
+	Www - the day of the week (one of Mon, Tue, Wed, Thu, Fri, Sat, Sun).
+		  day of week is translated according to the current locale
+	mm - the month (1 to 12).
+	dd - the day of the month (1 to 31).
+	hh - hours (0 to 23).
+	mm - minutes (0 to 59).
+	ss - seconds (0 to 59).
+	yyyy - year. */
+const char* myDateTime() {
+	static char DateTime[30];
+	std::time_t result = std::time(nullptr);  /* get current date & time 
+	as the number of seconds elapsed since midnight (00:00:00), January 1, 1970*/
+	/* convert result to tm struct */
+	const tm current_localtime{ *std::localtime(&result) };
+	/* convert to text */
+	std::strftime(DateTime, sizeof(DateTime), "%a %d/%m/%Y %T", &current_localtime);
+	return DateTime;
+}

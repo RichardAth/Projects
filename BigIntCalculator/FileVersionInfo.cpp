@@ -68,11 +68,11 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string &modified) {
 	
 	int err = _stat64(path, &fileStat);
 	if (err == 0) {
-		modified.resize(26);
+		modified.resize(31);
 		auto ftime = fileStat.st_mtime;  // time last modified in time_t format
 		localtime_s(&ftimetm, &ftime);   // convert to tm format
 		/* convert to dd/mm/yyyy  at hh:mm:ss */
-		std::strftime(&modified[0], 25, "%d/%m/%C%y at %H:%M:%S", &ftimetm);
+		std::strftime(&modified[0], 30, "%a %d/%m/%Y at %T", &ftimetm);
 	}
 	else
 		std::cout << path << " not found \n";

@@ -18,6 +18,10 @@ The disadvantage is that you have to download the source code and build it. In
 order to do that you need GMP or MPIR multi-precision library and the Boost 
 multi-precision library.
 
+The ability to switch from English to Spanish (and back again) has been retained.
+However, the Help file information in Spanish is not complete, and the language
+setting is not written out to the .ini file.
+
 the following changes were made:
 
 C++ rather than C
