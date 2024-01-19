@@ -261,9 +261,8 @@ retry:
 
                            //does it match our topic?
             str[std::strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-            if (std::strstr(helptopic.c_str(), str + 1) != NULL)
-                /* we get a match if the topic between [ and ] is contained
-                anywhere in helptopic */
+            if (_stricmp(helptopic.c_str(), str + 1) ==0)
+                /* we get a match if the topic between [ and ] = helptopic */
                 printtopic = true;   /* we have found the required topic*/
             lineCount = 0;    /* reset line count */
         }

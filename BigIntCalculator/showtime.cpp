@@ -111,15 +111,16 @@ const char* myTimeP()
 }
 
 
-/* get current date & time as Www dd/mm/yyyy hh:mm:ss 
+/* get current date & time as Www dd Mmm yyyy hh:mm:ss 
 	Www - the day of the week (one of Mon, Tue, Wed, Thu, Fri, Sat, Sun).
 		  day of week is translated according to the current locale
-	mm - the month (1 to 12).
 	dd - the day of the month (1 to 31).
+	Mmm - the month (Jan, Feb,   .... Dec, translated according to the current locale)
+	yyyy - year.
 	hh - hours (0 to 23).
 	mm - minutes (0 to 59).
 	ss - seconds (0 to 59).
-	yyyy - year. */
+ */
 const char* myDateTime() {
 	static char DateTime[30];
 	std::time_t result = std::time(nullptr);  /* get current date & time 
@@ -127,6 +128,6 @@ const char* myDateTime() {
 	/* convert result to tm struct */
 	const tm current_localtime{ *std::localtime(&result) };
 	/* convert to text */
-	std::strftime(DateTime, sizeof(DateTime), "%a %d/%m/%Y %T", &current_localtime);
+	std::strftime(DateTime, sizeof(DateTime), "%a %d %b %Y %T", &current_localtime);
 	return DateTime;
 }
