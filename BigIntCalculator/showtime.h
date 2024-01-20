@@ -20,6 +20,7 @@ double tenths(void);
 void GetDHMS(char **pptrText, int seconds);
 void GetDHMSt(char **pptrText, int tenths);
 
-const char * myTime(void);
-
-//void showElapsedTime(char **pptrOutput);
+const char * myTime(void);    /* get hh:mm:ss */
+const char* myTimePW(void);   /* get hh:mm:ss.msec */
+const char* myTimeP();        /* get hh:mm:ss.msec */
+const char* myDateTime();     /* Www Mmm dd hh:mm:ss yyyy */

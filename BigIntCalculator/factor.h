@@ -36,6 +36,7 @@ extern int groupSize;
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
+Znum power(const Znum& x, unsigned long long n);
 
 /*  get approximate size (1 limb = 64 bits) */
 #define numLimbs(a)  std::abs(ZT(a)->_mp_size)
@@ -98,7 +99,7 @@ private:
 	int pari = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
-	int power = 0;		   // perfect power
+	int powerCnt = 0;	   // perfect power
 public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
@@ -109,7 +110,7 @@ public:
 
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
-	friend size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
+	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 
@@ -117,7 +118,8 @@ public:
 
 /* Find Euler's Totient as the product of p^(e-1)*(p-1) where p=prime and e=exponent. 
   Euler's totient function counts the positive integers up to a given integer n that 
-  are relatively prime to n */
+  are relatively prime to n. See https://oeis.org/A000010, and 
+  https://en.wikipedia.org/wiki/Euler%27s_totient_function */
 	Znum totient() const {
     // this only works if factorisation is complete!
 		Znum result = 1, term;
@@ -131,7 +133,7 @@ public:
 		return result;
 	}
 
-	/* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and 
+ /* find Dedekind Psi function as the product of p^(e-1)(p+1) where p=prime and 
 	e=exponent. See https://oeis.org/A001615 
 	and https://en.wikipedia.org/wiki/Dedekind_psi_function*/
 	Znum dedekind() const {
@@ -147,7 +149,7 @@ public:
 		return result;
 	}
 
-	/* returns true if every prime factor has an exponent 2 or more, otherwise
+ /* returns true if every prime factor has an exponent 2 or more, otherwise
 	returns false. Equivalently, a powerful number is the product of a square and a cube. 
 	Powerful numbers are also known as squareful, square-full, or 2-full. 
 	See https://en.wikipedia.org/wiki/Powerful_number 
@@ -275,8 +277,8 @@ for factors found by YAFU or Msieve */
 			std::cout << " Carmichael: " << this->carm;
 		if (this->leh > 0)
 			std::cout << " Lehman: " << this->leh;
-		if (this->power > 0)
-			std::cout << " Perfect Power: " << this->power;
+		if (this->powerCnt > 0)
+			std::cout << " Perfect Power: " << this->powerCnt;
 		std::cout << '\n';
 	}
 
@@ -337,7 +339,9 @@ also http://oeis.org/A004018 */
 	}
 
 /* The number of representations of n as the sum of two squares ignoring order 
-and signs. see http://oeis.org/A000161 
+and signs i.e. Number of partitions of n into 2 (possibly 0) squares. 
+see http://oeis.org/A000161 and 
+https://mathworld.wolfram.com/SumofSquaresFunction.html
 e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 	  25 = 5²+0  = 3²+4² so R2P(25) = 2 
 	  8 = 2² + 2² so R2P(8) =1 */
@@ -367,8 +371,9 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		/* if b is odd the the exponents of ALL prime factors of n other than 2 are even,
 		therefore n is a perfect square, or 2*perfect square */
 			if ((a0 & 1) == 0)
-				/* mathworld.wolfram suggests using b-1 rather than b+1 here. In effect
-				zero would be disallowed as 1 of the squares. */
+				/* mathworld.wolfram suggests using b-1 rather than b+1 here, see equation (17)
+				In effect zero would be disallowed as 1 of the squares, but we prefer the 
+				OEIS version */
 				return (b + 1) / 2;  /* a0 is even i.e. n is a perfect square */
 			else
 				return (b + 1) / 2;  /* a0 is odd i.e. n is a 2*perfect square */
@@ -376,7 +381,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 	}
 
 /* calculate number of divisors of n (including 1 and n itself), given its list 
-   of prime factors. */
+   of prime factors. See https://oeis.org/A000005 */
 	Znum NoOfDivs() const {
 		Znum result = 1;
 		if (this->f.empty())
@@ -391,8 +396,9 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 	}
 
 // sum of divisors is the product of (p^(e+1)-1)/(p-1) where p=prime factor 
-// and e=exponent.
-	Znum DivisorSum() const {
+// and e=exponent. See https://oeis.org/A000203  and 
+// https://en.wikipedia.org/wiki/Divisor_function
+	Znum DivisorSumOld() const {
 		Znum result = 1, term;
 		if (this->f.empty())
 			return 0;
@@ -406,6 +412,33 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		return result;
 	}
 
+/*  get sum of n-th power of divisors. If n =0 get number of divisors. If
+    n = 1 get sum of divisors. */
+	Znum DivisorSum(int n = 1) {
+		Znum result = 1, term;
+		if (this->f.empty())
+			return 0;
+		if (this->f[0].Factor == 1)
+			return 1;		// special case: if original number is 1
+		if (n == 0) {
+			for (auto i : this->f) {
+				result *= i.exponent + 1;
+			}
+			return result;
+		}
+		else if (n > 0) {
+			for (auto i : this->f) {
+				mpz_pow_ui(ZT(term), ZT(i.Factor), (i.exponent + 1) * n);  // p^(e+1)n
+				term = (term - 1) / (power(i.Factor, n) - 1);	           // (p^(e+1)-1)/(p^n -1)
+				result *= term;
+				if (numLimbs(result) > 1560)
+					return -1;  /* value would exceed 30,000 digits*/
+			}
+			return result;
+		}
+		else
+			return -1;  /* n is -ve */
+	}
 
 /* Concatenates the prime factors (base 10) of num according to the mode
 Order of factors: Ascending or 	Descending
@@ -533,7 +566,7 @@ Repeated factors: No or Yes
 		temp.leh    = this->leh;     // Lehman
 		temp.msieve = this->msieve;  // Msieve
 		temp.pm1    = this->pm1;     // power + / -1
-		temp.power  = this->power;   // perfect power
+		temp.power  = this->powerCnt;   // perfect power
 		temp.prho   = this->prho;    // Pollard-rho
 		temp.siqs   = this->siqs;    // SIQS
 		temp.tdiv   = this->tdiv;    // trial division

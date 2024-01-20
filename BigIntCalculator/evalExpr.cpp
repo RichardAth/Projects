@@ -93,7 +93,7 @@ N(n):		Next probable prime after n
 B(n):		Previous probable prime before n
 Totient(n): finds the number of positive integers less than n which are relatively prime to n.
 NumDivs(n): Number of positive divisors of n either prime or composite.
-SumDivs(n): Sum of positive divisors of n either prime or composite.
+SumDivs(n, x): Sum of xth power of positive divisors of n either prime or composite.
 FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
 
 */
@@ -254,7 +254,7 @@ const static struct functions functionList[]{
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
     "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as wum of 4 squares
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "SUMDIVS",   1,  opCode::fn_sumdivs,
+    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of nth power of divisors
     "SQRT",      1,  opCode::fn_sqrt,
     "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
     "TOTIENT",   1,  opCode::fn_totient,
@@ -305,9 +305,9 @@ const static struct oper_list operators[]{
       //{ "!!",  opCode::dfact,       0,  true,  false, 1},      // double factorial
         { "!",   opCode::fact,        0,  true,  false, 1},      // multi-factorial
         { "#",   opCode::prim,        0,  true,  false, 1},      // primorial
-        { "(",   opCode::leftb,      99, true,  false, 0},      // left bracket
-        { ")",   opCode::rightb,     -1, true,  false, 0},      // right bracket
-        {"=",    opCode::assign,     12, false, false, 2},      // assignment
+        { "(",   opCode::leftb,      99,  true,  false, 0},      // left bracket
+        { ")",   opCode::rightb,     -1,  true,  false, 0},      // right bracket
+        {"=",    opCode::assign,     12,  false, false, 2},      // assignment
         /* unary - must be the last entry */
         {"U-",   opCode::unary_minus, 1, false, true,  1 },     // unary -
 };
@@ -332,7 +332,7 @@ static bool isPerfectSquare(const Znum &num) {
 }
 
 /* calculate Euler's totient for n as the product of p^(e-1)*(p-1)
-where p=prime factor and e=exponent.*/
+where p=prime factor and e=exponent. See https://oeis.org/A000010 */
 static Znum ComputeTotient(const Znum &n) {
     fList factorlist;
 
@@ -442,7 +442,7 @@ static Znum ComputeNumDivs(const Znum &n) {
 N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
 */
-static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
+static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
     fList f;          /* prime factors of tnum */
     Znum divisors;    /* number of divisors */
@@ -459,6 +459,8 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     }
 
     divisors = f.NoOfDivs();
+    if (divisors > 33333333)
+        return -1;  /* cannot make list of divisors; there are too many */
     numdiv = MulPrToLong(divisors);   /* number of divisors of tnum */
     numfactors = f.fsize();           /* number of unique prime factors of tnum */
     divlist.resize(numdiv);
@@ -494,15 +496,15 @@ static size_t DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 }
 
 /* sum of divisors is the product of (p^(e+1)-1)/(p-1)
- where p=prime factor and e=exponent. */
-static Znum ComputeSumDivs(const Znum &n) {
+ where p=prime factor and e=exponent. See https://oeis.org/A000203 */
+static Znum ComputeSumDivs(const Znum &n, const Znum &x) {
     fList factorlist;
 
     if (n == 1)
         return 1;   // 1 only has 1 divisor. 
     auto rv = factorise(n, factorlist, nullptr);
     if (rv) {
-        auto divisors = factorlist.DivisorSum();
+        auto divisors = factorlist.DivisorSum((int)MulPrToLong(x));
         return divisors;
     }
     else return 0;
@@ -741,7 +743,7 @@ static uint64_t PrimePi(const Znum &Zn) {
     unsigned long long n = MulPrToLong(Zn);
 
     if (primeListMax >= n)
-        return (PrimePiC(n));
+        return (PrimePiC(n));  /* search for n in prime list. */
 
     const auto v = (unsigned long long)std::sqrt(n);
 
@@ -821,7 +823,7 @@ static Znum  FactConcat(const Znum &mode, const Znum &num) {
 
 /* calculate the number of ways an integer n can be expressed as the sum of 2
 squares x^2 and y^2. The order of the squares and the sign of x and y is significant
-*/
+See http://oeis.org/A004018 */
 static Znum R2(const Znum &num) {
     Znum rvz;
     if (num < 0)
@@ -832,7 +834,6 @@ static Znum R2(const Znum &num) {
         return 0;   // at least 1 4k+3 factor has an odd exponent
 
     fList factorlist;
-    Znum b = 1;
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);
@@ -843,17 +844,18 @@ static Znum R2(const Znum &num) {
     return rvz;
 }
 
-/* The number of representations of n as the sum of two squares ignoring order and signs*/
+/* The number of representations of n as the sum of two squares ignoring order and signs
+i.e. Number of partitions of n into 2 (possibly zero) squares.
+see http://oeis.org/A000161 */
 static Znum R2p(const Znum& num) {
     if (num < 0)
         return 0;
     if (num == 0)
         return 1;
-    if (num % 4 == 3)
+    if (num % 4 == 3)  /*  short cut, in some cases */
         return 0;   // at least 1 4k+3 factor has an odd exponent
 
     fList factorlist;
-    Znum b = 1;
 
     /* get factors of num */
     auto rv = factorise(num, factorlist, nullptr);
@@ -953,7 +955,6 @@ Znum R4(Znum num) {
     
     /* get factors of num, or of largest odd divisor of num */
     auto rv = factorise(num, factorlist, nullptr);
-
 
     /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
     Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
@@ -1078,7 +1079,7 @@ static int lltTrialDiv(const Znum& n, const long long p) {
     else {
         if (verbose > 0)
             printf_s("%s No factors found by trial division to %d bits, start Lucas-Lehmer test \n",
-                myTime(), leftBit(2 * ll_limit * p + 1) + 1);
+                myTimeP(), leftBit(2 * ll_limit * p + 1) + 1);
         return 1;  /* no factor found */
     }
 }
@@ -1148,7 +1149,7 @@ Znum llt(const Znum& p) {
         t2 = std::clock();
         printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
         if (rv == 0) {
-            std::cout << myTime() << " 2^" << exp << " -1 is not prime *** \n";
+            std::cout << myTimeP() << " 2^" << exp << " -1 is not prime *** \n";
             return 0;   /* factor found -> n is composite */
         }
     }
@@ -1166,7 +1167,7 @@ Znum llt(const Znum& p) {
         if (verbose > 0 && (i > 0) && (i & 0x7ff) == 0) { /* 7ff = 2047, print msg every 2048 iterations */
             for (int j = 0; j < nchars; j++)
                 printf_s("\b");    // erase previous output
-            nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTime(), i,
+            nchars = printf_s("%s llt iteration %lld %.2f%% complete", myTimeP(), i,
                 (double)i * 100.0 / (exp - 2));
             std::fflush(stdout);
         }
@@ -1464,12 +1465,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeNumDivs(p[0]);
         break;
     }
-    case opCode::fn_sumdivs: {		// SUMDIVS
-        result = ComputeSumDivs(p[0]);
+    case opCode::fn_sumdivs: /* sum of divisors */ {	
+        if (p[0] < 1) {
+            return retCode::NUMBER_TOO_LOW;
+        }
+        if (p[1] < 0)
+            return retCode::EXPONENT_NEGATIVE;
+        if (p[1] > INT_MAX)
+            return retCode::EXPONENT_TOO_LARGE;
+        result = ComputeSumDivs(p[0], p[1]);  /* get sum of n-th power of divisors. */
+        if (result < 0)
+            return retCode::INTERIM_TOO_HIGH;
         break;
     }
 
-    case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	// SumDigits(n, r) : 
+    case opCode::fn_sumdigits: /* Sum of digits of p[0] in base r.*/ {	 
         if (p[1] <= 1)
             return retCode::EXPR_BASE_MUST_BE_POSITIVE;
         result = ComputeSumDigits(p[0], p[1]);
@@ -1839,6 +1849,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         }
         result = DivisorList(p[0], roots);
+        if (result < 0)
+            return retCode::INTERIM_TOO_HIGH;
         multiValue = true;     /* indicate multiple return values */
         break;
     }

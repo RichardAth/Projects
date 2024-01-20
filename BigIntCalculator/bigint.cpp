@@ -370,7 +370,7 @@ BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2)
 }
 
 // m *= n (used for operator overloading)
-void MultBigNbrByInt(BigInteger &m, int n) {
+void MultBigIntByInt(BigInteger &m, int n) {
     long long prod, carry = 0;
     int i;
     bool pos = true;
@@ -598,7 +598,7 @@ static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 }
 
 /* return true if Nbr1 == Nbr2 (used for operator overloading)*/
-bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+bool TestBigIntEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     int ctr;
     auto N1Limbs = Nbr1.nbrLimbs;
     auto N2Limbs = Nbr2.nbrLimbs;
@@ -634,7 +634,7 @@ bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 }
 
 /* return true if Nbr1 < Nbr2 (used for operator overloading) */
-bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
+bool TestBigIntLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
     int ctr;
     auto N1Limbs = Nbr1.nbrLimbs;
     auto N2Limbs = Nbr2.nbrLimbs;
@@ -708,7 +708,7 @@ void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Resul
         power2++;
     }
 
-    while (Base != Power)	//while (TestBigNbrEqual(Base, Power) == 0)
+    while (Base != Power)	//while (TestBigIntEqual(Base, Power) == 0)
     {    // Main GCD loop.
         if (Base.isEven()) {     // Number is even. Divide it by 2.
             BigIntDivide2(Base);

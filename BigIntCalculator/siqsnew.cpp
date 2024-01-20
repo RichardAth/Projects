@@ -3567,7 +3567,7 @@ static void sieveThread(Znum &result) {
 
 				for (index = 1; index < nbrFactorsA; index++) {
 					biQuadrCoeff *= afact[index];
-					//MultBigNbrByInt(biQuadrCoeff, afact[index], biQuadrCoeff);
+					//MultBigIntByInt(biQuadrCoeff, afact[index], biQuadrCoeff);
 				}
 
 #if DEBUG_SIQS
@@ -3591,7 +3591,7 @@ static void sieveThread(Znum &result) {
 					}
 					 biDividend = biQuadrCoeff/currentPrime; // DivBigNbrByInt(biQuadrCoeff, currentPrime, biDividend); 
 					biLinearDelta[index] = biDividend * Q;
-					// MultBigNbrByInt(biDividend, Q, biLinearDelta[index]);  // biLinearDelta[index] = biDividend * Q
+					// MultBigIntByInt(biDividend, Q, biLinearDelta[index]);  // biLinearDelta[index] = biDividend * Q
 #if 0 // DEBUG_SIQS
 					std::cout << "index = " << index << " Delta = " << biLinearDelta[index] << '\n';
 #endif

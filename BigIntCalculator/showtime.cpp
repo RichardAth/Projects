@@ -14,6 +14,9 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 
 #pragma warning(disable : 4996)
 
@@ -23,7 +26,7 @@ double tenths(void) {
 	return (double)now / (CLOCKS_PER_SEC / 10); ;
 }
 
-/* Convert seconds to days, hours, minutes and seconds.
+/* Convert interval in seconds to days, hours, minutes and seconds.
 & move *pptrText past added text (normally 14 chars)
 output format is "nd nnh nnm nns"*/
 void GetDHMS(char **pptrText, int seconds) {
@@ -34,8 +37,8 @@ void GetDHMS(char **pptrText, int seconds) {
 	*pptrText += len-1;    // pointer points at null terminator
 }
 
-/* Convert tenths to days, hours, minutes and seconds.tenths.
-& move *pptrText past added text (normally 16 chars)
+/* Convert interval in tenths of a second to days, hours, minutes and 
+seconds.tenths, & move *pptrText past added text (normally 16 chars)
 output format is "nd nnh nnm nn.ns"*/
 void GetDHMSt(char **pptrText, int tenths) {
 	char *ptrText = *pptrText;
@@ -45,4 +48,86 @@ void GetDHMSt(char **pptrText, int tenths) {
 		(seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60,
 		tenths%10);
 	*pptrText += len - 1;    // pointer points at null terminator
+}
+
+/* get current time of day in format hh:mm:ss */
+const char* myTime(void) {
+	static char timestamp[10];   // time in format hh:mm:ss
+	struct tm newtime;
+
+	const time_t current = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
+	localtime_s(&newtime, &current);    // convert time to tm structure
+	/* convert time to hh:mm:ss */
+	std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
+	return timestamp;
+}
+
+/* get current time of day in format hh:mm:ss.msec (windows-only version)*/
+const char* myTimePW(void) {
+	static char timestamp[15];   // time in format hh:mm:ss.msec
+	FILETIME SystemTimeAsFileTime;
+	SYSTEMTIME   sysTime;
+
+	GetSystemTimePreciseAsFileTime(&SystemTimeAsFileTime);
+
+	if (FileTimeToSystemTime(&SystemTimeAsFileTime, &sysTime)) {
+		sprintf_s(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%03d",
+			sysTime.wHour, sysTime.wMinute, sysTime.wSecond, sysTime.wMilliseconds);
+		return timestamp;
+	}
+	else {
+		ErrorDisp("__FUNCTION__");
+		return nullptr;
+	}
+}
+
+/* this version does not rely on any windows-specific functions */
+/* see https://stackoverflow.com/questions/16077299/how-to-print-current-time-with-milliseconds-using-c-c11/66291527#66291527
+*/
+const char* myTimeP()
+{
+	using namespace std::chrono;
+	using clock = system_clock;
+
+	static char timestamp[15];   // time in format hh:mm:ss.msec
+	const auto current_time_point{ clock::now() };  /* get current time */
+
+	/* convert to time_t */
+	const time_t current_time{ clock::to_time_t(current_time_point) };
+
+	/* convert to tm struct */
+	const tm current_localtime{ *std::localtime(&current_time) };
+
+	/* convert to time interval since start of epoch (1 Jan 1970) */
+	const auto current_time_since_epoch{ current_time_point.time_since_epoch() };
+	/* get number of milliseconds */
+	const auto current_milliseconds{ duration_cast<milliseconds> (current_time_since_epoch).count() % 1000 };
+
+	size_t offset = std::strftime(timestamp, sizeof(timestamp), "%T", 
+		&current_localtime);  /* get HH:MM:SS into timestamp */
+	/* append milliseconds */
+	sprintf_s(timestamp + offset, sizeof(timestamp) - offset, ".%03lld", current_milliseconds);
+	return timestamp;
+}
+
+
+/* get current date & time as Www dd Mmm yyyy hh:mm:ss 
+	Www - the day of the week (one of Mon, Tue, Wed, Thu, Fri, Sat, Sun).
+		  day of week is translated according to the current locale
+	dd - the day of the month (1 to 31).
+	Mmm - the month (Jan, Feb,   .... Dec, translated according to the current locale)
+	yyyy - year.
+	hh - hours (0 to 23).
+	mm - minutes (0 to 59).
+	ss - seconds (0 to 59).
+ */
+const char* myDateTime() {
+	static char DateTime[30];
+	std::time_t result = std::time(nullptr);  /* get current date & time 
+	as the number of seconds elapsed since midnight (00:00:00), January 1, 1970*/
+	/* convert result to tm struct */
+	const tm current_localtime{ *std::localtime(&result) };
+	/* convert to text */
+	std::strftime(DateTime, sizeof(DateTime), "%a %d %b %Y %T", &current_localtime);
+	return DateTime;
 }

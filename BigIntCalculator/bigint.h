@@ -170,7 +170,7 @@ public:
 	friend BigInteger BigIntDivide(const BigInteger &Dividend, const BigInteger &Divisor);
 	friend BigInteger BigIntDivideInt(const BigInteger &Dividend, const int Divisor);
 	friend BigInteger BigIntMultiply(const BigInteger &Factor1, const BigInteger &Factor2);
-	friend void MultBigNbrByInt(BigInteger &m, int n); // m *= n
+	friend void MultBigIntByInt(BigInteger &m, int n); // m *= n
 	friend BigInteger BigIntRemainder(const BigInteger &Dividend, const BigInteger &Divisor);
 	/* calculate base^expon. Throw exception if result is out of range */
 	friend void BigIntPowerIntExp    (const BigInteger &Base, int expon, BigInteger &Power);
@@ -181,8 +181,8 @@ public:
 	friend void addbigint(BigInteger &Result, int addend); // Result += addend
 
 	friend int getRemainder(const BigInteger &pBigInt, int divisor);  // BigInt%divisor
-	friend bool TestBigNbrEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
-	friend bool TestBigNbrLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
+	friend bool TestBigIntEqual(const BigInteger &Nbr1, const BigInteger &Nbr2);
+	friend bool TestBigIntLess(const BigInteger &Nbr1, const BigInteger &Nbr2);
 	friend void BigIntDivide2  (BigInteger &Arg);   // arg /=2;
 	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
@@ -257,11 +257,11 @@ public:
 	}
 	BigInteger operator * (int m) const {
 		BigInteger prod = *this;
-		MultBigNbrByInt(prod, m);
+		MultBigIntByInt(prod, m);
 		return prod;
 	}
 	BigInteger &operator *= (int b) {
-		MultBigNbrByInt(*this, b);
+		MultBigIntByInt(*this, b);
 		return *this;
 	}
 
@@ -365,55 +365,55 @@ public:
 
 	/* overload comparison operators here */
 	bool operator ==(const BigInteger &b) const {
-		return TestBigNbrEqual(*this, b);
+		return TestBigIntEqual(*this, b);
 	}
 	bool operator ==(const long long b) const {
 		if (b == 0)
 			return BigNbrIsZero((*this).limbs, (*this).nbrLimbs);
 		BigInteger Btemp;
 		Btemp = b;
-		return TestBigNbrEqual(*this, Btemp);
+		return TestBigIntEqual(*this, Btemp);
 	}
 	bool operator !=(const BigInteger &b) const {
-		return !TestBigNbrEqual(*this, b);
+		return !TestBigIntEqual(*this, b);
 	}
 	bool operator !=(const long long b) const {
 		BigInteger Btemp;
 		Btemp = b;
-		return !TestBigNbrEqual(*this, Btemp);
+		return !TestBigIntEqual(*this, Btemp);
 	}
 	bool operator < (const BigInteger &b) const {
-		return TestBigNbrLess(*this, b);
+		return TestBigIntLess(*this, b);
 	}
 	bool operator < (const long long b) const {
 		if (b == 0) {
 			return ((*this).sign == SIGN_NEGATIVE);
 		}
 		BigInteger Btemp = b;
-		return TestBigNbrLess(*this, Btemp);
+		return TestBigIntLess(*this, Btemp);
 	}
 	bool operator > (const BigInteger &b) const {
-		return TestBigNbrLess(b, *this);
+		return TestBigIntLess(b, *this);
 	}
 	bool operator > (const long long b) const {
 		BigInteger Btemp = b;
-		return TestBigNbrLess(Btemp, *this);
+		return TestBigIntLess(Btemp, *this);
 	}
 	bool operator <=(const BigInteger &b) const {
-		return !TestBigNbrLess(b, *this);
+		return !TestBigIntLess(b, *this);
 	}
 	bool operator <=(const long long b) const {
 		BigInteger Btemp = b;
-		return !TestBigNbrLess(Btemp, *this);
+		return !TestBigIntLess(Btemp, *this);
 	}
 	bool operator >=(const BigInteger &b) const {
-		return !TestBigNbrLess(*this, b);
+		return !TestBigIntLess(*this, b);
 	}
 	bool operator >=(const long long b) const {
 		if (b == 0)
 			return ((*this).sign == SIGN_POSITIVE);
 		BigInteger Btemp = b;
-		return !TestBigNbrLess(*this, Btemp);
+		return !TestBigIntLess(*this, Btemp);
 	}
 };  /* end of BigInteger class definition */
 

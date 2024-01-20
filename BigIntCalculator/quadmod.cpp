@@ -42,9 +42,9 @@ int SolNbr = 0;
 char* ptrOutput;
 static std::vector <Znum> roots;
 
-/* interfac matcher between DA's code and expression evaluation function */
+/* interface matcher between DA's code and expression evaluation function */
 static retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
-    std::string exp = exprA;
+    std::string exp = exprA;  /* assumes that exprA is a null-terminated string */
     Znum value;
     int asgct;
     bool multiv;
@@ -54,7 +54,7 @@ static retCode ComputeExpression(const char* exprA, BigInteger* result, bool dum
     if (rv)
         return rc;  /* pass back return code too */
     else
-        return retCode::INTERIM_TOO_HIGH;
+        return retCode::INTERIM_TOO_HIGH;  /* ZtoBig returned an error */
 }
 
 static int Show(const BigInteger* num, const char* str, int t)

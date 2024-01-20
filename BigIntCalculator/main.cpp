@@ -16,6 +16,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "pch.h"
 #include <strsafe.h>
+#include <sysinfoapi.h>
 
 #include <Mmsystem.h >   // for sound effects
 #include "diagnostic.h"
@@ -39,6 +40,9 @@ HINSTANCE calcHandle = HINST_THISCOMPONENT;  /* instance handle for this program
 HINSTANCE cH2 = GetModuleHandle(NULL);  /* should contain the same value */
 
 int lang = 0;             // 0 English, 1 = Spanish
+const char EnLocale[] = "en_GB.utf8";   /* locale for English */
+const char SpLocale[] = "es_ES.utf8";   /* locale for Spanish */
+
 bool VSrun = false;       /* set to true if program started from Visual Studio */
 
 bool hexPrFlag = false;		// set true if output is in hex
@@ -113,20 +117,6 @@ void ErrorDisp(const char *lpszFunction)
     LocalFree(lpDisplayBuf);
     // ExitProcess(dw);
 }
-
-
-/* get time in format hh:mm:ss */
-const char * myTime(void) {
-    static char timestamp[10];   // time in format hh:mm:ss
-    struct tm newtime;
-
-    const time_t current = std::time(NULL);  // time as seconds elapsed since midnight, January 1, 1970
-    localtime_s(&newtime, &current);    // convert time to tm structure
-    /* convert time to hh:mm:ss */
-    std::strftime(timestamp, sizeof(timestamp), "%H:%M:%S", &newtime);
-    return timestamp;
-}
-
 
 /* Convert number to hexdecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
@@ -218,7 +208,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
 long long MulPrToLong(const Znum &x) {
     long long rv;
     // note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
-    if (x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
+    if (numLimbs(x) <= 1 && x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
         //rv = mpz_get_si(ZT(x)); // convert to normal integer
         rv = ZT(x)->_mp_d[0];     // accessing the limb directly seems to be a lot faster
         if (ZT(x)->_mp_size < 0)  // than calling mpz_get_si
@@ -465,7 +455,7 @@ void strToUpper(const std::string &s, std::string &d) {
 void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (msg.size() > 1)
-        std::cout << myTime() << ' ' << msg;
+        std::cout << myTimeP() << ' ' << msg;
     auto elSec = elapsed / CLOCKS_PER_SEC; // convert ticks to seconds
 
     if (elSec > 10.0)
@@ -474,9 +464,9 @@ void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (elSec <= 60.0) {
         if (lang)
-            printf_s("%.4f segundos \n", elSec);
+            printf_s("%.3f segundos \n", elSec);
         else
-            printf_s("%.4f seconds \n", elSec);  /* print time used to nearest millisecond */
+            printf_s("%.3f seconds \n", elSec);  /* print time used to nearest millisecond */
     }
     else {
         /* round to nearest second */
@@ -609,7 +599,13 @@ static void doFactors(const Znum &Result, bool test) {
                 std::cout << "\nMöbius             = " << mob;
     
             }
-
+            if (Result > 0) {
+                Znum R2p = factorlist.R2p();
+                if (R2p > 0) {  /* show value of R2p only if it is non-zero */
+                    std::cout << "\nR2P = ";
+                    ShowLargeNumber(R2p, groupSize, false, false);
+                }
+            }
             /* show that the number is the sum of 4 or fewer squares. See
             https://www.alpertron.com.ar/4SQUARES.HTM */
             if (Result >= 0)
@@ -702,9 +698,9 @@ static bool factortest(const Znum &x3, const int testnum, const int method=0) {
     sum.numsize = (int)ComputeNumDigits(x3, 10);
 
     if (lang)
-        std::cout << '\n' << myTime() << "Prueba " << testnum << ": factoriza ";
+        std::cout << '\n' << myTimeP() << "Prueba " << testnum << ": factoriza ";
     else
-        std::cout << '\n' << myTime() << " Test " << testnum << ": factorise ";
+        std::cout << '\n' << myTimeP() << " Test " << testnum << ": factorise ";
     ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
@@ -874,7 +870,7 @@ static void doTests(void) {
         "carmichael(201)",                 66,
         "numdivs(7!)",                     60,
         "divisors(7!)",                    60,   /* number of divisors */
-        "sumdivs(7!)",                  19344,
+        "sumdivs(7!, 1)",               19344,
         "numdigits(123456789, 6)",         11,
         "sumdigits(123456789, 6)",         19,
         "revdigits(1234567890, 10)",  987654321, 
@@ -938,7 +934,8 @@ static void doTests(void) {
         "gf(21)",                47297536000,   /* gauss factorial */
         "carmichael(497)",              210,     /* carmichael function */
         "numdivs(116)",                   6,     /* number of divisors*/
-        "sumdivs(116)",                 210,
+        "sumdivs(116, 1)",              210,     /* sum of divisors */
+        "sumdivs(2627, 3)",     18129674448,     /* sum of cubes of divisors */
         "invtot(132)",                  161,     /* smallest number whose totient is 132 */
         "popcnt(123456789)",             16,     /* number of 1-bits */
         "tau(9)",                   -113643,  /* Ramanujan's tau function */
@@ -1239,7 +1236,7 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        std::cout << '\n' << myTime() << "  Test " << i << " of " << p1 << '\n';
+        std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
@@ -1726,7 +1723,7 @@ static void doTestsB(const std::vector<std::string> &p) {
         rv = R3(xl);
         rv3 = R3h(x);
         if (rv3 != rv || verbose > 1 || p2 >= 37) {
-            std::cout << myTime() <<  " R3(" << xl << ") =" << rv 
+            std::cout << myTimeP() <<  " R3(" << xl << ") =" << rv 
                 << "; R3h(" << x << ") = " << rv3 << '\n';
         }
     }
@@ -1755,7 +1752,7 @@ static void doTests4(void) {
             std::cout << "remaining tests skipped \n";
             break;
         }
-        std::cout << '\n' << myTime() << " test " << px + 1 << " of " << pmax + 1;
+        std::cout << '\n' << myTimeP() << " test " << px + 1 << " of " << pmax + 1;
         mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
         m--;                // get 2^p -1
         if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
@@ -1925,13 +1922,13 @@ static void doTests7(const std::vector<std::string> &p) {
         Znum p = primeList[i];
         Znum rv = llt(p); /* Return 0 if 2^p-1 is composite, 1 if prime  */
         if (rv == 1) {
-            std::cout << myTime() << " 2^" << primeList[i] << " -1 is prime *** \n";
+            std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is prime *** \n";
             mPrimes.push_back(primeList[i]);
         }
         else if (verbose > 0 || (i & 0x3f) == 0)
             /* \r instead of usual \n means that each messsage overwrites the 
             previous one */
-            std::cout << myTime() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
+            std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
     }
 
     /* print the results */
@@ -1956,11 +1953,13 @@ static void doTests7(const std::vector<std::string> &p) {
     PrintTimeUsed(elapsed, "test 7 completed time used = ");
 }
 
+/* test R4 function */
 static void doTests12(const std::vector<std::string>& p) {
     int i;
     auto start = std::clock();	// used to measure execution time
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
-    long long p2 = 0;  // size of numbers to be tested, in bits (default is 22, maximum is 24)
+    long long p2 = 0;  // size of numbers to be tested, in bits (default is 22, 
+                       // maximum is 29, also design of R4alt limits p2 to 31)
     long long p3 = 0;
     long long xl;
     unsigned long long rv;
@@ -1980,7 +1979,7 @@ static void doTests12(const std::vector<std::string>& p) {
         p1 = 20;
     }
    
-    if (p2 <= 7 || p2 > 25) {
+    if (p2 <= 7 || p2 > 29) {
         std::cout << "Use default 22 for number size in bits \n";
         p2 = 22;
     }
@@ -2003,9 +2002,9 @@ static void doTests12(const std::vector<std::string>& p) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         xl = MulPrToLong(x);
         rv = MulPrToLong(R4(x));
-        rv3 = R4alt(xl);  /* alternative way to calculate R4. */
-        if (rv3 != rv || verbose > 0 || p2 >= 37) {
-            std::cout << myTime() << " R4(" << xl << ") =" << rv
+        rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
+        if (rv3 != rv || verbose > 0 || p2 >= 25) {
+            std::cout << myTimeP() << " R4(" << xl << ") =" << rv
                 << "; R4alt(" << x << ") = " << rv3 << '\n';
         }
     }
@@ -2066,7 +2065,7 @@ void writeIni(void) {
         if (rv2 != 0)
             std::perror("unable to rename BigIntCalculator.new as BigIntCalculator.ini");
         else if (verbose > 0)
-            std::cout << myTime() << " BigIntCalculator.ini written to disk \n";
+            std::cout << myTimeP() << " BigIntCalculator.ini written to disk \n";
     }
     else
         std::perror("unable to rename BigIntCalculator.ini as BigIntCalculator.old");
@@ -2696,10 +2695,16 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
         case sel_language:
             b_ck = IsDlgButtonChecked(DiBoxHandle, sel_language);
-            if (b_ck == BST_CHECKED)
+            if (b_ck == BST_CHECKED) {
                 lang = TRUE;    /* select Spanish */
-            if (b_ck == BST_UNCHECKED)
+                auto lc = std::setlocale(LC_ALL, SpLocale);
+                printf_s("%s locale is now: %s\n", myDateTime(), lc);
+            }
+            if (b_ck == BST_UNCHECKED) {
                 lang = FALSE;   /* select English */
+                auto lc = std::setlocale(LC_ALL, EnLocale);
+                printf_s("%s locale is now: %s\n", myDateTime(), lc);
+            }
             return FALSE;
 
         case group_size_int:
@@ -2823,9 +2828,17 @@ static int processCmd(std::string command) {
             return 1;
         }
     case 4: /* E */ {
-         lang = 0; return 1; }           // english
+         lang = 0; // english
+         auto lc = std::setlocale(LC_ALL, EnLocale);
+         printf_s("%s locale is now: %s\n", myDateTime(), lc);
+         return 1; 
+    }           
     case 5: /* S */ { 
-        lang = 1; return 1; }	          // spanish (Español)
+        lang = 1; // spanish (Español)
+        auto lc = std::setlocale(LC_ALL, SpLocale);
+        printf_s("%s locale is now: %s\n", myDateTime(), lc);
+        return 1; 
+    }	          
     case 6: /* F */ { 
         if (p.size() >= 2) {
             if (p1 != INT_MIN)
@@ -2863,6 +2876,8 @@ static int processCmd(std::string command) {
                  << "      Test 10 [p1[,p2]]            test quadratic modular equation solver \n"
                  << "                   where p1 is the number of tests and p2 is the number size in bits \n"
                  << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n";
 
              return 1;
@@ -3097,14 +3112,13 @@ static void initialise(int argc, char *argv[]) {
     }
 
     VersionInfo(argv[0], version, modified); /* get version info from .exe file */
-    printf_s(lang? "Bigint calculadora versão %d.%d.%d.%d \n" : 
+    printf_s(lang? "%s Bigint calculadora versão %d.%d.%d.%d \n" : 
            "%s Bigint calculator Version %d.%d.%d.%d \n", 
-        myTime(), version[0], version[1], version[2], version[3]);
+        myDateTime(), version[0], version[1], version[2], version[3]);
     std::cout << (lang? "última modificação em " : "last modified on ") << modified << '\n';
 
 #ifdef __GNUC__
     printf("gcc version: %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
-    std::setlocale(LC_ALL, "en_GB.utf8");      // allows non-ascii characters to print
 #endif
 
 #ifdef _MSC_FULL_VER
@@ -3116,9 +3130,14 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     std::cout << ver / 100000 << '.';    // next 2 digits
     ver %= 100000;                        // remove next 2 digits
     std::cout << ver << '\n';             // last 5 digits
-
-    auto lc = std::setlocale(LC_ALL, "en-EN.utf8");      // allows non-ascii characters to print
 #endif
+
+    if (lang) {
+        auto lc = std::setlocale(LC_ALL, SpLocale);      // allows non-ascii characters to print
+    }
+    else {
+        auto lc = std::setlocale(LC_ALL, EnLocale);      // allows non-ascii characters to print
+    }
 
     printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
@@ -3153,6 +3172,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     BOOL iccRV = InitCommonControlsEx(&ccset);
     if (iccRV == FALSE)
         ErrorDisp(__FUNCTION__);
+
     return;
 }
 

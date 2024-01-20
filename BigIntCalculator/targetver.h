@@ -5,5 +5,6 @@
 // include WinSDKVer.h and set the _WIN32_WINNT macro to the platform you 
 // wish to support before including SDKDDKVer.h.
 #include <WinSDKVer.h>
-#define _WIN32_WINNT	0x0601   /* windows 7 (or later) feature set */
+
+#define _WIN32_WINNT_WIN10                  0x0A00 /* ABRACADABRA_THRESHOLD*/
 #include <SDKDDKVer.h>
