@@ -678,178 +678,178 @@ The "PARI CLOSE" command frees the memory used by the pari stack.
 To install libpari go to https://pari.math.u-bordeaux.fr/download.html
 
 [B]
-B(n)            : Previous probable prime < n
+B(n)            Previous probable prime < n
 
 [F]
-F(n)            : Fibonacci number Fn (maximum value of n is 95700, mimimum is -95700,
-                  so that the result does not exceed 20,000 digits.) The Fibonacci
-                  sequence starts with 0,1,,1,2,3. Each number after 0, 0 is the 
-                  sum of the preceding two.
+F(n)            Fibonacci number Fn (maximum value of n is 95700, mimimum is -95700,
+                so that the result does not exceed 20,000 digits.) The Fibonacci
+                sequence starts with 0,1,1,2,3. Each number after 0, 1 is the 
+                sum of the preceding two. Negafibonacci numbers are supported.
 [L]
-L(n)            : Lucas number L(n) = F(n-1) + F(n+1). (maximum value of n is 95700,
-                  so that the result does not exceed 20,000 digits)
+L(n)            Lucas number L(n) = F(n-1) + F(n+1). (maximum value of n is 95700,
+                so that the result does not exceed 20,000 digits)
 [N]
-N(n)            : Next probable prime after n
+N(n)            Next probable prime after n
 [P]
-P(n)            : Unrestricted Partition Number (number of decompositions of n, 
-                  into sums of integers without regard to order)
-                  (maximum value of n is 10^6) 
+P(n)            Unrestricted Partition Number (number of decompositions of n, 
+                into sums of integers without regard to order)
+                (maximum value of n is 10^6) 
 [Pi]
-Pi(n)           : Number of primes <= n (maximum value of n is 10^13)
+Pi(n)           Number of primes <= n (maximum value of n is 10^13)
 [GCD]
-Gcd(m, n ...)   : Greatest common divisor of m, n ...
+Gcd(m, n ...)   Greatest common divisor of m, n ...
 [LCM]
-Lcm(m, n ...)   : Least common multiple of m, n ...
+Lcm(m, n ...)   Least common multiple of m, n ...
 [ABS]
-Abs(n)          : absolute value of n 
+Abs(n)          absolute value of n 
 [MODINV]
-Modinv(m, n)    : inverse of m modulo n, only valid when gcd(m, n) = 1.
+Modinv(m, n)    inverse of m modulo n, only valid when gcd(m, n) = 1.
 [MODPOW]
-Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
+Modpow(m, n, r) finds m^n modulo r Equivalent to m^n%r but more efficient.
 [TOTIENT]
-Totient(n)      : finds the number of positive integers less than n which are 
-                  relatively prime to n.
+Totient(n)      finds the number of positive integers less than n which are 
+                relatively prime to n.
 [CARMICHAEL]
-Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
-                  m such that a^m ≡ 1   (mod n) for every integer a between 1 
-                  and n that is coprime to n. Also known as the reduced totient
-                  function.
+Carmichael(n)   λ(n) of a positive integer n is the smallest positive integer 
+                m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                and n that is coprime to n. Also known as the reduced totient
+                function.
 [DEDEKIND]
-Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime 
-                  factor and e=exponent
+Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime 
+                factor and e=exponent
 [ISPRIME]
-IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
+IsPrime(n)      returns zero if n is composite, -1 if it is a probable prime.
 [BPSW]
-BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
-                  1 for probable prime, 2 for definite prime. 
-                  considered to be 100% reliable for numbers up to 10000 digits
+BPSW(n)         Baillie-PSW primality test. It returns zero if n is composite, 
+                1 for probable prime, 2 for definite prime. 
+                considered to be 100% reliable for numbers up to 10000 digits
 [APRCL]
-APRCL(n)        : Adleman-Pomerance-Rumely primality test. If the number is > 
-                  6021 digits it reverts to the BPSW test. returns zero if n is 
-                  composite, 1 for probable prime (only if BPSW used), 2 for a
-                  definite prime. Unlike other, more efficient algorithms for this 
-                  purpose, it avoids the use of random numbers, so it is a deterministic 
-                  primality test. WARNING: very slow for large numbers 
-                  e.g. 20s for 400 digits
+APRCL(n)        Adleman-Pomerance-Rumely primality test. If the number is > 6021 
+                digits it reverts to the BPSW test. Returns zero if n is 
+                composite, 1 for probable prime (only if BPSW used), 2 for a
+                definite prime. Unlike other, more efficient algorithms for this 
+                purpose, it avoids the use of random numbers, so it is a 
+                deterministic primality test. WARNING: very slow for large 
+                numbers e.g. 20s for 400 digits
 [ISPOWERFUL]
-ISPOWERFUL(n)   : returns -1 if n is a powerful number, 0 if not. A number is
-                  powerful if and only if every prime factor has an exponent 2 or 
-                  more. Equivalently, a powerful number is the product of a 
-                  square and a cube.
+ISPOWERFUL(n)   returns -1 if n is a powerful number, 0 if not. A number is
+                powerful if and only if every prime factor has an exponent 2 or 
+                more. Equivalently, a powerful number is the product of a 
+                square and a cube.
 [ISSQUAREFREE]
-ISSQUAREFREE(n) : returns -1 if n is square-free, 0 if not.
+ISSQUAREFREE(n) returns -1 if n is square-free, 0 if not.
 [ISFUNDAMENTAL]
-ISFUNDAMENTAL(n): returns -1 if n is a Fundamental Discriminant, otherwise 0.
+ISFUNDAMENTAL(n) returns -1 if n is a Fundamental Discriminant, otherwise 0.
 [ISPOLYGONAL]
-ISPOLYGONAL(n, s): returns -1 if n is a polygonal number, otherwise 0. s 
+ISPOLYGONAL(n, s) returns -1 if n is a polygonal number, otherwise 0. s 
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
 [NUMDIVS]
-NumDivs(n)      : Number of positive divisors of n either prime or composite.
+NumDivs(n)      Number of positive divisors of n either prime or composite.
 [SUMDIVS]
-SumDivs(n, x)   : Sum of xth power of positive divisors of n, either prime or 
-                  composite. if x = 0 the result is the same as the NumDivs function.
+SumDivs(n, x)   Sum of xth power of positive divisors of n, either prime or 
+                composite. if x = 0 the result is the same as the NumDivs function.
 [DIVISORS]
-Divisors(n)     : Get list of divisors of n, either prime or composite. The value
-                  returned is the number of divisors (same as numdivs). If this
-                  is the outermost or only function in the expression the list of 
-                  divisors is displayed.
+Divisors(n)     Get list of divisors of n, either prime or composite. The value
+                returned is the number of divisors (same as numdivs). If this
+                is the outermost or only function in the expression the list of 
+                divisors is displayed.
 [NUMDIGITS]
-NumDigits(n, r) : Number of digits of n in base r.
+NumDigits(n, r) Number of digits of n in base r.
 [SUMDIGITS]
-SumDigits(n, r) : Sum of digits of n in base r.
+SumDigits(n, r) Sum of digits of n in base r.
 [REVDIGITS]
-RevDigits(n, r) : finds the value obtained by writing backwards the digits of n 
-                  in base r.
+RevDigits(n, r) finds the value obtained by writing backwards the digits of n 
+                in base r.
 [SQRT]
-Sqrt(n)         : square root of n, rounded down to nearest integer.
+Sqrt(n)         square root of n, rounded down to nearest integer.
 [NROOT]
-Nroot(n, r)     : rth root of n e.g.r=3 for cube root. r must be <= 2^31,
-                  rounded down to nearest integer.
+Nroot(n, r)     rth root of n e.g.r=3 for cube root, rounded down to nearest 
+                integer. r must be <= 2^31. 
 [NUMFACT]
-NumFact(n)      : number of distinct prime factors of n.
+NumFact(n)      number of distinct prime factors of n.
 [MINFACT]
-MinFact(n)      : minimum prime factor of n.
+MinFact(n)      minimum prime factor of n.
 [MAXFACT]
-MaxFact(n)      : maximum prime factor of n
+MaxFact(n)      maximum prime factor of n
 [LLT]
-LLT(n)          : perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, 
-                  1 if prime. n must be >0 and <= 2^31.
+LLT(n)          perform Lucas-Lehmer test. Return 0 if 2^n-1 is composite, 
+                1 if prime. n must be >0 and <= 2^31.
 [FACTCONCAT]
-FactConcat(m,n) : Concatenates the prime factors of n (base 10) according to the mode m
+FactConcat(m,n) Concatenates the prime factors of n (base 10) according to the mode m
                   mode    Order of factors    Repeated factors
                   0       Ascending           No
                   1       Descending          No
                   2       Ascending           Yes
                   3       Descending          Yes
 [R2]
-R2(n)           : Number of ways n can be expressed as the sum of x² + y².  
-                  (order and sign of x and y are significant)
+R2(n)           Number of ways n can be expressed as the sum of x² + y².  
+                (order and sign of x and y are significant)
 [R2P]
-R2P(n)          : Number of ways n can be expressed as the sum of x² + y².  
-                  (ignoring order and signs) 
-                  e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
-                  25 = 5²+0 = 3²+4² so R2P(25) = 2
+R2P(n)          Number of ways n can be expressed as the sum of x² + y².  
+                (ignoring order and signs) 
+                e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
+                25 = 5²+0 = 3²+4² so R2P(25) = 2
 [R3]
-R3(n)           : Number of ways n can be expressed as the sum of x² + y² + z². 
-                  (order and sign of x, y and z are significant) N.B. very slow
-                  for large numbers e.g. 2 min for a 12 digit number.
+R3(n)           Number of ways n can be expressed as the sum of x² + y² + z². 
+                (order and sign of x, y and z are significant) N.B. very slow
+                for large numbers e.g. 2 min for a 12 digit number.
 [R3H]
-R3H(n)          : same as R3 but calculated using Hurwitz-Kronecker class number.
-                  (much faster) Currently restricted to n < 10^35.
+R3H(n)          same as R3 but calculated using Hurwitz-Kronecker class number.
+                (much faster) Currently restricted to n < 10^35.
 [R4]
-R4(n)           : Number of ways n can be expressed as the sum of w² + x² + y² + z². 
-                  (order and sign of w, x, y and z are significant)
+R4(n)           Number of ways n can be expressed as the sum of w² + x² + y² + z². 
+                (order and sign of w, x, y and z are significant)
 [HCLASS]
-HCLASS(n)       : Hurwitz-Kronecker class number *12. Currently restricted to
-                  n < 10^35. The true HCLASS is not always an integer, but 
-                  multiplying by 12 always yields an integer.
+HCLASS(n)       Hurwitz-Kronecker class number *12. Currently restricted to
+                n < 10^35. The true HCLASS is not always an integer, but 
+                multiplying by 12 always yields an integer.
 [CLASSNO]
-CLASSNO(n)      : class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
-                  not a perfect square. For +ve n, n must be < 730,000,000 to avoid
-                  pari stack overflow.
+CLASSNO(n)      class number. This is only defined if n ≡ 0 or 1 mod 4 and n is
+                not a perfect square. For +ve n, n must be < 730,000,000 to avoid
+                pari stack overflow.
 [TAU]
-TAU(x)          : Ramanujan's tau function
+TAU(x)          Ramanujan's tau function
 [STIRLING]
-STIRLING(n, k, f): if f = 1 return the Stirling number of the first kind s(n,k), 
+STIRLING(n, k, f) if f = 1 return the Stirling number of the first kind s(n,k), 
                   if f = 2, return the Stirling number of the second kind S(n,k).
                   n and k must be less than 2^63.
 [LE]
-LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
-                  The result is zero when a is a multiple of p, otherwise it is 
-                  one if there is a solution of x² ≡ a (mod p) and it is -1 when 
-                  the congruence has no solution.
+LE(a,p)         Legendre value for (a/p). Only defined if p is an odd prime.
+                The result is zero when a is a multiple of p, otherwise it is 
+                one if there is a solution of x² ≡ a (mod p) and it is -1 when 
+                the congruence has no solution.
 [JA]
-JA(a,p)         : Jacobi value for (a/p). Extension of Legendre to all odd values of p.
+JA(a,p)         Jacobi value for (a/p). Extension of Legendre to all odd values of p.
 [KR]
-KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
-                  all values of p
+KR(a,p)         Kronecker value for (a/p); an extension of the Jacobi value to
+                all values of p
 [ISPOW]
-ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
+ISPOW(n)        returns -1 if n is a perfect power, otherwise 0
 [MODSQRT]
-MODSQRT(a, p)   : returns r such that r² ≡ a (mod p). If no solution exists an error
-                  is reported. Generally there is more than 1 solution in the range 0 
-                  to p-1, but only the smallest positive solution is returned.
+MODSQRT(a, p)   returns r such that r² ≡ a (mod p). If no solution exists an error
+                is reported. Generally there is more than 1 solution in the range 0 
+                to p-1, but only the smallest positive solution is returned.
 [PRIMROOT]
-PRIMROOT(a)     : returns smallest primitive root of a if there is one. Primitive 
-                  roots exists if a is 2, 4, an odd prime power, or twice an odd 
-                  prime power.
+PRIMROOT(a)     returns smallest primitive root of a if there is one. Primitive 
+                roots exists if a is 2, 4, an odd prime power, or twice an odd 
+                prime power.
 [INVTOT]
-INVTOT(x)       : finds n such that totient(n) = x. There may be no such value, or 
-                  many values. x is limited to 10^15 because large values use too 
-                  much memory and could hang the PC.
+INVTOT(x)       finds n such that totient(n) = x. There may be no such value, or 
+                many values. x is limited to 10^15 because large values use too 
+                much memory and could hang the PC.
 [POPCNT]
-POPCNT(x)       : for x >= 0, counts the number of 1-bits, also known as the
-                  Hamming weight.
+POPCNT(x)       for x >= 0, counts the number of 1-bits, also known as the
+                Hamming weight.
 [HAMDIST]
-HAMDIST(x, y)   : counts the number of bits which differ beween x and y. x and
-                  y must have the same sign.
+HAMDIST(x, y)   counts the number of bits which differ beween x and y. x and
+                y must have the same sign.
 [GF]
-GF(x)           : Gauss Factorial of x, defined as the product of all positive 
-                  numbers < x  that are relatively prime to x. If GF(x) would excceed
-                  30,000 digits an error is generated. 
+GF(x)           Gauss Factorial of x, defined as the product of all positive 
+                numbers < x  that are relatively prime to x. If GF(x) would excceed
+                30,000 digits an error is generated. 
 [QUADDISC]
-QUADDISC(x)     : Discriminant of quadratic field Q(sqrt(x)). 
+QUADDISC(x)     Discriminant of quadratic field Q(sqrt(x)). 
 [EULERFRAC]
-EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
-                  x must be <= 9022 to limit the result to 30,000 digits. 
+EULERFRAC(x)    Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
+                x must be <= 9022 to limit the result to 30,000 digits. 
