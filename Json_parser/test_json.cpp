@@ -277,6 +277,8 @@ int process_file_s(FILE* fp, int* counter,
             if (value == NULL) {
                 fprintf(stderr, "Unable to parse data: last valid name found = %s \n",
                     lastValidNameFound);
+                jsonVerbose = 2;
+                json_parse(json, strlen(buffer));
                 return(1);
             }
             
@@ -325,7 +327,7 @@ int process_file(FILE *fp, int *counter) {
             value = json_parse(json, sizeof(buffer));
 
             if (value == NULL) {
-                fprintf(stderr, "Unable to parse data\n");
+                fprintf(stderr, "Unable to parse data. counter = %d\n", *counter);
                 return(1);
             }
 

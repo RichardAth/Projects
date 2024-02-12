@@ -252,7 +252,7 @@ const static struct functions functionList[]{
                                             // calculated using hurwitz class number
     "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
     "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as wum of 4 squares
+    "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as sum of 4 squares
     "SUMDIGITS", 2,  opCode::fn_sumdigits,
     "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of nth power of divisors
     "SQRT",      1,  opCode::fn_sqrt,

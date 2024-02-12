@@ -253,6 +253,8 @@ flag_line_comment    = 1 << 13,
 flag_block_comment   = 1 << 14,
 flag_num_got_decimal = 1 << 15;
 
+int jsonVerbose = 0;
+
 json_value* json_parse_ex(json_settings* settings,
     const json_char* json,
     size_t length,
@@ -265,6 +267,7 @@ json_value* json_parse_ex(json_settings* settings,
     long flags = 0;
     int num_digits = 0;
     double num_e = 0, num_fraction = 0;
+    ptrdiff_t offset;
 
     /* Skip UTF-8 BOM
      */
@@ -280,6 +283,11 @@ json_value* json_parse_ex(json_settings* settings,
     end = (json + length);
 
     memcpy(&state.settings, settings, sizeof(json_settings));
+
+    if (jsonVerbose > 0) {
+        printf("parsing record, length %llu \n", length);
+        printf("%s \n", json);
+    }
 
     if (!state.settings.mem_alloc)
         state.settings.mem_alloc = default_alloc;
@@ -302,6 +310,11 @@ json_value* json_parse_ex(json_settings* settings,
         for (state.ptr = json;; ++state.ptr)
         {
             json_char b = (state.ptr == end ? 0 : *state.ptr);
+            offset = state.ptr - json;
+
+            if (jsonVerbose > 1) {
+                printf("offset = %llu, b = %c \n", offset, b);
+            }
 
             if (flags & flag_string)
             {
@@ -447,6 +460,9 @@ json_value* json_parse_ex(json_settings* settings,
                                 = (json_char*)top->_reserved.object_mem;
 
                             strncpy(lastValidNameFound, (char*)top->_reserved.object_mem, sizeof(lastValidNameFound));
+                            if (jsonVerbose > 0) {
+                                printf("lastValidNameFound = %s offset = %llu \n", lastValidNameFound, offset);
+                            }
 
                             top->u.object.values[top->u.object.length].name_length
                                 = string_length;
@@ -805,10 +821,11 @@ json_value* json_parse_ex(json_settings* settings,
                             if (would_overflow(top->u.integer, b))
                             {
                                 json_int_t integer = top->u.integer;
-                                --num_digits;
-                                --state.ptr;
+                                //--num_digits;
+                                // --state.ptr;   /* backspace 1 character */
                                 top->type = json_double;
                                 top->u.dbl = (double)integer;
+                                top->u.dbl = (top->u.dbl * 10) + (b - '0');
                                 continue;
                             }
 
@@ -849,6 +866,11 @@ json_value* json_parse_ex(json_settings* settings,
                         top->type = json_double;
                         top->u.dbl = (double)integer;
 
+                        flags |= flag_num_got_decimal;
+                        num_digits = 0;
+                        continue;
+                    }
+                    else if (b == '.' && top->type == json_double) {
                         flags |= flag_num_got_decimal;
                         num_digits = 0;
                         continue;
@@ -994,6 +1016,7 @@ e_failed:
             strcpy(error_buf, error);
         else
             strcpy(error_buf, "Unknown error");
+        sprintf(error_buf + strlen(error_buf), " offset =%lld ", offset);
     }
 
     if (state.first_pass)

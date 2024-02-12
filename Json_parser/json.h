@@ -62,6 +62,7 @@ extern "C"
 {
 
 #endif
+    extern int jsonVerbose;
 
     typedef struct
     {
