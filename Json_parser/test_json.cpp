@@ -159,7 +159,11 @@ static void process_object(json_value* value, int depth)
     length = value->u.object.length;
     for (x = 0; x < length; x++) {
         print_depth_shift(depth);
-        printf("object[%d].name = %s\n", x, value->u.object.values[x].name);
+        printf("object[%d].name = %s ", x, value->u.object.values[x].name);
+#ifdef JSON_TRACK_SOURCE
+        printf("  line = %d, col = %d", value->line, value->col);
+#endif 
+        putchar('\n');
         process_value(value->u.object.values[x].value, depth + 1);
     }
 }
@@ -245,7 +249,10 @@ static void process_value(json_value* value, int depth)
         printf("int: %10ld\n", (long)value->u.integer);
         break;
     case json_double:
-        printf("double: %f\n", value->u.dbl);
+        if (abs(value->u.dbl) < 10E20)
+            printf("double: %f\n", value->u.dbl);
+        else 
+            printf("double: %.15g\n", value->u.dbl);
         break;
     case json_string:
         printf("string: %s\n", value->u.string.ptr);
@@ -277,13 +284,17 @@ int process_file_s(FILE* fp, int* counter,
             if (value == NULL) {
                 fprintf(stderr, "Unable to parse data: last valid name found = %s \n",
                     lastValidNameFound);
+                jsonVerbose = 2;
+                json_parse(json, strlen(buffer));
                 return(1);
             }
-            
+            (*counter)++;  /* count number of records */
+
 #ifdef _DEBUG
+            printf("\n*** record %d \n", *counter);
             process_value(value, 0);
+            putchar('\n');
 #endif
-             (*counter)++;  /* count number of records */
         }
         else {   /* error or end-of-file */
             if (feof(fp)) {
@@ -325,7 +336,7 @@ int process_file(FILE *fp, int *counter) {
             value = json_parse(json, sizeof(buffer));
 
             if (value == NULL) {
-                fprintf(stderr, "Unable to parse data\n");
+                fprintf(stderr, "Unable to parse data. counter = %d\n", *counter);
                 return(1);
             }
 

@@ -127,7 +127,7 @@ JSON (JavaScript Object Notation) is a lightweight data-interchange format.
 JSON is a text format that is completely language independent but uses conventions 
 that are familiar to programmers of the C-family of languages
 
-SON is built on two structures:
+JSON is built on two structures:
 
     A collection of name/value pairs.
     An ordered list of values. In most languages, this is realized as an array, 

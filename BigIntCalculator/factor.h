@@ -226,8 +226,13 @@ It has values in {−1, 0, 1} depending on the factorization of n into prime fac
 	/* print factors */
 	void Xprint() const {
 		for (auto i : this->f) {
-			std::cout << i.Factor << "^" << i.exponent << " ("
-				<< i.upperBound << ")  * ";
+			std::cout << i.Factor;
+			if (i.exponent > 1)
+				std::cout << "^" << i.exponent; 
+			if (i.upperBound == -1)
+				std::cout << "(P) * ";
+			else
+				std::cout << "(" << i.upperBound << ")  * ";
 		}
 		std::cout << '\n';
 	}

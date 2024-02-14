@@ -28,13 +28,17 @@
  */
 
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 #include <sys/stat.h>
-#include <string.h>
+#include <cstring>
 #include <cctype>
 #include <cmath>
-
+#include <cassert>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
  /* C99 might give us uintptr_t and UINTPTR_MAX but they also might not be provided */
@@ -42,10 +46,6 @@
 #endif
 
 #include "json.h"
-
-#ifdef _MSC_VER
-#pragma warning(disable : 4996)
-#endif
 
 #ifndef JSON_INT_T_OVERRIDDEN
 #if defined(_MSC_VER)
@@ -68,9 +68,9 @@
 typedef unsigned int json_uchar;
 
 const struct _json_value json_value_none;
-char lastValidNameFound[256] = { '\0' };  /* may be useful if a parsing error occurs */
+char lastValidNameFound[256] = { '\0' };
 
-/* convert hex digit from ascii to binary */
+/* conver hex char to binary */
 static unsigned char hex_value(json_char c)
 {
     if ( std::isdigit((unsigned char)c))
@@ -238,24 +238,26 @@ static int new_value(json_state* state,
    state.cur_line, state.cur_col
 
 static const long
-flag_next = 1 << 0,
-flag_reproc = 1 << 1,
-flag_need_comma = 1 << 2,
-flag_seek_value = 1 << 3,
-flag_escaped = 1 << 4,
-flag_string = 1 << 5,
-flag_need_colon = 1 << 6,
-flag_done = 1 << 7,
-flag_num_negative = 1 << 8,
-flag_num_zero = 1 << 9,
-flag_num_e = 1 << 10,
-flag_num_e_got_sign = 1 << 11,
-flag_num_e_negative = 1 << 12,
-flag_line_comment = 1 << 13,
-flag_block_comment = 1 << 14,
+flag_next            = 1 << 0,
+flag_reproc          = 1 << 1,
+flag_need_comma      = 1 << 2,
+flag_seek_value      = 1 << 3,
+flag_escaped         = 1 << 4,
+flag_string          = 1 << 5,
+flag_need_colon      = 1 << 6,
+flag_done            = 1 << 7,
+flag_num_negative    = 1 << 8,
+flag_num_zero        = 1 << 9,
+flag_num_e           = 1 << 10,
+flag_num_e_got_sign  = 1 << 11,
+flag_num_e_negative  = 1 << 12,
+flag_line_comment    = 1 << 13,
+flag_block_comment   = 1 << 14,
 flag_num_got_decimal = 1 << 15;
 
-static json_value* json_parse_ex(json_settings* settings,
+int jsonVerbose = 0;
+
+json_value* json_parse_ex(json_settings* settings,
     const json_char* json,
     size_t length,
     char* error_buf)
@@ -267,6 +269,7 @@ static json_value* json_parse_ex(json_settings* settings,
     long flags = 0;
     int num_digits = 0;
     double num_e = 0, num_fraction = 0;
+    ptrdiff_t offset;
 
     /* Skip UTF-8 BOM
      */
@@ -282,6 +285,11 @@ static json_value* json_parse_ex(json_settings* settings,
     end = (json + length);
 
     std::memcpy(&state.settings, settings, sizeof(json_settings));
+
+    if (jsonVerbose > 0) {
+        std::printf("parsing record, length %llu \n", length);
+        std::printf("%s \n", json);
+    }
 
     if (!state.settings.mem_alloc)
         state.settings.mem_alloc = default_alloc;
@@ -300,10 +308,17 @@ static json_value* json_parse_ex(json_settings* settings,
         flags = flag_seek_value;
 
         state.cur_line = 1;
+        state.cur_col = 0;
 
-        for (state.ptr = json;; ++state.ptr)
+        /* step through json record, byte by byte */
+        for (state.ptr = json;; ++state.ptr, ++state.cur_col)
         {
             json_char b = (state.ptr == end ? 0 : *state.ptr);
+            offset = state.ptr - json;
+
+            if (jsonVerbose > 1) {
+                std::printf("offset = %llu, b = %c \n", offset, b);
+            }
 
             if (flags & flag_string)
             {
@@ -430,14 +445,14 @@ static json_value* json_parse_ex(json_settings* settings,
 
                     switch (top->type)
                     {
-                    case json_string:
+                    case json_string: {
 
                         top->u.string.length = string_length;
                         flags |= flag_next;
 
                         break;
-
-                    case json_object:
+                    }
+                    case json_object: {
 
                         if (state.first_pass) {
                             json_char** chars = (json_char**)&top->u.object.values;
@@ -448,10 +463,15 @@ static json_value* json_parse_ex(json_settings* settings,
                             top->u.object.values[top->u.object.length].name
                                 = (json_char*)top->_reserved.object_mem;
 
+                            std::strncpy(lastValidNameFound, (char*)top->_reserved.object_mem, sizeof(lastValidNameFound));
+                            if (jsonVerbose > 0) {
+                                std::printf("lastValidNameFound = %s offset = %llu \n", lastValidNameFound, offset);
+                            }
+
                             top->u.object.values[top->u.object.length].name_length
                                 = string_length;
                             /* save copy of name (might be useful if error occurs) */
-                            strncpy_s(lastValidNameFound, sizeof(lastValidNameFound), 
+                            strncpy_s(lastValidNameFound, sizeof(lastValidNameFound),
                                 (char*)top->_reserved.object_mem, _TRUNCATE);
 
                             (*(json_char**)&top->_reserved.object_mem) += string_length + 1;
@@ -459,7 +479,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                         flags |= flag_seek_value | flag_need_colon;
                         continue;
-
+                    }
                     default:
                         break;
                     };
@@ -519,17 +539,18 @@ static json_value* json_parse_ex(json_settings* settings,
 
                     switch (b = *state.ptr)
                     {
-                    case '/':
+                    case '/': {
                         flags |= flag_line_comment;
                         continue;
-
-                    case '*':
+                    }
+                    case '*': {
                         flags |= flag_block_comment;
                         continue;
-
-                    default:
+                    }
+                    default: {
                         std::sprintf(error, "%u:%u: Unexpected `%c` in comment opening sequence", line_and_col, b);
                         goto e_failed;
+                    }
                     };
                 }
             }
@@ -544,12 +565,13 @@ static json_value* json_parse_ex(json_settings* settings,
                 whitespace:
                     continue;
 
-                default:
-
+                default:  /* trailing garbage */
+                {
                     std::sprintf(error, "%u:%u: Trailing garbage: `%c`",
                         line_and_col, b);
 
                     goto e_failed;
+                }
                 };
             }
 
@@ -560,7 +582,7 @@ static json_value* json_parse_ex(json_settings* settings,
                 whitespace:
                     continue;
 
-                case ']':
+                case ']': {
 
                     if (top && top->type == json_array)
                         flags = (flags & ~(flag_need_comma | flag_seek_value)) | flag_next;
@@ -571,9 +593,9 @@ static json_value* json_parse_ex(json_settings* settings,
                     }
 
                     break;
-
+                }
                 default:
-
+                {
                     if (flags & flag_need_comma)
                     {
                         if (b == ',')
@@ -606,27 +628,27 @@ static json_value* json_parse_ex(json_settings* settings,
                         }
                     }
 
-                    flags &= ~flag_seek_value;
+                    flags &= ~flag_seek_value;  /* clear flag_seek_value */
 
                     switch (b)
                     {
                     case '{':
-
+                    {
                         if (!new_value(&state, &top, &root, &alloc, json_object))
                             goto e_alloc_failure;
 
                         continue;
-
+                    }
                     case '[':
-
+                    {
                         if (!new_value(&state, &top, &root, &alloc, json_array))
                             goto e_alloc_failure;
 
                         flags |= flag_seek_value;
                         continue;
-
+                    }
                     case '"':
-
+                    {
                         if (!new_value(&state, &top, &root, &alloc, json_string))
                             goto e_alloc_failure;
 
@@ -636,15 +658,15 @@ static json_value* json_parse_ex(json_settings* settings,
                         string_length = 0;
 
                         continue;
-
-                    case 't':
-
+                    }
+                    case 't':  /* check for "true" */
+                    {
                         if ((end - state.ptr) <= 3 || *(++state.ptr) != 'r' ||
                             *(++state.ptr) != 'u' || *(++state.ptr) != 'e')
                         {
                             goto e_unknown_value;
                         }
-                        /* found 'true'*/
+                        /* we have "true" */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -652,46 +674,46 @@ static json_value* json_parse_ex(json_settings* settings,
 
                         flags |= flag_next;
                         break;
-
-                    case 'f':
-
+                    }
+                    case 'f': /* check for "false" */
+                    {
                         if ((end - state.ptr) <= 4 || *(++state.ptr) != 'a' ||
                             *(++state.ptr) != 'l' || *(++state.ptr) != 's' ||
                             *(++state.ptr) != 'e')
                         {
                             goto e_unknown_value;
                         }
-                        /* found 'false' */
+                        /* we have "false" */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
                         flags |= flag_next;
                         break;
-
-                    case 'n':
-
+                    }
+                    case 'n': /* check for "null" */
+                    {
                         if ((end - state.ptr) <= 3 || *(++state.ptr) != 'u' ||
                             *(++state.ptr) != 'l' || *(++state.ptr) != 'l')
                         {
                             goto e_unknown_value;
                         }
-                        /* found 'null' */
+                        /* we have "null" */
                         if (!new_value(&state, &top, &root, &alloc, json_null))
                             goto e_alloc_failure;
 
                         flags |= flag_next;
                         break;
-
+                    }
                     default:
-
-                        if ( std::isdigit((unsigned char)b) || b == '-')
+                    {  /* check for number */
+                        if (std::isdigit((unsigned char)b) || b == '-')
                         {
                             if (!new_value(&state, &top, &root, &alloc, json_integer))
                                 goto e_alloc_failure;
 
                             if (!state.first_pass)
-                            {
-                                while ( std::isdigit((unsigned char)b) || b == '+' || b == '-'
+                            {   /* move stat.ptr past number */
+                                while (std::isdigit((unsigned char)b) || b == '+' || b == '-'
                                     || b == 'e' || b == 'E' || b == '.')
                                 {
                                     if ((++state.ptr) == end)
@@ -703,13 +725,13 @@ static json_value* json_parse_ex(json_settings* settings,
                                     b = *state.ptr;
                                 }
 
-                                flags |= flag_next | flag_reproc;
+                                flags |= flag_next | flag_reproc;  /* set next and reproc */
                                 break;
                             }
-
+                            /* clear various flags */
                             flags &= ~(flag_num_negative | flag_num_e |
                                 flag_num_e_got_sign | flag_num_e_negative |
-                                flag_num_zero);
+                                flag_num_zero | flag_num_got_decimal);
 
                             num_digits = 0;
                             num_fraction = 0;
@@ -729,15 +751,17 @@ static json_value* json_parse_ex(json_settings* settings,
                             std::sprintf(error, "%u:%u: Unexpected `%c` when seeking value", line_and_col, b);
                             goto e_failed;
                         }
+                    }
                     };
                 };
+                }
             }
             else
             {
                 switch (top->type)
                 {
-                case json_object: {
-
+                case json_object:
+                {
                     switch (b)
                     {
                     whitespace:
@@ -779,8 +803,8 @@ static json_value* json_parse_ex(json_settings* settings,
                     break;
                 }
                 case json_integer:
-                case json_double: {
-
+                case json_double:
+                {
                     if (std::isdigit((unsigned char)b))
                     {
                         ++num_digits;
@@ -808,16 +832,20 @@ static json_value* json_parse_ex(json_settings* settings,
                             if (would_overflow(top->u.integer, b))
                             {
                                 json_int_t integer = top->u.integer;
-                                --num_digits;
-                                --state.ptr;
+                                //--num_digits;
+                                // --state.ptr;   /* backspace 1 character */
                                 top->type = json_double;
                                 top->u.dbl = (double)integer;
+                                top->u.dbl = (top->u.dbl * 10) + (b - '0');
                                 continue;
                             }
 
                             top->u.integer = (top->u.integer * 10) + (b - '0');
                             continue;
                         }
+
+                        /* if we drop through we have type = json_double */
+                        assert(top->type == json_double);
 
                         if (flags & flag_num_got_decimal)
                             num_fraction = (num_fraction * 10) + (b - '0');
@@ -852,6 +880,13 @@ static json_value* json_parse_ex(json_settings* settings,
                         top->type = json_double;
                         top->u.dbl = (double)integer;
 
+                        flags |= flag_num_got_decimal;
+                        num_digits = 0;
+                        continue;
+                    }
+                    /* added 13/2/2024 */
+                    else if (b == '.' && top->type == json_double) {
+                        assert(!(flags & flag_num_got_decimal));
                         flags |= flag_num_got_decimal;
                         num_digits = 0;
                         continue;
@@ -922,7 +957,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
             if (flags & flag_next)
             {
-                flags = (flags & ~flag_next) | flag_need_comma;
+                flags = (flags & ~flag_next) | flag_need_comma; /* clear next, set need_comma */
 
                 if (!top->parent)
                 {
@@ -942,19 +977,19 @@ static json_value* json_parse_ex(json_settings* settings,
                     switch (parent->type)
                     {
                     case json_object:
-
+                    {
                         parent->u.object.values
                             [parent->u.object.length].value = top;
 
                         break;
-
+                    }
                     case json_array:
-
+                    {
                         parent->u.array.values
                             [parent->u.array.length] = top;
 
                         break;
-
+                    }
                     default:
                         break;
                     };
@@ -974,9 +1009,10 @@ static json_value* json_parse_ex(json_settings* settings,
 
     return root;
 
+    /* error handling */
 e_unknown_value:
 
-    std::sprintf(error, "%u:%u: Unknown value", line_and_col);
+   std::sprintf(error, "%u:%u: Unknown value", line_and_col);
     goto e_failed;
 
 e_alloc_failure:
@@ -997,6 +1033,7 @@ e_failed:
             std::strcpy(error_buf, error);
         else
             std::strcpy(error_buf, "Unknown error");
+        std::sprintf(error_buf + std::strlen(error_buf), " offset =%lld ", offset);
     }
 
     if (state.first_pass)

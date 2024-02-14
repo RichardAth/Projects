@@ -21,10 +21,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
     int wpLo = LOWORD(additionalInfo1);     /* menu or control identifier */
 
     int button = 0;  /* set according to radio button selected */
-    //char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
-    //        "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
-    //        "PARI", };
-
+ 
     switch (message) {
 
     case WM_DESTROY:        /* 0x02 */
@@ -278,7 +275,7 @@ retry:
                     else
                         lineCount = 0;
                 }
-                wprintf_s(L"%S", str);  
+                wprintf_s(L"%S", str);  /* convert ascii or utf-8 to wide chars, print line */
                 lineCount++;
             }
         }
@@ -297,6 +294,6 @@ retry:
     /* change stdout back to normal */
     std::fflush(stdout);
     _setmode(_fileno(stdout), oldmode);
-    std::fclose(doc);
+    std::fclose(doc);    /* close doc file */
     return;
 }
