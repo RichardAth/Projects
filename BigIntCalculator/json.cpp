@@ -691,7 +691,7 @@ static json_value* json_parse_ex(json_settings* settings,
 
                             if (!state.first_pass)
                             {
-                                while ( std::isdigit((unsigned char)b) || b == '+' || b == '-'
+                                while (isdigit((unsigned char)b) || b == '+' || b == '-'
                                     || b == 'e' || b == 'E' || b == '.')
                                 {
                                     if ((++state.ptr) == end)
@@ -736,7 +736,7 @@ static json_value* json_parse_ex(json_settings* settings,
             {
                 switch (top->type)
                 {
-                case json_object: {
+                case json_object:
 
                     switch (b)
                     {
@@ -779,7 +779,7 @@ static json_value* json_parse_ex(json_settings* settings,
                     break;
                 }
                 case json_integer:
-                case json_double: {
+                case json_double:
 
                     if (std::isdigit((unsigned char)b))
                     {
@@ -791,7 +791,7 @@ static json_value* json_parse_ex(json_settings* settings,
                             {
                                 if (flags & flag_num_zero)
                                 {
-                                    std::sprintf(error, "%u:%u: Unexpected `0` before `%c`", line_and_col, b);
+                                    sprintf(error, "%u:%u: Unexpected `0` before `%c`", line_and_col, b);
                                     goto e_failed;
                                 }
 
@@ -997,6 +997,7 @@ e_failed:
             std::strcpy(error_buf, error);
         else
             std::strcpy(error_buf, "Unknown error");
+        std::sprintf(error_buf + strlen(error_buf), " offset =%lld ", offset);
     }
 
     if (state.first_pass)
