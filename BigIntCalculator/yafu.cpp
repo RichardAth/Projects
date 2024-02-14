@@ -7,6 +7,7 @@ extern char lastValidNameFound[];
 /* forward declarations */
 static void process_value_s(json_value* value, int depth, const char* name,
     const int index);
+static void process_value(json_value* value, int depth);
 
 
 /* Note: the path specified here can be overwritten by a path specified in the .ini file */
@@ -728,6 +729,9 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
                     return 1;  /* return error */
                 }
                 else {
+                    if (verbose > 1) {
+                        process_value(value, 0);  /* print contents of json object */
+                    }
                     parseOK = true;
                     /* process last record read, which has been copied into value */
                     factors.clear();
@@ -855,4 +859,83 @@ bool callYafu(const Znum& num, fList& Factors) {
         fcount++;
     }
     return (fcount > 0);
+}
+
+/* indent according to depth */
+static void print_depth_shift(int depth)
+{
+    int j;
+    for (j = 0; j < depth; j++) {
+        printf("  ");
+    }
+}
+
+static void process_object(json_value* value, int depth)
+{
+    int length, x;
+    if (value == NULL) {
+        return;
+    }
+    length = value->u.object.length;
+    for (x = 0; x < length; x++) {
+        print_depth_shift(depth);
+        printf("object[%d].name = %s ", x, value->u.object.values[x].name);
+#ifdef JSON_TRACK_SOURCE
+        printf("  line = %d, col = %d", value->line, value->col);
+#endif 
+        putchar('\n');
+        process_value(value->u.object.values[x].value, depth + 1);
+    }
+}
+
+static void process_array(json_value* value, int depth)
+{
+    int length, x;
+    if (value == NULL) {
+        return;
+    }
+    length = value->u.array.length;
+    printf("array\n");
+    for (x = 0; x < length; x++) {
+        process_value(value->u.array.values[x], depth);
+    }
+}
+
+static void process_value(json_value* value, int depth)
+{
+    if (value == NULL) {
+        return;
+    }
+    if (value->type != json_object) {
+        print_depth_shift(depth);
+    }
+    switch (value->type) {
+    case json_none:
+        printf("none\n");
+        break;
+    case json_null:
+        printf("null\n");
+        break;
+    case json_object:
+        process_object(value, depth + 1);
+        break;
+    case json_array:
+        process_array(value, depth + 1);
+        break;
+    case json_integer:
+        printf("int: %10ld\n", (long)value->u.integer);
+        break;
+    case json_double:
+        if (abs(value->u.dbl) < 10E20)
+            printf("double: %f\n", value->u.dbl);
+        else
+            printf("double: %.15g\n", value->u.dbl);
+        break;
+    case json_string:
+        printf("string: %s\n", value->u.string.ptr);
+        break;
+    case json_boolean:
+        printf("bool: %d\n", value->u.boolean);
+        break;
+    }
 }

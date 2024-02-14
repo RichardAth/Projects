@@ -38,7 +38,7 @@
 #include <cstring>
 #include <cctype>
 #include <cmath>
-
+#include <cassert>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
  /* C99 might give us uintptr_t and UINTPTR_MAX but they also might not be provided */
@@ -306,8 +306,10 @@ json_value* json_parse_ex(json_settings* settings,
         flags = flag_seek_value;
 
         state.cur_line = 1;
+        state.cur_col = 0;
 
-        for (state.ptr = json;; ++state.ptr)
+        /* step through json record, byte by byte */
+        for (state.ptr = json;; ++state.ptr, ++state.cur_col)
         {
             json_char b = (state.ptr == end ? 0 : *state.ptr);
             offset = state.ptr - json;
@@ -619,7 +621,7 @@ json_value* json_parse_ex(json_settings* settings,
                         }
                     }
 
-                    flags &= ~flag_seek_value;
+                    flags &= ~flag_seek_value;  /* clear flag_seek_value */
 
                     switch (b)
                     {
@@ -657,7 +659,7 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* we have "true" */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -674,7 +676,7 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* we have "false" */
                         if (!new_value(&state, &top, &root, &alloc, json_boolean))
                             goto e_alloc_failure;
 
@@ -688,7 +690,7 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             goto e_unknown_value;
                         }
-
+                        /* we have "null" */
                         if (!new_value(&state, &top, &root, &alloc, json_null))
                             goto e_alloc_failure;
 
@@ -722,7 +724,7 @@ json_value* json_parse_ex(json_settings* settings,
 
                             flags &= ~(flag_num_negative | flag_num_e |
                                 flag_num_e_got_sign | flag_num_e_negative |
-                                flag_num_zero);
+                                flag_num_zero | flag_num_got_decimal);
 
                             num_digits = 0;
                             num_fraction = 0;
@@ -833,6 +835,9 @@ json_value* json_parse_ex(json_settings* settings,
                             continue;
                         }
 
+                        /* if we drop through we have type = json_double */
+                        assert(top->type == json_double);
+
                         if (flags & flag_num_got_decimal)
                             num_fraction = (num_fraction * 10) + (b - '0');
                         else
@@ -870,7 +875,9 @@ json_value* json_parse_ex(json_settings* settings,
                         num_digits = 0;
                         continue;
                     }
+                    /* added 13/2/2024 */
                     else if (b == '.' && top->type == json_double) {
+                        assert(!(flags& flag_num_got_decimal));
                         flags |= flag_num_got_decimal;
                         num_digits = 0;
                         continue;

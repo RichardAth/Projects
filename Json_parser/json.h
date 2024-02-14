@@ -36,6 +36,11 @@
 #define json_char char
 #endif
 
+
+#ifdef _DEBUG
+#define JSON_TRACK_SOURCE
+#endif
+
 #ifndef json_int_t
 #undef JSON_INT_T_OVERRIDDEN
 #if defined(_MSC_VER)
