@@ -69,6 +69,7 @@ typedef unsigned int json_uchar;
 
 const struct _json_value json_value_none;
 char lastValidNameFound[256] = { '\0' };
+bool JsonIntOverflow = false;   /* set true if number has more than ~19 digits before . */
 
 /* conver hex char to binary */
 static unsigned char hex_value(json_char c)
@@ -283,6 +284,7 @@ json_value* json_parse_ex(json_settings* settings,
 
     error[0] = '\0';
     end = (json + length);
+    JsonIntOverflow = false;
 
     std::memcpy(&state.settings, settings, sizeof(json_settings));
 
@@ -501,6 +503,7 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             flags &= ~flag_line_comment;
                             --state.ptr;  /* so null can be reproc'd */
+                            --state.cur_col;
                         }
 
                         continue;
@@ -518,6 +521,7 @@ json_value* json_parse_ex(json_settings* settings,
                         {
                             flags &= ~flag_block_comment;
                             ++state.ptr;  /* skip closing sequence */
+                            ++state.cur_col;
                         }
 
                         continue;
@@ -728,7 +732,7 @@ json_value* json_parse_ex(json_settings* settings,
                                 flags |= flag_next | flag_reproc;  /* set next and reproc */
                                 break;
                             }
-                            /* clear various flags */
+                            /* clear various flags, flag_num_got_decimal added 13/2/2024 */
                             flags &= ~(flag_num_negative | flag_num_e |
                                 flag_num_e_got_sign | flag_num_e_negative |
                                 flag_num_zero | flag_num_got_decimal);
@@ -768,7 +772,7 @@ json_value* json_parse_ex(json_settings* settings,
                         continue;
 
                     case '"':
-
+                    {
                         if (flags & flag_need_comma)
                         {
                             std::sprintf(error, "%u:%u: Expected `,` before `\"`", line_and_col);
@@ -781,23 +785,25 @@ json_value* json_parse_ex(json_settings* settings,
                         string_length = 0;
 
                         break;
-
+                    }
                     case '}':
-
+                    {
                         flags = (flags & ~flag_need_comma) | flag_next;
                         break;
-
+                    }
                     case ',':
-
+                    {
                         if (flags & flag_need_comma)
                         {
                             flags &= ~flag_need_comma;
                             break;
                         } /* FALLTHRU */
-
+                    }
                     default:
+                    {
                         std::sprintf(error, "%u:%u: Unexpected `%c` in object", line_and_col, b);
                         goto e_failed;
+                    }
                     };
 
                     break;
@@ -837,6 +843,7 @@ json_value* json_parse_ex(json_settings* settings,
                                 top->type = json_double;
                                 top->u.dbl = (double)integer;
                                 top->u.dbl = (top->u.dbl * 10) + (b - '0');
+                                JsonIntOverflow = true;
                                 continue;
                             }
 

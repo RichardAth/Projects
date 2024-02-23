@@ -180,6 +180,7 @@ enum class opCode {
     fn_fundamental,       /* test whether x is a fundamental discriminant or not*/
     fn_polygonal,         /* test whether x is a polygonal number */
     fn_squarefree,        /* test whether x is squarefree or not */
+    fn_pisano,            /* calculate the Pisano period of n */
     fn_invalid = -1,
 };
 
@@ -239,6 +240,7 @@ const static struct functions functionList[]{
     "NUMFACT",   1,  opCode::fn_numfact,
     "NROOT",     2,  opCode::fn_nroot,
     "N",         1,  opCode::fn_np,			// next prime
+    "PISANO",    1,  opCode::fn_pisano,     // Pisano period
     "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
     "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
     "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
@@ -1229,6 +1231,67 @@ static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr)
         return false;  /* not a polygonal number */
 }
 
+/* calculate LCM of a and b. Assumes that a and b are +ve. If this is not so
+caller must use llabs or similar to get magnitude. Mathematically, this does
+not alter the value of the lcm. If overflow occurs an exception is thrown. */
+uint64_t lcm(const uint64_t a, const uint64_t b) {
+    HRESULT rv;
+    uint64_t prod;
+
+    rv = ULongLongMult(a / gcd(a, b), b, &prod);
+    if (rv != S_OK) {
+        ThrowExc("integer overflow: ")
+    }
+    return prod;
+}
+
+/* calculate pisano period for number p. See
+https://en.wikipedia.org/wiki/Pisano_period
+In general, the pisano period π(p) <= 4p.
+If p is of the form 2 * 5^i, π(p)  =6p.*/
+long long pisano(const long long p) {
+    long long x[2] = { 1, 1 };
+    long long y[2];
+    long long k = 1;
+
+    if (p == 1)
+        return 1;
+ 
+    k = 1;   /* initialise count*/
+    do {
+        k++;  /* increment count */
+        y[0] = x[1];
+        y[1] = (x[0] + x[1]) % p;  /* get next fibonacci number, mod p*/
+        std::swap(x, y);
+        if (x[0] == 0 && x[1] == 1) {
+            return k;  /* sequence has looped, so exit, returning count */
+        }
+    } while (true);
+}
+
+/* calculate pisano period for composite number
+π(n) ≤ 6n, with equality if and only if n = 2·5^r, for r ≥ 1.
+Otherwise π(n) ≤ 4n.
+by factorising n, we can calculate π(p) for much smaller numbers,
+then combine them, hopefully speeding up the calculation.*/
+long long pisanof(const long long n, const factorsS &f) {
+
+    long long result = 1;
+    long long pisanoV;
+
+    for (int i = 0; i < f.factorcount; i++) {
+        long long p = f.factorlist[i][0];
+        pisanoV = pisano(p);
+        int e = (int)f.factorlist[i][1];
+        while (e > 1) {
+            pisanoV *= p;
+            e--;
+        }
+        result = lcm(result, pisanoV);  /* combine with pisano value for
+                                   smaller factors*/
+    }
+    return result;
+}
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
@@ -1942,7 +2005,21 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             break;
         }
     }
+    case opCode::fn_pisano:     /* Pisano period */ {
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;
+        if (p[0] > LLONG_MAX/6)
+            return retCode::NUMBER_TOO_HIGH; /* avoid risk of overflow */
+        long long n = MulPrToLong(p[0]);
+        factorsS f;
 
+        generatePrimes(2097169);
+        primeFactors(n, f);  /* get prime factors of n in f */
+        if (f.factorlist[f.factorcount - 1][0] > INT_MAX)
+            return retCode::NUMBER_TOO_HIGH;
+        result = pisanof(n, f);
+        break;
+    }
     default:
         std::abort();	// should never get here
     }

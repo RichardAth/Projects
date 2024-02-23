@@ -192,6 +192,9 @@ GF(x)           : Gauss Factorial of x, defined as the product of all positive
 QUADDISC(x)     : Discriminant of quadratic field Q(sqrt(x)). 
 EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
                   x must be <= 9022 to limit the result to 30,000 digits. 
+PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31, 
+                  because for large factors of n the calculation might take too 
+                  long.
 
 [OTHER]
 other commands: 
@@ -884,6 +887,10 @@ QUADDISC(x)  Discriminant of quadratic field Q(sqrt(x)).
 [EULERFRAC]
 EULERFRAC(x)  Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
               x must be <= 9022 to limit the result to 30,000 digits. 
+[PISANO]
+PISANO(n)    Pisano period for n. the largest factor of n must be < 2^31, 
+             because for large factors of n the calculation might take too 
+             long.
 [X]
 X    switch to hexadecimal o/p.
 [D]

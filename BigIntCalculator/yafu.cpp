@@ -5,9 +5,9 @@
 extern char lastValidNameFound[];
 
 /* forward declarations */
-static void process_value_s(json_value* value, int depth, const char* name,
-    const int index);
-static void process_value(json_value* value, int depth);
+static void process_value_s(const json_value* value, int depth, const char* name,
+    const int index, std::vector <Znum> &factors, Znum &ToBeFactored);
+static void process_value(const json_value* value, int depth);
 
 
 /* Note: the path specified here can be overwritten by a path specified in the .ini file */
@@ -560,9 +560,6 @@ bool callYafuOld(const Znum &num, fList &Factors) {
         return false;   // failure
 }
 
-Znum ToBeFactored;
-std::vector <Znum> factors;
-
 /* check whether the product of all the factors is equal to the number to be
 factored */
 static bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& factors, 
@@ -594,10 +591,11 @@ static bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& facto
     }
 }
 
-/* save specified values from value struct. At the moment, we are only looking for the number
-to be factored and the factors found. These are decimal mumbers saved as text
-strings */
-static void save_value(json_value* value, const int index, int depth) {
+/* save specified values from value struct. At the moment, we are only looking 
+for the number to be factored and the factors found. These are decimal mumbers 
+saved as text strings */
+static void save_value(const json_value* value, const int index, int depth,
+    std::vector <Znum> &factors, Znum &ToBeFactored) {
     json_type t = value->type;
     char* sp;
     Znum numValue;
@@ -629,8 +627,8 @@ static void save_value(json_value* value, const int index, int depth) {
 
 /* look for objects which match the name specified. For those that match,
 call process_value_s */
-static void process_object_s(json_value* value, int depth, const char* name,
-    const int index)
+static void process_object_s(const json_value* value, int depth, const char* name,
+    const int index, std::vector <Znum> &factors, Znum &ToBeFactored)
 {
     int length, x;
     if (value == NULL) {
@@ -642,13 +640,14 @@ static void process_object_s(json_value* value, int depth, const char* name,
             continue;  /* ignore object unless name matches */
         //print_depth_shift(depth);
         //printf_s("object[%d].name = %s\n", x, value->u.object.values[x].name);
-        process_value_s(value->u.object.values[x].value, depth + 1, name, index);
+        process_value_s(value->u.object.values[x].value, depth + 1, name, index, 
+            factors, ToBeFactored);
     }
 }
 
 /* call process_value_s for each object in an array. */
-static void process_array_s(json_value* value, int depth, const char* name,
-    const int index)
+static void process_array_s(const json_value* value, int depth, const char* name,
+    const int index, std::vector <Znum> &factors, Znum& ToBeFactored)
 {
     int length, x;
     if (value == NULL) {
@@ -657,14 +656,15 @@ static void process_array_s(json_value* value, int depth, const char* name,
     length = value->u.array.length;
     //printf_s("array\n");
     for (x = 0; x < length; x++) {
-        process_value_s(value->u.array.values[x], depth, name, index);
+        process_value_s(value->u.array.values[x], depth, name, index, factors,
+            ToBeFactored);
     }
 }
 
 /* for lowest-level objects, call save_value. If the value contains another obect
 call process_object_s. If the value contains an array call process_array_s. */
-static void process_value_s(json_value* value, int depth, const char* name,
-    const int index) {
+static void process_value_s(const json_value* value, int depth, const char* name,
+    const int index, std::vector <Znum> &factors,  Znum &ToBeFactored) {
     if (value == NULL) {
         return;
     }
@@ -676,14 +676,14 @@ static void process_value_s(json_value* value, int depth, const char* name,
     case json_double:
     case json_string:
     case json_boolean:
-        save_value(value, index, depth);   
+        save_value(value, index, depth, factors,ToBeFactored);   
         break;
 
     case json_object:
-        process_object_s(value, depth + 1, name, index);
+        process_object_s(value, depth + 1, name, index, factors, ToBeFactored);
         break;
     case json_array:
-        process_array_s(value, depth + 1, name, index);
+        process_array_s(value, depth + 1, name, index, factors, ToBeFactored);
         break;
 
     default:
@@ -693,20 +693,21 @@ static void process_value_s(json_value* value, int depth, const char* name,
 }
 
 /* returns -1 for read error, +1 for parsing error, otherwise
-treats each line as a separate json record; parses it and stores
-selected objects from the last record in a decoded form, and returns 0 
+treats each line as a separate json record; parses the last one and stores
+selected objects from it in a decoded form, and returns 0 
 fp is a file pointer for the json file, 
 the number of records in the json file is returned in counter, 
 the name_list contains the names of json objects we are interested in, 
 and num is the number being factored. */
 static int process_file_s(FILE* fp, int* counter, const char* name_list[],
-    const int name_list_size, const Znum& num) {
+    const int name_list_size, const Znum& num, std::vector <Znum> &factors) {
     char* string_p = NULL;
     char buffer[4096] = "";
     json_char* json = NULL;
     json_value* value = NULL;  /* pointer to a structure that contains the parsed 
                                 info from the JSON record*/
     bool parseOK = false;
+    Znum ToBeFactored;        /* value from json obect is copied into here */
 
     *counter = 0;  /* counts number of records in file */
     for (;;) {
@@ -728,15 +729,23 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
                         lastValidNameFound);
                     return 1;  /* return error */
                 }
+ 
                 else {
-                    if (verbose > 1) {
+                     if (verbose > 1 || JsonIntOverflow) {
                         process_value(value, 0);  /* print contents of json object */
                     }
+                     if (JsonIntOverflow) {
+                         std::cout << "*** Suspicious number in json object ***\n";
+                         Beep(2000, 1000); /* beep at 2000 Hz for 1 second */
+                         system("PAUSE"); /* press any key to continue */
+                     }
                     parseOK = true;
-                    /* process last record read, which has been copied into value */
+                    /* process last record read, which has been copied into value.
+                     Put numbers into factors and ToBeFactored. */
                     factors.clear();
                     for (int index = 0; index < name_list_size; index++)
-                        process_value_s(value, 0, name_list[index], index);
+                        process_value_s(value, 0, name_list[index], index, factors,
+                            ToBeFactored);
                     if (!factors.empty())
                         sanityCheck(ToBeFactored, factors, num);
                     json_value_free(value);  /* avoid memory leakage */
@@ -759,7 +768,7 @@ JSON (JavaScript Object Notation) is an open standard file format and data
 interchange format that uses human-readable text to store and transmit data 
 objects consisting of attribute-value pairs and arrays (or other serializable 
 values) */
-static int process_json_file_main(const Znum& num) {
+static int process_json_file_main(const Znum& num, std::vector <Znum> &factorList) {
     FILE* fp;
     char filename[MAX_PATH] = "";
     struct _stat filestatus;
@@ -768,6 +777,7 @@ static int process_json_file_main(const Znum& num) {
     int rv;
     /* names of objects in the json file that are relevant. */
     const char* name_list[] = { "input-decimal", "factors-prime" };
+
     DWORD rv2 = GetCurrentDirectoryA(MAX_PATH, filename);
     assert(rv2 != 0);
 
@@ -790,7 +800,8 @@ static int process_json_file_main(const Znum& num) {
             << (double)file_size / 1024.0 << " Kb \n";
     }
     /* read the file. Store information from the last record. */
-    rv = process_file_s(fp, &counter, name_list, 2, num); /* read & process file */
+    rv = process_file_s(fp, &counter, name_list, 2, num, factorList); 
+    /* read & process file */
     if (counter > 20 || verbose > 0)
         printf_s("YAFU: factor.json file contains %d records, size = %.1f Kb\n", counter,
         (double)file_size / 1024.0);
@@ -803,6 +814,7 @@ bool callYafu(const Znum& num, fList& Factors) {
     std::string numStr;
     std::string buffer;
     int fcount = 0;
+    std::vector <Znum> factorList;
 
     if (useOldYafu) {
         return callYafuOld(num, Factors);
@@ -851,10 +863,10 @@ bool callYafu(const Znum& num, fList& Factors) {
     }
 
     /* get the factors from the last record in the json file produced by YAFU */
-    rv = process_json_file_main(num);
+    rv = process_json_file_main(num, factorList);
     if (rv != 0)
         return false;
-    for (auto f : factors) {
+    for (auto f : factorList) {
         insertBigFactor(Factors, f);
         fcount++;
     }
@@ -870,7 +882,7 @@ static void print_depth_shift(int depth)
     }
 }
 
-static void process_object(json_value* value, int depth)
+static void process_object(const json_value* value, int depth)
 {
     int length, x;
     if (value == NULL) {
@@ -888,7 +900,7 @@ static void process_object(json_value* value, int depth)
     }
 }
 
-static void process_array(json_value* value, int depth)
+static void process_array(const json_value* value, int depth)
 {
     int length, x;
     if (value == NULL) {
@@ -901,7 +913,7 @@ static void process_array(json_value* value, int depth)
     }
 }
 
-static void process_value(json_value* value, int depth)
+static void process_value(const json_value* value, int depth)
 {
     if (value == NULL) {
         return;
