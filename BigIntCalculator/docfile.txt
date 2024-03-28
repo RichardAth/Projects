@@ -195,7 +195,9 @@ EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is ze
 PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31, 
                   because for large factors of n the calculation might take too 
                   long.
-
+ISSQUAREFREE(n) : returns -1 if n is square-free, otherwise 0.
+CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
+RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
 [OTHER]
 other commands: 
 SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI, X, 
@@ -888,9 +890,16 @@ QUADDISC(x)  Discriminant of quadratic field Q(sqrt(x)).
 EULERFRAC(x)  Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
               x must be <= 9022 to limit the result to 30,000 digits. 
 [PISANO]
-PISANO(n)    Pisano period for n. the largest factor of n must be < 2^31, 
-             because for large factors of n the calculation might take too 
-             long.
+PISANO(n)    Pisano period for n. n must be < 2^63. The largest factor of n must 
+             be < 2^31, because for large factors of n the calculation might take 
+             too long.
+             If n = 2 * 5^r, then pisano(n) = 6n.
+             If n = 5^r, or n = 6 * 5^r, then pisano(n) = 4n, otherwise pisano(n) < 4n. 
+[CORE]
+CORE(n): unique square-free integer d dividing n such that n/d is a square. If n 
+         is a perfect square core(n) = 1. If n is square-free, core(n) = n.
+[RAD]
+RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
 [X]
 X    switch to hexadecimal o/p.
 [D]

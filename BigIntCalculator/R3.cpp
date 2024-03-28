@@ -372,7 +372,7 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
                 if (factor > 1) {
                     tnum /= factor;
                     /* save smaller factor 1st in factorlist */
-                    if (factor <= (long long)tnum) {
+                    if (factor < (long long)tnum) {
                         f.factorlist[count][0] = factor;
                         f.factorlist[count][1] = 1;
                         count++;
@@ -380,12 +380,17 @@ unsigned int primeFactors(unsigned __int64 tnum, factorsS &f) {
                         f.factorlist[count][1] = 1;
                         count++;
                     }
-                    else {
+                    else if (factor > (long long)tnum){
                         f.factorlist[count][0] = tnum;
                         f.factorlist[count][1] = 1;
                         count++;
                         f.factorlist[count][0] = factor;
                         f.factorlist[count][1] = 1;
+                        count++;
+                    }
+                    else { /* factor = tnum i.e. we have a perfect square */
+                        f.factorlist[count][0] = tnum;
+                        f.factorlist[count][1] = 2;
                         count++;
                     }
                     break;

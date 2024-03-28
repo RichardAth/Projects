@@ -107,7 +107,6 @@ public:
 	friend void TrialDiv(fList &Factors, long long LehmanLimit);
 	friend bool factor(const Znum &toFactor, fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
-
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
@@ -187,7 +186,7 @@ See also https://oeis.org/A002322 */
 		Znum result = 1, term;
 		for (auto i : this->f) {
 			if (i.Factor == 2 && i.exponent > 2)
-				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2)
 			else {
 				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
 				term = term * (i.Factor - 1);	                     // (p^(e-1)-1)*(p-1)
@@ -495,6 +494,17 @@ Repeated factors: No or Yes
 				i.exponent -= temp.exponent;
 			}
 		}
+	}
+
+	/* calculate the radical of 'this'. N.B: in general the radical is not
+	 equal to to the square-free part, as defined in sqfree(). Note: if n is zero
+	 it cannot be factorised and the radical is undefined. */
+	Znum radical() const {
+		Znum result = 1;
+		for (auto i : this->f) {
+			result *= i.Factor;
+		}
+		return result;
 	}
 
 	/* checks whether the original number was prime */

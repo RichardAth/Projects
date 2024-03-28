@@ -957,7 +957,7 @@ static void doTests(void) {
         "ispolygonal(449921,10000)",      0,
         "issquarefree(99998)",           -1,
         "issquarefree(99999)",            0,
-
+        "pisano(17!)",           3483648000,
     };
 
     results.clear();

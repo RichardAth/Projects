@@ -181,6 +181,8 @@ enum class opCode {
     fn_polygonal,         /* test whether x is a polygonal number */
     fn_squarefree,        /* test whether x is squarefree or not */
     fn_pisano,            /* calculate the Pisano period of n */
+    fn_core,              /* calculate square-free d such that n/d is a square. */
+    fn_radical,           /* get largest square-free divisor of n */
     fn_invalid = -1,
 };
 
@@ -207,6 +209,7 @@ const static struct functions functionList[]{
     "B",         1,  opCode::fn_pp,			   // previous prime
     "CLASSNO",   1,  opCode::fn_classno,       // class number
     "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
+    "CORE",      1,  opCode::fn_core,          /* get square-free number */
     "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
     "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
     "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
@@ -248,6 +251,7 @@ const static struct functions functionList[]{
 
     "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
                                                quadratic field Q(sqrt(x))*/
+    "RAD",       1,  opCode::fn_radical,    /* get largest square-free divisor */
     "REVDIGITS", 2,  opCode::fn_revdigits,
     "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
@@ -880,10 +884,10 @@ static Znum powerBi(const Znum &x, unsigned __int64 n) {
 return adjusted num, square divisor, and factor list of divisor.*/
 static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
     fList factorlist;
-    zFactors temp;
     auto rv = factorise(num, factorlist, nullptr);
 
-    factorlist.sqfree(sqf);  // get factors of square in sqf
+    factorlist.sqfree(sqf);  // get factors of max square divisor in sqf,
+                             // also remove these factors from factorlist
 
     sq = 1;
     Znum x;
@@ -1274,10 +1278,10 @@ long long pisano(const long long p) {
 Otherwise π(n) ≤ 4n.
 by factorising n, we can calculate π(p) for much smaller numbers,
 then combine them, hopefully speeding up the calculation.*/
-long long pisanof(const long long n, const factorsS &f) {
+Znum pisanof(const long long n, const factorsS &f) {
 
-    long long result = 1;
-    long long pisanoV;
+    Znum result = 1;
+    Znum pisanoV;
 
     for (int i = 0; i < f.factorcount; i++) {
         long long p = f.factorlist[i][0];
@@ -1554,7 +1558,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeNumDigits(p[0], p[1]);
         break;
     }
-    case opCode::fn_revdigits: {	// revdigits
+    case opCode::fn_revdigits: /* value of n with digits reversed in base d*/ {	
         if (p[1] <=1 )
             return retCode::EXPR_BASE_MUST_BE_POSITIVE;
         result = ComputeRevDigits(p[0], p[1]);
@@ -2008,7 +2012,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     case opCode::fn_pisano:     /* Pisano period */ {
         if (p[0] < 1)
             return retCode::NUMBER_TOO_LOW;
-        if (p[0] > LLONG_MAX/6)
+        if (p[0] > LLONG_MAX)
             return retCode::NUMBER_TOO_HIGH; /* avoid risk of overflow */
         long long n = MulPrToLong(p[0]);
         factorsS f;
@@ -2018,6 +2022,29 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (f.factorlist[f.factorcount - 1][0] > INT_MAX)
             return retCode::NUMBER_TOO_HIGH;
         result = pisanof(n, f);
+        break;
+    }
+    case opCode::fn_core: /* unique squarefree integer d dividing n such that
+                        n/d is a square */ {
+        Znum d;
+        std::vector <zFactors> sqf;
+        result = p[0];
+        squareFree(result, d, sqf);
+        if (verbose > 0 && result != p[0]) {
+            gmp_printf("core: %Zd = %Zd * %Zd\n", ZT(p[0]), ZT(result), ZT(d));
+        }
+        break;
+    }
+    case opCode::fn_radical: /* get largest square-free divisor of n */ {
+        /* see https://oeis.org/A007947 */
+        fList f;
+        if (p[0] == 0) {
+            result = 0;  /* 0 has to be a special case */
+        }
+        else {
+            factorise(p[0], f, nullptr);
+            result = f.radical();
+        }
         break;
     }
     default:
