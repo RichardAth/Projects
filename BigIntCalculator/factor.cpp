@@ -456,80 +456,107 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 
 /* called for Carmichael numbers that have no small factors. 
 Return: false = No factors found, true = factors found.
- Use: Xaux for square root of -1.
-      Zaux for square root of 1. */
-static bool factorCarmichael(const Znum &pValue, fList &Factors)
+ Use: Xaux for square root of -1, mod p.
+      Zaux for square root of 1 mod p. */
+static bool factorCarmichael(const Znum &p, fList &Factors)
 {
-    Znum randomBase = 0;  // pseudo-random number
+    Znum PsRand = 0;  // pseudo-random number
     bool factorsFound = false;
     int countdown, ctr;
     bool sqrtOneFound = false;
     bool sqrtMinusOneFound = false;
-    Znum Aux1, Aux2, Aux3, Aux4, Xaux, Zaux, Temp4;
+    Znum Pmin1, Aux2, Aux3, Aux4, Xaux, Zaux, Temp4;
         
-    Aux1 = pValue - 1;  // Aux1 = p - 1 (p is odd, so Aux1 is even)
-    DivideZnumByMaxPowerOf2(ctr, Aux1);  // Aux1 /= 2^ctr
+    Pmin1 = p - 1;  // Pmin1 = p - 1 (p is odd, so Pmin1 is even)
+    DivideZnumByMaxPowerOf2(ctr, Pmin1);  // Pmin1 /= 2^ctr
     
+    /* we try up to 20 pseudo-random numbers. p is a Carmichael number.
+    aux2 = pr^(Pmin1) mod p */
     for (countdown = 20; countdown > 0; countdown--) {
         int i;
-        randomBase = ((uint64_t)randomBase * 89547121 + 1762281733) & 0x7fffffff;
-         // Aux2 = randomBase^Aux1 (mod p)
-        mpz_powm(ZT(Aux2), ZT(randomBase), ZT(Aux1), ZT(pValue));
-        // If Aux2 = 1 or Aux2 = p-1, then try next base.
-        if (Aux2 ==1 || Aux2 == pValue-1) {
+        PsRand = ((uint64_t)PsRand * 89547121 + 1762281733) & 0x7fffffff;
+         // Aux2 = PsRand^Pmin1 (mod p)
+        mpz_powm(ZT(Aux2), ZT(PsRand), ZT(Pmin1), ZT(p));
+        // If Aux2 = 1 or Aux2 = p-1, then try next pseudo-random number.
+        if (Aux2 ==1 || Aux2 == p-1) {
             continue;    // This base cannot find a factor. Try another one.
         }
         for (i = 0; i < ctr; i++) {              // Loop that squares number.
-            mpz_powm_ui(ZT(Aux3), ZT(Aux2), 2, ZT(pValue));   // Aux3 = Aux2^2 (mod p)
+            mpz_powm_ui(ZT(Aux3), ZT(Aux2), 2, ZT(p));   // Aux3 = Aux2^2 (mod p)
             if (Aux3 == 1)
             {            // Non-trivial square root of 1 found.
                 if (!sqrtOneFound)
-                {          // Save it to perform GCD later.
+                {   // Save 1st non-trivial root to perform GCD later.
                     Zaux = Aux2;
                     sqrtOneFound = true;
                 }
                 else
                 {          // Try to find non-trivial factor by doing GCD.
                     Aux4 = Aux2 - Zaux;
-                    mpz_mod(ZT(Aux4), ZT(Aux4), ZT(pValue));// Aux4 = Aux2 - Zaux (mod p)
-                    Temp4 = gcd(pValue, Aux4);
-                    if ((Temp4 > 1) && (Temp4 != pValue))
+                    mpz_mod(ZT(Aux4), ZT(Aux4), ZT(p));// Aux4 = Aux2 - Zaux (mod p)
+                    // i.e. Aux4 is the difference between 2 non-trivial roots 
+                    Temp4 = gcd(p, Aux4);
+                    if ((Temp4 > 1) && (Temp4 != p))
                     {          // Non-trivial factor found.
-                        if (insertBigFactor(Factors, Temp4))
+                        if (insertBigFactor(Factors, Temp4)) {
                             factorsFound = true;
+                            if (verbose > 0)
+                                std::cout << "Carmichael factor found(1), ctr = "
+                                << ctr << " i = " << i << " countdown = " << countdown << '\n';
+                        }
+                        else if (verbose > 1)
+                            std::cout << "Carmichael duplicate factor " 
+                            << Temp4 << " found" << " countdown = " << countdown 
+                            << '\n';
                     }
                 }
 
                 // Try to find non-trivial factor by doing GCD.
                 Aux4 = Aux2 + 1;
-                Aux4 %= pValue;             // Aux4 = Aux2+1 (mod p)
-                Temp4 = gcd(pValue, Aux4);  // Temp4 = gcd(p, Aux4)
-                if ((Temp4 > 1) && (Temp4 != pValue))
+                Aux4 %= p;             // Aux4 = Aux2+1 (mod p)
+                Temp4 = gcd(p, Aux4);  
+                if ((Temp4 > 1) && (Temp4 != p))
                 {          // Non-trivial factor found.
-                    if (insertBigFactor(Factors, Temp4))
+                    if (insertBigFactor(Factors, Temp4)) {
                         factorsFound = true;
+                        if (verbose > 0)
+                            std::cout << "Carmichael factor found(2), ctr = "
+                            << ctr << " i = " << i << " countdown = " << countdown << '\n';
+                    }
+                    else if (verbose > 1)
+                        std::cout << "Carmichael duplicate factor "
+                        << Temp4 << " found" << " countdown = " << countdown
+                        << '\n';
                 }
 
                 i = ctr;   // break out of inner for loop
                 continue;  // Find more factors.
             }
 
-            if (Aux3 == pValue-1)     // Aux3 = Aux2^2 (mod p)
+            if (Aux3 == p-1)     // Aux3 = Aux2^2 (mod p)
             {            // Square root of -1 found.
                 if (!sqrtMinusOneFound)
-                {          // Save it to perform GCD later.
+                {          // Save 1st non-trivial root to perform GCD later.
                     Xaux = Aux2;
                     sqrtMinusOneFound = true;
                 }
                 else
                 {          // Try to find non-trivial factor by doing GCD.
-                    Aux4 = Aux3 - Xaux;
-                    Aux4 %= pValue; // Aux4 = Aux3 - Xaux (mod p)
-                    Temp4 = gcd(pValue, Aux4);  // Temp4 = gcd(p, Aux4)
-                    if ((Temp4 > 1) && (Temp4 != pValue))
+                    Aux4 = Aux2 - Xaux;
+                    Aux4 %= p; // Aux4 = Aux2 - Xaux (mod p)
+                    Temp4 = gcd(p, Aux4); 
+                    if ((Temp4 > 1) && (Temp4 != p))
                     {          // Non-trivial factor found.
-                        if (insertBigFactor(Factors, Temp4))
+                        if (insertBigFactor(Factors, Temp4)) {
                             factorsFound = true;
+                            if (verbose > 0)
+                                std::cout << "Carmichael factor found(-1), ctr = "
+                                << ctr << " i = " << i << "countdown = " << countdown << '\n';
+                        }
+                        else if (verbose > 1)
+                            std::cout << "Carmichael duplicate factor "
+                            << Temp4 << " found" << " countdown = " << countdown
+                            << '\n';
                     }
                 }
 
@@ -538,6 +565,10 @@ static bool factorCarmichael(const Znum &pValue, fList &Factors)
             }
             Aux2 = Aux3;    // Aux2 = Aux2^2 (mod p)
         }
+        if (Factors.factComplete())
+            break;   /* all factor are now prime, so stop. Without this test
+             the loop would go round 20 times, probably finding the same factors
+             over and over again. */
     }
     return factorsFound;
 }

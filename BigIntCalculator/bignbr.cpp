@@ -447,7 +447,8 @@ void DivideZnumByMaxPowerOf2(int &ShRight, Znum &number) {
 
 
 /* BPSW primality test:
-1) If the input number is 2-SPRP composite, indicate composite and go out.
+1) If the input number is 2-SPRP (strong Probable Prime to base 2) composite, 
+indicate composite and go out.
 2) Perform a BPSW probable prime test on n 
    If n is not a probable prime, then n is composite.
    Otherwise, n is almost certainly prime.
@@ -534,3 +535,20 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
         return 0;			// probably prime;
 }
 
+/* convert digits in str to a Znum. This is basically a wrapper for mpz_set_str. 
+This function returns true if the entire string is a valid number in base base. 
+Otherwise it returns false.
+
+Set the value of result from str, a null-terminated C string in base base. White 
+space is allowed in the string, and is simply ignored.
+The base may vary from 2 to 62, or if base is 0, then the leading characters are 
+used: 0x and 0X for hexadecimal, 0b and 0B for binary, 0 for octal, or decimal 
+otherwise.
+
+For bases up to 36, case is ignored; upper-case and lower-case letters have the 
+same value. For bases 37 to 62, upper-case letter represent the usual 10..35 
+while lower-case letter represent 36..61.
+*/
+bool StrToZ(Znum& result, const char str[], int base) {
+    return mpz_set_str(ZT(result), str, base) == 0;
+}

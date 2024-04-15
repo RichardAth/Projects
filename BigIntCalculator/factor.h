@@ -590,6 +590,22 @@ Repeated factors: No or Yes
 		return temp;
 	}
 
+	/* return true if all factors are prime i.e. factorisation is complete,
+	otherwise false */
+	bool factComplete() {
+		for (size_t i = 0; i < this->f.size(); i++) {
+			if (this->f[i].upperBound == -1)
+				continue;
+			if (PrimalityTest(this->f[i].Factor, this->f[i].upperBound) == 0) {
+				this->f[i].upperBound = -1;
+				continue;
+			}
+			else 
+				return false;  /* found a non-prime factor*/
+		}
+		return true;
+	}
+
 };   /* end of class flist */
 
 void showECMStatus(void);
