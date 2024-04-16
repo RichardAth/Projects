@@ -958,6 +958,9 @@ static void doTests(void) {
         "issquarefree(99998)",           -1,
         "issquarefree(99999)",            0,
         "pisano(17!)",           3483648000,
+        "iscarmichael(1713045574801)",    0,
+        "iscarmichael(1713045574803)",    1,
+        "iscarmichael(1713045574819)",    2,
     };
 
     results.clear();
@@ -1055,7 +1058,8 @@ static void doTests(void) {
     // ComputeExpr("56897193526942024370326972321", x3, asgCt);
     StrToZ(x3, "56897193526942024370326972321");
     testcnt++;
-    factortest(x3, testcnt);  /* 29 digit pseudo-prime number */
+    factortest(x3, testcnt);  /* 29 digit pseudo-prime number (is a 2-SPRP but 
+       is not a carmichael number */
 
      /* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
     // ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
@@ -1073,7 +1077,7 @@ static void doTests(void) {
     testcnt++;
     ComputeExpr("10^170 + 8786356", x3, asgCt);
     /* if the 3 expressions in brackets below are all prime, then x4 is a 
-    carmichael number. */
+    carmichael number. (From a 1939 theorem by Jack Chernick)*/
     x4 = (6 * x3 + 1) * (12 * x3 + 1) * (18 * x3 + 1);
     factortest(x4, testcnt);
     std::cout << "factorised 514-digit Carmichael number \n";
@@ -2823,7 +2827,7 @@ static int processCmd(std::string command) {
         token = strtok_s(nullptr, seps, &next);
     }
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
-        p1 = std::stoi(p[1]);  /* if p[1] is a +ve decimal number set p1 to value */
+        p1 = std::atoi(p[1].c_str());  /* if p[1] is a +ve decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;

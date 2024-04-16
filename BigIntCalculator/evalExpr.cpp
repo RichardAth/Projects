@@ -183,6 +183,7 @@ enum class opCode {
     fn_pisano,            /* calculate the Pisano period of n */
     fn_core,              /* calculate square-free d such that n/d is a square. */
     fn_radical,           /* get largest square-free divisor of n */
+    fn_iscarmichael,
     fn_invalid = -1,
 };
 
@@ -220,6 +221,7 @@ const static struct functions functionList[]{
     "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
     "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
+    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael,  /* is a carmichael number? */
     "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
     "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
     "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
@@ -2045,6 +2047,27 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             factorise(p[0], f, nullptr);
             result = f.radical();
         }
+        break;
+    }
+    case opCode::fn_iscarmichael: {/* returns 0 for Carmichael number 
+        (probability = 1 - 2^(-tries),  1 for composite non-Carmichael numbers, 
+        and 2 for prime numbers. */
+        int tries;
+        if (p.size() == 1) {
+            result = isCarmichael(p[0]);  /* use default number of tries */
+            break;
+        }
+        if (p.size() >= 2) {
+            if (p[1] > 10000)
+                return retCode::NUMBER_TOO_HIGH;
+            if (p[1] < 2)
+                return retCode::NUMBER_TOO_LOW;
+            tries = (int)MulPrToLong(p[1]);
+            result = isCarmichael(p[0], tries);
+            break;
+        }
+        else return retCode::INVALID_PARAM; /* too few parameters */
+            
         break;
     }
     default:

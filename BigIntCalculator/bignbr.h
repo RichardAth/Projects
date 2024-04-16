@@ -56,6 +56,7 @@ void MultBigNbr(const limb Factor1[], const limb Factor2[], limb Prod[], int nbr
 long long PowerCheck(const Znum& BigInt, Znum& Base, long long upperBound);
 int PrimalityTest(const Znum& Value, long long upperBound);
 bool StrToZ(Znum& result, const char str[], int base = 10);
+int isCarmichael(const Znum& num, int tries = 16);
 int ZtoBigNbr(int number[], Znum numberZ);
 int ZtoLimbs(limb *number, Znum numberZ, int NumLen);
 

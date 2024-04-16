@@ -120,6 +120,9 @@ ISFUNDAMENTAL(n): returns -1 if n is a Fundamental Discriminant, otherwise 0.
 ISPOLYGONAL(n, s): returns -1 if n is a polygonal number, otherwise 0. s 
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
+ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+                  1 for composite non-Carmichael numbers, and 2 for prime numbers.
+                  If t is omitted its default value is 16.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n, x)   : Sum of xth power of positive divisors of n, either prime or 
                   composite. if x = 0 the result is the same as the NumDivs function.
@@ -900,6 +903,11 @@ CORE(n): unique square-free integer d dividing n such that n/d is a square. If n
          is a perfect square core(n) = 1. If n is square-free, core(n) = n.
 [RAD]
 RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
+[ISCARMICHAEL]
+ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+              1 for composite non-Carmichael numbers, and 2 for prime numbers.
+              If t is omitted its default value is 16, which gives a 99.998% 
+              probability that the result is correct
 [X]
 X    switch to hexadecimal o/p.
 [D]

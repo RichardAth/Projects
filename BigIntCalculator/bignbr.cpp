@@ -456,7 +456,7 @@ indicate composite and go out.
 Output: 0 = probable prime.
         1 = composite: not 2-Fermat pseudoprime.
         2 = composite: does not pass 2-SPRP test.
-        3 = composite: does not pass BPSW test, but passes other tests.
+        3 = composite: does not pass BPSW test, but passes 2-SPRP tests.
 return value 2 or 3 indicates a pseudoprime e.g. carmichael number
 ***********************************************************************/
 int PrimalityTest(const Znum &Value, long long upperBound) {
@@ -511,7 +511,7 @@ int PrimalityTest(const Znum &Value, long long upperBound) {
     if (rv2 >= 1)
         return 0;  // 'almost' certainly prime;
     else if(rv2 == 0)
-        return 3;  // composite - fails BPSW test
+        return 3;  // composite; fails BPSW test
 
     /* BPSW returned error code */
     std::cout << "*** BPSW primality test returned error! *** \n";
@@ -551,4 +551,55 @@ while lower-case letter represent 36..61.
 */
 bool StrToZ(Znum& result, const char str[], int base) {
     return mpz_set_str(ZT(result), str, base) == 0;
+}
+
+/* check whether num is a a Carmichael number.
+see https://math.stackexchange.com/questions/1726016/check-if-a-number-is-carmichael
+also https://en.wikipedia.org/wiki/Carmichael_number
+returns 0 for Carmichael number (probability = 1 - 2^(-tries), 
+ 1 for composite non-Carmichael numbers, and 2 for prime numbers.
+ A deterministic test would require num to be factorised. 
+*/
+int isCarmichael(const Znum &num, int tries) {
+    gmp_randstate_t state;  /* for random number generator */
+    std::random_device rd;   // non-deterministic generator
+    unsigned long long seedval, bitsize;
+    Znum r, mp, gcdv;
+
+    int rv2 = mpz_bpsw_prp(ZT(num));  /* returns 0 for composite, 2 for prime, 
+                                         1 for probable prime, -1 for error, */
+    if (rv2 >= 1)
+        return 2;   /* num is prime */
+    assert(rv2 != -1);
+
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    seedval = rd();      /* get random number for seed value */
+    gmp_randseed_ui(state, seedval);
+    bitsize = mpz_sizeinbase(ZT(num), 2)+1;  // calculate number of bits;
+
+    for (int i = 1; i <= tries; i++) {
+        retry:
+        mpz_urandomb(ZT(r), state, bitsize);  /* get pseudo-random number in r */
+        r %= num;   /* ensure r < num */
+        if (r <= 1)
+            goto retry;   /* ensure r > 1*/
+        /* calculate r^(num-1) (mod num)*/
+        mp = modPower(r, num - 1, num);
+        if (mp == 1)
+            continue;  /* repeat the test with another value of r */
+        gcdv = gcd(r, num);
+        if (gcdv == 1)
+            return 1;    /* composite, not a Carmichael number */
+        else {
+            /* gcdv is a non - trivial factor of num (may not be a prime) */
+            if (verbose > 0)
+                std::cout << "Carmichael test: " << num << " has divisor "
+                << gcdv << '\n';
+        }
+        /* repeat the test with another value of r */
+    }
+
+    /* after performing the specified number of tests, we haven't found
+     any indication that num is not a carmichael number */
+    return 0;   /* we have a Carmichael number */
 }
