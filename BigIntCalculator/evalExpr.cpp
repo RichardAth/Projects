@@ -1576,9 +1576,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                3 = composite: does not pass BPSW test, but passes other tests.*/
         if (verbose > 0) {
             if (rv == 2)
-                std::cout << "pseudo-prime; passes 2-fermat test but not 2-SPRP test \n";
+                std::cout << "pseudo-prime base 2; passes 2-fermat test but not 2-SPRP test \n";
             if (rv == 3)
-                std::cout << "pseudo-prime; passes 2-SPRP test but not BPSW test \n";
+                std::cout << "strong pseudo-prime base 2; passes 2-SPRP test but not BPSW test \n";
+            if (rv == 1)
+                std::cout << "composite; not a pseudoprime base 2 \n";
         }
         if (rv == 0)
             result = -1;   /* prime */

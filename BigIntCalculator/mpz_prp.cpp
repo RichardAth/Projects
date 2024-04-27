@@ -28,11 +28,12 @@
 #define PRP_PRIME 2
 
 
-/* *********************************************************************************************
+/* ********************************************************************************
  * mpz_sprp: (also called a Miller-Rabin pseudoprime)
- * A "strong pseudoprime" to the base a is an odd composite n = (2^r)*s+1 with s odd such that
- * either a^s == 1 mod n, or a^((2^t)*s) == -1 mod n, for some integer t, with 0 <= t < r.
- * *********************************************************************************************/
+ * A "strong pseudoprime" to the base a is an odd composite n = (2^r)*s+1 with s 
+ * odd such that either a^s == 1 mod n, or a^((2^t)*s) == -1 mod n, for some 
+ * integer t, with 0 <= t < r.
+ * *********************************************************************************/
 static int mpz_sprp(const mpz_t n, const mpz_t a)
 {
 	mpz_t s;
@@ -57,7 +58,7 @@ static int mpz_sprp(const mpz_t n, const mpz_t a)
 	mpz_init_set_ui(mpz_test, 0);
 	mpz_init_set_ui(s, 0);
 	mpz_init_set(nm1, n);
-	mpz_sub_ui(nm1, nm1, 1);
+	mpz_sub_ui(nm1, nm1, 1);  /* nm1 = n-1 */
 
 	/***********************************************/
 	/* Find s and r satisfying: n-1=(2^r)*s, s odd */

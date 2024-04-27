@@ -1044,7 +1044,7 @@ static void doTests(void) {
     /* test using carmichael numbers.  */
     unsigned long long int carmichael[] = { 90256390764228001, 18118463305678126129, 
         18265521244069461529,  18349357898532971521, 18308657203978189969,
-        804230935331967001 };
+        804230935331967001, 1452868638752967041 };
     for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
         testcnt++;
         factortest(carmichael[i], testcnt);
@@ -1060,6 +1060,14 @@ static void doTests(void) {
     testcnt++;
     factortest(x3, testcnt);  /* 29 digit pseudo-prime number (is a 2-SPRP but 
        is not a carmichael number */
+
+    StrToZ(x3, "1611901092819505566274901");
+    testcnt++;
+    factortest(x3, testcnt);  /* 26 digit pseudoprime number */
+
+    StrToZ(x3, "7259357160980020553885324958544388511061");
+    testcnt++;
+    factortest(x3, testcnt);  /* 41 digit pseudoprime number */
 
      /* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
     // ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
