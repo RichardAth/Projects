@@ -1055,7 +1055,6 @@ static void doTests(void) {
     testcnt++;
     factortest(x3, testcnt);  /* 23 digit carmichael number */
 
-    // ComputeExpr("56897193526942024370326972321", x3, asgCt);
     StrToZ(x3, "56897193526942024370326972321");
     testcnt++;
     factortest(x3, testcnt);  /* 29 digit pseudo-prime number (is a 2-SPRP but 
@@ -1063,15 +1062,13 @@ static void doTests(void) {
 
     StrToZ(x3, "1611901092819505566274901");
     testcnt++;
-    factortest(x3, testcnt);  /* 26 digit pseudoprime number */
+    factortest(x3, testcnt);  /* 25 digit pseudoprime number */
 
     StrToZ(x3, "7259357160980020553885324958544388511061");
     testcnt++;
-    factortest(x3, testcnt);  /* 41 digit pseudoprime number */
+    factortest(x3, testcnt);  /* 40 digit pseudoprime number */
 
      /* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
-    // ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
-    //  "5531276838753171770199594238596428121188033664754218345562493168782883", x3, asgCt);
     StrToZ(x3, "2967449566868551055015417464290533273077199179985304335099507"
         "5531276838753171770199594238596428121188033664754218345562493168782883");
     x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
@@ -1089,6 +1086,10 @@ static void doTests(void) {
     x4 = (6 * x3 + 1) * (12 * x3 + 1) * (18 * x3 + 1);
     factortest(x4, testcnt);
     std::cout << "factorised 514-digit Carmichael number \n";
+
+    testcnt++;
+    StrToZ(x3, "9649340769776349618630915417390658987772498722136713669954798667326094136661");
+    factortest(x3, testcnt);  /* 76 digit pseudoprime */
 
     testcnt++;
     ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  

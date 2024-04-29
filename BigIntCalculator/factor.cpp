@@ -456,35 +456,44 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
    a strong pseudoprime to base b. */
-static bool getfactors(const Znum& n, int b, fList& Factors) {
+static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
     Znum f, kf, nm1, modpow, zb, div1, div2;
     nm1 = n - 1;
     bool factorsfound = false;
     zb = b;
-    auto shift = mpz_remove(ZT(f), ZT(nm1), ZT(two));
 
+    /* check that b^(n-1) = 1 (mod n) */
+    mpz_powm(ZT(modpow), ZT(zb), ZT(nm1), ZT(n));
+    if (modpow != 1) {
+        if (verbose > 0)
+            gmp_printf("%Zd is not a pseudoprime to base %d\n", n, b);
+        return false;
+    }
+
+    auto shift = mpz_remove(ZT(f), ZT(nm1), ZT(two));
+    /* f *(2^shift) = n-1 */
     kf = f;
     for (int k = 1; k <= shift; k++) {
-        /* calculate b^kf*/
+        /* calculate b^kf, mod n */
         mpz_powm(ZT(modpow), ZT(zb), ZT(kf), ZT(n));
-        if (modpow != 1) {
+        if (modpow != 1 && modpow != nm1) {
             div1 = gcd(modpow + 1, n);
             div2 = gcd(modpow - 1, n);
-            break;
+            if (div1 > 1 || div2 > 1) {
+                if (verbose > 0)
+                    gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd \n", div1, div2, n);
+                if (div1 > 1)
+                    if (insertBigFactor(Factors, div1))
+                        factorsfound = true;
+                if (div2 > 1)
+                    if (insertBigFactor(Factors, div2))
+                        factorsfound = true;
+            }
+            kf +=f;
         }
-        kf *= 2;
-    }
-    if (div1 > 1 || div2 > 1) {
-        if (verbose > 0)
-            gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd \n", div1, div2, n);
-        if (div1 > 1)
-            if (insertBigFactor(Factors, div1))
-                factorsfound = true;
-        if (div2 > 1)
-            if (insertBigFactor(Factors, div2))
-                factorsfound = true;
+        else break;
     }
     return factorsfound;
 }
@@ -515,6 +524,7 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
         if (Aux2 ==1 || Aux2 == p-1) {
             continue;    // This base cannot find a factor. Try another one.
         }
+  
         for (i = 0; i < ctr; i++) {              // Loop that squares number.
             mpz_powm_ui(ZT(Aux3), ZT(Aux2), 2, ZT(p));   // Aux3 = Aux2^2 (mod p)
             if (Aux3 == 1)
@@ -567,7 +577,7 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
                 continue;  // Find more factors.
             }
 
-            if (Aux3 == p-1)     // Aux3 = Aux2^2 (mod p)
+            if (Aux3 == Pmin1)     // Aux3 = Aux2^2 (mod p)
             {            // Square root of -1 found.
                 if (!sqrtMinusOneFound)
                 {          // Save 1st non-trivial root to perform GCD later.
@@ -603,9 +613,6 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
             break;   /* all factor are now prime, so stop. Without this test
              the outer loop would go round 20 times, probably finding the same 
              factors over and over again. */
-    }
-    if (!factorsFound) {
-         factorsFound = getfactors(p, 2, Factors);  /*  try another way */
     }
     if (!factorsFound && verbose > 0) {
         std::cout << "Carmichael: no factors found for " << p << '\n';
@@ -871,10 +878,18 @@ static bool factor(const Znum &toFactor, fList &Factors) {
         if (result > 1) {  /* number is a pseudo-prime, but is NOT prime */
             size_t fsave = Factors.f.size();
             if (factorCarmichael(Zpower, Factors)) {
-                Factors.carm += (int)(Factors.f.size() - fsave); // record any increase in number of factors;
+                Factors.carm += (int)(Factors.f.size() - fsave); 
+                // record any increase in number of factors;
                 i = -1;			// restart loop at beginning!!
                 continue;
             }
+            else if(result == 2)
+                if (getfactors(Zpower, 2, Factors)) {
+                    Factors.carm += (int)(Factors.f.size() - fsave); 
+                    // record any increase in number of factors;
+                    i = -1;			// restart loop at beginning!!
+                    continue;
+                }
         }
 
         if (Zpower <= PollardLimit) {
