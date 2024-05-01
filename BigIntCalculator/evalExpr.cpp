@@ -1129,9 +1129,10 @@ Znum llt(const Znum& p) {
     clock_t t1, t2, t3;
 
     /* 1st check if p is prime. */
-    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1 or 2*/
-    /* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
-    if (rv == 0) {
+    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1, 2 or 3*/
+    /* rv is 3 or 4 if p is (probably) prime, or 0 if p is definitely composite,
+       1 or 2 for pseudoprime*/
+    if (rv == PRP_COMPOSITE || rv == PRP_SPSP || rv == PRP_WPSP) {
         lltTdivCnt++;  // count this result as found by trial division
         return 0;      // if p is composite, 2^p -1 is composite.
     }
@@ -1778,11 +1779,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         result = mpz_bpsw_prp(ZT(p[0]));
         if (verbose > 0) {
-            if (result == 0)
+            if (result == PRP_COMPOSITE)
                 std::cout << "composite \n";
-            else if (result == 1)
+            else if (result == PRP_PRP)
                 std::cout << "probable prime \n";
-            else if (result == 2)
+            else if (result == PRP_WPSP)
+                std::cout << "weak pseudoprime base 2 \n";
+            else if (result == PRP_SPSP)
+                std::cout << "strong pseudoprime base 2 \n";
+            else if (result == PRP_PRIME)
                 std::cout << "prime \n";
         }
         break;
@@ -1801,11 +1806,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         result = mpz_aprtcle(ZT(p[0]), verbose);
         if (verbose > 0) {
-            if (result == 0)
+            if (result == APRTCLE_COMPOSITE)
                 printf_s("\ncomposite \n");
-            else if (result == 1)
-                printf_s("\nprobable prime \n");
-            else if (result == 2)
+           else if (result == PRP_WPSP || result == PRP_SPSP)
+                printf_s("\npseudoprime \n");
+            else if (result == APRTCLE_PRIME)
                 printf_s("\nprime \n");
         }
         break;

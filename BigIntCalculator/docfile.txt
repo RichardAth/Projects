@@ -104,13 +104,14 @@ Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime
                   factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
-                  1 for probable prime, 2 for definite prime. 
+                  4 for probable prime, 3 for definite prime, 1 or 2 for base-2 
+                  pseudoprime which is NOT prime.
                   considered to be 100% reliable for numbers up to 10000 digits
 APRCL(n)        : Adleman-Pomerance-Rumely primality test. If the number is > 6021 
                   digits it reverts to the BPSW test. Returns zero if n is 
-                  composite, 1 for probable prime (only if BPSW used), 2 for a
-                  definite prime. WARNING: very slow for large numbers e.g. 20s 
-                  for 400 digits.
+                  composite, 4 for probable prime (only if BPSW used), 1 or 2 for a
+                  BPSW base-2 pseudoprime, 3 for a definite prime.
+                  WARNING: very slow for large numbers e.g. 20s for 400 digits.
 ISPOWERFUL(n)   : returns -1 if n is a powerful number, 0 if not. A number is
                   powerful if and only if every prime factor has an exponent 2 or 
                   more. Equivalently, a powerful number is the product of a 
@@ -758,17 +759,18 @@ Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime
 [ISPRIME]
 IsPrime(n)  returns zero if n is composite, -1 if it is a probable prime.
 [BPSW]
-BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 
-          1 for probable prime, 2 for definite prime. 
+BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 4 for
+          probable prime, 3 for definite prime, 1 or 2 for base-2 pseudoprime
+          which is NOT prime.
           considered to be 100% reliable for numbers up to 10000 digits
 [APRCL]
 APRCL(n)  Adleman-Pomerance-Rumely primality test. If the number is > 6021 
           digits it reverts to the BPSW test. Returns zero if n is 
-          composite, 1 for probable prime (only if BPSW used), 2 for a
-          definite prime. Unlike other, more efficient algorithms for this 
-          purpose, it avoids the use of random numbers, so it is a 
-          deterministic primality test. WARNING: very slow for large 
-          numbers e.g. 20s for 400 digits
+          composite, 4 for probable prime (only if BPSW used), 3 for a
+          definite prime, , 1 or 2 for a BPSW base-2 pseudoprime. Unlike other, 
+          more efficient algorithms for this purpose, it avoids the use of random 
+          numbers, so it is a deterministic primality test. WARNING: very slow 
+          for large numbers e.g. 20s for 400 digits
 [ISPOWERFUL]
 ISPOWERFUL(n)   returns -1 if n is a powerful number, 0 if not. A number is
                 powerful if and only if every prime factor has an exponent 2 or 

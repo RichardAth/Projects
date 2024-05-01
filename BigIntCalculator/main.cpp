@@ -899,10 +899,12 @@ static void doTests(void) {
         "SQRT(1234320)",               1110,
         "NROOT(2861381721051424,5)",   1234,
         "LLT(3217)",                      1,  // 2^3217-1 is prime
-        "BPSW(2^99-1)",                   0,  // not a prime number
-        "BPSW(2^127-1)",                  1,  // a prime number
+        "BPSW(2^99-1)",      PRP_COMPOSITE,   // not a prime number
+        "BPSW(2^127-1)",            PRP_PRP,  // a prime number
+        "bpsw(90256390764228001)",  PRP_WPSP, // weak pseudoprime
+        "BPSW(142899381901)",       PRP_SPSP, // strong pseudoprime
         "ISPRIME(2^127-1)",              -1,  // a prime number
-        "aprcl(2^127-1)",                 2,  // a prime number
+        "aprcl(2^127-1)",     APRTCLE_PRIME,  // a prime number
         "ispow(2^127-1)",                 0,  /* not a perfect power */
         "ispow(2^127)",                  -1,  /* a perfect power */
         "-not1",                          2,  // operators are processed from right to left
@@ -1155,6 +1157,7 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     t will be slightly less than that of r.
     */
     Znum r, s, t, t2, p0;
+    int rv;
 
     //1. s and t should be about half the bitlength of p
     for (;;) {
@@ -1174,7 +1177,7 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     // 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
     t2 = t * 2;
     r = t2 + 1;
-    while (mpz_bpsw_prp(ZT(r)) == 0)
+    while (rv = mpz_bpsw_prp(ZT(r)), rv == PRP_COMPOSITE || rv == PRP_SPSP, rv == PRP_WPSP)
     //while (!mpz_likely_prime_p(ZT(r), state, 0))
         r += t2;
 
@@ -1187,7 +1190,7 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     while (gcd(p, r*s) != 1)
         p+=2;  /* if p has any common factors with r or s we need to make an
                adjustment. Otherwise we would never find a prime. */
-    while (mpz_bpsw_prp(ZT(p)) == 0)
+    while (rv = mpz_bpsw_prp(ZT(r)), rv == PRP_COMPOSITE || rv == PRP_SPSP, rv == PRP_WPSP)
     //while (!mpz_likely_prime_p(ZT(p), state, 0))
         p += 2 * r*s;
     return;

@@ -447,71 +447,39 @@ void DivideZnumByMaxPowerOf2(int &ShRight, Znum &number) {
 
 
 /* BPSW primality test:
-1) If the input number is 2-SPRP (strong Probable Prime to base 2) composite, 
-indicate composite (return value 1 or 2) and go out.
-2) Perform a BPSW probable prime test on n 
-   If n is not a probable prime, then n is composite (return value 3).
-   Otherwise, n is almost certainly prime (return value 0).
-   upperBound is the largest divisor already tested during trial division
+*    upperBound is the largest divisor already tested during trial division
+* 1) Perform a BPSW probable prime test on n 
+* 2) If the input number is a Probable Prime to base 2 and is composite, 
+     indicate composite (return value 2 or 3) and go out.
+
+     If n is not a probable prime, then n is composite (return value 1).
+     Otherwise, n is almost certainly prime (return value 0).
+
 Output: 0 = probable prime.
         1 = composite: not pseudoprime.
 return value 2 or 3 indicates a base 2 pseudoprime e.g. carmichael number
+but n is NOT prime.
         2 = composite: does not pass 2-SPRP test.
         3 = composite: does not pass BPSW test, but passes 2-SPRP tests.
 ***********************************************************************/
 int PrimalityTest(const Znum &n, long long upperBound) {
-    int i, ctr;
-    Znum Mult1, Mult3, Mult4;
-    const Znum two = 2;
-
-    if (n <= 2) {
-        return 0;    // Indicate prime.
-    }
-    if (isEven(n)) {
-        return 1;    // Number is even and different from 2. Indicate composite.
-    }
-
-    // Perform base 2 Strong Probable Prime test (2-SPRP)
-    //see https://en.wikipedia.org/wiki/Probable_prime
-    
-    Mult3 = n - 1;
-    DivideZnumByMaxPowerOf2(ctr, Mult3);  // Mult3 /= 2^ctr
-    mpz_powm(ZT(Mult1), ZT(two), ZT(Mult3), ZT(n));  // Mult1 = 2^Mult3 (mod n)
-
-    if (Mult1 != 1 && Mult1 != n - 1) {
-        for (i = 0; i < ctr; i++){   
-            // Loop that squares number.
-            mpz_powm(ZT(Mult4), ZT(Mult1), ZT(two), ZT(n)); /* Mult4 = Mult1^2 (mod n)*/
-            if (Mult4 == 1)
-            {  // Current value is 1 but previous value is not 1 or -1: composite
-                return 2;       // Composite. Not 2-strong probable prime.
-            }
-            if (Mult4 == n - 1) {
-                i = -1;         // Number is 2-strong pseudoprime.
-                break;
-            }
-            Mult1 = Mult4; /* Mult1 = Mult1^2 (mod n) */
-        }
-        if (i == ctr) {
-            return 1;         // composite. Not 2-Fermat pseudo-prime.
-        }
-        if (i != -1) {
-            return 2;         // Composite. Not 2-strong pseudo-prime.
-        }
-    }
-
-    /* Number passes 2-SPRP test. Now perform a further test to see whether it is
-    really prime or not.
-    consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
+     
+    /* consensus is the BPSW (Baillie-Pomerance-Selfridge-Wagstaff) is better 
     than Miller-Rabin because;
     1. There are no known BPSW pseudoprimes
-    2. It's faster than Miller-Rabin */
+    2. It's faster than Miller-Rabin 
+    Note: the version used here has been 'tweaked' to indicate if n is a base-2
+    pseudoprime, when n is composite. */
 
     int rv2 = mpz_bpsw_prp(ZT(n));
-    if (rv2 >= 1)
+    if (rv2 == PRP_PRIME || rv2 == PRP_PRP)
         return 0;  // 'almost' certainly prime;
-    else if(rv2 == 0)
-        return 3;  // composite; fails BPSW test but passes 2-SPRP tests.
+    else if (rv2 == PRP_SPSP)
+        return 3;  /* strong pseudoprime*/
+    else if (rv2 == PRP_WPSP)
+        return 2;  /* weak pseudoprime */
+    else if(rv2 == PRP_COMPOSITE)
+        return 1;  // composite; fails BPSW test but passes 2-SPRP tests.
 
     /* BPSW returned error code */
     std::cout << "*** BPSW primality test returned error! *** \n";
@@ -530,7 +498,7 @@ int PrimalityTest(const Znum &n, long long upperBound) {
     auto rv = mpz_probab_prime_p(ZT(n), 16);
 #endif
     if (rv == 0)
-        return 3;			// composite - fails Miller-Rabin test
+        return 1;			// composite - fails Miller-Rabin test
     else
         return 0;			// probably prime;
 }
@@ -568,9 +536,10 @@ int isCarmichael(const Znum &num, int tries) {
     unsigned long long seedval, bitsize;
     Znum r, mp, gcdv;
 
-    int rv2 = mpz_bpsw_prp(ZT(num));  /* returns 0 for composite, 2 for prime, 
-                                         1 for probable prime, -1 for error, */
-    if (rv2 >= 1)
+    int rv2 = mpz_bpsw_prp(ZT(num));  /* returns 0 for composite, 3 for prime, 
+                                         1 for probable prime, 2 for pseudoprime,
+                                         -1 for error, */
+    if (rv2 == PRP_PRIME || rv2 == PRP_PRP)
         return 2;   /* num is prime */
     assert(rv2 != -1);
 

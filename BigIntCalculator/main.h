@@ -125,6 +125,22 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 DWORD getComCtlVer(void);
 
 /* mpz_prp.cpp */
+/*************************************************************/
+/*************************************************************/
+/* These are the definitions for the probable prime routines */
+/*************************************************************/
+/*************************************************************/
+#define PRP_ERROR -1
+#define PRP_COMPOSITE 0 /* composite, not a pseudoprime */
+#define PRP_SPSP 1     /* strong pseudoprime */
+#define PRP_WPSP 2      /* weak pseudo-prime*/
+#define PRP_PRIME 3     /* definate prime */
+#define PRP_PRP 4       /* probable prime */
+
+#define APRTCLE_ERROR -1
+#define APRTCLE_COMPOSITE 0
+#define APRTCLE_PRIME 3       /* definate prime */
+
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
 
