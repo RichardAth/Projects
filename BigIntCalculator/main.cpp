@@ -1177,10 +1177,12 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     // 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
     t2 = t * 2;
     r = t2 + 1;
-    while (rv = mpz_bpsw_prp(ZT(r)), rv == PRP_COMPOSITE || rv == PRP_SPSP, rv == PRP_WPSP)
-    //while (!mpz_likely_prime_p(ZT(r), state, 0))
-        r += t2;
-
+    while (true) {
+        rv = mpz_bpsw_prp(ZT(r));
+        if (rv == PRP_PRP || rv == PRP_PRIME)
+            break;
+         r += t2;
+    }
 
     // 3. Compute p0 = 2(sr-2 mod r)s - 1.
     p0 = ((s*r - 2) % r)*s * 2 - 1;
@@ -1190,9 +1192,12 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     while (gcd(p, r*s) != 1)
         p+=2;  /* if p has any common factors with r or s we need to make an
                adjustment. Otherwise we would never find a prime. */
-    while (rv = mpz_bpsw_prp(ZT(r)), rv == PRP_COMPOSITE || rv == PRP_SPSP, rv == PRP_WPSP)
-    //while (!mpz_likely_prime_p(ZT(p), state, 0))
-        p += 2 * r*s;
+    while (true) {
+        rv = mpz_bpsw_prp(ZT(p));
+        if (rv == PRP_PRP || rv == PRP_PRIME)
+            break;
+        p += 2 * r * s;
+    }
     return;
 }
 
