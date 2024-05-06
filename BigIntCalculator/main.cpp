@@ -534,7 +534,7 @@ static void printSummary(void) {
     double elSec;
     /* print column headings */
     printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
-    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv pari \n");
+    printf_s(" tdv prh leh crm psp pm1 ecm siq pwr yaf msv pari \n");
     for (auto res : results) {
         /* truncate elapsed time to nearest second */
         sec = (long long)std::floor(res.time); // convert to an integer
@@ -551,10 +551,10 @@ static void printSummary(void) {
 
         /* print counters showing how factors were found */
         printf_s("     %8d   %8d     %8d", res.NumFacs, res.totalFacs, res.sndFac);
-        printf_s("    %3d %3d %3d %3d %3d %3d ",
-            res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
+        printf_s("    %3d %3d %3d %3d %3d %3d %3d ",
+            res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm, res.ctrs.psp,
             res.ctrs.pm1, res.ctrs.ecm);
-        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.powerCnt, res.ctrs.yafu,
             res.ctrs.msieve, res.ctrs.paric);
     }
 
@@ -2056,6 +2056,71 @@ static void doTests12(const std::vector<std::string>& p) {
     return;
 }
 
+/* test for factoring pseudoprimes */
+static void doTests13(const std::vector<std::string>& p) {
+    long long p1 = 0;  // number of tests; must be greater than 0, default is 20
+    long long p2 = 0;  // prime value to use (f not prime use next prime)  
+    long long p3 = 0;
+    long long llprime;
+    int base = 2;
+    Znum bp, n1, n2, n;
+    auto start = std::clock();	// used to measure execution time
+    results.clear();
+
+    if (p.size() >= 3)
+        p1 = std::atoll(p[2].data());
+    if (p.size() >= 4)
+        p2 = std::atoll(p[3].data());
+    if (p.size() >= 5)
+        p3 = std::atoll(p[4].data());
+    /* check whether parameter values are within acceptable ranges */
+    if (p1 <= 0) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+    if (p2 <23 || p2 > 1000) {
+        std::cout << "Use default 23 for 1st prime \n";
+        p2 = 23;
+    }
+    Znum prime = p2;
+   int rv = mpz_bpsw_prp(ZT(prime));
+   if (rv == PRP_SPSP || rv == PRP_WPSP || rv == PRP_COMPOSITE)
+       mpz_nextprime(ZT(prime), ZT(prime));  /* make sure we have a prime number */
+
+   for (int ctr = 1; ctr <= p1; ctr++) {
+       llprime = MulPrToLong(prime);
+       if (llprime > 331) {
+           break;     /* stop when numbers get too large */
+       }
+        mpz_ui_pow_ui(ZT(bp), base, llprime);  /* bp = b^prime */
+       n1 = (bp - 1) / (base - 1);
+       n2 = (bp + 1) / (base + 1);
+       n = n1 * n2;  /* n is a pseudoprime to base */
+       rv = mpz_bpsw_prp(ZT(n));
+       switch (rv) {
+       case PRP_SPSP:
+           std::cout << '\n' << n << " is strong pseudoprime, prime = " << llprime;
+           break;
+       case PRP_WPSP:
+           std::cout << '\n' << n << " is weak pseudoprime, prime = " << llprime;
+           break;
+       case PRP_COMPOSITE:
+           std::cout << '\n' << n << " is composite";
+           break;
+       case PRP_PRP:
+       case PRP_PRIME:
+       default:
+           abort();
+       }
+       factortest(n, ctr);  
+       mpz_nextprime(ZT(prime), ZT(prime));
+   }
+   auto end = std::clock();              // measure amount of time used
+   auto elapsed = (double)end - start;
+   PrintTimeUsed(elapsed, " time used = ");
+   printSummary();           // print 1 line per test
+   return;
+}
 
 std::vector<std::string> inifile;  // copy some contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -2919,7 +2984,8 @@ static int processCmd(std::string command) {
                  << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
-                 << "                                   p2 = number size in bits \n";
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 13 [p1[,p2]]      test factoring of pseudoprimes where p1 = no of tests, \n";
 
              return 1;
          }
@@ -2982,6 +3048,10 @@ static int processCmd(std::string command) {
 
          case 12: /* R4 tests */
              doTests12(p);
+             return 1;
+
+         case 13: /* test for factoring pseudoprimes */
+             doTests13(p);
              return 1;
 
          default:

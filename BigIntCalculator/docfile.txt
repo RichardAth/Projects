@@ -549,8 +549,14 @@ A. If the factor is a perfect power replace it with the number which is the root
    and adjust the the factor's exponent accordingly. Although such numbers are  
    rare this is necessary because SIQS and ECM do not work for numbers which are
    perfect powers.
-B. Test whether the number is prime: 
-   If it is a Carmichael number factorise it using a specific algorithm. 
+B. Test whether the number is prime. The test used also recognises base-2 pseudoprimes
+   which are in fact composite: 
+   If it is a base-2 pseudoprime try to factorise it using a specific algorithm
+   designed for Carmichael numbers, but which also often works for other 
+   pseudoprimes. If the carmichael number method is unsuccessful and the number
+   is a base-2 weak pseudoprime another method is then used which always yields
+   a result but can only be used for numbers which are weak pseudoprimes to a 
+   known base.   
    If it is prime mark it as such. 
    Otherwise either:
       factorise it using built-in ECM, SIQS and Lehman algorithms. This method is 

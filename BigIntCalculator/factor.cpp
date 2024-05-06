@@ -385,6 +385,7 @@ static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix)
     auto exp = mpz_remove(ZT(qnew), ZT(quot), ZT(divisor));
     if (qnew != 1) {
         /* add new factor */
+        assert(exp > 0);  /* would abort if quot were not a multiple of divisor */
         Factors.f.resize(lastfactor + 1);  // increase size of factor list
         Factors.f[lastfactor].exponent = (int)exp * Factors.f[ix].exponent;
         Factors.f[lastfactor].Factor = divisor;
@@ -443,7 +444,7 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
     if (success) {
         SortFactors(Factors);
         if (verbose >= 1) {
-            std::cout << "Divisor = " << divisor << " result after sorting factors : " << '\n';
+            std::cout << "Divisor = " << divisor << " result after adding factor: \n";
             Factors.Xprint();
         }
     }
@@ -456,7 +457,7 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
    a strong pseudoprime to base b. */
-static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
+bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
     Znum f, kf, nm1, modpow, zb, div1, div2;
@@ -485,11 +486,15 @@ static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
                 if (verbose > 0)
                     gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd \n", div1, div2, n);
                 if (div1 > 1)
-                    if (insertBigFactor(Factors, div1))
+                    if (insertBigFactor(Factors, div1)) {
                         factorsfound = true;
+                        Factors.ct.psp++;
+                    }
                 if (div2 > 1)
-                    if (insertBigFactor(Factors, div2))
+                    if (insertBigFactor(Factors, div2)) {
                         factorsfound = true;
+                        Factors.ct.psp++;
+                    }
             }
             kf +=f;
         }
@@ -502,7 +507,7 @@ static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
 Return: false = No factors found, true = factors found.
  Use: Xaux for square root of -1, mod p.
       Zaux for square root of 1 mod p. */
-static bool factorCarmichael(const Znum &p, fList &Factors)
+bool factorCarmichael(const Znum &p, fList &Factors)
 {
     Znum PsRand = 0;  // pseudo-random number
     bool factorsFound = false;
@@ -544,6 +549,7 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
                     {          // Non-trivial factor found.
                         if (insertBigFactor(Factors, gcdVall)) {
                             factorsFound = true;
+                            Factors.ct.carm++;
                             if (verbose > 0)
                                 std::cout << "Carmichael factor found(1), ctr = "
                                 << ctr << " i = " << i << " countdown = " << countdown << '\n';
@@ -564,6 +570,7 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
                 {          // Non-trivial factor found.
                     if (insertBigFactor(Factors, gcdVall)) {
                         factorsFound = true;
+                        Factors.ct.carm++;
                         if (verbose > 0)
                             std::cout << "Carmichael factor found(2), ctr = "
                             << ctr << " i = " << i << " countdown = " << countdown << '\n';
@@ -594,6 +601,7 @@ static bool factorCarmichael(const Znum &p, fList &Factors)
                     {          // Non-trivial factor found.
                         if (insertBigFactor(Factors, gcdVall)) {
                             factorsFound = true;
+                            Factors.ct.carm++;
                             if (verbose > 0)
                                 std::cout << "Carmichael factor found(-1), ctr = "
                                 << ctr << " i = " << i << "countdown = " << countdown << '\n';
@@ -751,13 +759,31 @@ long long int PollardRho(long long int n, int depth)
 static void TrialDiv(fList &Factors, const long long PollardLimit) {
     bool restart = false;  // set true if trial division has to restart
     int upperBound;
+    int numtype;
     long long testP;
+    Znum temp;
     do {  /* use trial division */
         restart = false;    // change to true if any factor found
         for (int i = 0; i < Factors.f.size(); i++) {
             upperBound = Factors.f[i].upperBound;  // resume from where we left off
             if (upperBound == -1)
                 continue;  // factor is prime
+            temp = Factors.f[i].Factor;
+            if (numLimbs(temp) <= 10) {  /* avoid this for numbers > 190 digits 
+                  (seems faster on average not to do this for very large numbers) */
+                numtype = mpz_bpsw_prp(ZT(temp));
+                if (numtype == PRP_WPSP) {
+                    /* number is a weak pseudoprime */
+                    if (getfactors(temp, 2, Factors)) {
+                        restart = true;
+                        break;
+                    }
+                }
+                else if (numtype == PRP_PRIME || numtype == PRP_PRP){
+                    Factors.f[i].upperBound = -1; // show that residue is prime
+                    continue;
+                }
+            }
             /* trial division. Uses first 33333 primes */
             while (upperBound < std::min((int)prime_list_count, 33333)) {
                 testP = primeList[upperBound];
@@ -768,7 +794,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
                 if (Factors.f[i].Factor%testP == 0) {
                     insertIntFactor(Factors, upperBound, 0, i);
                     restart = true;  // factor found; keep looking for more
-                    Factors.tdiv++;
+                    Factors.ct.tdiv++;
                     break;
                 }
                 Factors.f[i].upperBound = upperBound;
@@ -794,7 +820,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
                     even when factor is not prime*/
                     if (f > 1) {
                         insertIntFactor(Factors, -1, f, i);
-                        Factors.prho++;
+                        Factors.ct.prho++;
                     }
                 }
             }
@@ -840,7 +866,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
     if (toFactor >= MaxP* MaxP) {
         /* may not be able to factorise entirely by trial division, so try this first */
         PowerPM1Check(Factors, toFactor, 2);  // check if toFactor is a perfect power +/- 1
-        Factors.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
+        Factors.ct.pm1 = (int)Factors.f.size() - 1;  // number of factors just found, if any
         if (Factors.f.size() > 1 && verbose > 0) {
             std::cout << "PowerPM1Check result: ";
             Factors.Xprint();
@@ -867,7 +893,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
         if (expon > 1) {    /* if factor is a perfect power*/
             Factors.f[i].Factor = Zpower;
             Factors.f[i].exponent *= expon;
-            Factors.powerCnt++;
+            Factors.ct.powerCnt++;
         }
         
         int result = PrimalityTest(Zpower, testP- 1);
@@ -876,28 +902,22 @@ static bool factor(const Znum &toFactor, fList &Factors) {
             continue;
         }
         if (result > 1) {  /* number is a pseudo-prime, but is NOT prime */
-            size_t fsave = Factors.f.size();
             if (factorCarmichael(Zpower, Factors)) {
-                Factors.carm += (int)(Factors.f.size() - fsave); 
-                // record any increase in number of factors;
                 i = -1;			// restart loop at beginning!!
                 continue;
             }
             else if(result == 2)
                 if (getfactors(Zpower, 2, Factors)) {
-                    Factors.carm += (int)(Factors.f.size() - fsave); 
-                    // record any increase in number of factors;
                     i = -1;			// restart loop at beginning!!
                     continue;
                 }
         }
-
         if (Zpower <= PollardLimit) {
             long long f;
             f = PollardRho(MulPrToLong(Zpower));
             if (f != 1) {
                 insertIntFactor(Factors, -1, f, i);
-                Factors.prho++;
+                Factors.ct.prho++;
                 /* there is a small possibility that PollardFactor won't work,
                 even when factor is not prime*/
                 continue;
@@ -930,7 +950,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
             for (int k = 1; k <= 10; k++) {
                 LehmanZ(Zpower, k, Zfactor);
                 if (Zfactor > 1) {
-                    Factors.leh++;     // Factor found.
+                    Factors.ct.leh++;     // Factor found.
                     insertBigFactor(Factors, Zfactor);
                     i = -1;   // success; restart loop at beginning to tidy up!	
                     break;
@@ -954,11 +974,11 @@ static bool factor(const Znum &toFactor, fList &Factors) {
                 i = -1;   // success; restart loop at beginning to tidy up!
                 // record any increase in number of factors
                 if (msieve)
-                    Factors.msieve += (int)(Factors.f.size() - fsave); 
+                    Factors.ct.msieve += (int)(Factors.f.size() - fsave); 
                 else if (yafu)
-                    Factors.yafu += (int)(Factors.f.size() - fsave); 
+                    Factors.ct.yafu += (int)(Factors.f.size() - fsave); 
                 else 
-                    Factors.pari += (int)(Factors.f.size() - fsave);
+                    Factors.ct.paric += (int)(Factors.f.size() - fsave);
             }
             else {
                 msieve = false;   // failed once, don't try again

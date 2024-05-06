@@ -1333,14 +1333,14 @@ bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor) {
 		enum eEcmResult ecmResp = ecmCurve(zN, Zfactor);
 		if (ecmResp == CHANGE_TO_SIQS) {    // Perform SIQS
 			FactoringSIQS(zN, Zfactor); // factor found is returned in Zfactor
-			Factors.siqs++;
+			Factors.ct.siqs++;
 			break;
 		}
 		else if (ecmResp == FACTOR_FOUND) {
 			if (foundByLehman)
-				Factors.leh++;
+				Factors.ct.leh++;
 			else
-				Factors.ecm++;
+				Factors.ct.ecm++;
 			break;
 		}
 		// statements below cannot be executed as ecmResp always = CHANGE_TO_SIQS or FACTOR_FOUND 

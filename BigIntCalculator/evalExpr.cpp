@@ -1129,9 +1129,9 @@ Znum llt(const Znum& p) {
     clock_t t1, t2, t3;
 
     /* 1st check if p is prime. */
-    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1, 2 or 3*/
-    /* rv is 3 or 4 if p is (probably) prime, or 0 if p is definitely composite,
-       1 or 2 for pseudoprime*/
+    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1, 2, 3 or 4 */
+    /* rv is 3 or 4 if p is (probably) prime, or 0 if p is composite,
+       1 or 2 for pseudoprime. */
     if (rv == PRP_COMPOSITE || rv == PRP_SPSP || rv == PRP_WPSP) {
         lltTdivCnt++;  // count this result as found by trial division
         return 0;      // if p is composite, 2^p -1 is composite.
