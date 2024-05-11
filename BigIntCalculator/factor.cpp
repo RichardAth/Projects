@@ -475,16 +475,17 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
 
     auto shift = mpz_remove(ZT(f), ZT(nm1), ZT(two));
     /* f *(2^shift) = n-1 */
-    kf = f;
-    for (int k = 1; k <= shift; k++) {
+ 
+    for (int k = 1; k <= 1LL << shift; k <<= 1) {
         /* calculate b^kf, mod n */
+        kf = k * f;
         mpz_powm(ZT(modpow), ZT(zb), ZT(kf), ZT(n));
         if (modpow != 1 && modpow != nm1) {
             div1 = gcd(modpow + 1, n);
             div2 = gcd(modpow - 1, n);
             if (div1 > 1 || div2 > 1) {
                 if (verbose > 0)
-                    gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd \n", div1, div2, n);
+                    gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd (k = %d)\n", div1, div2, n, k);
                 if (div1 > 1)
                     if (insertBigFactor(Factors, div1)) {
                         factorsfound = true;
@@ -496,9 +497,9 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
                         Factors.ct.psp++;
                     }
             }
-            kf +=f;
         }
-        else break;
+        else 
+            break;
     }
     return factorsfound;
 }
