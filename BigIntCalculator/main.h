@@ -48,6 +48,8 @@ void ErrorDisp(const char* lpszFunction);
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
+bool factortest(const Znum& x3, const int testnum, const int method = 0);
+void printSummary(void);
 
 
 extern bool* primeFlags;
@@ -68,6 +70,8 @@ extern HWND handConsole;      /* handle to console window */
 extern std::string helpFilePath;
 
 /* defined in various places: not in main.cpp */
+
+void doTests14(const std::vector<std::string>& p);
 
 /* yafu.cpp */
 bool callYafu(const Znum& num, fList& Factors);

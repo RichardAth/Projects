@@ -456,7 +456,8 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 }
 
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
-   a strong pseudoprime to base b. */
+   a strong pseudoprime to base b. See 
+   https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Variants_for_finding_factors */
 bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
@@ -476,8 +477,9 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     auto shift = mpz_remove(ZT(f), ZT(nm1), ZT(two));
     /* f *(2^shift) = n-1 */
  
-    for (int k = 1; k <= 1LL << shift; k <<= 1) {
-        /* calculate b^kf, mod n */
+    for (int k = 1; k <= (1LL << shift); k <<= 1) {
+        /* calculate b^kf, mod n. k doubles each time round the loop, kf also
+        doubles, and modpow is squared, (mod n)*/
         kf = k * f;
         mpz_powm(ZT(modpow), ZT(zb), ZT(kf), ZT(n));
         if (modpow != 1 && modpow != nm1) {
@@ -485,7 +487,8 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
             div2 = gcd(modpow - 1, n);
             if (div1 > 1 || div2 > 1) {
                 if (verbose > 0)
-                    gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors  of %Zd (k = %d)\n", div1, div2, n, k);
+                    gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors of %Zd (k = %d, s = %d)\n", 
+                        div1, div2, n, k, shift);
                 if (div1 > 1)
                     if (insertBigFactor(Factors, div1)) {
                         factorsfound = true;
@@ -499,7 +502,8 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
             }
         }
         else 
-            break;
+            break;  /* exit loop if modpow = 1 or -1, because squaring it again 
+                    will give modpow = 1*/
     }
     return factorsfound;
 }

@@ -529,7 +529,7 @@ struct summary {
 std::vector <summary> results;
 
 /* print summary - 1 line per test */
-static void printSummary(void) {
+void printSummary(void) {
     long long sec, min, hour;
     double elSec;
     /* print column headings */
@@ -685,7 +685,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int testnum, const int method=0) {
+bool factortest(const Znum &x3, const int testnum, const int method) {
     fList factorlist;
     Znum Quad[4], result;
     long long totalFactors = 0;
@@ -1092,6 +1092,23 @@ static void doTests(void) {
     testcnt++;
     StrToZ(x3, "9649340769776349618630915417390658987772498722136713669954798667326094136661");
     factortest(x3, testcnt);  /* 76 digit pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16336323671446851071689");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16336829078767893614761");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16343905875827839164649");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+
+    testcnt++;
+    StrToZ(x3, "16306943745747543227641");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
 
     testcnt++;
     ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
@@ -2985,7 +3002,8 @@ static int processCmd(std::string command) {
                  << "                                   p2 = number size in bits \n"
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
-                 << "      Test 13 [p1[,p2]]      test factoring of pseudoprimes where p1 = no of tests, \n";
+                 << "      Test 13 [p1[,p2]] test factoring of weak   pseudoprimes where p1 = no of tests, \n"
+                 << "      Test 14 [p1]      test factoring of strong pseudoprimes where p1 = no of tests, \n";;
 
              return 1;
          }
@@ -3050,8 +3068,12 @@ static int processCmd(std::string command) {
              doTests12(p);
              return 1;
 
-         case 13: /* test for factoring pseudoprimes */
+         case 13: /* test for factoring (weak) pseudoprimes */
              doTests13(p);
+             return 1;
+
+         case 14: /* test for factoring (strong) pseudoprimes */
+             doTests14(p);
              return 1;
 
          default:

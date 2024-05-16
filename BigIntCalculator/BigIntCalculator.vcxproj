@@ -313,6 +313,10 @@
       <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
     </ClCompile>
+    <ClCompile Include="Test14.cpp">
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
+      <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
+    </ClCompile>
     <ClCompile Include="yafu.cpp">
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Strict</FloatingPointModel>
       <FloatingPointModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Strict</FloatingPointModel>
