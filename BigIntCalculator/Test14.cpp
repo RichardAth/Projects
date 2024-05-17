@@ -1,4 +1,5 @@
-#include "pch.h"
+﻿#include "pch.h"
+#include <complex>
 
 /* OEIS A064238: Values of m such that N = (am+1)(bm+1)(cm+1) is a 3-Carmichael
 number (A087788), where a,b,c = 1,2,3. N ranges from  1729 to
@@ -1446,6 +1447,60 @@ struct summary {
 
 extern std::vector <summary> results;
 
+/* solve cubic equation ax^3 + bx^2 + cx + d = 0
+a, b, c and d are restricted to real (floating point) numbers.
+the roots returned may be complex (floating point) numbers.
+The method used here is from Wikipedia, and based on Cardano's formula.
+see https://en.wikipedia.org/wiki/Cubic_equation
+*/
+typedef std::complex<double> cmplx;
+void solveCubic(double a, double b, double c, double d,
+    cmplx& r1, cmplx& r2, cmplx& r3) {
+    /* Let
+    ∆0 = b^2 -3ac
+    ∆1 = 2b^3 – 9abc + 27(a^2)d
+    */
+    const double delta0 = (b * b) - (3 * a * c);
+    const double delta1 = (2 * b * b * b) - (9 * a * b * c) + (27 * a * a * d);
+    const double disc = delta1 * delta1 - 4 * delta0 * delta0 * delta0;
+
+    /* primitive cube root of unity, that is (- 1 ± √–3)/2 */
+    const cmplx pr1 = (cmplx)(-1.0 + std::sqrt((cmplx)-3.0)) / 2.0;
+    const cmplx i(0.0, 1.0);
+
+
+    /* Then let
+     C = 3√((∆1 ± √(∆1^2 - 4∆0^3)/2)    // (3√ is cube root) */
+    cmplx cc = std::sqrt((cmplx)disc);
+    cmplx C = std::pow(((cmplx)delta1 + cc) / 2.0, 1.0 / 3.0);
+    if (C.real() == 0.0 && C.imag() == 0.0)
+        C = std::pow(((cmplx)delta1 - cc) / 2.0, 1.0 / 3.0);
+
+    /* if cc is zero switching its sign makes no difference */
+    if (C.real() == 0.0 && C.imag() == 0.0) {
+        r1 = r2 = r3 = -b / (3 * a);
+    }
+    else {
+        /* one of the roots is: x = -(b + C+ ∆0/C) /3a */
+        r1 = -(b + C + delta0 / C) / (3 * a);
+
+        r2 = -(b + pr1 * C + delta0 / (C * pr1)) / (3 * a);
+        r3 = -(b + pr1 * pr1 * C + delta0 / (C * pr1 * pr1)) / (3 * a);
+    }
+
+    return;
+}
+
+
+/* get a Carmichael number */
+Znum getCarm(const int index) {
+    Znum m, N;
+    assert(index <= sizeof(generator) / sizeof(generator[0]));
+    m = generator[index];
+    N = (m + 1) * (2 * m + 1) * (3 * m + 1);
+    return N;
+}
+
 /* get a carmichael number which is a strong base-2 pseudoprime, and cannot be 
    factorised by trial division & pollard-rho */
 Znum getCarm2(const int index) {
@@ -1456,12 +1511,72 @@ Znum getCarm2(const int index) {
     return N;
 }
 
+/* get Carmichael number by a brute force approach. Numdigits specifies the
+approximate size in base 10, if start  is not specified. The value of start for
+next time is returned. */
+Znum getCarm3(const int numdigits, Znum &start) {
+    Znum limit, kmin, k, km1, p1, p2, p3, Carm;
+    double a, b, c, d, flimit;
+    cmplx r1, r2, r3;
+    int numtype;
+
+    if (start > 0)
+        k = start;
+    else {
+        mpz_ui_pow_ui(ZT(limit), 10, numdigits);  /* get lower limit for carmichael num. */
+        if (numdigits < 145) {
+            flimit = mpz_get_d(ZT(limit));
+            /* use the formula N = (6k + 1)(12k + 1)(18k + 1). If  all 3 factors are
+            prime, N is a Carmichael number.
+            N = 1296k^3 + 396k^2 + 36k +1
+            i.e. 1296k^3 + 396k^2 + 36k +1-N = 0
+            use Cardano's method to get values of k, given N */
+            a = 1296;
+            b = 396;
+            c = 36;
+            d = 1 - flimit;
+            solveCubic(a, b, c, d, r1, r2, r3);
+            mpz_set_d(ZT(kmin), r2.real());
+        }
+        else {
+            /* more approximate, avoids overflow issues */
+            mpz_nthroot(ZT(kmin), ZT(limit), 3);
+            kmin /= 1000;
+        }
+
+#ifdef _DEBUG
+        //std::cout << "N = " << flimit << " r1 = " << r1 << " r2 = " << r2 << " r3 = " << r3 << '\n';
+        //std::cout << "k = " << kmin << '\n';
+#endif
+ 
+        k = kmin;
+    }
+    while (true) {
+        k++;
+        p1 = 6 * k + 1;
+        p2 = 12 * k + 1;
+        p3 = 18 * k + 1;
+        numtype = mpz_bpsw_prp(ZT(p1));
+        if (numtype == PRP_COMPOSITE || numtype == PRP_SPSP || numtype == PRP_WPSP)
+            continue;
+        numtype = mpz_bpsw_prp(ZT(p2));
+        if (numtype == PRP_COMPOSITE || numtype == PRP_SPSP || numtype == PRP_WPSP)
+            continue;
+        numtype = mpz_bpsw_prp(ZT(p3));
+        if (numtype == PRP_COMPOSITE || numtype == PRP_SPSP || numtype == PRP_WPSP)
+            continue;
+        Carm = p1 * p2 * p3;  /* p1, p2 & p3 are prime */
+        start = k;            /* use new start value next time to get a different Carmichael number */
+        return Carm; 
+    }
+}
+
 void doTests14(const std::vector<std::string>& p) {
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
-    long long p2 = 0;  
+    long long p2 = 0;  // size desired for number (no of digits, base 10)
     long long p3 = 0;
     const int size2 = sizeof(gen2) / sizeof(gen2[0]);
-    Znum carm;
+    Znum carm, startval=0;
     auto start = std::clock();	// used to measure execution time
 
     results.clear();
@@ -1481,8 +1596,18 @@ void doTests14(const std::vector<std::string>& p) {
         p1 = size2;
         std::cout << "use maximum value " << p1 << " for number of tests \n";
     }
+    if (p2 > 250) {
+        p2 = 250;
+        std::cout << "use maximum value " << p2 << " for size of numbers \n";
+    }
+
     for (int ctr = 0; ctr < p1; ctr++) {
-        carm = getCarm2(ctr);   /* get a carmichael number */
+        if (p2 == 0) {
+            carm = getCarm2(ctr);   /* get a carmichael number */
+        }
+        else {
+            carm = getCarm3((int)p2, startval);
+        }
         factortest(carm, ctr + 1);
     }
 
