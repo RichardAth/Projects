@@ -388,6 +388,12 @@ TEST 11 [p1[,p2[,p3]]] Test R3 and R3h functions. p1 = mumber of tests,
 TEST 12 [p1[,p2[,p3]]] Test R4 function. p1, p2 and p3 are used in the 
         same way as for TEST 11
 
+TEST 13 [p1[,p2]] test factoring of weak pseudoprimes where p1 = no of tests.
+                  p2 = 1st prime used as base to generate pseudoprimes
+
+Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests
+                  p2 = size of numbers to be tested (no of digits, base 10)
+
 Test example:
 
 enter expression to be processed, or HELP, or EXIT

@@ -1511,11 +1511,11 @@ Znum getCarm2(const int index) {
     return N;
 }
 
-/* get Carmichael number by a brute force approach. Numdigits specifies the
-approximate size in base 10, if start  is not specified. The value of start for
+/* get Carmichael number by a brute force approach. If start  is not specified,
+numdigits specifies the approximate size in base 10. The value of start for
 next time is returned. */
 Znum getCarm3(const int numdigits, Znum &start) {
-    Znum limit, kmin, k, km1, p1, p2, p3, Carm;
+    Znum limit, kmin, k, p1, p2, p3, Carm;
     double a, b, c, d, flimit;
     cmplx r1, r2, r3;
     int numtype;
@@ -1525,9 +1525,8 @@ Znum getCarm3(const int numdigits, Znum &start) {
     else {
         mpz_ui_pow_ui(ZT(limit), 10, numdigits);  /* get lower limit for carmichael num. */
         if (numdigits < 145) {
-            flimit = mpz_get_d(ZT(limit));
-            /* use the formula N = (6k + 1)(12k + 1)(18k + 1). If  all 3 factors are
-            prime, N is a Carmichael number.
+            flimit = mpz_get_d(ZT(limit));  /* convert limit to floating point */
+            /* use the formula N = (6k + 1)(12k + 1)(18k + 1). 
             N = 1296k^3 + 396k^2 + 36k +1
             i.e. 1296k^3 + 396k^2 + 36k +1-N = 0
             use Cardano's method to get values of k, given N */
@@ -1537,22 +1536,28 @@ Znum getCarm3(const int numdigits, Znum &start) {
             d = 1 - flimit;
             solveCubic(a, b, c, d, r1, r2, r3);
             mpz_set_d(ZT(kmin), r2.real());
+#ifdef _DEBUG
+            //std::cout << "N = " << flimit << " r1 = " << r1 << " r2 = " << r2 << " r3 = " << r3 << '\n';
+            //std::cout << "k = " << kmin << '\n';
+#endif
+
         }
         else {
-            /* more approximate, avoids overflow issues */
+            /* more approximate, avoids overflow issues. use  N ≈ 1296k^3  
+            so that k ≈ (N/1296)^(1/3)*/
+            limit /= 1296;
             mpz_nthroot(ZT(kmin), ZT(limit), 3);
-            kmin /= 1000;
-        }
-
 #ifdef _DEBUG
-        //std::cout << "N = " << flimit << " r1 = " << r1 << " r2 = " << r2 << " r3 = " << r3 << '\n';
-        //std::cout << "k = " << kmin << '\n';
+            //std::cout << "k = " << kmin << '\n';
 #endif
- 
+        }
         k = kmin;
     }
+
     while (true) {
-        k++;
+        /* use the formula N = (6k + 1)(12k + 1)(18k + 1). If  all 3 factors are
+            prime, N is a Carmichael number. */
+        k++;  /* keep trying new values of k until we find one that works */
         p1 = 6 * k + 1;
         p2 = 12 * k + 1;
         p3 = 18 * k + 1;
@@ -1606,7 +1611,7 @@ void doTests14(const std::vector<std::string>& p) {
             carm = getCarm2(ctr);   /* get a carmichael number */
         }
         else {
-            carm = getCarm3((int)p2, startval);
+            carm = getCarm3((int)p2, startval);  /* get a carmichael number */
         }
         factortest(carm, ctr + 1);
     }
