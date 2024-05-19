@@ -53,7 +53,8 @@ struct counters {
 	int paric = 0;          // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
-	int power = 0;		   // perfect power
+	int psp = 0;           // base-2 pseudoprime
+	int powerCnt = 0;		   // perfect power
 
 };
 
@@ -87,19 +88,8 @@ public:
 class fList {
 private:
 	std::vector <zFactors> f;
+	counters ct;     /* counters showing how the factors were found */
 
-	/* counters showing how the factors were found */
-	int pm1 = 0;           // power + / -1
-	int tdiv = 0;          // trial division
-	int prho = 0;          // Pollard-rho
-	int ecm = 0;           // elliptic curve
-	int siqs = 0;          // SIQS
-	int msieve = 0;        // Msieve
-	int yafu = 0;          // YAFU
-	int pari = 0;          // found by Parilib
-	int carm = 0;          // Carmichael
-	int leh = 0;           // Lehman:
-	int powerCnt = 0;	   // perfect power
 public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
@@ -107,12 +97,13 @@ public:
 	friend void TrialDiv(fList &Factors, long long LehmanLimit);
 	friend bool factor(const Znum &toFactor, fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
-
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
+	friend bool getfactors(const Znum& n, uint32_t b, fList& Factors);
+	friend bool factorCarmichael(const Znum& p, fList& Factors);
 
 	/* methods that are in the class */
 
@@ -187,7 +178,7 @@ See also https://oeis.org/A002322 */
 		Znum result = 1, term;
 		for (auto i : this->f) {
 			if (i.Factor == 2 && i.exponent > 2)
-				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2
+				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2)
 			else {
 				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
 				term = term * (i.Factor - 1);	                     // (p^(e-1)-1)*(p-1)
@@ -262,28 +253,30 @@ for factors found by YAFU or Msieve */
 		if (this->f.size() == 1 && this->f[0].exponent == 1)
 			return;  // number is prime or has not been factored
 		std::cout << (lang? "encontrado por" : "found by");
-		if (this->tdiv > 0)
-			std::cout << (lang? " la división de prueba: " : " trial division: ") << this->tdiv;
-		if (this->prho > 0)
-			std::cout << " Pollard-rho: " << this->prho;
-		if (this->pm1 > 0)
-			std::cout << " power +/- 1: " << this->pm1;
-		if (this->ecm > 0)
-			std::cout << (lang? "curvas elípticas: " : " elliptic curve: ") << this->ecm;
-		if (this->siqs > 0)
-			std::cout << " SIQS: " << this->siqs;
-		if (this->msieve > 0)
-			std::cout << " Msieve: " << this->msieve;
-		if (this->yafu > 0)
-			std::cout << " YAFU:   " << this->yafu;
-		if (this->pari > 0)
-			std::cout << " PARI:   " << this->pari;
-		if (this->carm > 0)
-			std::cout << " Carmichael: " << this->carm;
-		if (this->leh > 0)
-			std::cout << " Lehman: " << this->leh;
-		if (this->powerCnt > 0)
-			std::cout << " Perfect Power: " << this->powerCnt;
+		if (this->ct.tdiv > 0)
+			std::cout << (lang? " la división de prueba: " : " trial division: ") << this->ct.tdiv;
+		if (this->ct.prho > 0)
+			std::cout << " Pollard-rho: " << this->ct.prho;
+		if (this->ct.pm1 > 0)
+			std::cout << " power +/- 1: " << this->ct.pm1;
+		if (this->ct.ecm > 0)
+			std::cout << (lang? "curvas elípticas: " : " elliptic curve: ") << this->ct.ecm;
+		if (this->ct.siqs > 0)
+			std::cout << " SIQS: " << this->ct.siqs;
+		if (this->ct.msieve > 0)
+			std::cout << " Msieve: " << this->ct.msieve;
+		if (this->ct.yafu > 0)
+			std::cout << " YAFU:   " << this->ct.yafu;
+		if (this->ct.paric > 0)
+			std::cout << " PARI:   " << this->ct.paric;
+		if (this->ct.carm > 0)
+			std::cout << " Carmichael: " << this->ct.carm;
+		if (this->ct.psp > 0)
+			std::cout << " PseudoP: " << this->ct.psp;
+		if (this->ct.leh > 0)
+			std::cout << " Lehman: " << this->ct.leh;
+		if (this->ct.powerCnt > 0)
+			std::cout << " Perfect Power: " << this->ct.powerCnt;
 		std::cout << '\n';
 	}
 
@@ -497,6 +490,17 @@ Repeated factors: No or Yes
 		}
 	}
 
+	/* calculate the radical of 'this'. N.B: in general the radical is not
+	 equal to to the square-free part, as defined in sqfree(). Note: if n is zero
+	 it cannot be factorised and the radical is undefined. */
+	Znum radical() const {
+		Znum result = 1;
+		for (auto i : this->f) {
+			result *= i.Factor;
+		}
+		return result;
+	}
+
 	/* checks whether the original number was prime */
 	bool isPrime() const {
 		// this only works if factorisation is complete!
@@ -566,18 +570,24 @@ Repeated factors: No or Yes
 	/* copy counters */
 	struct counters getCtrs() const {
 		struct counters temp;
-		temp.carm   = this->carm;    // Carmichael
-		temp.ecm    = this->ecm;     // elliptic curve
-		temp.leh    = this->leh;     // Lehman
-		temp.msieve = this->msieve;  // Msieve
-		temp.pm1    = this->pm1;     // power + / -1
-		temp.power  = this->powerCnt;   // perfect power
-		temp.prho   = this->prho;    // Pollard-rho
-		temp.siqs   = this->siqs;    // SIQS
-		temp.tdiv   = this->tdiv;    // trial division
-		temp.yafu   = this->yafu;    // YAFU
-		temp.paric  = this->pari;    // PARI
+		temp = this->ct;  /* copy all counters */
 		return temp;
+	}
+
+	/* return true if all factors are prime i.e. factorisation is complete,
+	otherwise false */
+	bool factComplete() {
+		for (size_t i = 0; i < this->f.size(); i++) {
+			if (this->f[i].upperBound == -1)
+				continue;
+			if (PrimalityTest(this->f[i].Factor, this->f[i].upperBound) == 0) {
+				this->f[i].upperBound = -1;
+				continue;
+			}
+			else 
+				return false;  /* found a non-prime factor*/
+		}
+		return true;
 	}
 
 };   /* end of class flist */

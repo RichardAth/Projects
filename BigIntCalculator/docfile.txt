@@ -104,13 +104,14 @@ Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime
                   factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
-                  1 for probable prime, 2 for definite prime. 
+                  4 for probable prime, 3 for definite prime, 1 or 2 for base-2 
+                  pseudoprime which is NOT prime.
                   considered to be 100% reliable for numbers up to 10000 digits
 APRCL(n)        : Adleman-Pomerance-Rumely primality test. If the number is > 6021 
                   digits it reverts to the BPSW test. Returns zero if n is 
-                  composite, 1 for probable prime (only if BPSW used), 2 for a
-                  definite prime. WARNING: very slow for large numbers e.g. 20s 
-                  for 400 digits.
+                  composite, 4 for probable prime (only if BPSW used), 1 or 2 for a
+                  BPSW base-2 pseudoprime, 3 for a definite prime.
+                  WARNING: very slow for large numbers e.g. 20s for 400 digits.
 ISPOWERFUL(n)   : returns -1 if n is a powerful number, 0 if not. A number is
                   powerful if and only if every prime factor has an exponent 2 or 
                   more. Equivalently, a powerful number is the product of a 
@@ -120,6 +121,9 @@ ISFUNDAMENTAL(n): returns -1 if n is a Fundamental Discriminant, otherwise 0.
 ISPOLYGONAL(n, s): returns -1 if n is a polygonal number, otherwise 0. s 
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
+ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+                  1 for composite non-Carmichael numbers, and 2 for prime numbers.
+                  If t is omitted its default value is 16.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n, x)   : Sum of xth power of positive divisors of n, either prime or 
                   composite. if x = 0 the result is the same as the NumDivs function.
@@ -192,7 +196,12 @@ GF(x)           : Gauss Factorial of x, defined as the product of all positive
 QUADDISC(x)     : Discriminant of quadratic field Q(sqrt(x)). 
 EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
                   x must be <= 9022 to limit the result to 30,000 digits. 
-
+PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31, 
+                  because for large factors of n the calculation might take too 
+                  long.
+ISSQUAREFREE(n) : returns -1 if n is square-free, otherwise 0.
+CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
+RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
 [OTHER]
 other commands: 
 SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI, X, 
@@ -379,6 +388,12 @@ TEST 11 [p1[,p2[,p3]]] Test R3 and R3h functions. p1 = mumber of tests,
 TEST 12 [p1[,p2[,p3]]] Test R4 function. p1, p2 and p3 are used in the 
         same way as for TEST 11
 
+TEST 13 [p1[,p2]] test factoring of weak pseudoprimes where p1 = no of tests.
+                  p2 = 1st prime used as base to generate pseudoprimes
+
+Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests
+                  p2 = size of numbers to be tested (no of digits, base 10)
+
 Test example:
 
 enter expression to be processed, or HELP, or EXIT
@@ -540,8 +555,14 @@ A. If the factor is a perfect power replace it with the number which is the root
    and adjust the the factor's exponent accordingly. Although such numbers are  
    rare this is necessary because SIQS and ECM do not work for numbers which are
    perfect powers.
-B. Test whether the number is prime: 
-   If it is a Carmichael number factorise it using a specific algorithm. 
+B. Test whether the number is prime. The test used also recognises base-2 pseudoprimes
+   which are in fact composite: 
+   If it is a base-2 pseudoprime try to factorise it using a specific algorithm
+   designed for Carmichael numbers, but which also often works for other 
+   pseudoprimes. If the carmichael number method is unsuccessful and the number
+   is a base-2 weak pseudoprime another method is then used which always yields
+   a result but can only be used for numbers which are weak pseudoprimes to a 
+   known base.   
    If it is prime mark it as such. 
    Otherwise either:
       factorise it using built-in ECM, SIQS and Lehman algorithms. This method is 
@@ -750,17 +771,18 @@ Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime
 [ISPRIME]
 IsPrime(n)  returns zero if n is composite, -1 if it is a probable prime.
 [BPSW]
-BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 
-          1 for probable prime, 2 for definite prime. 
+BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 4 for
+          probable prime, 3 for definite prime, 1 or 2 for base-2 pseudoprime
+          which is NOT prime.
           considered to be 100% reliable for numbers up to 10000 digits
 [APRCL]
 APRCL(n)  Adleman-Pomerance-Rumely primality test. If the number is > 6021 
           digits it reverts to the BPSW test. Returns zero if n is 
-          composite, 1 for probable prime (only if BPSW used), 2 for a
-          definite prime. Unlike other, more efficient algorithms for this 
-          purpose, it avoids the use of random numbers, so it is a 
-          deterministic primality test. WARNING: very slow for large 
-          numbers e.g. 20s for 400 digits
+          composite, 4 for probable prime (only if BPSW used), 3 for a
+          definite prime, , 1 or 2 for a BPSW base-2 pseudoprime. Unlike other, 
+          more efficient algorithms for this purpose, it avoids the use of random 
+          numbers, so it is a deterministic primality test. WARNING: very slow 
+          for large numbers e.g. 20s for 400 digits
 [ISPOWERFUL]
 ISPOWERFUL(n)   returns -1 if n is a powerful number, 0 if not. A number is
                 powerful if and only if every prime factor has an exponent 2 or 
@@ -884,6 +906,22 @@ QUADDISC(x)  Discriminant of quadratic field Q(sqrt(x)).
 [EULERFRAC]
 EULERFRAC(x)  Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
               x must be <= 9022 to limit the result to 30,000 digits. 
+[PISANO]
+PISANO(n)    Pisano period for n. n must be < 2^63. The largest factor of n must 
+             be < 2^31, because for large factors of n the calculation might take 
+             too long.
+             If n = 2 * 5^r, then pisano(n) = 6n.
+             If n = 5^r, or n = 6 * 5^r, then pisano(n) = 4n, otherwise pisano(n) < 4n. 
+[CORE]
+CORE(n): unique square-free integer d dividing n such that n/d is a square. If n 
+         is a perfect square core(n) = 1. If n is square-free, core(n) = n.
+[RAD]
+RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
+[ISCARMICHAEL]
+ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+              1 for composite non-Carmichael numbers, and 2 for prime numbers.
+              If t is omitted its default value is 16, which gives a 99.998% 
+              probability that the result is correct
 [X]
 X    switch to hexadecimal o/p.
 [D]

@@ -79,7 +79,7 @@ static INT_PTR helpDialogAct(HWND DiBoxHandle,
             button = wpLo - general;  /* general -> 0, function -> 1 etc. */
             hResp.radiobutton = button;
             //if (verbose >0)
-            //    std::cout << "button = " << butttext[button] << '\n';
+            //    std::cout << "button = " << buttText[button] << '\n';
             return FALSE;
 
         case IDOK:       /* OK         */
@@ -166,7 +166,7 @@ void helpfunc(const std::vector<std::string>& command)
     /* list of topics that can be selected (usually via the help dialog box). 
        If new topics are addded to the help file the dialog box and associated 
        functions should also be updated. */
-    const char butttext[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
+    const char buttText[][20] = { "HELP", "FUNCTION", "EXPRESSION", "OTHER",
             "YAFU", "TEST", "MSIEVE", "BACKGROUND", "LOOP", "QMES",
             "PARI", "AYUDA" };
 
@@ -180,17 +180,18 @@ void helpfunc(const std::vector<std::string>& command)
         if (helptopic.empty()) {
             helpdiag();  /* result saved in global hResp */
             if (verbose > 0 && hResp.Ok_Cancel == IDOK) {
-                std::cout << "button = " << butttext[hResp.radiobutton] << '\n';
+                std::cout << "button = " << buttText[hResp.radiobutton] << '\n';
             }
             if (hResp.Ok_Cancel == IDCANCEL) {
                 std::cout << "help cancelled \n";
                 return;
             }
-            helptopic = butttext[hResp.radiobutton];
+            helptopic = buttText[hResp.radiobutton];
         }
     }
     else   /* español. Spanish language help is not divided into topics. */
-        helptopic = butttext[11];  /* AYUDA */
+        if (helptopic.empty())
+            helptopic = buttText[11];  /* AYUDA */
 retry:
     //open the doc file and search for a matching topic
     errno_t ecode = fopen_s(&doc, helpFilePath.data(), "r");
@@ -251,17 +252,21 @@ retry:
 
         //is this a header?
         if ((str[0] == '[') && (str[std::strlen(str) - 2] == ']')) {
+            if (_stricmp(helptopic.c_str(), "LIST")== 0) {
+                wprintf_s(L"%S", str); /* print header*/
+            }
+            else {
+                if (printtopic)
+                    break;  /* we have reached the start of the next topic, so exit
+                               Only print 1 topic per help command */
 
-            if (printtopic)
-                break;  /* we have reached the start of the next topic, so exit
-                           Only print 1 topic per help command */
-
-                           //does it match our topic?
-            str[std::strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-            if (_stricmp(helptopic.c_str(), str + 1) ==0)
-                /* we get a match if the topic between [ and ] = helptopic */
-                printtopic = true;   /* we have found the required topic*/
-            lineCount = 0;    /* reset line count */
+                               //does it match our topic?
+                str[std::strlen(str) - 2] = '\0'; /* overwrite ']' with null */
+                if (_stricmp(helptopic.c_str(), str + 1) == 0)
+                    /* we get a match if the topic between [ and ] = helptopic */
+                    printtopic = true;   /* we have found the required topic*/
+                lineCount = 0;    /* reset line count */
+            }
         }
         else {  /* not a header line */
             if (printtopic) {
@@ -282,7 +287,7 @@ retry:
     }
 
     if (std::feof(doc)) {
-        if (printtopic)
+        if (printtopic || (_stricmp(helptopic.c_str(), "LIST") == 0))
             std::wprintf(L"\n");   /* contrary to the POSIX standard, the last line of the file
                             may not end with newline */
         else

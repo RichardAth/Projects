@@ -529,12 +529,12 @@ struct summary {
 std::vector <summary> results;
 
 /* print summary - 1 line per test */
-static void printSummary(void) {
+void printSummary(void) {
     long long sec, min, hour;
     double elSec;
     /* print column headings */
     printf_s("Test Num Size   time      Unique Factors Total Factors     2nd Fac");
-    printf_s(" tdv prh leh crm pm1 ecm siq pwr yaf msv pari \n");
+    printf_s(" tdv prh leh crm psp pm1 ecm siq pwr yaf msv pari \n");
     for (auto res : results) {
         /* truncate elapsed time to nearest second */
         sec = (long long)std::floor(res.time); // convert to an integer
@@ -551,10 +551,10 @@ static void printSummary(void) {
 
         /* print counters showing how factors were found */
         printf_s("     %8d   %8d     %8d", res.NumFacs, res.totalFacs, res.sndFac);
-        printf_s("    %3d %3d %3d %3d %3d %3d ",
-            res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm,
+        printf_s("    %3d %3d %3d %3d %3d %3d %3d ",
+            res.ctrs.tdiv, res.ctrs.prho, res.ctrs.leh, res.ctrs.carm, res.ctrs.psp,
             res.ctrs.pm1, res.ctrs.ecm);
-        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.power, res.ctrs.yafu,
+        printf_s("%3d %3d %3d %3d %3d \n", res.ctrs.siqs, res.ctrs.powerCnt, res.ctrs.yafu,
             res.ctrs.msieve, res.ctrs.paric);
     }
 
@@ -685,7 +685,7 @@ static void doFactors(const Znum &Result, bool test) {
 
 /* perform some simple tests. Returns true if x3 is prime 
 method = 0 for standard factorisation, != 0 to use only YAFU for factorisation */
-static bool factortest(const Znum &x3, const int testnum, const int method=0) {
+bool factortest(const Znum &x3, const int testnum, const int method) {
     fList factorlist;
     Znum Quad[4], result;
     long long totalFactors = 0;
@@ -899,10 +899,12 @@ static void doTests(void) {
         "SQRT(1234320)",               1110,
         "NROOT(2861381721051424,5)",   1234,
         "LLT(3217)",                      1,  // 2^3217-1 is prime
-        "BPSW(2^99-1)",                   0,  // not a prime number
-        "BPSW(2^127-1)",                  1,  // a prime number
+        "BPSW(2^99-1)",      PRP_COMPOSITE,   // not a prime number
+        "BPSW(2^127-1)",            PRP_PRP,  // a prime number
+        "bpsw(90256390764228001)",  PRP_WPSP, // weak pseudoprime
+        "BPSW(142899381901)",       PRP_SPSP, // strong pseudoprime
         "ISPRIME(2^127-1)",              -1,  // a prime number
-        "aprcl(2^127-1)",                 2,  // a prime number
+        "aprcl(2^127-1)",     APRTCLE_PRIME,  // a prime number
         "ispow(2^127-1)",                 0,  /* not a perfect power */
         "ispow(2^127)",                  -1,  /* a perfect power */
         "-not1",                          2,  // operators are processed from right to left
@@ -957,7 +959,10 @@ static void doTests(void) {
         "ispolygonal(449921,10000)",      0,
         "issquarefree(99998)",           -1,
         "issquarefree(99999)",            0,
-
+        "pisano(17!)",           3483648000,
+        "iscarmichael(1713045574801)",    0,
+        "iscarmichael(1713045574803)",    1,
+        "iscarmichael(1713045574819)",    2,
     };
 
     results.clear();
@@ -1040,29 +1045,70 @@ static void doTests(void) {
 
     /* test using carmichael numbers.  */
     unsigned long long int carmichael[] = { 90256390764228001, 18118463305678126129, 
-        18265521244069461529,  18349357898532971521, 18308657203978189969 };
+        18265521244069461529,  18349357898532971521, 18308657203978189969,
+        804230935331967001, 1452868638752967041 };
     for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
         testcnt++;
         factortest(carmichael[i], testcnt);
     }
 
-    ComputeExpr("16344221851913485532689", x3, asgCt);
+    // ComputeExpr("16344221851913485532689", x3, asgCt);
+    StrToZ(x3, "16344221851913485532689");
     testcnt++;
     factortest(x3, testcnt);  /* 23 digit carmichael number */
 
-    ComputeExpr("56897193526942024370326972321", x3, asgCt);
+    StrToZ(x3, "56897193526942024370326972321");
     testcnt++;
-    factortest(x3, testcnt);  /* 29 digit pseudo-prime number */
+    factortest(x3, testcnt);  /* 29 digit pseudo-prime number (is a 2-SPRP but 
+       is not a carmichael number */
 
-    /* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
-    ComputeExpr("2967449566868551055015417464290533273077199179985304335099507"
-        "5531276838753171770199594238596428121188033664754218345562493168782883", x3, asgCt);
+    StrToZ(x3, "1611901092819505566274901");
+    testcnt++;
+    factortest(x3, testcnt);  /* 25 digit pseudoprime number */
+
+    StrToZ(x3, "7259357160980020553885324958544388511061");
+    testcnt++;
+    factortest(x3, testcnt);  /* 40 digit pseudoprime number */
+
+     /* set x3 to large prime. see https://en.wikipedia.org/wiki/Carmichael_number */
+    StrToZ(x3, "2967449566868551055015417464290533273077199179985304335099507"
+        "5531276838753171770199594238596428121188033664754218345562493168782883");
     x4 = x3 * (313 * (x3 - 1) + 1) * (353 * (x3 - 1) + 1);
     /* in general numbers > about 110 digits cannot be factorised in a reasonable time 
     but this one can, because a special algorithm just for Carmichael numbers is used. */
     testcnt++;
     factortest(x4, testcnt);   // 397-digit Carmichael number
     std::cout << "factorised 397-digit Carmichael number \n";
+
+    // see https://math.stackexchange.com/questions/3029794/large-carmichael-number
+    testcnt++;
+    ComputeExpr("10^170 + 8786356", x3, asgCt);
+    /* if the 3 expressions in brackets below are all prime, then x4 is a 
+    carmichael number. (From a 1939 theorem by Jack Chernick)*/
+    x4 = (6 * x3 + 1) * (12 * x3 + 1) * (18 * x3 + 1);
+    factortest(x4, testcnt);
+    std::cout << "factorised 514-digit Carmichael number \n";
+
+    testcnt++;
+    StrToZ(x3, "9649340769776349618630915417390658987772498722136713669954798667326094136661");
+    factortest(x3, testcnt);  /* 76 digit pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16336323671446851071689");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16336829078767893614761");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+    testcnt++;
+    StrToZ(x3, "16343905875827839164649");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+
+
+    testcnt++;
+    StrToZ(x3, "16306943745747543227641");
+    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
 
     testcnt++;
     ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
@@ -1128,6 +1174,7 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     t will be slightly less than that of r.
     */
     Znum r, s, t, t2, p0;
+    int rv;
 
     //1. s and t should be about half the bitlength of p
     for (;;) {
@@ -1147,10 +1194,12 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     // 2 Find the first prime r in the sequence 2t + 1, 4t+1 6t+1 ...
     t2 = t * 2;
     r = t2 + 1;
-    while (mpz_bpsw_prp(ZT(r)) == 0)
-    //while (!mpz_likely_prime_p(ZT(r), state, 0))
-        r += t2;
-
+    while (true) {
+        rv = mpz_bpsw_prp(ZT(r));
+        if (rv == PRP_PRP || rv == PRP_PRIME)
+            break;
+         r += t2;
+    }
 
     // 3. Compute p0 = 2(sr-2 mod r)s - 1.
     p0 = ((s*r - 2) % r)*s * 2 - 1;
@@ -1160,9 +1209,12 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     while (gcd(p, r*s) != 1)
         p+=2;  /* if p has any common factors with r or s we need to make an
                adjustment. Otherwise we would never find a prime. */
-    while (mpz_bpsw_prp(ZT(p)) == 0)
-    //while (!mpz_likely_prime_p(ZT(p), state, 0))
-        p += 2 * r*s;
+    while (true) {
+        rv = mpz_bpsw_prp(ZT(p));
+        if (rv == PRP_PRP || rv == PRP_PRIME)
+            break;
+        p += 2 * r * s;
+    }
     return;
 }
 
@@ -1767,7 +1819,7 @@ static void doTests4(void) {
 /* tests using only YAFU for factorisation */
 static void doTests5(void) {
     results.clear();
-    int testcnt = 1, asgCt;
+    int testcnt = 1;
 
     Znum num = 49728103; // 7001 * 7103
     factortest(num, testcnt, 1);  // test 1
@@ -1782,8 +1834,9 @@ static void doTests5(void) {
     *117445 937227 520353 139789 517076 610399  
     (7 factors)   */
     testcnt++;
-    ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", 
-        num, asgCt);
+    //ComputeExpr("2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813", 
+    //    num, asgCt);
+    StrToZ(num, "2056802480868100646375721251575555494408897387375737955882170045672576386016591560879707933101909539325829251496440620798637813");
     factortest(num, testcnt, 1);
 
     //factorise 57 digit number      test 3
@@ -1794,7 +1847,8 @@ static void doTests5(void) {
       P18 = 248158049830971629
     */
     testcnt++;
-    ComputeExpr("520634955263678254286743265052100815100679789130966891851", num, asgCt);
+    //ComputeExpr("520634955263678254286743265052100815100679789130966891851", num, asgCt);
+    StrToZ(num, "520634955263678254286743265052100815100679789130966891851");
     factortest(num, testcnt, 1);
 
     //factorise 80 digit number (about 3 minutes)   test 4
@@ -1802,28 +1856,32 @@ static void doTests5(void) {
        P32 = 18138544144503826077310252140817
     */
     testcnt++;
-    ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num, asgCt);
+    //ComputeExpr("43756152090407155008788902702412144383525640641502974083054213255054353547943661", num, asgCt);
+    StrToZ(num, "43756152090407155008788902702412144383525640641502974083054213255054353547943661");
     factortest(num, testcnt, 1);
 
     //factorise 85 digit number (about 7 mins)   // test 5
     /* factors are 1485325304578290487744454354798448608807999 and 
                    1263789702211268559063981919736415575710439 */
     testcnt++;
-    ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num, asgCt);
+    //ComputeExpr("1877138824359859508015524119652506869600959721781289179190693027302028679377371001561", num, asgCt);
+    StrToZ(num, "1877138824359859508015524119652506869600959721781289179190693027302028679377371001561");
     factortest(num, testcnt, 1);
 
     // factorise 94 digit number (about 60 mins)    test 6
     /* factors are 10910042366770069935194172108679294830357131379375349 and 
                    859735020008609871428759089831769060699941 */
     testcnt++;
-    ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num, asgCt);
+    //ComputeExpr("9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409", num, asgCt);
+    StrToZ(num, "9379745492489847473195765085744210645855556204246905462578925932774371960871599319713301154409");
     factortest(num, testcnt, 1);
 
     //factorise 100 digit number - takes many hours    test 7
     /* factor are 618162834186865969389336374155487198277265679 and
                   4660648728983566373964395375209529291596595400646068307 */
     testcnt++;
-    ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num, asgCt);
+    // ComputeExpr("2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453", num, asgCt);
+    StrToZ(num, "2881039827457895971881627053137530734638790825166127496066674320241571446494762386620442953820735453");
     factortest(num, testcnt, 1);
 
     printSummary();    // print summary - 1 line per test
@@ -2015,6 +2073,71 @@ static void doTests12(const std::vector<std::string>& p) {
     return;
 }
 
+/* test for factoring pseudoprimes */
+static void doTests13(const std::vector<std::string>& p) {
+    long long p1 = 0;  // number of tests; must be greater than 0, default is 20
+    long long p2 = 0;  // prime value to use (f not prime use next prime)  
+    long long p3 = 0;
+    long long llprime;
+    int base = 2;
+    Znum bp, n1, n2, n;
+    auto start = std::clock();	// used to measure execution time
+    results.clear();
+
+    if (p.size() >= 3)
+        p1 = std::atoll(p[2].data());
+    if (p.size() >= 4)
+        p2 = std::atoll(p[3].data());
+    if (p.size() >= 5)
+        p3 = std::atoll(p[4].data());
+    /* check whether parameter values are within acceptable ranges */
+    if (p1 <= 0) {
+        std::cout << "Use default 20 for number of tests \n";
+        p1 = 20;
+    }
+    if (p2 <23 || p2 > 1000) {
+        std::cout << "Use default 23 for 1st prime \n";
+        p2 = 23;
+    }
+    Znum prime = p2;
+   int rv = mpz_bpsw_prp(ZT(prime));
+   if (rv == PRP_SPSP || rv == PRP_WPSP || rv == PRP_COMPOSITE)
+       mpz_nextprime(ZT(prime), ZT(prime));  /* make sure we have a prime number */
+
+   for (int ctr = 1; ctr <= p1; ctr++) {
+       llprime = MulPrToLong(prime);
+       if (llprime > 331) {
+           break;     /* stop when numbers get too large */
+       }
+        mpz_ui_pow_ui(ZT(bp), base, llprime);  /* bp = b^prime */
+       n1 = (bp - 1) / (base - 1);
+       n2 = (bp + 1) / (base + 1);
+       n = n1 * n2;  /* n is a pseudoprime to base */
+       rv = mpz_bpsw_prp(ZT(n));
+       switch (rv) {
+       case PRP_SPSP:
+           std::cout << '\n' << n << " is strong pseudoprime, prime = " << llprime;
+           break;
+       case PRP_WPSP:
+           std::cout << '\n' << n << " is weak pseudoprime, prime = " << llprime;
+           break;
+       case PRP_COMPOSITE:
+           std::cout << '\n' << n << " is composite";
+           break;
+       case PRP_PRP:
+       case PRP_PRIME:
+       default:
+           abort();
+       }
+       factortest(n, ctr);  
+       mpz_nextprime(ZT(prime), ZT(prime));
+   }
+   auto end = std::clock();              // measure amount of time used
+   auto elapsed = (double)end - start;
+   PrintTimeUsed(elapsed, " time used = ");
+   printSummary();           // print 1 line per test
+   return;
+}
 
 std::vector<std::string> inifile;  // copy some contents of .ini here
 std::string iniPath;          // path to .ini file
@@ -2803,7 +2926,7 @@ static int processCmd(std::string command) {
         token = strtok_s(nullptr, seps, &next);
     }
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
-        p1 = std::stoi(p[1]);  /* if p[1] is a +ve decimal number set p1 to value */
+        p1 = std::atoi(p[1].c_str());  /* if p[1] is a +ve decimal number set p1 to value */
 
     /* do 1st characters of text in command match anything in list? */
     int ix = 0;
@@ -2878,7 +3001,9 @@ static int processCmd(std::string command) {
                  << "      Test 11 [p1[,p2[,p3]]]       test R3 & R3h functions, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
-                 << "                                   p2 = number size in bits \n";
+                 << "                                   p2 = number size in bits \n"
+                 << "      Test 13 [p1[,p2]] test factoring of weak   pseudoprimes where p1 = no of tests, \n"
+                 << "      Test 14 [p1]      test factoring of strong pseudoprimes where p1 = no of tests, \n";;
 
              return 1;
          }
@@ -2941,6 +3066,14 @@ static int processCmd(std::string command) {
 
          case 12: /* R4 tests */
              doTests12(p);
+             return 1;
+
+         case 13: /* test for factoring (weak) pseudoprimes */
+             doTests13(p);
+             return 1;
+
+         case 14: /* test for factoring (strong) pseudoprimes */
+             doTests14(p);
              return 1;
 
          default:

@@ -180,6 +180,10 @@ enum class opCode {
     fn_fundamental,       /* test whether x is a fundamental discriminant or not*/
     fn_polygonal,         /* test whether x is a polygonal number */
     fn_squarefree,        /* test whether x is squarefree or not */
+    fn_pisano,            /* calculate the Pisano period of n */
+    fn_core,              /* calculate square-free d such that n/d is a square. */
+    fn_radical,           /* get largest square-free divisor of n */
+    fn_iscarmichael,
     fn_invalid = -1,
 };
 
@@ -206,6 +210,7 @@ const static struct functions functionList[]{
     "B",         1,  opCode::fn_pp,			   // previous prime
     "CLASSNO",   1,  opCode::fn_classno,       // class number
     "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
+    "CORE",      1,  opCode::fn_core,          /* get square-free number */
     "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
     "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
     "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
@@ -216,6 +221,7 @@ const static struct functions functionList[]{
     "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
     "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
     "InvTot",    1,  opCode::fn_invtot,         // inverse totient
+    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael,  /* is a carmichael number? */
     "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
     "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
     "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
@@ -239,6 +245,7 @@ const static struct functions functionList[]{
     "NUMFACT",   1,  opCode::fn_numfact,
     "NROOT",     2,  opCode::fn_nroot,
     "N",         1,  opCode::fn_np,			// next prime
+    "PISANO",    1,  opCode::fn_pisano,     // Pisano period
     "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
     "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
     "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
@@ -246,6 +253,7 @@ const static struct functions functionList[]{
 
     "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
                                                quadratic field Q(sqrt(x))*/
+    "RAD",       1,  opCode::fn_radical,    /* get largest square-free divisor */
     "REVDIGITS", 2,  opCode::fn_revdigits,
     "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
     "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
@@ -878,10 +886,10 @@ static Znum powerBi(const Znum &x, unsigned __int64 n) {
 return adjusted num, square divisor, and factor list of divisor.*/
 static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
     fList factorlist;
-    zFactors temp;
     auto rv = factorise(num, factorlist, nullptr);
 
-    factorlist.sqfree(sqf);  // get factors of square in sqf
+    factorlist.sqfree(sqf);  // get factors of max square divisor in sqf,
+                             // also remove these factors from factorlist
 
     sq = 1;
     Znum x;
@@ -1121,9 +1129,10 @@ Znum llt(const Znum& p) {
     clock_t t1, t2, t3;
 
     /* 1st check if p is prime. */
-    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1 or 2*/
-    /* rv is 1 if p is probably prime, or 0 if p is definitely composite.*/
-    if (rv == 0) {
+    rv = mpz_bpsw_prp(ZT(p));  /* returns 0, 1, 2, 3 or 4 */
+    /* rv is 3 or 4 if p is (probably) prime, or 0 if p is composite,
+       1 or 2 for pseudoprime. */
+    if (rv == PRP_COMPOSITE || rv == PRP_SPSP || rv == PRP_WPSP) {
         lltTdivCnt++;  // count this result as found by trial division
         return 0;      // if p is composite, 2^p -1 is composite.
     }
@@ -1229,6 +1238,67 @@ static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr)
         return false;  /* not a polygonal number */
 }
 
+/* calculate LCM of a and b. Assumes that a and b are +ve. If this is not so
+caller must use llabs or similar to get magnitude. Mathematically, this does
+not alter the value of the lcm. If overflow occurs an exception is thrown. */
+uint64_t lcm(const uint64_t a, const uint64_t b) {
+    HRESULT rv;
+    uint64_t prod;
+
+    rv = ULongLongMult(a / gcd(a, b), b, &prod);
+    if (rv != S_OK) {
+        ThrowExc("integer overflow: ")
+    }
+    return prod;
+}
+
+/* calculate pisano period for number p. See
+https://en.wikipedia.org/wiki/Pisano_period
+In general, the pisano period π(p) <= 4p.
+If p is of the form 2 * 5^i, π(p)  =6p.*/
+long long pisano(const long long p) {
+    long long x[2] = { 1, 1 };
+    long long y[2];
+    long long k = 1;
+
+    if (p == 1)
+        return 1;
+ 
+    k = 1;   /* initialise count*/
+    do {
+        k++;  /* increment count */
+        y[0] = x[1];
+        y[1] = (x[0] + x[1]) % p;  /* get next fibonacci number, mod p*/
+        std::swap(x, y);
+        if (x[0] == 0 && x[1] == 1) {
+            return k;  /* sequence has looped, so exit, returning count */
+        }
+    } while (true);
+}
+
+/* calculate pisano period for composite number
+π(n) ≤ 6n, with equality if and only if n = 2·5^r, for r ≥ 1.
+Otherwise π(n) ≤ 4n.
+by factorising n, we can calculate π(p) for much smaller numbers,
+then combine them, hopefully speeding up the calculation.*/
+Znum pisanof(const long long n, const factorsS &f) {
+
+    Znum result = 1;
+    Znum pisanoV;
+
+    for (int i = 0; i < f.factorcount; i++) {
+        long long p = f.factorlist[i][0];
+        pisanoV = pisano(p);
+        int e = (int)f.factorlist[i][1];
+        while (e > 1) {
+            pisanoV *= p;
+            e--;
+        }
+        result = lcm(result, pisanoV);  /* combine with pisano value for
+                                   smaller factors*/
+    }
+    return result;
+}
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 All the others have two. Some operators can genererate an error condition
@@ -1491,7 +1561,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         result = ComputeNumDigits(p[0], p[1]);
         break;
     }
-    case opCode::fn_revdigits: {	// revdigits
+    case opCode::fn_revdigits: /* value of n with digits reversed in base d*/ {	
         if (p[1] <=1 )
             return retCode::EXPR_BASE_MUST_BE_POSITIVE;
         result = ComputeRevDigits(p[0], p[1]);
@@ -1507,9 +1577,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                3 = composite: does not pass BPSW test, but passes other tests.*/
         if (verbose > 0) {
             if (rv == 2)
-                std::cout << "pseudo-prime; passes 2-fermat test but not 2-SPRP test \n";
+                std::cout << "pseudo-prime base 2; passes 2-fermat test but not 2-SPRP test \n";
             if (rv == 3)
-                std::cout << "pseudo-prime; passes 2-SPRP test but not BPSW test \n";
+                std::cout << "strong pseudo-prime base 2; passes 2-SPRP test but not BPSW test \n";
+            if (rv == 1)
+                std::cout << "composite; not a pseudoprime base 2 \n";
         }
         if (rv == 0)
             result = -1;   /* prime */
@@ -1707,11 +1779,15 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
         result = mpz_bpsw_prp(ZT(p[0]));
         if (verbose > 0) {
-            if (result == 0)
+            if (result == PRP_COMPOSITE)
                 std::cout << "composite \n";
-            else if (result == 1)
+            else if (result == PRP_PRP)
                 std::cout << "probable prime \n";
-            else if (result == 2)
+            else if (result == PRP_WPSP)
+                std::cout << "weak pseudoprime base 2 \n";
+            else if (result == PRP_SPSP)
+                std::cout << "strong pseudoprime base 2 \n";
+            else if (result == PRP_PRIME)
                 std::cout << "prime \n";
         }
         break;
@@ -1730,11 +1806,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         result = mpz_aprtcle(ZT(p[0]), verbose);
         if (verbose > 0) {
-            if (result == 0)
+            if (result == APRTCLE_COMPOSITE)
                 printf_s("\ncomposite \n");
-            else if (result == 1)
-                printf_s("\nprobable prime \n");
-            else if (result == 2)
+           else if (result == PRP_WPSP || result == PRP_SPSP)
+                printf_s("\npseudoprime \n");
+            else if (result == APRTCLE_PRIME)
                 printf_s("\nprime \n");
         }
         break;
@@ -1942,7 +2018,65 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             break;
         }
     }
+    case opCode::fn_pisano:     /* Pisano period */ {
+        if (p[0] < 1)
+            return retCode::NUMBER_TOO_LOW;
+        if (p[0] > LLONG_MAX)
+            return retCode::NUMBER_TOO_HIGH; /* avoid risk of overflow */
+        long long n = MulPrToLong(p[0]);
+        factorsS f;
 
+        generatePrimes(2097169);
+        primeFactors(n, f);  /* get prime factors of n in f */
+        if (f.factorlist[f.factorcount - 1][0] > INT_MAX)
+            return retCode::NUMBER_TOO_HIGH;
+        result = pisanof(n, f);
+        break;
+    }
+    case opCode::fn_core: /* unique squarefree integer d dividing n such that
+                        n/d is a square */ {
+        Znum d;
+        std::vector <zFactors> sqf;
+        result = p[0];
+        squareFree(result, d, sqf);
+        if (verbose > 0 && result != p[0]) {
+            gmp_printf("core: %Zd = %Zd * %Zd\n", ZT(p[0]), ZT(result), ZT(d));
+        }
+        break;
+    }
+    case opCode::fn_radical: /* get largest square-free divisor of n */ {
+        /* see https://oeis.org/A007947 */
+        fList f;
+        if (p[0] == 0) {
+            result = 0;  /* 0 has to be a special case */
+        }
+        else {
+            factorise(p[0], f, nullptr);
+            result = f.radical();
+        }
+        break;
+    }
+    case opCode::fn_iscarmichael: {/* returns 0 for Carmichael number 
+        (probability = 1 - 2^(-tries),  1 for composite non-Carmichael numbers, 
+        and 2 for prime numbers. */
+        int tries;
+        if (p.size() == 1) {
+            result = isCarmichael(p[0]);  /* use default number of tries */
+            break;
+        }
+        if (p.size() >= 2) {
+            if (p[1] > 10000)
+                return retCode::NUMBER_TOO_HIGH;
+            if (p[1] < 2)
+                return retCode::NUMBER_TOO_LOW;
+            tries = (int)MulPrToLong(p[1]);
+            result = isCarmichael(p[0], tries);
+            break;
+        }
+        else return retCode::INVALID_PARAM; /* too few parameters */
+            
+        break;
+    }
     default:
         std::abort();	// should never get here
     }

@@ -48,6 +48,8 @@ void ErrorDisp(const char* lpszFunction);
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 /* ComputeNumDigits(n,r): Number of digits of n in base r. */
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
+bool factortest(const Znum& x3, const int testnum, const int method = 0);
+void printSummary(void);
 
 
 extern bool* primeFlags;
@@ -68,6 +70,8 @@ extern HWND handConsole;      /* handle to console window */
 extern std::string helpFilePath;
 
 /* defined in various places: not in main.cpp */
+
+void doTests14(const std::vector<std::string>& p);
 
 /* yafu.cpp */
 bool callYafu(const Znum& num, fList& Factors);
@@ -125,6 +129,22 @@ void VersionInfo(const LPCSTR path, int ver[4], std::string& modified);
 DWORD getComCtlVer(void);
 
 /* mpz_prp.cpp */
+/*************************************************************/
+/*************************************************************/
+/* These are the definitions for the probable prime routines */
+/*************************************************************/
+/*************************************************************/
+#define PRP_ERROR -1
+#define PRP_COMPOSITE 0 /* composite, not a pseudoprime */
+#define PRP_SPSP 1     /* strong pseudoprime */
+#define PRP_WPSP 2      /* weak pseudo-prime*/
+#define PRP_PRIME 3     /* definate prime */
+#define PRP_PRP 4       /* probable prime */
+
+#define APRTCLE_ERROR -1
+#define APRTCLE_COMPOSITE 0
+#define APRTCLE_PRIME 3       /* definate prime */
+
 int mpz_bpsw_prp(const mpz_t n); /* Baillie-Pomerance-Selfridge-Wagstaff probablistic primality test*/
 int mpz_aprtcle(const mpz_t N, const int verbose);  /* APR-CL prime testing */
 
@@ -147,6 +167,8 @@ unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int6
 Znum             modMult(const Znum& a, const Znum& b, const Znum& mod);
 extern unsigned __int64 R2(const unsigned __int64 n);
 extern unsigned __int64 R3(__int64 n);
+/* get prime factors of tnum, using trial division */
+unsigned int primeFactors(unsigned __int64 tnum, factorsS& f);
 
 /* help.cpp */
 void helpfunc(const std::vector<std::string>& command);
