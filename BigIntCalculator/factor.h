@@ -104,6 +104,8 @@ public:
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
 	friend bool getfactors(const Znum& n, uint32_t b, fList& Factors);
 	friend bool factorCarmichael(const Znum& p, fList& Factors);
+	friend void insertCarmichaelFactor(Znum& Aux4, const Znum p, fList& Factors,
+		bool& factorsFound, int& countdown, int& ctr, int & i, int ref);
 
 	/* methods that are in the class */
 

@@ -2073,16 +2073,30 @@ static void doTests12(const std::vector<std::string>& p) {
     return;
 }
 
-/* test for factoring pseudoprimes */
+/* test for factoring weak base-2 pseudoprimes */
 static void doTests13(const std::vector<std::string>& p) {
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
     long long p2 = 0;  // prime value to use (f not prime use next prime)  
     long long p3 = 0;
     long long llprime;
-    int base = 2;
+    const int base = 2;
     Znum bp, n1, n2, n;
     auto start = std::clock();	// used to measure execution time
     results.clear();
+    if (p.size() >= 3) {
+        if (std::toupper(p[2][0] == 'H')) {
+            std::cout << "test for factoring weak base-2 pseudoprimes. Command format is: \n "
+                "TEST 13 [p1[,p2]]\n"
+                "where p1=number of tests (default 20)\n"
+                "p2 = value for 1st prime (default 23, p2 is incremented to next prime if necessary)\n"
+                "pseudoprimes are generated from the formulas: \n"
+                "n1= (b^p - 1) / (b - 1) \n"
+                "n2= (b^p + 1) / (b + 1).\n"
+                "N = n1*n2           (N is a weak pseudoprime to base b. In this case b=2) \n"
+                "for each subsequent test p is incremented to the next prime (up to p=331) \n";
+            return;
+        }
+    }
 
     if (p.size() >= 3)
         p1 = std::atoll(p[2].data());
@@ -2095,7 +2109,7 @@ static void doTests13(const std::vector<std::string>& p) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
     }
-    if (p2 <23 || p2 > 1000) {
+    if (p2 <23 || p2 > 331) {
         std::cout << "Use default 23 for 1st prime \n";
         p2 = 23;
     }
@@ -3003,7 +3017,7 @@ static int processCmd(std::string command) {
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
                  << "      Test 13 [p1[,p2]] test factoring of weak   pseudoprimes where p1 = no of tests, \n"
-                 << "      Test 14 [p1]      test factoring of strong pseudoprimes where p1 = no of tests, \n";;
+                 << "      Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests, \n";;
 
              return 1;
          }
