@@ -4,7 +4,6 @@
 /* OEIS A064238: Values of m such that N = (am+1)(bm+1)(cm+1) is a 3-Carmichael
 number (A087788), where a,b,c = 1,2,3. N ranges from  1729 to
 16344 221851 913485 532689 (23 digits)*/
-
 const int generator[] = {
 6, 36, 210, 270, 306, 330, 336, 600, 726, 1170, 1236,
 1296, 1530, 1656, 2220, 2280, 2556, 3036, 3060, 3066,
@@ -1823,6 +1822,10 @@ void doTests14(const std::vector<std::string>& p) {
         }
         else {
             carm = getCarm3((int)p2, startval);  /* get a carmichael number */
+            int type = PrimalityTest(carm, 0);
+            if (type == 3) {
+                std::cout << "\nTest " << ctr+1 << ": n is a strong base-2 pseudoprime";
+            }
         }
         factortest(carm, ctr + 1);
     }

@@ -534,7 +534,8 @@ void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors,
 }
 
 /* use psRand as a base. If p is a weak pseudoprime to that base, try to add 
-   factors of p. p = a *2^ctr */
+   factors of p. p = a *2^ctr. Use: Xaux for square root of -1, mod p,
+   Zaux for square root of 1 mod p.  */
 static void FCarmichaelproc(const Znum& p, const Znum& a, const uint64_t PsRand, 
     Znum &Zaux, Znum &Xaux, fList &Factors, bool &sqrtOneFound, bool &sqrtMinusOneFound, 
     bool &factorsFound, const int ctr, const int countdown) {
@@ -622,7 +623,7 @@ bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
         
     a = p - 1;  // a = p - 1 (p is odd, so a is even)
     DivideZnumByMaxPowerOf2(ctr, a);  // a /= 2^ctr
-    if (pseudoP)
+    if (pseudoP) /* if p is a weak pseudoprime to base 2 */
         FCarmichaelproc(p, a, 2, Zaux, Xaux, Factors, sqrtOneFound,
             sqrtMinusOneFound, factorsFound, ctr, 21);
 
