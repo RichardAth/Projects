@@ -91,7 +91,7 @@ static int mpz_sprp(const mpz_t n, const mpz_t a)
     mpz_clear(nm1);
 
     if (mpz_cmp_ui(mpz_test, 1) == 0) {
-        /* n is a weak pseudoprime base a */
+        /* if mpz_test == 1, then n is a weak pseudoprime base a */
         mpz_clear(mpz_test);
         return PRP_WPSP;  /* weak pseudoprime to base a, but NOT a strong pseudoprime */
     }

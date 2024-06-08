@@ -763,15 +763,30 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
                         << "c= " << Quad[2] << '\n'
                         << "d= " << Quad[3] << '\n';
                 }
-                else {
-                    if (verbose > 0)
-                        std::cout << "number = a² + b² + c² +d² \n"
-                        << "a= " << Quad[0] << '\n'
-                        << "b= " << Quad[1] << '\n'
-                        << "c= " << Quad[2] << '\n'
-                        << "d= " << Quad[3] << '\n';
-                }
             }
+                
+            if (x3 >= 0)
+                std::cout << "n = ";
+            else
+                std::cout << "\n-n = ";
+            char c = 'a';
+            for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
+                if (q == 0)
+                    break;
+                if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
+                std::cout << c << "² ";
+                c++;    // change a to b, b to c, etc
+            }
+            c = 'a';
+            for (auto q : Quad) {
+                if (q == 0)
+                    break;
+                std::cout << "\n" << c << "= " << q;
+                c++;  // change a to b, b to c, etc
+            }
+            std::cout << "\n";
+                
+            
         }
     }
 
@@ -789,6 +804,9 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
             factorlist.prCounts();   // print counts
         else
             sum.ctrs.yafu = sum.totalFacs;
+
+        if (factorlist.isCarmichael())
+            std::cout << "this is a Carmichael number \n";
 
         if (lang)
             std::cout << "prueba " << testnum << " terminada as las ";
@@ -981,7 +999,7 @@ static void doTests(void) {
     }
     std::cout << i << (lang ? "  pruebas completadas\n" : " tests completed\n");
 
-    for (Znum i = 1000; i <= 100000000000000000; ) {
+     for (Znum i = 1000; i <= 100000000000000000; ) {
         Znum x1, x2;
         mpz_nextprime(ZT(x1), ZT(i));  // get next prime
         i *= 10;
@@ -1103,12 +1121,15 @@ static void doTests(void) {
 
     testcnt++;
     StrToZ(x3, "16343905875827839164649");
-    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
-
+    factortest(x3, testcnt);  /* 23 digit carmichael number */
 
     testcnt++;
     StrToZ(x3, "16306943745747543227641");
-    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+    factortest(x3, testcnt);  /* 23 digit carmichael number */
+
+    testcnt++;
+    StrToZ(x3, "275281697159777474592222292759124204311014968333422998732083645637147190132701016074949742246939");
+    factortest(x3, testcnt);  /* 96 digit strong pseudoprime */
 
     testcnt++;
     ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  

@@ -87,8 +87,9 @@ public:
 
 class fList {
 private:
-	std::vector <zFactors> f;
-	counters ct;     /* counters showing how the factors were found */
+	Znum n;                  /* number to be factored */
+	std::vector <zFactors> f;  /* factor list */
+	counters ct;             /* counters showing how the factors were found */
 
 public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
@@ -211,6 +212,7 @@ It has values in {−1, 0, 1} depending on the factorization of n into prime fac
 	/* initialise factor list */
 	void set(const Znum &toFactor) {
 		this->f.resize(1);          // change size of factor list to 1
+		this->n = toFactor;
 		this->f[0].exponent = 1;
 		this->f[0].Factor = toFactor; 
 		this->f[0].upperBound = 0;  // assume toFactor's not prime
@@ -414,7 +416,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 
 /*  get sum of n-th power of divisors. If n =0 get number of divisors. If
     n = 1 get sum of divisors. */
-	Znum DivisorSum(int n = 1) {
+	Znum DivisorSum(int n = 1) const {
 		Znum result = 1, term;
 		if (this->f.empty())
 			return 0;
@@ -577,7 +579,7 @@ Repeated factors: No or Yes
 	}
 
 	/* return true if all factors are prime i.e. factorisation is complete,
-	otherwise false */
+	otherwise false. */
 	bool factComplete() {
 		for (size_t i = 0; i < this->f.size(); i++) {
 			if (this->f[i].upperBound == -1)
@@ -588,6 +590,21 @@ Repeated factors: No or Yes
 			}
 			else 
 				return false;  /* found a non-prime factor*/
+		}
+		return true;
+	}
+
+	/* return true if number is a Carmichael number. Use Korselt's criterion:
+ "A positive composite integer n is a Carmichael number if and only if n is 
+ square-free, and for all prime divisors p of n, it is true that p−1 ∣ n−1." */
+	bool isCarmichael() const {
+		if (this->f.empty())
+			return false;
+		for (auto i : this->f) {
+			if (i.exponent > 1)
+				return false;    /* if not square-free return false */
+			if ((this->n-1) % (i.Factor - 1) != 0)
+				return false;  
 		}
 		return true;
 	}
