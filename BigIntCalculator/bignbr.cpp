@@ -522,19 +522,23 @@ bool StrToZ(Znum& result, const char str[], int base) {
 }
 
 /* check whether num is a a Carmichael number.
-see https://math.stackexchange.com/questions/1726016/check-if-a-number-is-carmichael
-also https://en.wikipedia.org/wiki/Carmichael_number
+see https://en.wikipedia.org/wiki/Carmichael_number
 also //also https://en.wikipedia.org/wiki/Fermat_primality_test
-returns 0 for Carmichael number (probability = 1 - 2^(-tries),
- 1 for composite non-Carmichael numbers, and 2 for prime numbers.
-
- A deterministic test could use Korselt's criterion:
+returns 0 for Carmichael number, 1 for composite non-Carmichael numbers, 
+and 2 for prime numbers.
+Use Korselt's criterion:
  "A positive composite integer n is a Carmichael number if and only if n is 
  square-free, and for all prime divisors p of n, it is true that p−1 ∣ n−1."
 
- but this requires n to be factorised.
+ This requires n to be factorised.
 */
 int isCarmichael(const Znum& num, int tries) {
+
+    if (numLimbs(num) > 4) {
+        /* if num > 2^256 use method that does not require num to be factorised. */
+        return isCarmichaelOld(num, tries);
+    }
+
     fList factorlist;
 
     auto rv = factorise(num, factorlist, nullptr);
@@ -547,4 +551,55 @@ int isCarmichael(const Znum& num, int tries) {
             return 1;
     else
         return 1;   /* unable to factorise */
+}
+
+/* returns 0 for Carmichael number (probability = 1 - 2^(-tries),
+ 1 for composite non-Carmichael numbers, and 2 for prime numbers.
+ Does not require num to be factorised. 
+ see https://math.stackexchange.com/questions/1726016/check-if-a-number-is-carmichael
+ */
+int isCarmichaelOld(const Znum& num, int tries) {
+    gmp_randstate_t state;  /* for random number generator */
+    std::random_device rd;   // non-deterministic generator
+    unsigned long long seedval, bitsize;
+    Znum r, mp, gcdv;
+
+    int rv2 = mpz_bpsw_prp(ZT(num));  /* returns 0 for composite, 3 for prime,
+                                         1 for probable prime, 2 for pseudoprime,
+                                         -1 for error, */
+    if (rv2 == PRP_PRIME || rv2 == PRP_PRP)
+        return 2;   /* num is prime */
+    assert(rv2 != -1);
+
+    gmp_randinit_mt(state);  // use Mersenne Twister to generate pseudo-random numbers
+    seedval = rd();      /* get random number for seed value */
+    gmp_randseed_ui(state, seedval);
+    bitsize = mpz_sizeinbase(ZT(num), 2) + 1;  // calculate number of bits;
+
+    for (int i = 1; i <= tries; i++) {
+    retry:
+        mpz_urandomb(ZT(r), state, bitsize);  /* get pseudo-random number in r */
+        r %= num;   /* ensure r < num */
+        if (r <= 1)
+            goto retry;   /* ensure r > 1*/
+        /* calculate r^(num-1) (mod num)*/
+        mp = modPower(r, num - 1, num);
+        if (mp == 1)
+            continue;  /* repeat the test with another value of r */
+        gcdv = gcd(r, num);
+        if (gcdv == 1)
+            /* r and num are coprime */
+            return 1;    /* composite, not a Carmichael number */
+        else {
+            /* gcdv is a non - trivial factor of num (may not be a prime) */
+            if (verbose > 0)
+                std::cout << "Carmichael test: " << num << " has divisor "
+                << gcdv << '\n';
+        }
+        /* repeat the test with another value of r */
+    }
+
+    /* after performing the specified number of tests, we haven't found
+     any indication that num is not a carmichael number */
+    return 0;   /* we have a Carmichael number */
 }
