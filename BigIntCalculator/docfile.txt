@@ -921,7 +921,9 @@ RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
 ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
               1 for composite non-Carmichael numbers, and 2 for prime numbers.
               If t is omitted its default value is 16, which gives a 99.998% 
-              probability that the result is correct
+              probability that the result is correct. if n < 2^192 then Korselt's
+              criterion is used and the value of t is ignored. This requires n 
+              to be factorised, but is 100% certain.
 [X]
 X    switch to hexadecimal o/p.
 [D]

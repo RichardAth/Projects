@@ -534,21 +534,23 @@ Use Korselt's criterion:
 */
 int isCarmichael(const Znum& num, int tries) {
 
-    if (numLimbs(num) > 4) {
-        /* if num > 2^256 use method that does not require num to be factorised. */
+    if (numLimbs(num) > 3) {
+        /* if num > 2^192 use method that does not require num to be factorised. */
         return isCarmichaelOld(num, tries);
     }
 
     fList factorlist;
-
+    /* factorise num */
     auto rv = factorise(num, factorlist, nullptr);
-    if (factorlist.isPrime())
-        return 2;
-    if (rv)
+ 
+    if (rv) {
+        if (factorlist.isPrime())
+            return 2;
         if (factorlist.isCarmichael())
-            return 0;
+            return 0;  /* num is a carmichael number*/
         else
-            return 1;
+            return 1;  /* num is composite */
+    }
     else
         return 1;   /* unable to factorise */
 }
@@ -565,8 +567,8 @@ int isCarmichaelOld(const Znum& num, int tries) {
     Znum r, mp, gcdv;
 
     int rv2 = mpz_bpsw_prp(ZT(num));  /* returns 0 for composite, 3 for prime,
-                                         1 for probable prime, 2 for pseudoprime,
-                                         -1 for error, */
+                                      4 for probable prime, 1 or 2 for pseudoprime,
+                                      -1 for error, */
     if (rv2 == PRP_PRIME || rv2 == PRP_PRP)
         return 2;   /* num is prime */
     assert(rv2 != -1);
