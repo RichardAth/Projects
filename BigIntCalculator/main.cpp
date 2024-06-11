@@ -565,15 +565,10 @@ void printSummary(void) {
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
-static void doFactors(const Znum &Result, bool test) {
+static void doFactors(const Znum &Result) {
     fList factorlist;
     Znum Quad[4];
-    clock_t start;
-    summary sum;    // save summary of factorisation
     bool rv;
-
-    if (test)
-        start = std::clock();	// used to measure execution time
 
     /* call DA´s magic function to factorise Result */
     if (factorFlag > 1)
@@ -631,53 +626,6 @@ static void doFactors(const Znum &Result, bool test) {
             factorlist.prCounts();  // print counts
         }
         
-        if (test) {
-            /* recalculate result & get total number of factors */
-            Znum result = factorlist.recheck(sum.totalFacs);
-            if (result != Result) {
-                std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
-                Beep(750, 1000);
-            }
-            if (factorFlag > 1) {
-                result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-                if (result != Result) {
-                    std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
-                    Beep(750, 1000);
-                }
-                else {
-                    if (factorlist.twosq()) {
-                        if (Quad[2] != 0 || Quad[3] != 0)
-                            std::cout << "expected c = d= 0; got: \n"
-                            << "number = " << Result << '\n'
-                            << "a= " << Quad[0] << '\n'
-                            << "b= " << Quad[1] << '\n'
-                            << "c= " << Quad[2] << '\n'
-                            << "d= " << Quad[3] << '\n';
-                    }
-                    //else if (factorlist.sqplustwosq()) {
-                    //	if (Quad[1] != Quad[2] || Quad[3] != 0)
-                    //		std::cout << "expected b = c and d= 0; got: \n"
-                    //		<< "number = " << Result << '\n'
-                    //		<< "a= " << Quad[0] << '\n'
-                    //		<< "b= " << Quad[1] << '\n'
-                    //		<< "c= " << Quad[2] << '\n'
-                    //		<< "d= " << Quad[3] << '\n';
-                    //}
-                }
-            }
-            auto end = std::clock(); 
-            double elapsed = (double)end - start;
-            PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " :"time used = ");
-
-            /* store info for summary */
-            sum.time = elapsed / CLOCKS_PER_SEC;
-            sum.numsize = (int)ComputeNumDigits(result, 10);
-            sum.NumFacs = (int)factorlist.fsize();
-            /* get number of digits in 2nd largest factor */
-            sum.sndFac = factorlist.sndFac();
-            sum.ctrs = factorlist.getCtrs();
-            results.push_back(sum);
-        }
     }
     else
         std::cout << (lang? "no se puede factorizar\n" : " cannot be factorised\n");
@@ -704,7 +652,10 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
     ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
-        factorise(x3, factorlist, Quad);  // get factors
+        if (factorFlag > 1)
+            factorise(x3, factorlist, Quad);  // get factors
+        else
+            factorise(x3, factorlist, nullptr);  // get factors
     }
     if (method != 0) {
         factorlist.set(x3);
@@ -721,7 +672,7 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
     /* get number of digits in 2nd largest factor */
     sum.sndFac = factorlist.sndFac();
 
-    if (method == 0) {
+    if (method == 0 && factorFlag > 1) {
         /* check that sum of squares is correct */
         result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
         if (result != x3) {
@@ -768,7 +719,7 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
             if (x3 >= 0)
                 std::cout << "n = ";
             else
-                std::cout << "\n-n = ";
+                std::cout << "-n = ";
             char c = 'a';
             for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
                 if (q == 0)
@@ -785,8 +736,6 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
                 c++;  // change a to b, b to c, etc
             }
             std::cout << "\n";
-                
-            
         }
     }
 
@@ -1309,14 +1258,15 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
+        // std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
             get_RSA(x, state, p2);  // get RSA type number size p2 bits
         ShowLargeNumber(x, groupSize, true, false);
         std::cout << '\n';
-        doFactors(x, true); /* factorise x, calculate number of divisors etc */
+        //doFactors(x, true); /* factorise x, calculate number of divisors etc */
+        factortest(x, i);     /* factorise x  */
         results.back().testNum = i;
     }
 
@@ -3463,7 +3413,7 @@ int main(int argc, char *argv[]) {
                     ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {
-                        doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
+                        doFactors(Result); /* factorise Result, calculate number of divisors etc */
                         results.clear();  // get rid of unwanted results
                     }
                 }
