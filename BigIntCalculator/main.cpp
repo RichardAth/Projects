@@ -565,15 +565,10 @@ void printSummary(void) {
 }
 
 /* factorise Result, calculate number of divisors etc and print results */
-static void doFactors(const Znum &Result, bool test) {
+static void doFactors(const Znum &Result) {
     fList factorlist;
     Znum Quad[4];
-    clock_t start;
-    summary sum;    // save summary of factorisation
     bool rv;
-
-    if (test)
-        start = std::clock();	// used to measure execution time
 
     /* call DA´s magic function to factorise Result */
     if (factorFlag > 1)
@@ -631,53 +626,6 @@ static void doFactors(const Znum &Result, bool test) {
             factorlist.prCounts();  // print counts
         }
         
-        if (test) {
-            /* recalculate result & get total number of factors */
-            Znum result = factorlist.recheck(sum.totalFacs);
-            if (result != Result) {
-                std::cout << "Factors expected value " << Result << " actual value " << result << '\n';
-                Beep(750, 1000);
-            }
-            if (factorFlag > 1) {
-                result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
-                if (result != Result) {
-                    std::cout << "Quad expected value " << Result << " actual value " << result << '\n';
-                    Beep(750, 1000);
-                }
-                else {
-                    if (factorlist.twosq()) {
-                        if (Quad[2] != 0 || Quad[3] != 0)
-                            std::cout << "expected c = d= 0; got: \n"
-                            << "number = " << Result << '\n'
-                            << "a= " << Quad[0] << '\n'
-                            << "b= " << Quad[1] << '\n'
-                            << "c= " << Quad[2] << '\n'
-                            << "d= " << Quad[3] << '\n';
-                    }
-                    //else if (factorlist.sqplustwosq()) {
-                    //	if (Quad[1] != Quad[2] || Quad[3] != 0)
-                    //		std::cout << "expected b = c and d= 0; got: \n"
-                    //		<< "number = " << Result << '\n'
-                    //		<< "a= " << Quad[0] << '\n'
-                    //		<< "b= " << Quad[1] << '\n'
-                    //		<< "c= " << Quad[2] << '\n'
-                    //		<< "d= " << Quad[3] << '\n';
-                    //}
-                }
-            }
-            auto end = std::clock(); 
-            double elapsed = (double)end - start;
-            PrintTimeUsed(elapsed, lang? "Tiempo transcurrido = " :"time used = ");
-
-            /* store info for summary */
-            sum.time = elapsed / CLOCKS_PER_SEC;
-            sum.numsize = (int)ComputeNumDigits(result, 10);
-            sum.NumFacs = (int)factorlist.fsize();
-            /* get number of digits in 2nd largest factor */
-            sum.sndFac = factorlist.sndFac();
-            sum.ctrs = factorlist.getCtrs();
-            results.push_back(sum);
-        }
     }
     else
         std::cout << (lang? "no se puede factorizar\n" : " cannot be factorised\n");
@@ -704,7 +652,10 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
     ShowLargeNumber(x3, groupSize, true, false);
     std::cout << '\n';
     if (method == 0) {
-        factorise(x3, factorlist, Quad);  // get factors
+        if (factorFlag > 1)
+            factorise(x3, factorlist, Quad);  // get factors
+        else
+            factorise(x3, factorlist, nullptr);  // get factors
     }
     if (method != 0) {
         factorlist.set(x3);
@@ -721,7 +672,7 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
     /* get number of digits in 2nd largest factor */
     sum.sndFac = factorlist.sndFac();
 
-    if (method == 0) {
+    if (method == 0 && factorFlag > 1) {
         /* check that sum of squares is correct */
         result = Quad[0] * Quad[0] + Quad[1] * Quad[1] + Quad[2] * Quad[2] + Quad[3] * Quad[3];
         if (result != x3) {
@@ -763,15 +714,28 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
                         << "c= " << Quad[2] << '\n'
                         << "d= " << Quad[3] << '\n';
                 }
-                else {
-                    if (verbose > 0)
-                        std::cout << "number = a² + b² + c² +d² \n"
-                        << "a= " << Quad[0] << '\n'
-                        << "b= " << Quad[1] << '\n'
-                        << "c= " << Quad[2] << '\n'
-                        << "d= " << Quad[3] << '\n';
-                }
             }
+                
+            if (x3 >= 0)
+                std::cout << "n = ";
+            else
+                std::cout << "-n = ";
+            char c = 'a';
+            for (auto q : Quad) {  // print "n = a² + b² + c² + d²"
+                if (q == 0)
+                    break;
+                if (c > 'a') std::cout << "+ ";  // precede number with + unless its the 1st number
+                std::cout << c << "² ";
+                c++;    // change a to b, b to c, etc
+            }
+            c = 'a';
+            for (auto q : Quad) {
+                if (q == 0)
+                    break;
+                std::cout << "\n" << c << "= " << q;
+                c++;  // change a to b, b to c, etc
+            }
+            std::cout << "\n";
         }
     }
 
@@ -789,6 +753,9 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
             factorlist.prCounts();   // print counts
         else
             sum.ctrs.yafu = sum.totalFacs;
+
+        if (factorlist.isCarmichael())
+            std::cout << "this is a Carmichael number \n";
 
         if (lang)
             std::cout << "prueba " << testnum << " terminada as las ";
@@ -981,7 +948,7 @@ static void doTests(void) {
     }
     std::cout << i << (lang ? "  pruebas completadas\n" : " tests completed\n");
 
-    for (Znum i = 1000; i <= 100000000000000000; ) {
+     for (Znum i = 1000; i <= 100000000000000000; ) {
         Znum x1, x2;
         mpz_nextprime(ZT(x1), ZT(i));  // get next prime
         i *= 10;
@@ -1103,12 +1070,15 @@ static void doTests(void) {
 
     testcnt++;
     StrToZ(x3, "16343905875827839164649");
-    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
-
+    factortest(x3, testcnt);  /* 23 digit carmichael number */
 
     testcnt++;
     StrToZ(x3, "16306943745747543227641");
-    factortest(x3, testcnt);  /* 23 digit strong pseudoprime */
+    factortest(x3, testcnt);  /* 23 digit carmichael number */
+
+    testcnt++;
+    StrToZ(x3, "275281697159777474592222292759124204311014968333422998732083645637147190132701016074949742246939");
+    factortest(x3, testcnt);  /* 96 digit strong pseudoprime */
 
     testcnt++;
     ComputeExpr("n(10^24)*n(10^25)*n(10^26)*n(10^27)", x3, asgCt);  
@@ -1288,14 +1258,15 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
+        // std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
             get_RSA(x, state, p2);  // get RSA type number size p2 bits
         ShowLargeNumber(x, groupSize, true, false);
         std::cout << '\n';
-        doFactors(x, true); /* factorise x, calculate number of divisors etc */
+        //doFactors(x, true); /* factorise x, calculate number of divisors etc */
+        factortest(x, i);     /* factorise x  */
         results.back().testNum = i;
     }
 
@@ -2073,16 +2044,30 @@ static void doTests12(const std::vector<std::string>& p) {
     return;
 }
 
-/* test for factoring pseudoprimes */
+/* test for factoring weak base-2 pseudoprimes */
 static void doTests13(const std::vector<std::string>& p) {
     long long p1 = 0;  // number of tests; must be greater than 0, default is 20
     long long p2 = 0;  // prime value to use (f not prime use next prime)  
     long long p3 = 0;
     long long llprime;
-    int base = 2;
+    const int base = 2;
     Znum bp, n1, n2, n;
     auto start = std::clock();	// used to measure execution time
     results.clear();
+    if (p.size() >= 3) {
+        if (std::toupper(p[2][0] == 'H')) {
+            std::cout << "test for factoring weak base-2 pseudoprimes. Command format is: \n "
+                "TEST 13 [p1[,p2]]\n"
+                "where p1=number of tests (default 20)\n"
+                "p2 = value for 1st prime (default 23, p2 is incremented to next prime if necessary)\n"
+                "pseudoprimes are generated from the formulas: \n"
+                "n1= (b^p - 1) / (b - 1) \n"
+                "n2= (b^p + 1) / (b + 1).\n"
+                "N = n1*n2           (N is a weak pseudoprime to base b. In this case b=2) \n"
+                "for each subsequent test p is incremented to the next prime (up to p=331) \n";
+            return;
+        }
+    }
 
     if (p.size() >= 3)
         p1 = std::atoll(p[2].data());
@@ -2095,7 +2080,7 @@ static void doTests13(const std::vector<std::string>& p) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
     }
-    if (p2 <23 || p2 > 1000) {
+    if (p2 <23 || p2 > 331) {
         std::cout << "Use default 23 for 1st prime \n";
         p2 = 23;
     }
@@ -3003,7 +2988,7 @@ static int processCmd(std::string command) {
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
                  << "      Test 13 [p1[,p2]] test factoring of weak   pseudoprimes where p1 = no of tests, \n"
-                 << "      Test 14 [p1]      test factoring of strong pseudoprimes where p1 = no of tests, \n";;
+                 << "      Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests, \n";;
 
              return 1;
          }
@@ -3428,7 +3413,7 @@ int main(int argc, char *argv[]) {
                     ShowLargeNumber(Result, groupSize, true, hexPrFlag);   // print value of expression
                     std::cout << '\n';
                     if (factorFlag > 0) {
-                        doFactors(Result, false); /* factorise Result, calculate number of divisors etc */
+                        doFactors(Result); /* factorise Result, calculate number of divisors etc */
                         results.clear();  // get rid of unwanted results
                     }
                 }
