@@ -2988,7 +2988,8 @@ static int processCmd(std::string command) {
                  << "      Test 12 [p1[,p2[,p3]]]       test R4 function, where p1 = no of tests, \n"
                  << "                                   p2 = number size in bits \n"
                  << "      Test 13 [p1[,p2]] test factoring of weak   pseudoprimes where p1 = no of tests, \n"
-                 << "      Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests, \n";;
+                 << "      Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests, \n"
+                 << "                        p2 is the number size in decimal digits \n";
 
              return 1;
          }

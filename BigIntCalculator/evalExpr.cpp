@@ -1301,11 +1301,11 @@ Znum pisanof(const long long n, const factorsS &f) {
 }
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
-All the others have two. Some operators can genererate an error condition
-e.g. DIVIDE_BY_ZERO otherwise return EXPR_OK. 
+Most of the others have two. GCD and LCM have an indefinate number of operands. 
+Some operators can genererate an error condition e.g. DIVIDE_BY_ZERO 
+otherwise return EXPR_OK. 
 For functions, do any further checks needed on the parameter values, then 
-evaluate the function. gcd and lcm functions have a variable number of parameters. 
-Some functions can generate error codes. */
+evaluate the function. */
 static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &p, Znum &result) {
 
     int rv;

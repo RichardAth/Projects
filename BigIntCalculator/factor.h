@@ -600,6 +600,8 @@ Repeated factors: No or Yes
 	bool isCarmichael() const {
 		if (this->f.empty())
 			return false;
+		if (this->isPrime())
+			return false;
 		for (auto i : this->f) {
 			if (i.exponent > 1)
 				return false;    /* if not square-free return false */
