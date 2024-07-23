@@ -7594,8 +7594,8 @@ static mpz_t aiJ1[PWmax];
 static mpz_t aiJ2[PWmax];
 static mpz_t aiJ00[PWmax];
 static mpz_t aiJ01[PWmax];
-long long int NumberLngth; /* Length of multiple precision nbrs */
-mpz_t TestNmbr;
+static long long int NumberLngth; /* Length of multiple precision nbrs */
+static mpz_t TestNmbr;
 
 /* ============================================================================================== */
 
