@@ -29,7 +29,7 @@ dll for Windows 7 would be used */
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-#define BIGNBR       // define to include bignbr tests 
+//#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 extern Znum zR, zR2, zNI, zN;
 #endif
@@ -451,7 +451,9 @@ void strToUpper(const std::string &s, std::string &d) {
         d[ix] = std::toupper(s[ix]);
 }
 
-/* print elapsed time. If > 60 seconds print in hour min sec format */
+/* print elapsed time. If > 60 seconds print in hour min sec format 
+ For Windows systems, clock() measures wall-clock time, in msec.
+ ISO standard clock() would measure net CPU time */
 void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (msg.size() > 1)
@@ -2483,9 +2485,10 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     int good;
     int temp;
 
-    switch (message) {
+    switch (message) {  /* most message types should be ignored */
     case WM_DESTROY:       /* 0x02 */
     case WM_MOVE:          /* 0x03 */
+    case WM_SIZE:          /* 0x05 */
     case WM_ACTIVATE:      /* 0x06 */
     case WM_SETFOCUS:      /* 0x07 */
     case WM_KILLFOCUS:     /* 0x08 */
@@ -2498,14 +2501,16 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_SETCURSOR:     /* 0x20 */
     case WM_MOUSEACTIVATE:  /* 0x21 */
     case WM_GETMINMAXINFO:  /* 0x24 */
-    case WM_SETFONT:       /* 0x30 */
+    case WM_SETFONT:        /* 0x30 */
+    case WM_GETOBJECT:      /* 0x3d */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
-    case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_WINDOWPOSCHANGED:   /* 0x47 */
     case WM_NOTIFY:        /* 0x4e */
     case WM_HELP:          /* 0x53  (F1 key pressed) */
     case WM_NOTIFYFORMAT:  /* 0x55 */
     case WM_GETICON:       /* 0x75 */
     case WM_NCDESTROY:     /* 0x82 */
+    case WM_NCCALCSIZE:    /* 0x83 */
     case WM_NCHITTEST:     /* 0x84 */
     case WM_NCPAINT:       /* 0x85 */
     case WM_NCACTIVATE:    /* 0x86 */
@@ -3400,7 +3405,10 @@ int main(int argc, char *argv[]) {
             }
 
             /* input is not a valid command; assume it is an expression */
-            auto start = std::clock();	// used to measure execution time
+            clock_t start = std::clock();	// used to measure execution time
+            // for Windows systems, clock() measures wall-clock time, in msec
+            // ISO standard clock() would measure net CPU time
+
             removeIntSpace(expr);   /* remove spaces between digits */
             rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 
