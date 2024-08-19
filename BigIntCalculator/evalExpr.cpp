@@ -902,7 +902,7 @@ static void squareFree(Znum &num, Znum &sq, std::vector<zFactors> &sqf) {
 
 /* calculate the number of ways an integer n can be expressed as the sum of 3
 squares x^2, y^2 and z^2. The order of the squares is significant. x, y and z can
-be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875.txt*/
+be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875.txt */
 static Znum R3(Znum num) {
 
     if (num < 20'000'000'000'000'000) {
@@ -946,8 +946,9 @@ static Znum R3(Znum num) {
 }
 
 /* calculate the number of ways an integer n can be expressed as the sum of 4
-squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y and 
-z can be +ve, 0 or -ve See https://oeis.org/A000118 */
+squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y 
+and z can be +ve, 0 or -ve See https://oeis.org/A000118 
+The method used here is based on one described by Benoit Cloitre in 2002. */
 Znum R4(Znum num) {
     if (num < 0)
         return 0;
@@ -965,7 +966,7 @@ Znum R4(Znum num) {
     auto rv = factorise(num, factorlist, nullptr);
 
     /* see Carlos J. Moreno and Samuel S. Wagstaff, Jr., Sums of Squares of integers, 
-    Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29*/
+    Chapman & Hall/CRC, 2006, Theorem 2. 6 (Jacobi), p. 29 */
     if (odd) {
         return 8 * factorlist.DivisorSum();  /* divisorSum AKA sigma */
     }

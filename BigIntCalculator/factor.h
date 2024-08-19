@@ -64,6 +64,7 @@ public:
 	int exponent=0;
 	int upperBound=0;    /* used during trial division to show how far we've got. 
 						-1 indicats that Factor is prime */
+
 	/* define all comparison operators when comparing two factors */
 	bool operator == (const zFactors &b) const {
 		return this->Factor == b.Factor;
@@ -92,11 +93,31 @@ private:
 	counters ct;             /* counters showing how the factors were found */
 
 public:
+	/* define all comparison operators when comparing two factors */
+	bool operator == (const fList& b) const {
+		return this->n == b.n;
+	}
+	bool operator != (const fList& b) const {
+		return this->n != b.n;
+	}
+	bool operator < (const fList& b) const {
+		return this->n < b.n;
+	}
+	bool operator <= (const fList& b) const {
+		return this->n <= b.n;
+	}
+	bool operator > (const fList& b) const {
+		return this->n > b.n;
+	}
+	bool operator >= (const fList& b) const {
+		return this->n >= b.n;
+	}
+
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
 	friend void TrialDiv(fList &Factors, long long LehmanLimit);
-	friend bool factor(const Znum &toFactor, fList &Factors);
+	friend bool factor(fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);

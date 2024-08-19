@@ -14,7 +14,8 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include <map>
+//#include <map>
+#include <set>
 #include <numeric>
 
 #undef min                 // use std::min
@@ -866,14 +867,14 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 
 /* factorise toFactor; factor list returned in Factors. 
 returns false only if ecm returns an error. */
-static bool factor(const Znum &toFactor, fList &Factors) {
+static bool factor(fList &Factors) {
+    Znum toFactor = Factors.n;
     long long testP;
     const long long MaxP = 393'203;  // use 1st  33333 primes
     /* larger value seems to slow down factorisation overall. */
     // MaxP must never exceed 2,097,152 to avoid overflow of PollardLimit
     const long long PollardLimit = MaxP*MaxP*MaxP;
 
-    Factors.set(toFactor);   /* initialise factor list */
     if (toFactor <= 3)
         return true;   /* toFactor is 1 or prime so we can stop now*/
 
@@ -1652,7 +1653,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 }
 
 /* store factors for larger numbers */
-std::map<Znum, fList> savedFactors;
+std::set<fList> savedFactors;
 long long SFhitcount = 0;     /* number of 'hits' searching savedFactors */
 long long SFmisscount = 0;   /* number of 'misses' searching savedFactors */
 
@@ -1678,11 +1679,13 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
             pos = false;
             numberZ = -numberZ;
         }
+        vfactors.set(numberZ);
         if (numLimbs(numberZ) > 1) {
-            /* see whether the number has already been factorised */
-            auto ref = savedFactors.find(numberZ);
+        /* see whether the number has already been factorised. Note that
+           the find() method only looks for a match in the number to be factored */
+            auto ref = savedFactors.find(vfactors);
             if (ref != savedFactors.end()) {
-                vfactors = ref->second;  /* use factor list obtained earlier */
+                vfactors = *ref;  /* use factor list obtained earlier */
                 SFhitcount++;
                 hit = true;
                 if (verbose > 1) {
@@ -1691,11 +1694,11 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
             }
         }
         if (!hit) {
-            auto rv = factor(numberZ, vfactors);
+            auto rv = factor(vfactors);
             if (!rv)
                 return false;  // failed to factorise number
             if (numLimbs(numberZ) > 1) {
-                savedFactors[numberZ] = vfactors;  /* save factors just found */
+                savedFactors.insert(vfactors);  /* save factors just found */
                 SFmisscount++;
             }
         }
