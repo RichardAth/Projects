@@ -1260,15 +1260,14 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        // std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
+        
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
             get_RSA(x, state, p2);  // get RSA type number size p2 bits
-        ShowLargeNumber(x, groupSize, true, false);
-        std::cout << '\n';
-        //doFactors(x, true); /* factorise x, calculate number of divisors etc */
-        factortest(x, i);     /* factorise x  */
+        //ShowLargeNumber(x, groupSize, true, false);
+                
+        factortest(x, i);     /* factorise x, calculate number of divisors etc  */
         results.back().testNum = i;
     }
 

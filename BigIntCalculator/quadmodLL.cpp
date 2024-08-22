@@ -1,4 +1,4 @@
-﻿ //
+﻿//
 // This file is part of Alpertron Calculators.
 //
 // Copyright 2017-2021 Dario Alejandro Alpern

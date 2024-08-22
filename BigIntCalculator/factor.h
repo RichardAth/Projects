@@ -50,11 +50,11 @@ struct counters {
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
-	int paric = 0;          // found by Parilib
+	int paric = 0;         // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int psp = 0;           // base-2 pseudoprime
-	int powerCnt = 0;		   // perfect power
+	int powerCnt = 0;	   // perfect power
 
 };
 
@@ -63,7 +63,7 @@ public:
 	Znum Factor;
 	int exponent=0;
 	int upperBound=0;    /* used during trial division to show how far we've got. 
-						-1 indicats that Factor is prime */
+						-1 indicates that Factor is prime */
 
 	/* define all comparison operators when comparing two factors */
 	bool operator == (const zFactors &b) const {
@@ -93,7 +93,8 @@ private:
 	counters ct;             /* counters showing how the factors were found */
 
 public:
-	/* define all comparison operators when comparing two factors */
+	/* define all comparison operators when comparing two factor lists.
+	   Only the value of the original number is compared. */
 	bool operator == (const fList& b) const {
 		return this->n == b.n;
 	}
@@ -677,4 +678,3 @@ the text string a, function name, line number and source file name */
     sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
 	throw std::range_error(mesg);                \
 }
-

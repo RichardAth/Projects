@@ -14,7 +14,6 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-//#include <map>
 #include <set>
 #include <numeric>
 

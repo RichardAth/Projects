@@ -97,7 +97,7 @@ Modpow(m, n, r) : finds m^n modulo r Equivalent to m^n%r but more efficient.
 Totient(n)      : finds the number of positive integers less than n which are 
                   relatively prime to n.
 Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer 
-                  m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                  m such that a^m ≡ 1 (mod n) for every integer a between 1 
                   and n that is coprime to n. Also known as the reduced totient
                   function.
 Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime 
@@ -314,7 +314,7 @@ TEST 2  test factorisation using pseudo-random numbers of a specified size.
         If num3 > 2 the value of num3 is used as the 'seed' value. 
 
         If the value for num2 is the same and num3 ≠ 2 in two TEST 2 commands
-         the same sequence of numbers to be factored is generated. each time.  
+        the same sequence of numbers to be factored is generated. each time.  
         This is useful for benchmarking factorisation.
 
 TEST 3  Tests for the built-in bigintegers. These are based on DA's biginteger 
@@ -390,9 +390,11 @@ TEST 12 [p1[,p2[,p3]]] Test R4 function. p1, p2 and p3 are used in the
 
 TEST 13 [p1[,p2]] test factoring of weak pseudoprimes where p1 = no of tests.
                   p2 = 1st prime used as base to generate pseudoprimes
+        (use TEST 13 H for more information)
 
 Test 14 [p1[,p2]] test factoring of strong pseudoprimes where p1 = no of tests
                   p2 = size of numbers to be tested (no of digits, base 10)
+        (use TEST 14 H for more information)
 
 Test example:
 
@@ -640,9 +642,9 @@ $p=n($p)
 IF ($p < 10000) REPEAT
 
 format is IF (expression) REPEAT 
-          or IF (expression) STOP 
-          or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
-          the [ELSE (expression ...)] part is optional
+       or IF (expression) STOP 
+       or IF (expression) THEN (expression, expression, ...) [ELSE (expression, ...)]
+       the [ELSE (expression ...)] part is optional
 
 The IF command is processed as follows:
 1.  The expression in brackets after IF is evaluated. 
