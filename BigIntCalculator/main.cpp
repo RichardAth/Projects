@@ -2579,6 +2579,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         CheckDlgButton(DiBoxHandle, Msieve_E_option, eopt);
         CheckDlgButton(DiBoxHandle, hexPrint, hexPrFlag);
         CheckDlgButton(DiBoxHandle, sel_language, lang);
+        CheckDlgButton(DiBoxHandle, IDC_CHECK1, yafuSilent);
 
         if (yafu)
             rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, useYAFU);
@@ -2763,6 +2764,20 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             p[1] = "PATH";
             p[2] = "SET";
             pariParam(p);
+            return FALSE;
+
+        case IDC_CHECK1:
+            b_ck = IsDlgButtonChecked(DiBoxHandle, IDC_CHECK1);
+            if (b_ck == BST_CHECKED)
+                yafuSilent = true;
+            if (b_ck == BST_UNCHECKED)
+                yafuSilent = false;
+            std::cout << "YAFU SILENT set to ";
+            if (yafuSilent)
+                std::cout << "TRUE \n";
+            else
+                std::cout << "FALSE \n";
+            break;
             return FALSE;
 
         case verboseValue:   /* set verbose */
