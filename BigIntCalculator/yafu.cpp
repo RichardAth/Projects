@@ -24,7 +24,11 @@ std::string outPath = "C:/users/admin99/factors.txt";
 
 static std::string batfilename = "YafurunTemp.bat";
 bool yafu = true;  // true: use YAFU. false: use built-in ECM and SIQS or Msieve
-bool yafuSilent = false;
+#ifdef _DEBUG
+bool yafuSilent = false;  /* if compiled with debug option, YAFU is not silent by default*/
+#else
+bool yafuSilent = true; /* default is run YAFU silently */
+#endif
 bool useOldYafu = false;
 int pvalue = 4;    // 4 = PLAN NORMAL (default)
 
@@ -351,7 +355,8 @@ void yafuParam(const std::vector<std::string>& p) {
         break;
 
     }
-    case 3: /* YAFU OUT  */ {  
+    case 3: /* YAFU OUT  */ 
+    {  
         std::cout << "YAFU output file = " << outPath << '\n';
         if (p.size() >=3 && p[2] == "SET") {
             if (changepath2(outPath))
@@ -416,11 +421,12 @@ void yafuParam(const std::vector<std::string>& p) {
     }
 
     case 7: /* YAFU SILENT */ {
-        if (p.size() >= 3)
+        if (p.size() >= 3) {
             if (p[2] == "ON")
                 yafuSilent = true;
-        if (p[2] == "OFF")
-            yafuSilent = false;
+            if (p[2] == "OFF")
+                yafuSilent = false;
+        }
         std::cout << "YAFU SILENT set to ";
         if (yafuSilent)
             std::cout << "TRUE \n";
@@ -842,16 +848,18 @@ bool callYafu(const Znum& num, fList& Factors) {
     }
     numStr.resize(numdigits + 5);             // resize buffer
     mpz_get_str(&numStr[0], 10, ZT(num));     // convert num to decimal (ascii) digits
-    numStr.resize(std::strlen(&numStr[0]));        // get exact size of string in buffer
+    numStr.resize(std::strlen(&numStr[0]));   // get exact size of string in buffer
 
     buffer = YafuPath + "\\" + yafuprog;
     buffer += " factor(" + numStr + ")";
     buffer += " -p";                // set batch priority
-    if (verbose > 0)
+
+    if (yafuSilent)
+        buffer += " -silent";       // set silent mode for YAFU
+    else if (verbose > 0)   /* verbose is opposite of silent */
         for (int i = 1; i <= verbose; i++)
             buffer += " -v";        // set verbose mode for YAFU
-    else if (yafuSilent)
-        buffer += " -silent";       // set silent mode for YAFU
+
     if (pvalue != 4) {
         switch (pvalue) {
         case 1: buffer += " -plan none"; break;
@@ -868,7 +876,7 @@ bool callYafu(const Znum& num, fList& Factors) {
     }
     delfile("", "nfs.dat"); /* if earlier run leaves this file undeleted
                                    it would cause problems */
-    if (yafuSilent && verbose <= 0)
+    if (yafuSilent)
         std::cout << myTime() << " Starting YAFU \n";
     rv = std::system(buffer.data());             // start YAFU;
 
@@ -881,7 +889,7 @@ bool callYafu(const Znum& num, fList& Factors) {
         std::cout << "cannot start YAFU return code = " << rv << '\n';
         return false;
     }
-    if (yafuSilent && verbose <= 0)
+    if (yafuSilent)
         std::cout << myTime() << " YAFU finished \n";
 
     /* get the factors from the last record in the json file produced by YAFU */
