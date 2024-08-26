@@ -717,12 +717,12 @@ https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
 This method generally works but for very large n it may be too slow. It uses a
 truly random number generator so could give different results given the same
 value of n */
-long long int PollardRho(long long int n, int depth)
+unsigned long long int PollardRho(unsigned long long int n, int depth)
 {
     /* initialize random seed */
     std::random_device rd;   // non-deterministic generator
     std::mt19937_64 gen(rd());  // to seed mersenne twister.
-    std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
+    std::uniform_int_distribution<unsigned long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
     long long ctr = 0;     /* loop counter*/
     /* no prime divisor for 1 */
     if (n == 1) return n;
@@ -732,7 +732,7 @@ long long int PollardRho(long long int n, int depth)
 
     /* we will pick from the range [2, N) */
 
-    long long int x, y;
+    unsigned long long int x, y;
     x = dist(gen);  // x is in range 1 to max
     x = x % (n - 2) + 2;  // x is in range 2 to n-1
     y = x;
@@ -745,7 +745,7 @@ long long int PollardRho(long long int n, int depth)
     c = c % (n - 1) + 1;  // c is in range 1 to n-1
 
 /* Initialize candidate divisor (or result) */
-    long long int d = 1;
+    unsigned long long int d = 1;
 
     /* until the prime factor isn't obtained.
        If n is prime, return n */
@@ -759,7 +759,7 @@ long long int PollardRho(long long int n, int depth)
         y = (modPowerLL(y, 2, n) + c + n) % n;
 
         /* check gcd of |x-y| and n */
-        d = std::gcd( std::abs(x - y), n);
+        d = std::gcd(x>y?(x - y):(y-x), n);
 
         /* retry if the algorithm fails to find prime factor
          * with chosen x and c */
@@ -781,7 +781,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
     bool restart = false;  // set true if trial division has to restart
     int upperBound;
     int numtype;
-    long long testP;
+    unsigned long long testP;
     Znum temp;
     do {  /* use trial division */
         restart = false;    // change to true if any factor found
@@ -868,11 +868,11 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 returns false only if ecm returns an error. */
 static bool factor(fList &Factors) {
     Znum toFactor = Factors.n;
-    long long testP;
-    const long long MaxP = 393'203;  // use 1st  33333 primes
+    unsigned long long testP;
+    const unsigned long long MaxP = 2'097'143;  // use 1st 155611 primes
     /* larger value seems to slow down factorisation overall. */
-    // MaxP must never exceed 2,097,152 to avoid overflow of PollardLimit
-    const long long PollardLimit = MaxP*MaxP*MaxP;
+    // MaxP must never exceed 2'097'152 to avoid overflow.
+    const unsigned long long PollardLimit = MaxP*MaxP*MaxP;
 
     if (toFactor <= 3)
         return true;   /* toFactor is 1 or prime so we can stop now*/

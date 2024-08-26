@@ -637,7 +637,7 @@ Repeated factors: No or Yes
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
-long long int PollardRho(long long int n, int depth = 0);
+unsigned long long int PollardRho(unsigned long long int n, int depth = 0);
 
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
 
