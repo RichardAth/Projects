@@ -1300,6 +1300,7 @@ Znum pisanof(const long long n, const factorsS &f) {
     }
     return result;
 }
+
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 Most of the others have two. GCD and LCM have an indefinate number of operands. 

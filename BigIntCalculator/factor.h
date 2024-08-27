@@ -117,7 +117,7 @@ public:
 	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
-	friend void TrialDiv(fList &Factors, long long LehmanLimit);
+	friend void TrialDiv(fList &Factors, unsigned long long LehmanLimit);
 	friend bool factor(fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
