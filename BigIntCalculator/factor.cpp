@@ -371,7 +371,7 @@ static void SortFactors(fList &Factors) {
 of divisor. either pi is the index into the prime list of the divisor, or the  
 divisor value is in div. This function is used for smaller factors found by trial
  division or Pollard Rho. */
-static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix) {
+static void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix) {
     auto lastfactor = Factors.f.size();
     Znum quot, qnew;
     Znum divisor;
@@ -825,7 +825,7 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
 
             if (!restart && (Factors.f[i].upperBound != -1)
                 && Factors.f[i].Factor <= PollardLimit) {
-                long long f;
+                unsigned long long f;
                 if (PrimalityTest(Factors.f[i].Factor, primeList[Factors.f[i].upperBound]) == 0)
                     /* if factor is prime calling PollardFactor would waste a LOT of time*/
                     Factors.f[i].upperBound = -1; // Indicate that number is prime.
@@ -936,7 +936,7 @@ static bool factor(fList &Factors) {
             //    }
         }
         if (Zpower <= PollardLimit) {
-            long long f;
+            unsigned long long f;
             f = PollardRho(MulPrToLong(Zpower));
             if (f != 1) {
                 insertIntFactor(Factors, -1, f, i);

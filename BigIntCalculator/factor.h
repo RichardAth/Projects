@@ -114,7 +114,7 @@ public:
 		return this->n >= b.n;
 	}
 
-	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
+	friend void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
 	friend void TrialDiv(fList &Factors, unsigned long long LehmanLimit);

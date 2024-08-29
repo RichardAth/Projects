@@ -2253,6 +2253,9 @@ static void processIni(const char * arg) {
                 PariPath = buffer.substr(9);
             }
             else inifile.push_back(buffer);  // save anything not recognised
+            if (buffer[0] == '%' && verbose > 0) {
+                std::cout << "From BigintCalculator.ini: " << buffer << '\n';
+            }
         }
         iniStr.close();
     }

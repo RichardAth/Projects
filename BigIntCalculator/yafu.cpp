@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-
+#include <filesystem>
 #include "json.h"
 
 extern char lastValidNameFound[];
@@ -75,11 +75,13 @@ void delfile(const std::string& path, const char* FileName) {
 char * getFileName(const char *filter, HWND owner, bool MustExist) {
 
     OPENFILENAMEA ofn;
-    static char * fileNameStr = NULL;
     static char afilename[MAX_PATH] = "";
-    static char fileName[MAX_PATH] = "";
+    static char* fileNameStr = nullptr;
 
-    fileNameStr = NULL;
+    static char fileName[MAX_PATH] = "";
+    char* filename;     /* pointer to file name*/
+    DWORD  retval = 0;
+    
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(OPENFILENAMEA);	// length of the structure
     ofn.hwndOwner = owner;						// handle of owner window
@@ -98,7 +100,14 @@ char * getFileName(const char *filter, HWND owner, bool MustExist) {
 
     if (GetOpenFileNameA(&ofn)) {
         fileNameStr = afilename;
-        strcpy_s(afilename, sizeof(afilename), fileName);
+        //strcpy_s(afilename, sizeof(afilename), fileName);
+        /* convert relative path to absolute path */
+        retval = GetFullPathNameA(fileName, sizeof(fileName), afilename, &filename);
+        if (retval == 0)  {
+            // Handle an error condition.
+            printf_s("GetFullPathName failed (%d)\n", GetLastError());
+            return nullptr;
+        }
     }
 
     return fileNameStr;
@@ -380,7 +389,7 @@ void yafuParam(const std::vector<std::string>& p) {
         }
     }
     case 5: /* YAFU TIDY */ {
-        if (useOldYafu) {
+        if (true) {
             delfile(YafuPath, "factor.log");
             delfile(YafuPath, "session.log");
             delfile(YafuPath, "factor.json");
@@ -830,12 +839,15 @@ static int process_json_file_main(const Znum& num, std::vector <Znum> &factorLis
     return rv;
 }
 
+/* this is for newer versions of YAFU that send output to the json file */
 bool callYafu(const Znum& num, fList& Factors) {
     int rv;
     std::string numStr;
     std::string buffer;
     int fcount = 0;
     std::vector <Znum> factorList;
+    namespace fs = std::filesystem;
+    fs::path curPath;  /* save current path here */
 
     if (useOldYafu) {
         return callYafuOld(num, Factors);
@@ -878,15 +890,20 @@ bool callYafu(const Znum& num, fList& Factors) {
                                    it would cause problems */
     if (yafuSilent)
         std::cout << myTime() << " Starting YAFU \n";
+    curPath = fs::current_path();   /* save current path */
+    fs::current_path(YafuPath);     /* change current path*/
     rv = std::system(buffer.data());             // start YAFU;
 
     /* get control back when YAFU has finished */
+
     if (rv == -1) {
         std::perror( "cannot start YAFU");
+        fs::current_path(curPath);  /* restore previous path */
         return false;
     }
     else if (rv != 0) {
         std::cout << "cannot start YAFU return code = " << rv << '\n';
+        fs::current_path(curPath);  /* restore previous path */
         return false;
     }
     if (yafuSilent)
@@ -894,6 +911,7 @@ bool callYafu(const Znum& num, fList& Factors) {
 
     /* get the factors from the last record in the json file produced by YAFU */
     rv = process_json_file_main(num, factorList);
+    fs::current_path(curPath);  /* restore previous path */
     if (rv != 0)
         return false;
     for (auto f : factorList) {
@@ -903,6 +921,8 @@ bool callYafu(const Znum& num, fList& Factors) {
     return (fcount > 0);
 }
 
+/* the functions below are used if verbose > 1, to print the contents of the
+json record. */
 /* indent according to depth */
 static void print_depth_shift(int depth)
 {
