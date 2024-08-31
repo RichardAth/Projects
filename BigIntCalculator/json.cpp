@@ -69,6 +69,7 @@ typedef unsigned int json_uchar;
 
 const struct _json_value json_value_none;
 char lastValidNameFound[256] = { '\0' };
+char suspectObjectName[256] = { '\0' };
 bool JsonIntOverflow = false;   /* set true if number has more than ~19 digits before . */
 
 /* conver hex char to binary */
@@ -844,6 +845,7 @@ json_value* json_parse_ex(json_settings* settings,
                                 top->u.dbl = (double)integer;
                                 top->u.dbl = (top->u.dbl * 10) + (b - '0');
                                 JsonIntOverflow = true;
+                                top->flags |= 1; 
                                 continue;
                             }
 

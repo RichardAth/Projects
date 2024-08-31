@@ -458,7 +458,7 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
    a strong pseudoprime to base b. See 
    https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Variants_for_finding_factors */
-bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
+static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
     Znum f, kf, nm1, modpow, zb, div1, div2;
@@ -512,7 +512,7 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
 /* common code to (maybe) insert factor. If factor added, factorsFound is
 * set to true & the counter is incremented.
 countdown, ctr, i & ref are only used if verbose > 0, to print messages. */
-void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
+static void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
     bool &factorsFound, const int countdown, const int ctr, const int i, int ref) {
     Znum gcdVall;
     mpz_mod(ZT(Aux4), ZT(Aux4), ZT(p));

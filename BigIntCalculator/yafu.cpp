@@ -102,7 +102,7 @@ char * getFileName(const char *filter, HWND owner, bool MustExist) {
         fileNameStr = afilename;
         //strcpy_s(afilename, sizeof(afilename), fileName);
         /* convert relative path to absolute path */
-        retval = GetFullPathNameA(fileName, sizeof(fileName), afilename, &filename);
+        retval = GetFullPathNameA(fileName, sizeof(afilename), afilename, &filename);
         if (retval == 0)  {
             // Handle an error condition.
             printf_s("GetFullPathName failed (%d)\n", GetLastError());
@@ -761,14 +761,12 @@ static int process_file_s(FILE* fp, int* counter, const char* name_list[],
                 }
  
                 else {
-                     if (verbose > 1 || JsonIntOverflow) {
+                     if (verbose > 1) {
                         process_value(value, 0);  /* print contents of json object */
                     }
-                     if (JsonIntOverflow) {
-                         std::cout << "*** Suspicious number in json object ***\n";
-                         Beep(2000, 1000); /* beep at 2000 Hz for 1 second */
-                         system("PAUSE"); /* press any key to continue */
-                     }
+                    if (JsonIntOverflow && verbose > 0) {
+                        std::cout << "*** Suspicious number in json object *** \n";
+                    }
                     parseOK = true;
                     /* process last record read, which has been copied into value.
                      Put numbers into factors and ToBeFactored. */
@@ -986,12 +984,16 @@ static void process_value(const json_value* value, int depth)
         break;
     case json_integer:
         printf("int: %10ld\n", (long)value->u.integer);
+        if (value->flags != 0)
+            printf("flags: %x  ***** \n", value->flags);
         break;
     case json_double:
         if (abs(value->u.dbl) < 10E20)
             printf("double: %f\n", value->u.dbl);
         else
             printf("double: %.15g\n", value->u.dbl);
+        if (value->flags != 0)
+            printf("flags: %x  ***** \n", value->flags);
         break;
     case json_string:
         printf("string: %s\n", value->u.string.ptr);
