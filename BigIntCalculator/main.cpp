@@ -626,6 +626,8 @@ static void doFactors(const Znum &Result) {
             }
             std::cout << "\n";
             factorlist.prCounts();  // print counts
+            if (factorlist.isCarmichael())
+                std::cout << "this is a Carmichael number \n";
         }
         
     }
@@ -758,6 +760,8 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
 
         if (factorlist.isCarmichael())
             std::cout << "this is a Carmichael number \n";
+        if (factorlist.powerful())
+            std::cout << "this is a Powerful number \n";
 
         if (lang)
             std::cout << "prueba " << testnum << " terminada as las ";
@@ -3366,7 +3370,7 @@ static void myGetline(std::string &expr) {
 
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char* envp[]) {
     std::string expr;
     Znum Result;
     retCode rv;
@@ -3374,7 +3378,14 @@ int main(int argc, char *argv[]) {
     bool multiV = false;
 
     try {
-
+  /*      if (verbose > 0) {
+            for (int i = 0;; i++) {
+                char* env = envp[i];
+                if (env == nullptr)
+                    break;
+                std::cout << "env[" << i << "] = " << env << '\n';
+            }
+        }*/
         initialise(argc, argv);  /* initialisation code only executed once */
 
         /* start of main loop. Normal exit is via EXIT command */
