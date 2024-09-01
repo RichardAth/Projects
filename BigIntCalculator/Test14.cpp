@@ -4,7 +4,7 @@
 /* OEIS A064238: Values of m such that N = (am+1)(bm+1)(cm+1) is a 3-Carmichael
 number (A087788), where a,b,c = 1,2,3. N ranges from  1729 to
 16344 221851 913485 532689 (23 digits)*/
-const int generator[] = {
+static const int generator[] = {
 6, 36, 210, 270, 306, 330, 336, 600, 726, 1170, 1236,
 1296, 1530, 1656, 2220, 2280, 2556, 3036, 3060, 3066,
 4260, 4446, 4800, 4950, 5226, 5580, 5850, 6150, 6360,
@@ -1640,7 +1640,7 @@ The method used here is from Wikipedia, and based on Cardano's formula.
 see https://en.wikipedia.org/wiki/Cubic_equation
 */
 typedef std::complex<double> cmplx;
-void solveCubic(double a, double b, double c, double d,
+static void solveCubic(double a, double b, double c, double d,
     cmplx& r1, cmplx& r2, cmplx& r3) {
     /* Let
     ∆0 = b^2 -3ac
@@ -1679,7 +1679,7 @@ void solveCubic(double a, double b, double c, double d,
 
 
 /* get a Carmichael number */
-Znum getCarm(const int index) {
+static Znum getCarm(const int index) {
     Znum m, N;
     assert(index <= sizeof(generator) / sizeof(generator[0]));
     m = generator[index];
@@ -1689,14 +1689,14 @@ Znum getCarm(const int index) {
 
 /* get a carmichael number which is a strong base-2 pseudoprime, and cannot be 
    factorised by trial division & pollard-rho */
-Znum getCarm2(const int index) {
+static Znum getCarm2(const int index) {
     Znum m, N;
     assert(index <= sizeof(gen2) / sizeof(gen2[0]));
     m = gen2[index];
     N = (m + 1) * (2 * m + 1) * (3 * m + 1);
     return N;
 }
-Znum getCarm4(const int index) {
+static Znum getCarm4(const int index) {
     Znum m, N;
     assert(index <= sizeof(gen4) / sizeof(gen4[0]));
     m = gen4[index];
@@ -1707,7 +1707,7 @@ Znum getCarm4(const int index) {
 /* get Carmichael number by a brute force approach. If start  is not specified,
 numdigits specifies the approximate size in base 10. The value of start for
 next time is returned. */
-Znum getCarm3(const int numdigits, Znum &start) {
+static Znum getCarm3(const int numdigits, Znum &start) {
     Znum limit, kmin, k, p1, p2, p3, Carm;
     double a, b, c, d, flimit;
     cmplx r1, r2, r3;

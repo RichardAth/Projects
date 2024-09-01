@@ -1,6 +1,5 @@
 #include "pch.h"
 
-
 std::vector <Znum>bistoredp;   /* calculated values of p(n) */
 Znum bi1;
 

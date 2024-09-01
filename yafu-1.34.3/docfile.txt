@@ -82,7 +82,7 @@ change program behavior.  Supported flags are:
                     <name> = deep: pretest to t-level 1/3 the size of the  
                              input before starting qs/nfs
                     <name> = custom: pretest to t-level specified by the 
-                             ratio in the –pretest_ratio option 
+                             ratio in the ï¿½pretest_ratio option 
 -pretest_ratio <num>   A fractional value used in the plan=custom mode of operation 
                 to determine the depth of pretesting.  Inputs are pretested 
                 to t-level equal to size of input * pretest_ratio
@@ -526,14 +526,14 @@ command line flags affecting factor:
                <name> = deep: pretest to t-level 1/3 the size of the  
                         input before starting qs/nfs
                <name> = custom: pretest to t-level specified by the 
-                        ratio in the –pretest_ratio option 
+                        ratio in the ï¿½pretest_ratio option 
 -pretest_ratio <num>    A fractional value used in the plan=custom mode of 
                operation to  determine the depth of pretesting.  Inputs are 
                pretested  to t-level equal to size of input * pretest_ratio
 -work <num>     Assert to factor() that the input has already received pretesting 
                 equivalent to the specified t-level.  In other words, if you know 
                 that an input has received ~900 ecm curves at B1=1M, then 
-                specify –work 35.  This value may be input as floating point.
+                specify ï¿½work 35.  This value may be input as floating point.
 -xover <num>    Use this option to specify the decimal digit size beyond which nfs
                 should be used instead of qs.  Specifying this option overrides
                 any crossover point computed from tuning data.  May be entered

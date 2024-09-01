@@ -68,7 +68,8 @@ extern "C"
 
 #endif
     extern int jsonVerbose;
-    extern bool JsonIntOverflow;  /* set true if number has more tha ~19 digits before . */
+    extern bool JsonIntOverflow;  /* set true if number has more than ~19 digits before . */
+    extern char suspectObjectName[];
 
     typedef struct
     {
@@ -185,7 +186,7 @@ extern "C"
         unsigned int line, col;
 
 #endif
-
+        unsigned int flags = 0;
 
         /* Some C++ operator sugar */
 

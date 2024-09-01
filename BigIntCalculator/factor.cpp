@@ -14,7 +14,7 @@ along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "pch.h"
-#include <map>
+#include <set>
 #include <numeric>
 
 #undef min                 // use std::min
@@ -371,7 +371,7 @@ static void SortFactors(fList &Factors) {
 of divisor. either pi is the index into the prime list of the divisor, or the  
 divisor value is in div. This function is used for smaller factors found by trial
  division or Pollard Rho. */
-static void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix) {
+static void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix) {
     auto lastfactor = Factors.f.size();
     Znum quot, qnew;
     Znum divisor;
@@ -458,7 +458,7 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
    a strong pseudoprime to base b. See 
    https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Variants_for_finding_factors */
-bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
+static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
     Znum f, kf, nm1, modpow, zb, div1, div2;
@@ -512,7 +512,7 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
 /* common code to (maybe) insert factor. If factor added, factorsFound is
 * set to true & the counter is incremented.
 countdown, ctr, i & ref are only used if verbose > 0, to print messages. */
-void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
+static void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
     bool &factorsFound, const int countdown, const int ctr, const int i, int ref) {
     Znum gcdVall;
     mpz_mod(ZT(Aux4), ZT(Aux4), ZT(p));
@@ -717,12 +717,12 @@ https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
 This method generally works but for very large n it may be too slow. It uses a
 truly random number generator so could give different results given the same
 value of n */
-long long int PollardRho(long long int n, int depth)
+unsigned long long int PollardRho(unsigned long long int n, int depth)
 {
     /* initialize random seed */
     std::random_device rd;   // non-deterministic generator
     std::mt19937_64 gen(rd());  // to seed mersenne twister.
-    std::uniform_int_distribution<long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
+    std::uniform_int_distribution<unsigned long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
     long long ctr = 0;     /* loop counter*/
     /* no prime divisor for 1 */
     if (n == 1) return n;
@@ -732,7 +732,7 @@ long long int PollardRho(long long int n, int depth)
 
     /* we will pick from the range [2, N) */
 
-    long long int x, y;
+    unsigned long long int x, y;
     x = dist(gen);  // x is in range 1 to max
     x = x % (n - 2) + 2;  // x is in range 2 to n-1
     y = x;
@@ -745,7 +745,7 @@ long long int PollardRho(long long int n, int depth)
     c = c % (n - 1) + 1;  // c is in range 1 to n-1
 
 /* Initialize candidate divisor (or result) */
-    long long int d = 1;
+    unsigned long long int d = 1;
 
     /* until the prime factor isn't obtained.
        If n is prime, return n */
@@ -759,7 +759,7 @@ long long int PollardRho(long long int n, int depth)
         y = (modPowerLL(y, 2, n) + c + n) % n;
 
         /* check gcd of |x-y| and n */
-        d = std::gcd( std::abs(x - y), n);
+        d = std::gcd(x>y?(x - y):(y-x), n);
 
         /* retry if the algorithm fails to find prime factor
          * with chosen x and c */
@@ -777,11 +777,11 @@ long long int PollardRho(long long int n, int depth)
 
 /* trial division & Pollard-Rho. Uses first 33333 primes. Also weak
   pseudoprimes base 2 are factorised (maybe only partly) if < 190 digits. */
-static void TrialDiv(fList &Factors, const long long PollardLimit) {
+static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
     bool restart = false;  // set true if trial division has to restart
     int upperBound;
     int numtype;
-    long long testP;
+    unsigned long long testP;
     Znum temp;
     do {  /* use trial division */
         restart = false;    // change to true if any factor found
@@ -806,6 +806,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
                 }
             }
             /* trial division. Uses first 33333 primes */
+            //while (upperBound < std::min((int)prime_list_count,  155611)) {
             while (upperBound < std::min((int)prime_list_count, 33333)) {
                 testP = primeList[upperBound];
                 if (testP*testP > Factors.f[i].Factor) {
@@ -824,7 +825,7 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 
             if (!restart && (Factors.f[i].upperBound != -1)
                 && Factors.f[i].Factor <= PollardLimit) {
-                long long f;
+                unsigned long long f;
                 if (PrimalityTest(Factors.f[i].Factor, primeList[Factors.f[i].upperBound]) == 0)
                     /* if factor is prime calling PollardFactor would waste a LOT of time*/
                     Factors.f[i].upperBound = -1; // Indicate that number is prime.
@@ -866,14 +867,15 @@ static void TrialDiv(fList &Factors, const long long PollardLimit) {
 
 /* factorise toFactor; factor list returned in Factors. 
 returns false only if ecm returns an error. */
-static bool factor(const Znum &toFactor, fList &Factors) {
-    long long testP;
-    const long long MaxP = 393'203;  // use 1st  33333 primes
+static bool factor(fList &Factors) {
+    Znum toFactor = Factors.n;
+    unsigned long long testP;
+    const unsigned long long MaxP = 393203;       // use 1st 33335 primes 
+    //const unsigned long long MaxP = 2'097'143;  // use 1st 155611 primes
     /* larger value seems to slow down factorisation overall. */
-    // MaxP must never exceed 2,097,152 to avoid overflow of PollardLimit
-    const long long PollardLimit = MaxP*MaxP*MaxP;
+    // MaxP must never exceed 2'097'152 to avoid overflow.
+    const unsigned long long PollardLimit = MaxP*MaxP*MaxP;
 
-    Factors.set(toFactor);   /* initialise factor list */
     if (toFactor <= 3)
         return true;   /* toFactor is 1 or prime so we can stop now*/
 
@@ -934,7 +936,7 @@ static bool factor(const Znum &toFactor, fList &Factors) {
             //    }
         }
         if (Zpower <= PollardLimit) {
-            long long f;
+            unsigned long long f;
             f = PollardRho(MulPrToLong(Zpower));
             if (f != 1) {
                 insertIntFactor(Factors, -1, f, i);
@@ -1652,7 +1654,7 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
 }
 
 /* store factors for larger numbers */
-std::map<Znum, fList> savedFactors;
+std::set<fList> savedFactors;
 long long SFhitcount = 0;     /* number of 'hits' searching savedFactors */
 long long SFmisscount = 0;   /* number of 'misses' searching savedFactors */
 
@@ -1678,11 +1680,13 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
             pos = false;
             numberZ = -numberZ;
         }
+        vfactors.set(numberZ);
         if (numLimbs(numberZ) > 1) {
-            /* see whether the number has already been factorised */
-            auto ref = savedFactors.find(numberZ);
+        /* see whether the number has already been factorised. Note that
+           the find() method only looks for a match in the number to be factored */
+            auto ref = savedFactors.find(vfactors);
             if (ref != savedFactors.end()) {
-                vfactors = ref->second;  /* use factor list obtained earlier */
+                vfactors = *ref;  /* use factor list obtained earlier */
                 SFhitcount++;
                 hit = true;
                 if (verbose > 1) {
@@ -1691,11 +1695,11 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
             }
         }
         if (!hit) {
-            auto rv = factor(numberZ, vfactors);
+            auto rv = factor(vfactors);
             if (!rv)
                 return false;  // failed to factorise number
             if (numLimbs(numberZ) > 1) {
-                savedFactors[numberZ] = vfactors;  /* save factors just found */
+                savedFactors.insert(vfactors);  /* save factors just found */
                 SFmisscount++;
             }
         }

@@ -84,6 +84,7 @@ bool fileStatus(const std::string& fileName);
 bool changepathPP(std::string& path, std::string& prog);
 bool changepath2(std::string& path);
 extern bool yafu;
+extern bool yafuSilent;
 
 /* msieve.cpp */
 bool callMsieve(const Znum& num, fList& Factors);

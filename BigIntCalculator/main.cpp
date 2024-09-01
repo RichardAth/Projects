@@ -29,7 +29,7 @@ dll for Windows 7 would be used */
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-#define BIGNBR       // define to include bignbr tests 
+//#define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 extern Znum zR, zR2, zNI, zN;
 #endif
@@ -451,7 +451,9 @@ void strToUpper(const std::string &s, std::string &d) {
         d[ix] = std::toupper(s[ix]);
 }
 
-/* print elapsed time. If > 60 seconds print in hour min sec format */
+/* print elapsed time. If > 60 seconds print in hour min sec format 
+ For Windows systems, clock() measures wall-clock time, in msec.
+ ISO standard clock() would measure net CPU time */
 void PrintTimeUsed(double elapsed, const std::string &msg) {
 
     if (msg.size() > 1)
@@ -624,6 +626,8 @@ static void doFactors(const Znum &Result) {
             }
             std::cout << "\n";
             factorlist.prCounts();  // print counts
+            if (factorlist.isCarmichael())
+                std::cout << "this is a Carmichael number \n";
         }
         
     }
@@ -756,6 +760,8 @@ bool factortest(const Znum &x3, const int testnum, const int method) {
 
         if (factorlist.isCarmichael())
             std::cout << "this is a Carmichael number \n";
+        if (factorlist.powerful())
+            std::cout << "this is a Powerful number \n";
 
         if (lang)
             std::cout << "prueba " << testnum << " terminada as las ";
@@ -1258,15 +1264,14 @@ static void doTests2(const std::vector<std::string> &p) {
     results.clear();
 
     for (int i = 1; i <= p1; i++) {
-        // std::cout << '\n' << myTimeP() << "  Test " << i << " of " << p1 << '\n';
+        
         if (p3 == 0)
             mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
         else
             get_RSA(x, state, p2);  // get RSA type number size p2 bits
-        ShowLargeNumber(x, groupSize, true, false);
-        std::cout << '\n';
-        //doFactors(x, true); /* factorise x, calculate number of divisors etc */
-        factortest(x, i);     /* factorise x  */
+        //ShowLargeNumber(x, groupSize, true, false);
+                
+        factortest(x, i);     /* factorise x, calculate number of divisors etc  */
         results.back().testNum = i;
     }
 
@@ -2252,6 +2257,9 @@ static void processIni(const char * arg) {
                 PariPath = buffer.substr(9);
             }
             else inifile.push_back(buffer);  // save anything not recognised
+            if (buffer[0] == '%' && verbose > 0) {
+                std::cout << "From BigintCalculator.ini: " << buffer << '\n';
+            }
         }
         iniStr.close();
     }
@@ -2483,9 +2491,10 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     int good;
     int temp;
 
-    switch (message) {
+    switch (message) {  /* most message types should be ignored */
     case WM_DESTROY:       /* 0x02 */
     case WM_MOVE:          /* 0x03 */
+    case WM_SIZE:          /* 0x05 */
     case WM_ACTIVATE:      /* 0x06 */
     case WM_SETFOCUS:      /* 0x07 */
     case WM_KILLFOCUS:     /* 0x08 */
@@ -2498,14 +2507,16 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     case WM_SETCURSOR:     /* 0x20 */
     case WM_MOUSEACTIVATE:  /* 0x21 */
     case WM_GETMINMAXINFO:  /* 0x24 */
-    case WM_SETFONT:       /* 0x30 */
+    case WM_SETFONT:        /* 0x30 */
+    case WM_GETOBJECT:      /* 0x3d */
     case WM_WINDOWPOSCHANGING:  /* 0x46 */
-    case WM_WINDOWPOSCHANGED:  /* 0x47 */
+    case WM_WINDOWPOSCHANGED:   /* 0x47 */
     case WM_NOTIFY:        /* 0x4e */
     case WM_HELP:          /* 0x53  (F1 key pressed) */
     case WM_NOTIFYFORMAT:  /* 0x55 */
     case WM_GETICON:       /* 0x75 */
     case WM_NCDESTROY:     /* 0x82 */
+    case WM_NCCALCSIZE:    /* 0x83 */
     case WM_NCHITTEST:     /* 0x84 */
     case WM_NCPAINT:       /* 0x85 */
     case WM_NCACTIVATE:    /* 0x86 */
@@ -2575,6 +2586,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
         CheckDlgButton(DiBoxHandle, Msieve_E_option, eopt);
         CheckDlgButton(DiBoxHandle, hexPrint, hexPrFlag);
         CheckDlgButton(DiBoxHandle, sel_language, lang);
+        CheckDlgButton(DiBoxHandle, IDC_CHECK1, yafuSilent);
 
         if (yafu)
             rv = CheckRadioButton(DiBoxHandle, useYAFU, usepari, useYAFU);
@@ -2759,6 +2771,20 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
             p[1] = "PATH";
             p[2] = "SET";
             pariParam(p);
+            return FALSE;
+
+        case IDC_CHECK1:
+            b_ck = IsDlgButtonChecked(DiBoxHandle, IDC_CHECK1);
+            if (b_ck == BST_CHECKED)
+                yafuSilent = true;
+            if (b_ck == BST_UNCHECKED)
+                yafuSilent = false;
+            std::cout << "YAFU SILENT set to ";
+            if (yafuSilent)
+                std::cout << "TRUE \n";
+            else
+                std::cout << "FALSE \n";
+            break;
             return FALSE;
 
         case verboseValue:   /* set verbose */
@@ -3344,7 +3370,7 @@ static void myGetline(std::string &expr) {
 
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char* envp[]) {
     std::string expr;
     Znum Result;
     retCode rv;
@@ -3352,7 +3378,14 @@ int main(int argc, char *argv[]) {
     bool multiV = false;
 
     try {
-
+  /*      if (verbose > 0) {
+            for (int i = 0;; i++) {
+                char* env = envp[i];
+                if (env == nullptr)
+                    break;
+                std::cout << "env[" << i << "] = " << env << '\n';
+            }
+        }*/
         initialise(argc, argv);  /* initialisation code only executed once */
 
         /* start of main loop. Normal exit is via EXIT command */
@@ -3400,7 +3433,10 @@ int main(int argc, char *argv[]) {
             }
 
             /* input is not a valid command; assume it is an expression */
-            auto start = std::clock();	// used to measure execution time
+            clock_t start = std::clock();	// used to measure execution time
+            // for Windows systems, clock() measures wall-clock time, in msec
+            // ISO standard clock() would measure net CPU time
+
             removeIntSpace(expr);   /* remove spaces between digits */
             rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
 

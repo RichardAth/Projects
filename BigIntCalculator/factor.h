@@ -50,11 +50,11 @@ struct counters {
 	int siqs = 0;          // SIQS
 	int msieve = 0;        // Msieve
 	int yafu = 0;          // YAFU
-	int paric = 0;          // found by Parilib
+	int paric = 0;         // found by Parilib
 	int carm = 0;          // Carmichael
 	int leh = 0;           // Lehman:
 	int psp = 0;           // base-2 pseudoprime
-	int powerCnt = 0;		   // perfect power
+	int powerCnt = 0;	   // perfect power
 
 };
 
@@ -63,7 +63,8 @@ public:
 	Znum Factor;
 	int exponent=0;
 	int upperBound=0;    /* used during trial division to show how far we've got. 
-						-1 indicats that Factor is prime */
+						-1 indicates that Factor is prime */
+
 	/* define all comparison operators when comparing two factors */
 	bool operator == (const zFactors &b) const {
 		return this->Factor == b.Factor;
@@ -92,18 +93,39 @@ private:
 	counters ct;             /* counters showing how the factors were found */
 
 public:
-	friend void insertIntFactor(fList &Factors, int pi, long long div, ptrdiff_t ix);
+	/* define all comparison operators when comparing two factor lists.
+	   Only the value of the original number is compared. */
+	bool operator == (const fList& b) const {
+		return this->n == b.n;
+	}
+	bool operator != (const fList& b) const {
+		return this->n != b.n;
+	}
+	bool operator < (const fList& b) const {
+		return this->n < b.n;
+	}
+	bool operator <= (const fList& b) const {
+		return this->n <= b.n;
+	}
+	bool operator > (const fList& b) const {
+		return this->n > b.n;
+	}
+	bool operator >= (const fList& b) const {
+		return this->n >= b.n;
+	}
+
+	friend void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix);
 	friend bool insertBigFactor(fList &Factors, const Znum &divisor);
 	friend void SortFactors(fList &Factors);
-	friend void TrialDiv(fList &Factors, long long LehmanLimit);
-	friend bool factor(const Znum &toFactor, fList &Factors);
+	friend void TrialDiv(fList &Factors, unsigned long long LehmanLimit);
+	friend bool factor(fList &Factors);
 	friend void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num);
 	friend bool ecm(const Znum &zN, fList &Factors, Znum &Zfactor);
 	friend std::vector <Znum> ModSqrt(const Znum &aa, const Znum &m);
 	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
-	friend bool getfactors(const Znum& n, uint32_t b, fList& Factors);
+	friend static bool getfactors(const Znum& n, uint32_t b, fList& Factors);
 	friend bool factorCarmichael(const Znum& p, fList& Factors, bool pseudoP);
 	friend void insertCarmichaelFactor(Znum& Aux4, const Znum &p, fList& Factors,
 		bool& factorsFound, const int countdown, const int ctr, const int i, int ref);
@@ -615,7 +637,7 @@ Repeated factors: No or Yes
 
 void showECMStatus(void);
 constexpr unsigned long long int gcd(unsigned long long int u, unsigned long long int v);
-long long int PollardRho(long long int n, int depth = 0);
+unsigned long long int PollardRho(unsigned long long int n, int depth = 0);
 
 bool factorise(Znum numberZ, fList &vfactors, Znum quads[]);
 
@@ -656,4 +678,3 @@ the text string a, function name, line number and source file name */
     sprintf_s(mesg, sizeof(mesg), "%s %s line  %d in file %s ", a,  __func__, __LINE__, __FILE__); \
 	throw std::range_error(mesg);                \
 }
-
