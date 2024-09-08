@@ -775,7 +775,7 @@ unsigned long long int PollardRho(unsigned long long int n, int depth)
     return d;
 }
 
-/* trial division & Pollard-Rho. Uses first 33333 primes. Also weak
+/* trial division & Pollard-Rho. Uses first 33334 primes. Also weak
   pseudoprimes base 2 are factorised (maybe only partly) if < 190 digits. */
 static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
     bool restart = false;  // set true if trial division has to restart
@@ -805,9 +805,9 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
                     continue;
                 }
             }
-            /* trial division. Uses first 33333 primes */
+            /* trial division. Uses first 33334 primes */
             //while (upperBound < std::min((int)prime_list_count,  155611)) {
-            while (upperBound < std::min((int)prime_list_count, 33333)) {
+            while (upperBound < std::min((int)prime_list_count, 33334)) {
                 testP = primeList[upperBound];
                 if (testP*testP > Factors.f[i].Factor) {
                     Factors.f[i].upperBound = -1; // show that residue is prime
@@ -870,9 +870,9 @@ returns false only if ecm returns an error. */
 static bool factor(fList &Factors) {
     Znum toFactor = Factors.n;
     unsigned long long testP;
-    const unsigned long long MaxP = 393203;       // use 1st 33335 primes 
+    const unsigned long long MaxP = 393203;       // use 1st 33334 primes 
     //const unsigned long long MaxP = 2'097'143;  // use 1st 155611 primes
-    /* larger value seems to slow down factorisation overall. */
+    /* larger value for Maxp seems to slow down factorisation overall. */
     // MaxP must never exceed 2'097'152 to avoid overflow.
     const unsigned long long PollardLimit = MaxP*MaxP*MaxP;
 
@@ -1672,7 +1672,7 @@ bool factorise(Znum numberZ, fList &vfactors, Znum quads[]) {
 
     try {
         bool pos = true;
-        bool hit = false;  /* set true if numberZ facrors found in cache */
+        bool hit = false;  /* set true if numberZ factors found in cache */
 
         if (numberZ == 0)
             return false;  // function factor can't factorize zero

@@ -685,6 +685,11 @@ This is actually Dario Alpern's solver, converted from a web page to a console
 program. 
 
 [PRINT]
+Test printing of non-ascii characters
+
+English
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG.
+the quick brown fox jumps over the lazy dog.
 
 Russsian
 ЁЂЃЄЅФЧЫЮ
@@ -693,7 +698,7 @@ Greek
 ΆΌΈΏΣπσψόϒΩϕΠ
 
 accents etc
-«áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿?
+«áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿??
 
 others
 ¦§¨©ª«¬­­®¯°±²³´¹º»¼½¾ ❶❿
@@ -701,6 +706,7 @@ others
 
 Emoticons
 ❤💜☮☪😀🤣😅😊😍😗😗☺🤩😐🙄😥😯🥴🎈🎆🎇🎉✨🧨
+❤💚💨☮🕉🔯💌💤💫✝☸🕎💝💢💦🕳☪✡☯❤🔯💦
 
 [PARI]
 
