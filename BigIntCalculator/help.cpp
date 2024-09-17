@@ -8,6 +8,8 @@ struct HelpDialogResp{
     int Ok_Cancel;
 };
 
+extern HANDLE hConsole;   /* STD_OUTPUT_HANDLE */
+
 static HelpDialogResp hResp;  /* user choices in the help dialog box are saved here */
 
 /* process messages from dialog box for Help topics
@@ -152,7 +154,8 @@ The help file is not limited to ASCII characters. Most UTF-8 characters can be p
 void helpfunc(const std::vector<std::string>& command)
 {
     FILE* doc;
-    char str[1024];
+    char nstr[1024];
+    wchar_t wstr[1025];
     bool printtopic = false;
     bool line1 = true;
     std::string expr = " ";
@@ -229,7 +232,7 @@ retry:
     is reached */
     while (!std::feof(doc)) {
 
-        char* rv = std::fgets(str, sizeof(str), doc);   //read a line
+        char* rv = std::fgets(nstr, sizeof(nstr), doc);   //read a line
         if (rv == NULL)
             if (std::feof(doc)) {
                 break;
@@ -241,19 +244,19 @@ retry:
 
         if (line1) {
             line1 = false;     /* only do this on 1st line */
-            int d = (unsigned char)str[0] - BOM[0];    /* BOM has to be declared as unsigned char */
-            int d1 = (unsigned char)str[1] - BOM[1];
-            int d2 = (unsigned char)str[2] - BOM[2];
+            int d = (unsigned char)nstr[0] - BOM[0];    /* BOM has to be declared as unsigned char */
+            int d1 = (unsigned char)nstr[1] - BOM[1];
+            int d2 = (unsigned char)nstr[2] - BOM[2];
             if (d == 0 && d1 == 0 && d2 == 0) {
-                 std::memmove(str, str + 3, std::strlen(str) - 2);  /* remove BOM */
+                 std::memmove(nstr, nstr + 3, std::strlen(nstr) - 2);  /* remove BOM */
                 UTF8 = true;
             }
         }
 
         //is this a header?
-        if ((str[0] == '[') && (str[std::strlen(str) - 2] == ']')) {
+        if ((nstr[0] == '[') && (nstr[std::strlen(nstr) - 2] == ']')) {
             if (_stricmp(helptopic.c_str(), "LIST")== 0) {
-                wprintf_s(L"%S", str); /* print header*/
+                wprintf_s(L"%S", nstr); /* print header*/
             }
             else {
                 if (printtopic)
@@ -261,8 +264,8 @@ retry:
                                Only print 1 topic per help command */
 
                                //does it match our topic?
-                str[std::strlen(str) - 2] = '\0'; /* overwrite ']' with null */
-                if (_stricmp(helptopic.c_str(), str + 1) == 0)
+                nstr[std::strlen(nstr) - 2] = '\0'; /* overwrite ']' with null */
+                if (_stricmp(helptopic.c_str(), nstr + 1) == 0)
                     /* we get a match if the topic between [ and ] = helptopic */
                     printtopic = true;   /* we have found the required topic*/
                 lineCount = 0;    /* reset line count */
@@ -280,7 +283,14 @@ retry:
                     else
                         lineCount = 0;
                 }
-                wprintf_s(L"%S", str);  /* convert ascii or utf-8 to wide chars, print line */
+                /* convert ascii or utf-8 to wide chars, print line */
+                MultiByteToWideChar(CP_UTF8, 0, nstr, sizeof(nstr), wstr, sizeof(wstr));
+#ifdef _WIN32
+                DWORD n_written;
+                WriteConsoleW(hConsole, wstr, (DWORD)wcslen(wstr), &n_written, nullptr);
+#else
+                wprintf_s(L"%s", wstr);
+#endif
                 lineCount++;
             }
         }

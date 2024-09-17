@@ -3283,8 +3283,13 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     else {
         auto lc = std::setlocale(LC_ALL, EnLocale);      // allows non-ascii characters to print
     }
-
     printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
+#ifdef _DEBUG
+    auto cp = GetConsoleOutputCP();
+    SetConsoleOutputCP(CP_UTF8);
+    if (cp != CP_UTF8)
+        std::cout << "Console OP code page changed from " << cp << " to " << CP_UTF8 << '\n';
+#endif
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
         << '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
 

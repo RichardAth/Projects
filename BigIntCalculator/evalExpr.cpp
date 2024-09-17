@@ -2031,7 +2031,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         generatePrimes(2097169);
         primeFactors(n, f);  /* get prime factors of n in f */
         if (f.factorlist[f.factorcount - 1][0] > INT_MAX)
-            return retCode::NUMBER_TOO_HIGH;
+            return retCode::NUMBER_TOO_HIGH;  /* largest prime factor > INT_MAX */
         result = pisanof(n, f);
         break;
     }

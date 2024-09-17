@@ -30,7 +30,10 @@ These commands include the HELP command.
 You can get further help by entering "HELP <topic>" selecting from the following topics:
 expression  function  yafu  msieve  other  test  loop   background qmes  pari
 
-or enter "HELP <function name>" for help on a specific function.
+or enter "HELP <name>" for help on a specific function or command, or
+HELP LIST for a list of all topic headings in the help file. 
+If HELP is entered without any parameters a dialog box is opened, which allows
+you to select one of the main topics.
 
 [EXPRESSION]
 Expressions are composed of numbers, operators, functions and user variables.
@@ -201,6 +204,7 @@ PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31,
                   long.
 ISSQUAREFREE(n) : returns -1 if n is square-free, otherwise 0.
 CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
+                  If n is square-free core(n) = n. 
 RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
 [OTHER]
 other commands: 
@@ -231,7 +235,8 @@ EXIT   Terminates the calculator program.
 [YAFU]
 The YAFU command controls factorisation using YAFU:
 
-   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off)
+   YAFU ON   Turns on factorisation using YAFU (and turns Msieve off). YAFU ON
+             is set by default.
    YAFU OFF  Turns off factorisation using YAFU (revert to built-in ECM and SIQS)
    YAFU PATH Displays the path used when starting YAFU. The path is saved in the 
              .ini file so only needs to be set once. It will also verify that the 
@@ -261,7 +266,7 @@ The YAFU command controls factorisation using YAFU:
              the correct folder then click on any file. The new path to the ggnfs 
              files will then be saved in the ggnfs_dir parameter of the YAFU.ini file.
    YAFU SILENT ON turns on the -silent option in YAFU, which prevents virtually
-             all output from YAFU to the screen.
+             all output from YAFU to the screen. This is set by default. 
    YAFU SILENT OFF turns off the -silent option.
 
 YAFU is on by default but can be turned off by the "YAFU OFF" command and turned 
@@ -685,6 +690,9 @@ This is actually Dario Alpern's solver, converted from a web page to a console
 program. 
 
 [PRINT]
+PRINT command: Print the names and values of any user variables.
+
+
 Test printing of non-ascii characters
 
 English
@@ -699,6 +707,15 @@ Greek
 
 accents etc
 «áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿??
+
+Japanese Kanji by Hiragana
+亜唖娃阿哀愛挨姶逢葵茜穐悪握渥旭葦芦鯵梓杏
+
+Japanese Kanji by radical
+瓜瓠瓠瓣瓦瓧瓩瓮瓲瓰瓱瓸疉疂病白皀皺
+
+Simplified Chinese by PinYin
+啊阿呵吖腌锕埃挨哎唉唉哀鞍氨安俺肮昂凹敖熬鏖
 
 others
 ¦§¨©ª«¬­­®¯°±²³´¹º»¼½¾ ❶❿
@@ -773,7 +790,7 @@ Totient(n)    finds the number of positive integers less than n which are
               relatively prime to n.
 [CARMICHAEL]
 Carmichael(n)   λ(n) of a positive integer n is the smallest positive integer 
-                m such that a^m ≡ 1   (mod n) for every integer a between 1 
+                m such that a^m ≡ 1  (mod n) for every integer a between 1 
                 and n that is coprime to n. Also known as the reduced totient
                 function.
 [DEDEKIND]
@@ -808,7 +825,7 @@ ISPOLYGONAL(n, s) returns -1 if n is a polygonal number, otherwise 0. s
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
 [NUMDIVS]
-NumDivs(n)  Number of positive divisors of n either prime or composite.
+NumDivs(n)  Number of positive divisors of n, either prime or composite.
 [SUMDIVS]
 SumDivs(n, x)   Sum of xth power of positive divisors of n, either prime or 
                 composite. if x = 0 the result is the same as the NumDivs function.
@@ -906,7 +923,7 @@ INVTOT(x)   finds n such that totient(n) = x. There may be no such value, or
 POPCNT(x)   for x >= 0, counts the number of 1-bits, also known as the
             Hamming weight.
 [HAMDIST]
-HAMDIST(x, y  counts the number of bits which differ beween x and y. x and
+HAMDIST(x, y)  counts the number of bits which differ beween x and y. x and
               y must have the same sign.
 [GF]
 GF(x)       Gauss Factorial of x, defined as the product of all positive 
@@ -948,3 +965,17 @@ V n  Set 'verbosity' to n. n=0 is the default which minimises output.
        n = 1 turns on many messages that show more of what is happening internally.
        n = 2 turns on even more messages. The V setting can also increase output 
        from YAFU, unless YAFU SILENT ON is set.
+
+[EXIT]
+The calculator program will terminate.
+[SET]
+The SET command opens a dialog box which allows many settings to be changed. 
+Many of the current settings are also displayed. This intended to be a more 
+user-friendly way to change settings than the text-based commands.
+
+Equivalents to all the YAFU, MSIEVE and PARI command parameters are available. 
+There are also equivalents to the X, D, E, S, F and V commands.
+Also this is the only way to change the 'group size' used to format output of 
+large numbers.
+Also a convenient way to check or change the path to access the Help File.
+(The SET command itself does not depend on the Help File)

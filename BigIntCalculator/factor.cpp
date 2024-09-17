@@ -248,7 +248,10 @@ static void InsertAurifFactors(fList &Factors, const Znum &Base,
 }
 
 /* Original number to be factored = Base^Expon - increment 
-increment = 1 or -1 */
+increment = 1 or -1 
+see https://en.wikipedia.org/wiki/Cunningham_number 
+and https://en.wikipedia.org/wiki/Cunningham_Project
+*/
 static void Cunningham(fList &Factors, const Znum &Base, int Expon,
     const int increment, const Znum &Original) {
     int Expon2, k;
@@ -542,8 +545,8 @@ static void FCarmichaelproc(const Znum& p, const Znum& a, const uint64_t PsRand,
     Znum Aux2, Aux3, Aux4, base;
     int i;
 
-    base = PsRand; 
-    mpz_powm(ZT(Aux2), ZT(base), ZT(a), ZT(p));
+    base = PsRand;   /* change type to Znum */
+    mpz_powm(ZT(Aux2), ZT(base), ZT(a), ZT(p));  /* Aux2 = base^a mod p */
     // If Aux2 = 1 or Aux2 = p-1, then try next pseudo-random number.
     if (Aux2 == 1 || Aux2 == p - 1) {
         return;    // This base cannot find a factor. Try another one.
@@ -1661,7 +1664,7 @@ long long SFmisscount = 0;   /* number of 'misses' searching savedFactors */
 /********************************************************************************
 code below is to interface between DA's code
 and the new code that uses Znums, which are really mpz_t integers from MPIR or GMP
-multiprecision library, with a c++ class wrapped around them that allows them
+multiprecision library, with a C++ class wrapped around them that allows them
 to be used pretty much like normal integers. 
 **********************************************************************************/
 
