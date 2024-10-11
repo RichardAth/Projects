@@ -567,11 +567,7 @@ A. If the factor is a perfect power replace it with the number which is the root
 B. Test whether the number is prime. The test used also recognises base-2 pseudoprimes
    which are in fact composite: 
    If it is a base-2 pseudoprime try to factorise it using a specific algorithm
-   designed for Carmichael numbers, but which also often works for other 
-   pseudoprimes. If the carmichael number method is unsuccessful and the number
-   is a base-2 weak pseudoprime another method is then used which always yields
-   a result but can only be used for numbers which are weak pseudoprimes to a 
-   known base.   
+   designed for Carmichael numbers, but which also often works for other pseudoprimes. 
    If it is prime mark it as such. 
    Otherwise either:
       factorise it using built-in ECM, SIQS and Lehman algorithms. This method is 
@@ -708,10 +704,10 @@ Greek
 accents etc
 «áéíóú  àèìòù âêîôû õ ã ç ºª» § €$#£ ¿??
 
-Japanese Kanji by Hiragana
+Japanese Kanji by Hiragana (U+4E9C etc)
 亜唖娃阿哀愛挨姶逢葵茜穐悪握渥旭葦芦鯵梓杏
 
-Japanese Kanji by radical
+Japanese Kanji by radical (U+4E00 etc)
 瓜瓠瓠瓣瓦瓧瓩瓮瓲瓰瓱瓸疉疂病白皀皺
 
 Simplified Chinese by PinYin

@@ -418,7 +418,7 @@ public:
 };  /* end of BigInteger class definition */
 
 bool BigIntIsZero(const BigInteger* value);
-void BigIntChSign(BigInteger* value);   /* does same job as BigIntNegate */
+//void BigIntChSign(BigInteger* value);   /* does same job as BigIntNegate */
 void BigIntAbs(BigInteger* value);  /* if value is -ve, change its sign */
 void Bin2Dec(const BigInteger &BigInt, char *decimal, int groupLength);
 void PrintBigInteger(const BigInteger* pBigInt, int groupLength);

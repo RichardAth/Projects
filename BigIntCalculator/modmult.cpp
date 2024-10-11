@@ -1853,6 +1853,7 @@ void modPow(const limb* base, const limb* exp, int nbrGroupsExp, limb* power)
     }
 }
 
+/* power = base^exp mod TestNbr */
 void modPowBaseInt(int base, const limb* exp, int nbrGroupsExp, limb* power)
 {
     int NumberLengthBytes = (NumberLength + 1) * (int)sizeof(limb);
