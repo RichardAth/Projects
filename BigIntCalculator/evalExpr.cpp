@@ -1407,7 +1407,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         return retCode::EXPR_OK;
     }
     case opCode::not_less: {
-        if (p[0] <= p[1])
+        if (p[0] >= p[1])
             result = -1;
         else
             result = 0;

@@ -823,6 +823,19 @@ static void doTests(void) {
         "20 - 32^2/4*7",                -1772,
         "(20-32)^2 / 4 * 7",              252,   
         "(20-32)^2 / (4*7)",                5,
+        /* comparisons. -1 = true, 0 = false */
+        "5>5",                              0,
+        "5>4",                             -1,
+        "4<5",                             -1,
+        "4<4",                              0,
+        "4<=4",                            -1,
+        "4<=3",                             0,
+        "5>=5",                            -1,
+        "5>=6",                             0,
+        "5==5",                            -1,
+        "5==6",                             0,
+        "5!=6",                            -1,
+        "5!=5",                             0,
         "19!",             121645100408832000,   // factorial
         "19!!",  	                654729075,   // double factorial
         "29!!!",                  72642169600,   // triple factorial
@@ -2913,7 +2926,8 @@ static long long setdiag(void) {
 Note: command syntax checking is not rigorous; typing errors may produce unexpected 
 results. command is a copy of the input buffer, not a reference. This is intentional
 because strtok_s overwrites part of the buffer. */
-static int processCmd(std::string command) {
+static int processCmd(const std::string &txt) {
+    std::string command = txt;
 
     /* list of commands (static for efficiency) */
     const static std::vector<std::string> list =
@@ -2924,7 +2938,7 @@ static int processCmd(std::string command) {
 
     std::vector<std::string> p;   /* each parameter is stored separately in an element of p */
     int p1 = INT_MIN;             /* if 1st parameter is numeric, store its value here */
-    const char seps[] = ", \n";   /* separators between parameters; either , or space */
+    const char seps[] = ",( \n";   /* separators between parameters; either , ( or space */
     char* token = nullptr;
     char* next = nullptr;         /* used by strtok_s */
 
@@ -2974,7 +2988,20 @@ static int processCmd(std::string command) {
         return 1; 
     }	          
     case 6: /* F */ { 
+        int ix = 0;
         if (p.size() >= 2) {
+            /* check whether or not F is followed by a ( */
+            for (ix = 0; ix < txt.size(); ix++) {
+                if (toupper(txt[ix]) == 'F')
+                    break;  /* find the F*/
+            }
+            for (ix++; ix < txt.size(); ix++) {
+                if (txt[ix] == ' ')
+                    continue;    /* move past any spaces following the F */
+                if (txt[ix] == '(')
+                    return 0;    // F(n) is a function, not a command
+            }
+ 
             if (p1 != INT_MIN)
                 factorFlag = p1;
             else
@@ -3164,10 +3191,10 @@ static int processCmd(std::string command) {
             or IF (expression) THEN (expression[, expression ...])
                                  ELSE (expression[, expression ...]) */
             Znum result;
-            int rv = ifCommand(command);  /* analyse IF command */
+            int rv = ifCommand(txt);  /* analyse IF command */
             if (rv == 2) {
                 /* REPEAT */
-                exprList.push_back(command);
+                exprList.push_back(txt);
                 loop:
                 for (auto expr : exprList) {
                     if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
@@ -3192,7 +3219,7 @@ static int processCmd(std::string command) {
             }
             if (rv == 0 || rv == 3)
                 /* if command processed, now save it for possible loop */
-                exprList.push_back(command);  
+                exprList.push_back(txt);  
             /* to be completed for rv =-1, rv = 1*/
             return 1;
         }
