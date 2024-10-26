@@ -144,7 +144,7 @@ static char* getHex(Znum Bi_Nbr) {
             long long rll;
             mpz_fdiv_q_2exp(ZT(q), ZT(Bi_Nbr), 4);	// q = Bi_Nbr/16 rounded towards -inf
             mpz_fdiv_r_2exp(ZT(r), ZT(Bi_Nbr), 4);	// r = Bi_Nbr - q*16 (0 <= r <= 15)
-            rll = MulPrToLong(r);
+            rll = ZnumToLong(r);
             obuff += (rll <= 9) ? '0' + (char)rll : 'a' + (char)rll -10;  // get char '0' to 'f'
             Bi_Nbr = q;
         }
@@ -205,7 +205,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
 }
 
 /* convert biginteger to normal. Checks for overflow */
-long long MulPrToLong(const Znum &x) {
+long long ZnumToLong(const Znum &x) {
     long long rv;
     // note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
     if (numLimbs(x) <= 1 && x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
@@ -1760,7 +1760,7 @@ static void doTestsB(const std::vector<std::string> &p) {
 
     for (i = 1; i <= p1; i++) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
-        xl = MulPrToLong(x);
+        xl = ZnumToLong(x);
         rv = R3(xl);
         rv3 = R3h(x);
         if (rv3 != rv || verbose > 1 || p2 >= 37) {
@@ -2047,8 +2047,8 @@ static void doTests12(const std::vector<std::string>& p) {
 
     for (i = 1; i <= p1; i++) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
-        xl = MulPrToLong(x);
-        rv = MulPrToLong(R4(x));
+        xl = ZnumToLong(x);
+        rv = ZnumToLong(R4(x));
         rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
         if (rv3 != rv || verbose > 0 || p2 >= 25) {
             std::cout << myTimeP() << " R4(" << xl << ") =" << rv
@@ -2108,7 +2108,7 @@ static void doTests13(const std::vector<std::string>& p) {
        mpz_nextprime(ZT(prime), ZT(prime));  /* make sure we have a prime number */
 
    for (int ctr = 1; ctr <= p1; ctr++) {
-       llprime = MulPrToLong(prime);
+       llprime = ZnumToLong(prime);
        if (llprime > 331) {
            break;     /* stop when numbers get too large */
        }

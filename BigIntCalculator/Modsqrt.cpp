@@ -15,37 +15,6 @@ static Znum pow2bi(unsigned __int64 exp) {
 }
 
 
-/* find x such that x ≡ a1 (mod n1) and x ≡ a2 (mod n2)
-x will be in the range 0 to n1*n2. n1 and n2 must be mutually prime
-We use the extended Euclidian algorithm to find integers m1 and m2 such that
-m1*n1 + m2*n2 = gcd(n1,n2)
-A solution is given by x = a1*m2*n2 + a2*m1*n1, provided n1 and n2 are co-prime
-N.B. if n1 and n2 are not co-prime an exception will be thrown
-*/
-static void ChineseRem(const Znum &a1, const Znum &n1, const Znum &a2, const Znum &n2, Znum &x) {
-
-	Znum m1, m2, gcd, t2;
-	mpz_gcdext(ZT(gcd), ZT(m1), ZT(m2), ZT(n1), ZT(n2));
-	if (gcd != 1) {
-		char buf[4000];  /* guess how big buffer should be; if it's too small the
-						 message will be truncated */
-		gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd",
-			a1, n1, a2, n2);
-		ThrowExc(buf);  /* throw an exception */
-	}
-	x = a1 * m2*n2 + a2 * m1*n1;
-
-	t2 = abs(n1*n2);
-	if (x < 0) {    // if x < 0 add a multiple of n1*n2
-		//gmp_printf("x=%Zd, t2=%Zd\n", x, t2);
-		mpz_fdiv_r(ZT(x), ZT(x), ZT(t2));  // ensure x is in required range
-	}
-	if (x >= t2) {  // if x n1*n2 subtract a multiple of n1*n2
-		//gmp_printf("x=%Zd, t2=%Zd\n", x, t2);
-		mpz_fdiv_r(ZT(x), ZT(x), ZT(t2));
-	}
-	return;
-}
 
 /* find least significant 1-bit in num, equivalent to counting 0-bits, starting from 
 least significant bit. If num is a power of 2, then 2^return value = num.*/
@@ -567,8 +536,8 @@ static void test9timerx(int type, int p2d, int p3d) {
 
 		case 1:
 			if (p2d < 64) {
-				long long xl = MulPrToLong(x);
-				long long ml = MulPrToLong(m);
+				long long xl = ZnumToLong(x);
+				long long ml = ZnumToLong(m);
 				rl = ModSqrtBF(xl, ml);
 				if (rl.empty())
 					nrCount++;

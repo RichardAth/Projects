@@ -203,7 +203,7 @@ int ZtoLimbs(limb *number, Znum numberZ, int NumLen) {
         /* calculating quotient and remainder separately turns
         out to be faster */
         mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-        number[i] = (int)MulPrToLong(remainder);
+        number[i] = (int)ZnumToLong(remainder);
         mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
 
         i++;

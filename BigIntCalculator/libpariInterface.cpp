@@ -416,7 +416,7 @@ Znum R3h(Znum n) {
     while ((n & 3) == 0)
         n >>= 2;  /* if n is a multiple of 4, divide n by 4*/
 
-    int mod = (int)MulPrToLong(n & 7);
+    int mod = (int)ZnumToLong(n & 7);
 
     /* note that in general h(n) may not be an integer. hclassno returns num and
     denom and the ratio is the class number */
@@ -617,9 +617,9 @@ Znum stirling(const Znum& n, const Znum& m, const Znum& flag) {
     ulong* av = *avma_ref;
 
     /* convert m, n, and flag to 64-bit integers */
-    uint64_t ln = MulPrToLong(n);
-    uint64_t lm = MulPrToLong(m);
-    long long f = MulPrToLong(flag);
+    uint64_t ln = ZnumToLong(n);
+    uint64_t lm = ZnumToLong(m);
+    long long f = ZnumToLong(flag);
     GEN retval = stirling_ref(ln, lm, f);  /* get stirling number */
     InttoMP(retval, ZT(num));  /* convert result to Znums */
     ptrdiff_t diff = av - *avma_ref;
@@ -653,7 +653,7 @@ Znum eulerfrac(const Znum& n) {
 
     Znum num;
     specinit();     /* initialise as required*/
-    long long nl = MulPrToLong(n);
+    long long nl = ZnumToLong(n);
     GEN retval;
     ulong* av = *avma_ref;
 

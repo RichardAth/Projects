@@ -905,7 +905,7 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
         /* calculating quotient and remainder separately turns
         out to be faster */
         mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-        number.limbs[i] = (int)MulPrToLong(remainder);
+        number.limbs[i] = (int)ZnumToLong(remainder);
         mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
         i++;
     }

@@ -102,6 +102,9 @@
     <ClCompile Include="Test14.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="chinese.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="showtime.h">

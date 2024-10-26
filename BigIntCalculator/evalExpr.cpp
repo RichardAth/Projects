@@ -183,7 +183,8 @@ enum class opCode {
     fn_pisano,            /* calculate the Pisano period of n */
     fn_core,              /* calculate square-free d such that n/d is a square. */
     fn_radical,           /* get largest square-free divisor of n */
-    fn_iscarmichael,
+    fn_iscarmichael,      /* return -1 if n is a carmichael number */
+    fn_chinese,           /* apply Chinese Remainder Theorem */
     fn_invalid = -1,
 };
 
@@ -196,7 +197,8 @@ struct  functions {
 
 /* list of function names. No function name can begin with SHL, SHR, NOT, 
  AND, OR, XOR because this would conflict with the operators. 
- Function names should also not conflict with commands. Names are not case-
+ Function names should also not conflict with commands. (The F command needs
+ a messy kludge to distinguish it from the F(n) function) Names are not case-
  sensitive.  Longer names must be listed before short ones that start with the 
  same letters to avoid mismatches e.g. FACTCONCAT before F, ISPOWERFUL before 
  ISPOW, BPSW before B, etc*/
@@ -208,6 +210,7 @@ const static struct functions functionList[]{
     "ABS",       1,  opCode::fn_abs,           /* absolute value */
     "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
     "B",         1,  opCode::fn_pp,			   // previous prime
+    "CHINESE",   4,  opCode::fn_chinese,       // Chinese Remainder Theorem
     "CLASSNO",   1,  opCode::fn_classno,       // class number
     "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
     "CORE",      1,  opCode::fn_core,          /* get square-free number */
@@ -469,7 +472,7 @@ static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     divisors = f.NoOfDivs();
     if (divisors > 33333333)
         return -1;  /* cannot make list of divisors; there are too many */
-    numdiv = MulPrToLong(divisors);   /* number of divisors of tnum */
+    numdiv = ZnumToLong(divisors);   /* number of divisors of tnum */
     numfactors = f.fsize();           /* number of unique prime factors of tnum */
     divlist.resize(numdiv);
 
@@ -512,7 +515,7 @@ static Znum ComputeSumDivs(const Znum &n, const Znum &x) {
         return 1;   // 1 only has 1 divisor. 
     auto rv = factorise(n, factorlist, nullptr);
     if (rv) {
-        auto divisors = factorlist.DivisorSum((int)MulPrToLong(x));
+        auto divisors = factorlist.DivisorSum((int)ZnumToLong(x));
         return divisors;
     }
     else return 0;
@@ -599,7 +602,7 @@ static retCode ShiftLeft(const Znum &first, const Znum &bits, Znum &result) {
     if (bits > LLONG_MAX || bits < LLONG_MIN)
         return retCode::INVALID_PARAM;
 
-    long long shift = MulPrToLong(bits);
+    long long shift = ZnumToLong(bits);
 
     if (shift == 0) {
         result = first;
@@ -644,6 +647,7 @@ static int PrimalityTest(const Znum &Value) {
     else
         return 0;  // number is definately composite
 }
+
 /* same purpose as PrimalityTest but optimised for smaller numbers. 1st call can be very slow,
 but subsequent calls are very quick. -1 means definately prime*/
 static int PrimalityTestSmall(const long long Value) {
@@ -748,7 +752,7 @@ static uint64_t PrimePi(const Znum &Zn) {
     if (Zn < 2) return 0;
     if (Zn == 2) return 1;     // 2 is the smallest prime number
 
-    unsigned long long n = MulPrToLong(Zn);
+    unsigned long long n = ZnumToLong(Zn);
 
     if (primeListMax >= n)
         return (PrimePiC(n));  /* search for n in prime list. */
@@ -906,7 +910,7 @@ be +ve, 0 or -ve See https://oeis.org/A005875 & https://oeis.org/A005875/b005875
 static Znum R3(Znum num) {
 
     if (num < 20'000'000'000'000'000) {
-        __int64 llnum = MulPrToLong(num);
+        __int64 llnum = ZnumToLong(num);
         return R3(llnum);
     }
     Znum sum = 0, sq, multiplier = 1;
@@ -1061,7 +1065,7 @@ static int lltTrialDiv(const Znum& n, const long long p) {
         limit = maxlimit;   // larger limit would take too long (also encounter > 64-bit integers)
     }
 
-    long long ll_limit = MulPrToLong(limit);
+    long long ll_limit = ZnumToLong(limit);
     Znum rem;
     for (long long i = 1; i <= ll_limit; i++) {
         long long d = 2 * i * p + 1;
@@ -1126,7 +1130,7 @@ If verbose is > 1 trial division is used to try to find factors */
 Znum llt(const Znum& p) {
     int rv;
     Znum n, tmp;
-    long long exp = MulPrToLong(p); /* exp = p */
+    long long exp = ZnumToLong(p); /* exp = p */
     clock_t t1, t2, t3;
 
     /* 1st check if p is prime. */
@@ -1229,7 +1233,7 @@ static bool isPolygonal(const Znum& x, const Znum s, long long int *n = nullptr)
         N = num / denom;
         assert(num % denom == 0);
         if (n != nullptr && N <= LLONG_MAX)
-            *n = MulPrToLong(N);   /* return value of n */
+            *n = ZnumToLong(N);   /* return value of n */
         if (verbose > 0) {
             std::cout << x << " is the " << N << "-th " << s << "-gonal number \n";
         }
@@ -1301,6 +1305,24 @@ Znum pisanof(const long long n, const factorsS &f) {
     return result;
 }
 
+Znum ChineseRT(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2) {
+    if (a1 <= 0 || a2 <= 0 || n1 <=1 || n2 <= 1)
+        return -1;     /* invalid parameter value */
+    if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
+        long long a1l = ZnumToLong(a1);
+        long long a2l = ZnumToLong(a2);
+        long long n1l = ZnumToLong(n1);
+        long long n2l = ZnumToLong(n2);
+        long long res = ChineseRem(a1l, n1l, a2l, n2l);
+        return res;
+    }
+    Znum result;
+    if (gcd(n1, n1) != 1)
+        return 0;    /* return error id n1 & n2 not co-prime */
+    ChineseRem(a1, n1, a2, n2, result);
+    return result;
+}
+
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 Most of the others have two. GCD and LCM have an indefinate number of operands. 
@@ -1321,7 +1343,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_HIGH;
         if (p[1] < 1)
             return retCode::NUMBER_TOO_LOW;
-        long long k = MulPrToLong(p[1]);
+        long long k = ZnumToLong(p[1]);
         mpz_bin_ui(ZT(result), ZT(p[0]), k);
         return retCode::EXPR_OK;
     }
@@ -1364,7 +1386,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::EXPONENT_TOO_LARGE;
         if (p[1] < 0)
             return retCode::EXPONENT_NEGATIVE;
-        long long exp = MulPrToLong(p[1]);
+        long long exp = ZnumToLong(p[1]);
         auto resultsize = (NoOfBits(p[0]) - 1)* exp;  // estimate number of bits for result
         if (resultsize > 99940)  // more than 99940 bits -> more than 30,000 decimal digits
             return retCode::INTERIM_TOO_HIGH;
@@ -1446,8 +1468,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] > LLONG_MAX)
             return retCode::NUMBER_TOO_HIGH;
 
-        long long temp = llabs(MulPrToLong(p[0]));
-        long long t2 = MulPrToLong(p[1]);
+        long long temp = llabs(ZnumToLong(p[0]));
+        long long t2 = ZnumToLong(p[1]);
         if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
             /* more than 20,000 digits in base 10 */
             return retCode::INTERIM_TOO_HIGH;
@@ -1465,7 +1487,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;
 
-        long long temp = llabs(MulPrToLong(p[0]));
+        long long temp = llabs(ZnumToLong(p[0]));
         mpz_primorial_ui(ZT(result), temp);  // get primorial
         return retCode::EXPR_OK;
     }
@@ -1596,7 +1618,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         {  /* result would exceed 20,000 digits */
             return retCode::INTERIM_TOO_HIGH;
         }
-        long long temp = MulPrToLong(ZT(p[0]));
+        long long temp = ZnumToLong(ZT(p[0]));
         bool neg = false;
         if (temp < 0) {
             /* is it a "negafibonacci" number? */
@@ -1614,7 +1636,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] > 95700)  {
             return retCode::INTERIM_TOO_HIGH; /* result would exceed 20,000 digits */
         }
-        long long temp = MulPrToLong(p[0]);
+        long long temp = ZnumToLong(p[0]);
         mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
         break;
     }
@@ -1628,7 +1650,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
             // note: biperm is limited to values <= 1,000,000
         }
-        int temp = (int)MulPrToLong(p[0]);
+        int temp = (int)ZnumToLong(p[0]);
         biperm(temp, result);   // calculate number of partitions
         break;
     }
@@ -1694,7 +1716,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
     case opCode::fn_classno: {
-        int mod = (int)MulPrToLong(p[0] % 4);
+        int mod = (int)ZnumToLong(p[0] % 4);
         if (mod < 0)
             mod += 4;
         if (mod > 1)
@@ -1770,7 +1792,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_HIGH;
         }
 
-        long long temp = MulPrToLong(ZT(p[1]));
+        long long temp = ZnumToLong(ZT(p[1]));
         mpz_root(ZT(result), ZT(p[0]), temp);  /* result = nth root of p[0]*/
         break;
     }
@@ -1908,7 +1930,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         /* get list of numbers x1, x2, ... such that totient(x) = p[0].
         if p[0] is zero InverseTotient just clears its cache. */
-        auto size = inverseTotient(MulPrToLong(p[0]), &resultsP, false, 0, false);
+        auto size = inverseTotient(ZnumToLong(p[0]), &resultsP, false, 0, false);
         if (size == 0) {
             if (verbose > 0)
                 std::cout << "Inverse Totient has no solutions \n";
@@ -2025,7 +2047,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
         if (p[0] > LLONG_MAX)
             return retCode::NUMBER_TOO_HIGH; /* avoid risk of overflow */
-        long long n = MulPrToLong(p[0]);
+        long long n = ZnumToLong(p[0]);
         factorsS f;
 
         generatePrimes(2097169);
@@ -2071,13 +2093,19 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
                 return retCode::NUMBER_TOO_HIGH;
             if (p[1] < 2)
                 return retCode::NUMBER_TOO_LOW;
-            tries = (int)MulPrToLong(p[1]);
+            tries = (int)ZnumToLong(p[1]);
             result = isCarmichael(p[0], tries);
             break;
         }
         else return retCode::INVALID_PARAM; /* too few parameters */
             
         break;
+    }
+    case opCode::fn_chinese: /* Chinese Remainder Theorem */ {
+        result = ChineseRT(p[0], p[1], p[2], p[3]);
+        if (result <= 0)
+            return retCode::INVALID_PARAM;
+        else break;
     }
     default:
         std::abort();	// should never get here

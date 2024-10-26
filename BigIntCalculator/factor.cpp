@@ -164,7 +164,7 @@ static void InsertAurifFactors(fList &Factors, const Znum &Base,
     if (Base >= 386) {
         return;    // Base is very big, so go out.
     }
-    auto llBase = MulPrToLong(Base);
+    auto llBase = ZnumToLong(Base);
 
     if (Expon % 2 == 0 && Incre == -1) {
         do {
@@ -839,7 +839,7 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
                         std::cout << "factors before Pollard factorisation: ";
                         Factors.Xprint();
                     }
-                    f = PollardRho(MulPrToLong(Factors.f[i].Factor));
+                    f = PollardRho(ZnumToLong(Factors.f[i].Factor));
                     //f = SQUFOF(MulPrToLong(Factors.f[i].Factor));
                     /* there is a small possibility that PollardFactor won't work,
                     even when factor is not prime*/
@@ -940,7 +940,7 @@ static bool factor(fList &Factors) {
         }
         if (Zpower <= PollardLimit) {
             unsigned long long f;
-            f = PollardRho(MulPrToLong(Zpower));
+            f = PollardRho(ZnumToLong(Zpower));
             if (f != 1) {
                 insertIntFactor(Factors, -1, f, i);
                 Factors.ct.prho++;
