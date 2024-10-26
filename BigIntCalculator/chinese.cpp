@@ -271,34 +271,42 @@ int64_t ChineseRem(int64_t a1, int64_t n1, int64_t a2, int64_t n2) {
 	return x;
 }
 
-/* find x such that x ≡ a1 (mod n1) and x ≡ a2 (mod n2)
-x will be in the range 0 to n1*n2. n1 and n2 must be mutually prime
+/* find x such that x ≡ a (mod m) and x ≡ b (mod n)
+x will be in the range 0 to m*n. m and n must be mutually prime
 We use the extended Euclidian algorithm to find integers m1 and m2 such that
-m1*n1 + m2*n2 = gcd(n1,n2)
-A solution is given by x = a1*m2*n2 + a2*m1*n1, provided n1 and n2 are co-prime
-N.B. if n1 and n2 are not co-prime an exception will be thrown
+m1*m + m2*n = gcd(m,n)
+A solution is given by x = a*m2*n + b*m1*m, provided m and n are co-prime
+N.B. if m and n are not co-prime an exception will be thrown
 */
-void ChineseRem(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2, Znum& x) {
+void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum& g) {
 
-	Znum m1, m2, gcd, t2;
-	mpz_gcdext(ZT(gcd), ZT(m1), ZT(m2), ZT(n1), ZT(n2));
+	Znum u, v, gcd, t2;
+	/* set gcd to gcd(m, n), also m*u + n*v = gcd */
+	mpz_gcdext(ZT(gcd), ZT(u), ZT(v), ZT(m), ZT(n));
 	if (gcd != 1) {
-		char buf[4000];  /* guess how big buffer should be; if it's too small the
-						 message will be truncated */
-		gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd",
-			a1, n1, a2, n2);
-		ThrowExc(buf);  /* throw an exception */
-	}
-	x = a1 * m2 * n2 + a2 * m1 * n1;
+		if ((a - b) % gcd != 0) {
+			if (verbose > 0) {
+				char buf[4000];  /* guess how big buffer should be; if it's too small the
+								 message will be truncated */
+				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd",
+					a, m, b, n);
 
-	t2 = abs(n1 * n2);
-	if (x < 0) {    // if x < 0 add a multiple of n1*n2
-		//gmp_printf("x=%Zd, t2=%Zd\n", x, t2);
-		mpz_fdiv_r(ZT(x), ZT(x), ZT(t2));  // ensure x is in required range
+				g = 0;   /* there is no solution */
+				return;
+			}
+		}
 	}
-	if (x >= t2) {  // if x n1*n2 subtract a multiple of n1*n2
-		//gmp_printf("x=%Zd, t2=%Zd\n", x, t2);
-		mpz_fdiv_r(ZT(x), ZT(x), ZT(t2));
+	g = a * v * n + b * u * m;
+	t2 = abs(m * n);
+	if (gcd > 1) {
+		g /= gcd;
+		t2 /= gcd;
+	}
+	if (g < 0) {    // if g < 0 add a multiple of m*n
+		mpz_fdiv_r(ZT(g), ZT(g), ZT(t2));  // ensure x is in required range
+	}
+	if (g >= t2) {  // if g > m*n subtract a multiple of m*n
+		mpz_fdiv_r(ZT(g), ZT(g), ZT(t2));
 	}
 	return;
 }

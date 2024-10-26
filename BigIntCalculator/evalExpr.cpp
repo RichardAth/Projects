@@ -1308,17 +1308,16 @@ Znum pisanof(const long long n, const factorsS &f) {
 Znum ChineseRT(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2) {
     if (a1 <= 0 || a2 <= 0 || n1 <=1 || n2 <= 1)
         return -1;     /* invalid parameter value */
-    if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
+    /*if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
         long long a1l = ZnumToLong(a1);
         long long a2l = ZnumToLong(a2);
         long long n1l = ZnumToLong(n1);
         long long n2l = ZnumToLong(n2);
+        generatePrimes((n1l > n2l) ? n1l : n2l);
         long long res = ChineseRem(a1l, n1l, a2l, n2l);
         return res;
-    }
+    }*/
     Znum result;
-    if (gcd(n1, n1) != 1)
-        return 0;    /* return error id n1 & n2 not co-prime */
     ChineseRem(a1, n1, a2, n2, result);
     return result;
 }

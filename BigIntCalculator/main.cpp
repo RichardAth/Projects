@@ -949,6 +949,7 @@ static void doTests(void) {
         "iscarmichael(1713045574801)",    0,
         "iscarmichael(1713045574803)",    1,
         "iscarmichael(1713045574819)",    2,
+        "chinese(4,15,7,18)",            79,   /* works even though 15 and 18 are not mutually prime */
     };
 
     results.clear();
