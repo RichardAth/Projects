@@ -271,12 +271,12 @@ int64_t ChineseRem(int64_t a1, int64_t n1, int64_t a2, int64_t n2) {
 	return x;
 }
 
-/* find x such that x ≡ a (mod m) and x ≡ b (mod n)
-x will be in the range 0 to m*n. m and n must be mutually prime
-We use the extended Euclidian algorithm to find integers m1 and m2 such that
-m1*m + m2*n = gcd(m,n)
-A solution is given by x = a*m2*n + b*m1*m, provided m and n are co-prime
-N.B. if m and n are not co-prime an exception will be thrown
+/* find g such that g ≡ a (mod m) and x ≡ b (mod n)
+g will be in the range 0 to m*n/gcd(m,n) -1. 
+We use the extended Euclidian algorithm to find integers u and v such that
+u*m + v*n = gcd(m,n)
+A solution is given by g = a*v*n + b*u*m, provided m and n are co-prime
+If there is no solution the value returned is zero.
 */
 void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum& g) {
 

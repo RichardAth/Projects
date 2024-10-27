@@ -1305,22 +1305,23 @@ Znum pisanof(const long long n, const factorsS &f) {
     return result;
 }
 
-Znum ChineseRT(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2) {
-    if (a1 <= 0 || a2 <= 0 || n1 <=1 || n2 <= 1)
-        return -1;     /* invalid parameter value */
-    /*if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
-        long long a1l = ZnumToLong(a1);
-        long long a2l = ZnumToLong(a2);
-        long long n1l = ZnumToLong(n1);
-        long long n2l = ZnumToLong(n2);
-        generatePrimes((n1l > n2l) ? n1l : n2l);
-        long long res = ChineseRem(a1l, n1l, a2l, n2l);
-        return res;
-    }*/
-    Znum result;
-    ChineseRem(a1, n1, a2, n2, result);
-    return result;
-}
+/* apply Chinese Remainder Theorem */
+//Znum ChineseRT(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2) {
+//    if (a1 <= 0 || a2 <= 0 || n1 <=1 || n2 <= 1)
+//        return -1;     /* invalid parameter value */
+//    /*if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
+//        long long a1l = ZnumToLong(a1);
+//        long long a2l = ZnumToLong(a2);
+//        long long n1l = ZnumToLong(n1);
+//        long long n2l = ZnumToLong(n2);
+//        generatePrimes((n1l > n2l) ? n1l : n2l);
+//        long long res = ChineseRem(a1l, n1l, a2l, n2l);
+//        return res;
+//    }*/
+//    Znum result;
+//    ChineseRem(a1, n1, a2, n2, result);
+//    return result;
+//}
 
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
@@ -2101,7 +2102,12 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
     case opCode::fn_chinese: /* Chinese Remainder Theorem */ {
-        result = ChineseRT(p[0], p[1], p[2], p[3]);
+        if (p[0] <= 0 || p[2] <= 0 || p[1] <= 1 || p[3] <= 1) {
+            return retCode::INVALID_PARAM;
+        }
+        /* apply Chinese Remainder Theorem; 
+        find result ≡ p[0] (mod p[1]) and result ≡ p[3] (mod p[4]) */
+        ChineseRem(p[0], p[1], p[2], p[3], result);
         if (result <= 0)
             return retCode::INVALID_PARAM;
         else break;
