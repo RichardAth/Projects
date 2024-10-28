@@ -210,7 +210,7 @@ const static struct functions functionList[]{
     "ABS",       1,  opCode::fn_abs,           /* absolute value */
     "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
     "B",         1,  opCode::fn_pp,			   // previous prime
-    "CHINESE",   4,  opCode::fn_chinese,       // Chinese Remainder Theorem
+    "CHINESE",   SHORT_MAX,  opCode::fn_chinese,   // Chinese Remainder Theorem
     "CLASSNO",   1,  opCode::fn_classno,       // class number
     "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
     "CORE",      1,  opCode::fn_core,          /* get square-free number */
@@ -1305,24 +1305,6 @@ Znum pisanof(const long long n, const factorsS &f) {
     return result;
 }
 
-/* apply Chinese Remainder Theorem */
-//Znum ChineseRT(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2) {
-//    if (a1 <= 0 || a2 <= 0 || n1 <=1 || n2 <= 1)
-//        return -1;     /* invalid parameter value */
-//    /*if (a1 <= LLONG_MAX && a2 <= LLONG_MAX && n1 <= LLONG_MAX && n2 <= LLONG_MAX) {
-//        long long a1l = ZnumToLong(a1);
-//        long long a2l = ZnumToLong(a2);
-//        long long n1l = ZnumToLong(n1);
-//        long long n2l = ZnumToLong(n2);
-//        generatePrimes((n1l > n2l) ? n1l : n2l);
-//        long long res = ChineseRem(a1l, n1l, a2l, n2l);
-//        return res;
-//    }*/
-//    Znum result;
-//    ChineseRem(a1, n1, a2, n2, result);
-//    return result;
-//}
-
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 Most of the others have two. GCD and LCM have an indefinate number of operands. 
@@ -2102,12 +2084,16 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
     case opCode::fn_chinese: /* Chinese Remainder Theorem */ {
-        if (p[0] <= 0 || p[2] <= 0 || p[1] <= 1 || p[3] <= 1) {
-            return retCode::INVALID_PARAM;
-        }
+        if (p.size() % 2 != 0)
+            return retCode::NUMBER_OF_PARAMS_NOT_EVEN;
+        if (p.size() < 4)
+            return retCode::TOO_FEW_PARAMS;
+ 
         /* apply Chinese Remainder Theorem; 
-        find result ≡ p[0] (mod p[1]) and result ≡ p[3] (mod p[4]) */
-        ChineseRem(p[0], p[1], p[2], p[3], result);
+        find result ≡ p[0] (mod p[1]) and result ≡ p[2] (mod p[3]) etc */
+        ChineseRemV(p, result);
+        if (result == -2)
+            return retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE;
         if (result <= 0)
             return retCode::INVALID_PARAM;
         else break;

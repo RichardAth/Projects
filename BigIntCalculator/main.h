@@ -14,6 +14,8 @@ enum class retCode
 	TOO_MANY_PAREN,
 	INVALID_PARAM,
 	ARGUMENTS_NOT_RELATIVELY_PRIME,
+	NUMBER_OF_PARAMS_NOT_EVEN,
+	TOO_FEW_PARAMS,
 	//EXPR_BREAK,
 	//EXPR_OUT_OF_MEMORY,
 	//EXPR_CANNOT_USE_X_IN_EXPONENT,
@@ -22,7 +24,7 @@ enum class retCode
 	EXPONENT_NEGATIVE,
 	//EXPR_LEADING_COFF_MULTIPLE_OF_PRIME,
 	//EXPR_CANNOT_LIFT,
-	//EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
+	EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE,
 	//EXPR_MODULUS_MUST_BE_PRIME_EXP,
 	EXPR_BASE_MUST_BE_POSITIVE,
 	//EXPR_POWER_MUST_BE_POSITIVE,
@@ -184,3 +186,4 @@ void get_computer_info(char* CPUidstr, double &MEAS_CPU_FREQUENCY);
 
 int64_t ChineseRem(int64_t a1, int64_t n1, int64_t a2, int64_t n2);
 void ChineseRem(const Znum& a1, const Znum& n1, const Znum& a2, const Znum& n2, Znum& x);
+void ChineseRemV(const std::vector <Znum>& p, Znum& result);

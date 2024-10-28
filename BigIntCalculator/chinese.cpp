@@ -271,7 +271,7 @@ int64_t ChineseRem(int64_t a1, int64_t n1, int64_t a2, int64_t n2) {
 	return x;
 }
 
-/* find g such that g ≡ a (mod m) and x ≡ b (mod n)
+/* find g such that g ≡ a (mod m) and g ≡ b (mod n)
 g will be in the range 0 to m*n/gcd(m,n) -1. 
 We use the extended Euclidian algorithm to find integers u and v such that
 u*m + v*n = gcd(m,n)
@@ -288,25 +288,57 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 			if (verbose > 0) {
 				char buf[4000];  /* guess how big buffer should be; if it's too small the
 								 message will be truncated */
-				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd",
+				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd \n",
 					a, m, b, n);
-
+				std::cout << buf;
 				g = 0;   /* there is no solution */
-				return;
 			}
+			return;
 		}
 	}
 	g = a * v * n + b * u * m;
 	t2 = abs(m * n);
 	if (gcd > 1) {
 		g /= gcd;
-		t2 /= gcd;
+		t2 /= gcd;  /* t2 = lcm(m, n) */
 	}
-	if (g < 0) {    // if g < 0 add a multiple of m*n
+	if (g < 0) {    // if g < 0 add a multiple of lcm(m*n)
 		mpz_fdiv_r(ZT(g), ZT(g), ZT(t2));  // ensure x is in required range
 	}
-	if (g >= t2) {  // if g > m*n subtract a multiple of m*n
+	if (g >= t2) {  // if g > m*n subtract a multiple of lcm(m*n)
 		mpz_fdiv_r(ZT(g), ZT(g), ZT(t2));
 	}
 	return;
+}
+
+/* find g such that g ≡ p[0] (mod p[1], g ≡ p[1] (mod[p2]) etc */
+void ChineseRemV(const std::vector <Znum>& p, Znum& result) {
+	Znum modulus = p[1];
+	result = p[0];
+	if (p[0] <= 0) {
+		result = -1;  /* invalid parameter value */
+		return;
+	}
+	if (p[1] <= 1) {
+		result = -2;   /* modulus must be > 1 */
+		return;
+	}
+		
+	for (unsigned int ix = 2; ix < p.size(); ix += 2) {
+		if (p[ix] <= 0) {
+			result = -1;
+			return;
+		}
+		if (p[ix+1] <= 1) {
+			result = -2;    /* modulus must be > 1 */
+			return;
+		}
+		ChineseRem(result, modulus, p[ix], p[ix + 1], result);
+		if (result == 0)
+			return;  /* there is no solution */
+		modulus = lcm(modulus, p[ix + 1]);  /* get new modulus */
+		if (verbose > 1)
+			gmp_printf("Chinese rem. ix = %d, result %Zd, modulus = %Zd \n",
+				ix, ZT(result), ZT(modulus));
+	}
 }

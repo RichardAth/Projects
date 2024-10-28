@@ -429,13 +429,20 @@ void textError(retCode rc) {
     //	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
     //		"Power must be greater than zero\n");
     //	break;
-    //case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
-    //	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
-    //	break;
+    case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
+    	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
+    	break;
     case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
         std::cout << (lang ? "El módulo no debe ser negativo\n" :
             "Modulus must not be negative\n");
         break;
+    case retCode::TOO_FEW_PARAMS:
+        std::cout << (lang ? "Muy pocos parámetros\n" :
+            "Too few parameters\n");
+        break;
+    case retCode::NUMBER_OF_PARAMS_NOT_EVEN:
+        std::cout << (lang ? "El número de parámetros debe ser par\n" :
+            "There must be an even number of parameters\n");
     default:
         printf_s( "unknown error code: %d\n", (int)rc);
         break;
@@ -949,7 +956,11 @@ static void doTests(void) {
         "iscarmichael(1713045574801)",    0,
         "iscarmichael(1713045574803)",    1,
         "iscarmichael(1713045574819)",    2,
-        "chinese(4,15,7,18)",            79,   /* works even though 15 and 18 are not mutually prime */
+        "chinese(4,15,7,18,7,24)",       79,   /* works even though 15 and 18 are not mutually prime */
+        "chinese(4, 15, 7, 22, 9, 49)", 3439,
+        "core(1236)",                    309,  /* 1236 = 4 * 309 */
+        "rad(1236)",                     618,
+
     };
 
     results.clear();

@@ -206,8 +206,9 @@ ISSQUAREFREE(n) : returns -1 if n is square-free, otherwise 0.
 CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
                   If n is square-free core(n) = n. 
 RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
-CHINESE(a1, n1, a2, n2) : finds a number x such that x ≡ a1 (modulo n1) and x ≡ a2 
-                  (modulo n2). If n1 and n2 are not co-prime there may be no solution. 
+CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 
+                  x ≡ a2 (modulo n2), etc. If n1 and n2 are not co-prime there 
+                  may be no solution. 
 [OTHER]
 other commands: 
 SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI, X, 
@@ -951,9 +952,9 @@ ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t),
               criterion is used and the value of t is ignored. This requires n 
               to be factorised, but is 100% certain.
 [CHINESE]
-CHINESE(a1, n1, a2, n2) : finds a number x such that x ≡ a1 (modulo n1) and x ≡ a2 
-       (modulo n2). If n1 and n2 are not co-prime there is a solution if and only
-       if a1 ≡ a2 (modulo gcd(n1, n2)). 
+CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 
+       x ≡ a2 (modulo n2) etc. If ni and nj are not co-prime there is a solution 
+       if and only if ai ≡ aj (modulo gcd(ni, nj)). 
 [X]
 X    switch to hexadecimal o/p.
 [D]
