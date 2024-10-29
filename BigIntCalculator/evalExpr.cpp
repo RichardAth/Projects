@@ -2094,7 +2094,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         ChineseRemV(p, result);
         if (result == -2)
             return retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE;
-        if (result <= 0)
+        if (result < 0)
             return retCode::INVALID_PARAM;
         else break;
     }

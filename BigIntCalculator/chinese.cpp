@@ -276,7 +276,7 @@ g will be in the range 0 to m*n/gcd(m,n) -1.
 We use the extended Euclidian algorithm to find integers u and v such that
 u*m + v*n = gcd(m,n)
 A solution is given by g = a*v*n + b*u*m, provided m and n are co-prime
-If there is no solution the value returned is zero.
+If there is no solution the value returned is -3.
 */
 void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum& g) {
 
@@ -291,7 +291,7 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd \n",
 					a, m, b, n);
 				std::cout << buf;
-				g = 0;   /* there is no solution */
+				g = -3;   /* there is no solution */
 			}
 			return;
 		}
@@ -311,11 +311,15 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 	return;
 }
 
-/* find g such that g ≡ p[0] (mod p[1], g ≡ p[1] (mod[p2]) etc */
+/* find g such that g ≡ p[0] (mod p[1], g ≡ p[1] (mod[p2]) etc.
+Return -ve value for any error.
+-1 if p[0] or p[2] or p[4] etc < 0
+-2 if p[1] or p[3] or p[5] etc < 1 (modulus must be > 1) 
+-3 if there is no solution. */
 void ChineseRemV(const std::vector <Znum>& p, Znum& result) {
 	Znum modulus = p[1];
 	result = p[0];
-	if (p[0] <= 0) {
+	if (p[0] < 0) {
 		result = -1;  /* invalid parameter value */
 		return;
 	}
@@ -325,7 +329,7 @@ void ChineseRemV(const std::vector <Znum>& p, Znum& result) {
 	}
 		
 	for (unsigned int ix = 2; ix < p.size(); ix += 2) {
-		if (p[ix] <= 0) {
+		if (p[ix] < 0) {
 			result = -1;
 			return;
 		}
@@ -334,7 +338,7 @@ void ChineseRemV(const std::vector <Znum>& p, Znum& result) {
 			return;
 		}
 		ChineseRem(result, modulus, p[ix], p[ix + 1], result);
-		if (result == 0)
+		if (result < 0)
 			return;  /* there is no solution */
 		modulus = lcm(modulus, p[ix + 1]);  /* get new modulus */
 		if (verbose > 1)

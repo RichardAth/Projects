@@ -350,7 +350,7 @@ void generatePrimes(unsigned long long int max_val) {
 /* translate error code to text and output it*/
 void textError(retCode rc) {
     /*
-    error codes currently used:
+    error codes currently used include:
     NUMBER_TOO_LOW,
     NUMBER_TOO_HIGH,
     INTERM_TOO_HIGH,		
