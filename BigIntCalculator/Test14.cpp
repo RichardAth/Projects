@@ -1436,7 +1436,8 @@ const int gen2[] = { 398580, 408636, 410460, 422076, 422100, 423480, 429660, 431
 /* subset of generator list A064262 (Values of m such that N = (am+1)(bm+1)(cm+1) 
 is a 3-Carmichael number, where a,b,c = 1,2,51), which includes only values
 where the Carmichael number is a strong base - 2 pseudoprime */
-const int gen4[] = { 1656,     6960,   50820,     53268,   135276,   147516,   167916,   188316,
+const int gen4[] = { 
+    1656,     6960,   50820,     53268,   135276,   147516,   167916,   188316,
   199740,   316428,  322548,    369468,   422100,   451068,   587748,   724836,   740748,
   901500,   942300,  991260,   1071228,  1106316,  1128348,  1175676,  1215456,  1234836,
  1332756,  1456380, 1565928,   1624068,  1656300,  1693428,  1718928,  1829700,  1933740,
@@ -1807,8 +1808,8 @@ void doTests14(const std::vector<std::string>& p) {
         std::cout << "Use default 20 for number of tests \n";
         p1 = 20;
     }
-    if (p1 > size2) {
-        p1 = size2;
+    if (p1 > size4) {
+        p1 = size4;
         std::cout << "use maximum value " << p1 << " for number of tests \n";
     }
     if (p2 > 250) {
