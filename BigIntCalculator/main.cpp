@@ -144,7 +144,7 @@ static char* getHex(Znum Bi_Nbr) {
             long long rll;
             mpz_fdiv_q_2exp(ZT(q), ZT(Bi_Nbr), 4);	// q = Bi_Nbr/16 rounded towards -inf
             mpz_fdiv_r_2exp(ZT(r), ZT(Bi_Nbr), 4);	// r = Bi_Nbr - q*16 (0 <= r <= 15)
-            rll = MulPrToLong(r);
+            rll = ZnumToLong(r);
             obuff += (rll <= 9) ? '0' + (char)rll : 'a' + (char)rll -10;  // get char '0' to 'f'
             Bi_Nbr = q;
         }
@@ -205,7 +205,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
 }
 
 /* convert biginteger to normal. Checks for overflow */
-long long MulPrToLong(const Znum &x) {
+long long ZnumToLong(const Znum &x) {
     long long rv;
     // note: do not use mpz_fits_slong_p because it checks whether x fits a 32 bit integer, rather than a 64 bit integer.
     if (numLimbs(x) <= 1 && x >= LLONG_MIN && x <= LLONG_MAX) { // is x value OK for normal integer?
@@ -350,7 +350,7 @@ void generatePrimes(unsigned long long int max_val) {
 /* translate error code to text and output it*/
 void textError(retCode rc) {
     /*
-    error codes currently used:
+    error codes currently used include:
     NUMBER_TOO_LOW,
     NUMBER_TOO_HIGH,
     INTERM_TOO_HIGH,		
@@ -429,13 +429,20 @@ void textError(retCode rc) {
     //	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
     //		"Power must be greater than zero\n");
     //	break;
-    //case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
-    //	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
-    //	break;
+    case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
+    	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
+    	break;
     case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
         std::cout << (lang ? "El módulo no debe ser negativo\n" :
             "Modulus must not be negative\n");
         break;
+    case retCode::TOO_FEW_PARAMS:
+        std::cout << (lang ? "Muy pocos parámetros\n" :
+            "Too few parameters\n");
+        break;
+    case retCode::NUMBER_OF_PARAMS_NOT_EVEN:
+        std::cout << (lang ? "El número de parámetros debe ser par\n" :
+            "There must be an even number of parameters\n");
     default:
         printf_s( "unknown error code: %d\n", (int)rc);
         break;
@@ -823,6 +830,19 @@ static void doTests(void) {
         "20 - 32^2/4*7",                -1772,
         "(20-32)^2 / 4 * 7",              252,   
         "(20-32)^2 / (4*7)",                5,
+        /* comparisons. -1 = true, 0 = false */
+        "5>5",                              0,
+        "5>4",                             -1,
+        "4<5",                             -1,
+        "4<4",                              0,
+        "4<=4",                            -1,
+        "4<=3",                             0,
+        "5>=5",                            -1,
+        "5>=6",                             0,
+        "5==5",                            -1,
+        "5==6",                             0,
+        "5!=6",                            -1,
+        "5!=5",                             0,
         "19!",             121645100408832000,   // factorial
         "19!!",  	                654729075,   // double factorial
         "29!!!",                  72642169600,   // triple factorial
@@ -936,6 +956,11 @@ static void doTests(void) {
         "iscarmichael(1713045574801)",    0,
         "iscarmichael(1713045574803)",    1,
         "iscarmichael(1713045574819)",    2,
+        "chinese(4,15,7,18,7,24)",       79,   /* works even though 15 and 18 are not mutually prime */
+        "chinese(4, 15, 7, 22, 9, 49)", 3439,
+        "core(1236)",                    309,  /* 1236 = 4 * 309 */
+        "rad(1236)",                     618,
+
     };
 
     results.clear();
@@ -1747,7 +1772,7 @@ static void doTestsB(const std::vector<std::string> &p) {
 
     for (i = 1; i <= p1; i++) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
-        xl = MulPrToLong(x);
+        xl = ZnumToLong(x);
         rv = R3(xl);
         rv3 = R3h(x);
         if (rv3 != rv || verbose > 1 || p2 >= 37) {
@@ -2034,8 +2059,8 @@ static void doTests12(const std::vector<std::string>& p) {
 
     for (i = 1; i <= p1; i++) {
         mpz_urandomb(ZT(x), state, p2);  // get random number, size=p2 bits
-        xl = MulPrToLong(x);
-        rv = MulPrToLong(R4(x));
+        xl = ZnumToLong(x);
+        rv = ZnumToLong(R4(x));
         rv3 = R4alt((int)xl);  /* alternative way to calculate R4. */
         if (rv3 != rv || verbose > 0 || p2 >= 25) {
             std::cout << myTimeP() << " R4(" << xl << ") =" << rv
@@ -2095,7 +2120,7 @@ static void doTests13(const std::vector<std::string>& p) {
        mpz_nextprime(ZT(prime), ZT(prime));  /* make sure we have a prime number */
 
    for (int ctr = 1; ctr <= p1; ctr++) {
-       llprime = MulPrToLong(prime);
+       llprime = ZnumToLong(prime);
        if (llprime > 331) {
            break;     /* stop when numbers get too large */
        }
@@ -2913,7 +2938,8 @@ static long long setdiag(void) {
 Note: command syntax checking is not rigorous; typing errors may produce unexpected 
 results. command is a copy of the input buffer, not a reference. This is intentional
 because strtok_s overwrites part of the buffer. */
-static int processCmd(std::string command) {
+static int processCmd(const std::string &txt) {
+    std::string command = txt;
 
     /* list of commands (static for efficiency) */
     const static std::vector<std::string> list =
@@ -2924,7 +2950,7 @@ static int processCmd(std::string command) {
 
     std::vector<std::string> p;   /* each parameter is stored separately in an element of p */
     int p1 = INT_MIN;             /* if 1st parameter is numeric, store its value here */
-    const char seps[] = ", \n";   /* separators between parameters; either , or space */
+    const char seps[] = ",( \n";   /* separators between parameters; either , ( or space */
     char* token = nullptr;
     char* next = nullptr;         /* used by strtok_s */
 
@@ -2974,7 +3000,20 @@ static int processCmd(std::string command) {
         return 1; 
     }	          
     case 6: /* F */ { 
+        int ix = 0;
         if (p.size() >= 2) {
+            /* check whether or not F is followed by a ( */
+            for (ix = 0; ix < txt.size(); ix++) {
+                if (toupper(txt[ix]) == 'F')
+                    break;  /* find the F*/
+            }
+            for (ix++; ix < txt.size(); ix++) {
+                if (txt[ix] == ' ')
+                    continue;    /* move past any spaces following the F */
+                if (txt[ix] == '(')
+                    return 0;    // F(n) is a function, not a command
+            }
+ 
             if (p1 != INT_MIN)
                 factorFlag = p1;
             else
@@ -3164,10 +3203,10 @@ static int processCmd(std::string command) {
             or IF (expression) THEN (expression[, expression ...])
                                  ELSE (expression[, expression ...]) */
             Znum result;
-            int rv = ifCommand(command);  /* analyse IF command */
+            int rv = ifCommand(txt);  /* analyse IF command */
             if (rv == 2) {
                 /* REPEAT */
-                exprList.push_back(command);
+                exprList.push_back(txt);
                 loop:
                 for (auto expr : exprList) {
                     if (expr.size() > 2 && expr.substr(0, 2) == "IF") {
@@ -3192,7 +3231,7 @@ static int processCmd(std::string command) {
             }
             if (rv == 0 || rv == 3)
                 /* if command processed, now save it for possible loop */
-                exprList.push_back(command);  
+                exprList.push_back(txt);  
             /* to be completed for rv =-1, rv = 1*/
             return 1;
         }
@@ -3283,8 +3322,13 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     else {
         auto lc = std::setlocale(LC_ALL, EnLocale);      // allows non-ascii characters to print
     }
-
     printf_s("locale is now: %s\n", std::setlocale(LC_ALL, NULL));
+#ifdef _DEBUG
+    auto cp = GetConsoleOutputCP();
+    SetConsoleOutputCP(CP_UTF8);
+    if (cp != CP_UTF8)
+        std::cout << "Console OP code page changed from " << cp << " to " << CP_UTF8 << '\n';
+#endif
     std::cout << "GMP version: " << __GNU_MP_VERSION << '.' << __GNU_MP_VERSION_MINOR
         << '.' << __GNU_MP_VERSION_PATCHLEVEL << '\n';
 

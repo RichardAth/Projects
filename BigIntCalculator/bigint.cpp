@@ -905,7 +905,7 @@ bool ZtoBig(BigInteger &number, Znum numberZ) {
         /* calculating quotient and remainder separately turns
         out to be faster */
         mpz_fdiv_r_2exp(ZT(remainder), ZT(numberZ), BITS_PER_GROUP);
-        number.limbs[i] = (int)MulPrToLong(remainder);
+        number.limbs[i] = (int)ZnumToLong(remainder);
         mpz_fdiv_q_2exp(ZT(numberZ), ZT(numberZ), BITS_PER_GROUP);
         i++;
     }
@@ -1407,21 +1407,21 @@ bool BigIntIsZero(const BigInteger* value)
 }
 
 /* change -ve to +ve and vice versa. Does the same job as BigIntNegate  */
-void BigIntChSign(BigInteger* value)
-{
-    if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
-    {    // Value is zero. Do not change sign.
-        return;
-    }
-    if (value->sign == SIGN_POSITIVE)
-    {
-        value->sign = SIGN_NEGATIVE;
-    }
-    else
-    {
-        value->sign = SIGN_POSITIVE;
-    }
-}
+//void BigIntChSign(BigInteger* value)
+//{
+//    if ((value->nbrLimbs == 1) && (value->limbs[0] == 0))
+//    {    // Value is zero. Do not change sign.
+//        return;
+//    }
+//    if (value->sign == SIGN_POSITIVE)
+//    {
+//        value->sign = SIGN_NEGATIVE;
+//    }
+//    else
+//    {
+//        value->sign = SIGN_POSITIVE;
+//    }
+//}
 
 /* change -ve to +ve */
 void BigIntAbs(BigInteger* value) {

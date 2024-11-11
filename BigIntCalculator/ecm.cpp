@@ -22,7 +22,7 @@ Profiling indicates that about 2/3 of the CPU time is used during Modular Multip
 
 //#define log 1              // remove this line to generate code without logging
 
-extern HANDLE hConsole;
+extern HANDLE hConsole;   /* STD_OUTPUT_HANDLE */
 typedef void(*mmCback)(void);
 extern mmCback modmultCallback;   // function pointer
 extern void FactoringSIQS(const Znum& NbrToFactor, Znum& Factor);
@@ -399,7 +399,7 @@ static int gcdIsOne(const limb value[], const Znum& zN, int line) {
 		Temp1, zN, BiGD, line);
 #endif
 	if (BiGD < 2) {
-		return (int)MulPrToLong(BiGD);    // GCD is less than 2.
+		return (int)ZnumToLong(BiGD);    // GCD is less than 2.
 	}
 	return 2;      // GCD is greater than one.
 }
@@ -547,7 +547,7 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 			m = 2;
 		}
 		else { // k Odd
-			r = (int)MulPrToLong((k + nbr)& 3) ;  // r = (k+nbr)%4 i.e. 0 or 2 ?
+			r = (int)ZnumToLong((k + nbr)& 3) ;  // r = (k+nbr)%4 i.e. 0 or 2 ?
 			m = 4;
 		}
 	}
@@ -574,8 +574,8 @@ void LehmanZ(const Znum &nbr, int k, Znum &factor) {
 
 	for (i = 0; i < 17; i++) {
 		int pr = primes[i];
-		nbrs[i] = (int)MulPrToLong(c % primes[i]);
-		diffs[i] = m * (int)MulPrToLong(((a %pr) * 2 + m) % pr);
+		nbrs[i] = (int)ZnumToLong(c % primes[i]);
+		diffs[i] = m * (int)ZnumToLong(((a %pr) * 2 + m) % pr);
 	}
 
 	for (j = 0; j < 10000; j++) {

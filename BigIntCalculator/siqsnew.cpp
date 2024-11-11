@@ -33,7 +33,7 @@ the results would look completely different.
 
 #pragma warning(disable : 4996)
 
-extern HANDLE hConsole;
+extern HANDLE hConsole;    /* STD_OUTPUT_HANDLE */
 static bool first = true;   /* set true for 1st message of set, then false for the 
 							rest. used to control cursor repositioning so that 
 							subsequent messages overwrite the 1st one */

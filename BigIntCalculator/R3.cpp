@@ -885,10 +885,10 @@ long long R4alt(int num) {
         if (k * k == num)
             sum += 2;  // note that num is a perfect square
         else
-            sum += 2 * MulPrToLong(R3h(num - k*k));
+            sum += 2 * ZnumToLong(R3h(num - k*k));
         /* could use R3 instead of R3h. For numbers up to about 2^25 R3 appears to
         be as fast as R3h */
     }
-    sum += MulPrToLong(R3h(num));  // note: this time (for k=0) we DON'T multiply R3 by 2
+    sum += ZnumToLong(R3h(num));  // note: this time (for k=0) we DON'T multiply R3 by 2
     return sum;
 }
