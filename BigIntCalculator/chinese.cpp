@@ -16,7 +16,7 @@ the extended Euclidean algorithm is an extension to the Euclidean algorithm,
 which computes, besides the greatest common divisor of integers a and b, the
 coefficients of Bézout's identity, that is integers x and y such that
 
-	  a * x + b * y = gcd ( a , b )
+	  a*x + b*y = gcd (a, b )
 */
 int64_t extendedGcd(const int64_t a, const int64_t b, int64_t* x, int64_t* y) {
 	int64_t s = 0, old_s = 1;;
@@ -311,7 +311,7 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 	return;
 }
 
-/* find g such that g ≡ p[0] (mod p[1], g ≡ p[1] (mod[p2]) etc.
+/* find g such that g ≡ p[0] (mod p[1], g ≡ p[2] (mod[p3]) etc.
 Return -ve value for any error.
 -1 if p[0] or p[2] or p[4] etc < 0
 -2 if p[1] or p[3] or p[5] etc < 1 (modulus must be > 1) 

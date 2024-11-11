@@ -213,20 +213,20 @@ static std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int 
 	if (gcdv > 1) {
 		if (isPerfectSquare(gcdv, sqrtgcd)) {
 			if (prime == 2)
-				roots = ModSqrtp2(c/gcdv, prime, lambda);
+				roots = ModSqrtp2(c/gcdv, prime, lambda);  //  Find modular square root, modulus = prime^lambda
 			else
-				roots = ModSqrt2x(c / gcdv, prime, lambda);
+				roots = ModSqrt2x(c / gcdv, prime, lambda);  //  Find modular square root, modulus = prime^lambda
 			if (roots.empty())
 				return roots;  /* no solutions*/
 			r1 = roots[0];  /* we only need 1 of the roots just obtained */
 
 			if (prime == 2)
-				roots = ModSqrtp2x(gcdv, prime, lambda);
+				roots = ModSqrtp2x(gcdv, prime, lambda);  //  Find modular square root, modulus = prime^lambda
 			else
-				roots = ModSqrt2xs(gcdv, prime, lambda);
+				roots = ModSqrt2xs(gcdv, prime, lambda);  //  Find modular square root, modulus = prime^lambda
 
 			for (size_t i = 0; i < roots.size(); i++)
-				roots[i] = modMult(roots[i], r1, mod);
+				roots[i] = modMult(roots[i], r1, mod); /* multiply each root by r1 */
 
 			printroots(c, mod, roots);
 
@@ -239,9 +239,9 @@ static std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int 
 	}
 	else  /* c and mod are mutually prime*/
 		if (prime == 2)
-			return ModSqrtp2(c, prime, lambda);
+			return ModSqrtp2(c, prime, lambda); //  Find modular square root of c, modulus = prime^lambda
 		else
-			return(ModSqrt2x(c, prime, lambda));
+			return(ModSqrt2x(c, prime, lambda));  //  Find modular square root of c, modulus = prime^lambda
 }
 
 
@@ -253,7 +253,7 @@ long long divremp2(const Znum x, const int p, Znum& quot) {
 }
 
 /* get result of bitwise and of a and x (a must be +ve) */
-long long ZandInt(const Znum a, long long x) {
+static long long ZandInt(const Znum a, long long x) {
 	int sz = ZT(a)->_mp_size;
 	unsigned long long last;   /* value from last limb*/
 	assert(sz >= 0);
@@ -290,7 +290,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 		return result;
 	}
 
-	if (prime == 2) {
+	if (prime == 2) {  /* modulus = 2 is a special case. */
 		result.push_back(a);  // a is 0 or 1
 		printroots(a, prime, result);
 		return result;

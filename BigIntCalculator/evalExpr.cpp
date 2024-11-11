@@ -650,24 +650,24 @@ static int PrimalityTest(const Znum &Value) {
 
 /* same purpose as PrimalityTest but optimised for smaller numbers. 1st call can be very slow,
 but subsequent calls are very quick. -1 means definately prime*/
-static int PrimalityTestSmall(const long long Value) {
-    assert(Value >= 0);
-    /* deal with even values first, because getBit below only handles odd values*/
-    if (Value == 2) return -1;		//  2 is only even prime
-    if ((Value & 1) == 0) return 0;   // even numbers > 2 are not prime
-
-    if (Value <= max_prime) {
-        if (primeFlags == NULL || (long long)primeListMax < Value) {
-            generatePrimes(max_prime);  // takes a while, but only needed on 1st call
-        }
-        if (!getBit(Value, primeFlags))
-            return -1;		// number is prime
-        else
-            return 0;		// number is not prime
-    }
-    else
-        return PrimalityTest(Value);  // should work, but should never be needed
-}
+//static int PrimalityTestSmall(const long long Value) {
+//    assert(Value >= 0);
+//    /* deal with even values first, because getBit below only handles odd values*/
+//    if (Value == 2) return -1;		//  2 is only even prime
+//    if ((Value & 1) == 0) return 0;   // even numbers > 2 are not prime
+//
+//    if (Value <= max_prime) {
+//        if (primeFlags == NULL || (long long)primeListMax < Value) {
+//            generatePrimes(max_prime);  // takes a while, but only needed on 1st call
+//        }
+//        if (!getBit(Value, primeFlags))
+//            return -1;		// number is prime
+//        else
+//            return 0;		// number is not prime
+//    }
+//    else
+//        return PrimalityTest(Value);  // should work, but should never be needed
+//}
 
 
 /*  B(n): Previous probable prime before n */
