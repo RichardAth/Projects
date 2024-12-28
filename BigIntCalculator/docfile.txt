@@ -124,9 +124,13 @@ ISFUNDAMENTAL(n): returns -1 if n is a Fundamental Discriminant, otherwise 0.
 ISPOLYGONAL(n, s): returns -1 if n is a polygonal number, otherwise 0. s 
                   specifies the number of sides to the polygon; s = 3 for triangular,
                   4 for square, 5 for pentagonal, etc. Must have n >= 1, s >= 3.
-ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+ISCARMICHAEL(n[, t]): returns 0 if n is a Carmichael number (probability = 1 - 2^(-t), 
                   1 for composite non-Carmichael numbers, and 2 for prime numbers.
                   If t is omitted its default value is 16.
+ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
+CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
+                  If n is square-free core(n) = n. 
+RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
 NumDivs(n)      : Number of positive divisors of n either prime or composite.
 SumDivs(n, x)   : Sum of xth power of positive divisors of n, either prime or 
                   composite. if x = 0 the result is the same as the NumDivs function.
@@ -179,7 +183,6 @@ LE(a,p)         : Legendre value for (a/p). Only defined if p is an odd prime.
 JA(a,p)         : Jacobi value for (a/p). Extension of Legendre to all odd values of p.
 KR(a,p)         : Kronecker value for (a/p); an extension of the Jacobi value to
                   all values of p
-ISPOW(n)        : returns -1 if n is a perfect power, otherwise 0
 MODSQRT(a, p)   : returns r such that r² ≡ a (mod p). If no solution exists an error
                   is reported. Generally there is more than 1 solution in the range 0 
                   to p-1, but only the smallest positive solution is returned.
@@ -202,10 +205,6 @@ EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is ze
 PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31, 
                   because for large factors of n the calculation might take too 
                   long.
-ISSQUAREFREE(n) : returns -1 if n is square-free, otherwise 0.
-CORE(n)         : unique square-free integer d dividing n such that n/d is a square.
-                  If n is square-free core(n) = n. 
-RAD(n)          : largest square-free divisor of n. If n is square-free rad(n) = n.
 CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 
                   x ≡ a2 (modulo n2), etc. If n1 and n2 are not co-prime there 
                   may be no solution. 
@@ -213,7 +212,7 @@ CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) a
 other commands: 
 SET  : opens a dialog box that has equivalents to the YAFU, MSIEVE, PARI, X, 
        D, F, V, S and E commands. This dialog box also has a control to set the 
-       'group size'. This controls the number of digits displayed in each group 
+       'group size', which controls the number of digits displayed in each group 
        for large numbers. Use 0 for no space between groups.
 X    : hexadecimal o/p, 
 D    : decimal o/p
@@ -552,8 +551,10 @@ this process creates equal factors they are merged.
 Primes up to 393203 (33335 primes) are used in trial division.
 
 Step 1: if number to factor is > than the the square of the largest prime to be 
-used in trial division, check if the number is a perfect power +/- 1 and if so 
-attempt to factorise it. This step may return factors that are not prime factors.
+used in trial division, check if the number is a perfect power ± 1 (i.e. it is 
+a Cunningham number) and if so attempt to factorise it by finding both algebraic 
+factors and Aurifellian factors. This step may return factors that are not prime 
+factors.
 
 Step 2: Try to factorise each factor (there may already be more than 1) by trial division 
 using a list of primes. If a residue after trial division is found that is: 
@@ -945,7 +946,7 @@ CORE(n): unique square-free integer d dividing n such that n/d is a square. If n
 [RAD]
 RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
 [ISCARMICHAEL]
-ISCARMICHAEL(n[, t]): returns 0 for Carmichael number (probability = 1 - 2^(-t), 
+ISCARMICHAEL(n[, t]): returns 0 if n is a Carmichael number (probability = 1 - 2^(-t)), 
               1 for composite non-Carmichael numbers, and 2 for prime numbers.
               If t is omitted its default value is 16, which gives a 99.998% 
               probability that the result is correct. if n < 2^192 then Korselt's

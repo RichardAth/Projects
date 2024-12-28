@@ -952,7 +952,10 @@ static Znum R3(Znum num) {
 /* calculate the number of ways an integer n can be expressed as the sum of 4
 squares  w^2, x^2, y^2 and z^2. The order of the squares is significant. w, x, y 
 and z can be +ve, 0 or -ve See https://oeis.org/A000118 
-The method used here is based on one described by Benoit Cloitre in 2002. */
+The method used here is based on one described by Benoit Cloitre in 2002. 
+Also see https://en.wikipedia.org/wiki/Jacobi%27s_four-square_theorem 
+num is a copy of the original value. This is intentional as the value of the
+copy is changed. */
 Znum R4(Znum num) {
     if (num < 0)
         return 0;
@@ -960,7 +963,7 @@ Znum R4(Znum num) {
         return 1;
 
     fList factorlist;
-    bool odd = true;
+    bool odd = true;   /* set to false iff num is even. */
     while (isEven(num)) {
         odd = false;
         num >>= 1; /* divide n by 2 if it is even */
@@ -975,6 +978,7 @@ Znum R4(Znum num) {
         return 8 * factorlist.DivisorSum();  /* divisorSum AKA sigma */
     }
     else {  /* original value of num was even */
+        /* DivisorSum gives the sum of the ODD divisors of num */
         return 24 * factorlist.DivisorSum();
     }
 }
@@ -2656,6 +2660,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
             nxtToken.numops = operators[opIndex].numOps;
             nxtToken.value = 0;
             exprIndex += (int)std::strlen(operators[opIndex].oper);  // move index to next char after operator
+            /* special for factorial; count number of ! chars and convert this to an operand */
             if (operators[opIndex].operCode == opCode::fact) {
                 nxtToken.value = 1;
                 while (expr.substr(exprIndex, 1) == "!") {
@@ -2778,7 +2783,7 @@ next:
             tokens.push_back(nxtToken);
     }
 
-    int brackets = 0; /* count depth of brackets*/
+    int brackets = 0; /* count depth of brackets. Check that brackets can be paired. */
     for (auto t : tokens) {
         if (t.typecode == types::Operator && t.oper == opCode::leftb)
             brackets++;

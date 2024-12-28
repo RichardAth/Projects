@@ -960,7 +960,6 @@ static void doTests(void) {
         "chinese(4, 15, 7, 22, 9, 49)", 3439,
         "core(1236)",                    309,  /* 1236 = 4 * 309 */
         "rad(1236)",                     618,
-
     };
 
     results.clear();
@@ -1058,7 +1057,7 @@ static void doTests(void) {
     StrToZ(x3, "56897193526942024370326972321");
     testcnt++;
     factortest(x3, testcnt);  /* 29 digit pseudo-prime number (is a 2-SPRP but 
-       is not a carmichael number */
+       is not a carmichael number) */
 
     StrToZ(x3, "1611901092819505566274901");
     testcnt++;

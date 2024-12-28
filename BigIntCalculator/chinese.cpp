@@ -29,13 +29,13 @@ int64_t extendedGcd(const int64_t a, const int64_t b, int64_t* x, int64_t* y) {
 		quotient = old_r / r;
 		PA(old_r, r, r, old_r - quotient * r)
 
-			rv = LongLongMult(quotient, s, &qs);
+		rv = LongLongMult(quotient, s, &qs);
 		if (rv != S_OK) {
 			ThrowExc("integer overflow: ")
 		}
 		PA(old_s, s, s, old_s - qs)
 
-			rv = LongLongMult(quotient, t, &qt);
+		rv = LongLongMult(quotient, t, &qt);
 		if (rv != S_OK) {
 			ThrowExc("integer overflow: ")
 		}
