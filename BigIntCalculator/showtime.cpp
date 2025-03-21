@@ -96,7 +96,9 @@ const char* myTimeP()
 	const time_t current_time{ clock::to_time_t(current_time_point) };
 
 	/* convert to tm struct */
-	const tm current_localtime{ *std::localtime(&current_time) };
+	//const tm current_localtime{ *std::localtime(&current_time) };
+	tm current_localtime;
+	localtime_s(&current_localtime, &current_time);
 
 	/* convert to time interval since start of epoch (1 Jan 1970) */
 	const auto current_time_since_epoch{ current_time_point.time_since_epoch() };

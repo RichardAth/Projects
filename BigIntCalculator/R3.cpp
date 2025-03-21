@@ -116,11 +116,42 @@ bool isPrime2(unsigned __int64 num) {
     return !primeFlags[num/2];
 }
 
+unsigned __int64 modPowerLLold(unsigned __int64 a, unsigned __int64 n,
+    unsigned __int64 mod);
 
-/*
-* calculates (a * b) % c taking into account that a * b might overflow
-*/
-unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod)
+/* divide 128-bit number dividend by 64 bit divisor, get 128-bit quotient,
+ and 64-bit remainder. avoids overflow problem  */
+uint128_t divide_uint128_by_uint64(uint128_t dividend, uint64_t divisor,
+    uint64_t* remainder) {
+    uint128_t quotient = { 0, 0 };
+    if (divisor == 0) {
+        ThrowExc("Division by zero");
+    }
+    if (divisor == 1) {
+        return dividend;
+    }
+
+    /* divisor > 1 */
+    // Perform the division manually for uint128_t
+    uint64_t carry;
+    quotient.hi = dividend.hi / divisor;
+    carry = dividend.hi % divisor;
+    quotient.lo = _udiv128(carry, dividend.lo, divisor, remainder);
+#ifdef _DEBUG
+    Znum dividendZ = dividend.hi;
+    dividendZ <<= 64;
+    dividendZ += dividend.lo;
+    Znum quotientZ = dividendZ / divisor;
+    assert(quotientZ == (((Znum)quotient.hi) << 64) + quotient.lo);
+    Znum remZ = dividendZ % divisor;
+    assert(remZ == *remainder);
+    
+#endif
+    return quotient;
+}
+
+/*  calculates (a * b) % mod taking into account that a * b might overflow */
+unsigned __int64 modMultOld(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod)
 {
     unsigned __int64 x = 0, retval=0;
     HRESULT  res =0;
@@ -143,11 +174,64 @@ unsigned __int64 modMult(unsigned __int64 a, unsigned __int64 b, unsigned __int6
     }
     return x;
 }
+unsigned __int64 modMult(const unsigned __int64 a, const unsigned __int64 b, 
+    const unsigned __int64 mod) {
+/* this version uses intrinsics for 128-bit arithmetic instead of gmp/MPIR 
+extended precision functions */
+    uint128_t prod, quot;
+    uint64_t rem;
+     /* prod = a*b */
+    prod.lo = _umul128(a, b, &prod.hi);
+
+    /* rem = prod%m (quot value returned by divide is  not used) */
+    quot = divide_uint128_by_uint64(prod, mod, &rem);
+
+#ifdef _DEBUG
+    auto q2 = modMultOld(a, b, mod);
+    assert(q2 == rem);
+#endif
+    return rem;
+}
 Znum modMult(const Znum &a, const Znum &b, const Znum &mod) {
     Znum res;
     res = a * b;
     mpz_mod(ZT(res), ZT(res), ZT(mod));
     return res;
+}
+
+
+// calculate x^n%mod
+unsigned __int64 modPowerLL(const unsigned __int64 x, const unsigned __int64 np,
+    unsigned __int64 mod) {
+ /* this version uses intrinsics for 128-bit arithmetic instead of gmp/MPIR
+extended precision functions */
+    unsigned __int64 n = np, p;  // p is a power of x
+    uint128_t r = { 0, 1 };
+   
+    p = x;
+    
+    /* loop log2(n) times.*/
+    while (n > 0) {
+        if (n % 2 == 1) {
+            r.lo = _umul128(r.lo, p, &r.hi); //    r *= p;
+
+            // r %= mod (dividend is in r, remainder goes into r.lo, 
+            // quotient is discarded)
+            r.hi %= mod;   /* avoid possibility of integer overflow on divide */
+            _udiv128(r.hi, r.lo, mod, &r.lo);
+            r.hi = 0;
+        }
+        n /= 2;
+        if (n == 0) 
+            break;
+        // p = (p^2) %mod;
+        p = modMult(p, p, mod);
+    }
+#ifdef _DEBUG
+    long long rx = modPowerLLold(x, np, mod);
+    assert(rx == r.lo);
+#endif
+    return r.lo;
 }
 
 // calculate x^n%mod
@@ -183,7 +267,7 @@ static __int64 mPowerInt(const unsigned int x, unsigned int n, const unsigned in
 }
 
 // calculate a^n%mod   
-unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
+unsigned __int64 modPowerLLold(unsigned __int64 a, unsigned __int64 n,
     unsigned __int64 mod) {
     static mpz_t al, ml, res;
     unsigned __int64 rl;
@@ -539,7 +623,7 @@ unsigned __int64 R3(__int64 n) {
     if (n % 8 == 7)
         return 0;        // take short cut if possible
 
-    generatePrimes(2097169);  // this is more than enough primes to factorise any 64-bit number
+    generatePrimes(2642245);  // this is more than enough primes to factorise any 64-bit number
                  
     squareFree(n, sq, sqf); /* make n square-free, factors removed are in sqf */
 
