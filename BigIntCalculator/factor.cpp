@@ -615,7 +615,7 @@ Return: false = No factors found, true = factors found.
       (x-R)(x+R) ≡ 0 (modulo n)
       We also look for square roots of 1 (modulo n) in the same way.
 */
-bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
+static bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
 {
     uint64_t PsRand = 0;  // pseudo-random number
     bool factorsFound = false;
@@ -720,19 +720,15 @@ https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
 This method generally works but for very large n it may be too slow. It uses a
 truly random number generator so could give different results given the same
 value of n */
-// return (x^2 + c + n) % n; Correct result even when intermediate value
+// return (x^2 + c) % n; Correct result even when intermediate value
 // exceeds 64 bits
 static unsigned long long PRf(unsigned long long x, unsigned long long c, unsigned long long n) {
     uint128_t rv = { 0,0 };
     unsigned long long temp, result;
-    temp = modPowerLL(x, 2, n);     // temp = x^2 mod n
+    temp = modMult(x, x, n);     // temp = x^2 mod n
     rv.lo = temp + c;
     if (rv.lo < temp)
         rv.hi++;       /* overflow i.e. carry > 0 */
-    temp = rv.lo + n;
-    if (temp < rv.lo)
-        rv.hi++;      /* overflow i.e. carry > 0 */
-    rv.lo = temp;
     divide_uint128_by_uint64(rv, n, &result);  /* get remainder i.e. rv (mod n) in result */
 #ifdef _DEBUG
     // if (rv.hi > 0)
@@ -776,13 +772,10 @@ unsigned long long int PollardRho(unsigned long long int n, int depth)
     {
         /* Tortoise Move: x(i+1) = f(x(i)) */
         x = PRf(x, c, n);
-        //x = (modPowerLL(x, 2, n) + c + n) % n;
 
         /* Hare Move: y(i+1) = f(f(y(i))) */
         y = PRf(y, c, n);
         y = PRf(y, c, n);
-        // y = (modPowerLL(y, 2, n) + c + n) % n;
-        // y = (modPowerLL(y, 2, n) + c + n) % n;
 
         /* check gcd of |x-y| and n */
         d = std::gcd(x>y?(x - y):(y-x), n);
