@@ -128,6 +128,7 @@ uint128_t divide_uint128_by_uint64(uint128_t dividend, uint64_t divisor,
         ThrowExc("Division by zero");
     }
     if (divisor == 1) {
+        *remainder = 0;
         return dividend;
     }
 
@@ -182,6 +183,11 @@ extended precision functions */
     uint64_t rem;
      /* prod = a*b */
     prod.lo = _umul128(a, b, &prod.hi);
+#ifdef _DEBUG
+    if (prod.hi != 0) {
+        //        system("PAUSE");   /* press any key to continue */
+    }
+#endif
 
     /* rem = prod%m (quot value returned by divide is  not used) */
     quot = divide_uint128_by_uint64(prod, mod, &rem);
@@ -217,6 +223,11 @@ extended precision functions */
 
             // r %= mod (dividend is in r, remainder goes into r.lo, 
             // quotient is discarded)
+#ifdef _DEBUG
+            if (r.hi != 0) {
+                system("PAUSE");   /* press any key to continue */
+            }
+#endif
             r.hi %= mod;   /* avoid possibility of integer overflow on divide */
             _udiv128(r.hi, r.lo, mod, &r.lo);
             r.hi = 0;
@@ -307,8 +318,8 @@ Znum modPower(const Znum &a, const Znum &n, const Znum &mod) {
 }
 
 // n-1 = 2^s * d with d odd by factoring powers of 2 from n-1
-static bool witness(unsigned __int64 n, unsigned int s, unsigned __int64 d,
-    unsigned __int64 a)
+static bool witness(const unsigned __int64 n, unsigned int s, const unsigned __int64 d,
+    const unsigned __int64 a)
 {
     unsigned __int64 x = modPowerLL(a, d, n);   // calculate a^d%n
     unsigned __int64 y;

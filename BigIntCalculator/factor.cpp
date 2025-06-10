@@ -889,8 +889,8 @@ returns false only if ecm returns an error. */
 static bool factor(fList &Factors) {
     Znum toFactor = Factors.n;
     unsigned long long testP;
-    const unsigned long long MaxP = 393203;       // use 1st 33334 primes 
-    //const unsigned long long MaxP = 2'097'143;  // use 1st 155611 primes
+    const unsigned long long MaxP = 393203;   // use 1st  33334 primes 
+    //const unsigned long long MaxP = 2'097'152;  // use 1st 155611 primes
     /* larger value for Maxp seems to slow down factorisation overall. */
     // MaxP must never exceed 2'097'152 to avoid overflow.
     const unsigned long long PollardLimit = MaxP*MaxP*MaxP;
