@@ -125,10 +125,12 @@ public:
 	friend long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist);
 	friend Znum primRoot(const Znum &num);
 	friend void factor(const BigInteger* pValN, int factorsMod[], sFactors astFactorsMod[]);
-	friend static bool getfactors(const Znum& n, uint32_t b, fList& Factors);
+	friend bool getfactors(const Znum& n, uint32_t b, fList& Factors);
 	friend bool factorCarmichael(const Znum& p, fList& Factors, bool pseudoP);
 	friend void insertCarmichaelFactor(Znum& Aux4, const Znum &p, fList& Factors,
 		bool& factorsFound, const int countdown, const int ctr, const int i, int ref);
+	friend int FactoriseFactorial(const unsigned long long num, fList& factorlist);
+	friend Znum FactorFactorial(const Znum& p);
 
 	/* methods that are in the class */
 

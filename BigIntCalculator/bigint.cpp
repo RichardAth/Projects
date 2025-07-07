@@ -564,7 +564,7 @@ void BigIntDivide2(BigInteger &pArg) {
 
 /* arg = arg*2^power. Throw exception if product is too large. 
 (shiftBI does the same. May be more efficient?)*/
-static void BigIntMutiplyPower2(BigInteger &pArg, int power2)
+void BigIntMutiplyPower2(BigInteger &pArg, int power2)
 {
     int ctr;
     int nbrLimbs = pArg.nbrLimbs;

@@ -185,6 +185,7 @@ enum class opCode {
     fn_radical,           /* get largest square-free divisor of n */
     fn_iscarmichael,      /* return -1 if n is a carmichael number */
     fn_chinese,           /* apply Chinese Remainder Theorem */
+    fn_factfact,          /* factorise factorial */
     fn_invalid = -1,
 };
 
@@ -218,6 +219,7 @@ const static struct functions functionList[]{
     "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
     "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
+    "FACTFACT",  1,  opCode::fn_factfact,       // factorise factorial
     "F",         1,  opCode::fn_fib,			// fibonacci
     "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
     "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
@@ -1309,6 +1311,74 @@ Znum pisanof(const long long n, const factorsS &f) {
     return result;
 }
 
+/* get the prime factors of num!  */
+int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
+
+    int i;
+    unsigned long long x;
+    zFactors factor;
+
+    generatePrimes(393203);  /* only needed if prime list not already set up */
+    assert(num <= primeListMax);
+    factorlist.f.clear();
+    for (i = 0; primeList[i] <= num; i++) {
+        factor.Factor = primeList[i];
+        factor.exponent = 0;
+        x = (int)num;
+        while (x > 0) {
+            x /= primeList[i];
+            factor.exponent += (int)x;
+        }
+        factorlist.f.push_back(factor);
+    }
+    return i;
+}
+
+/* factorise p! Print factors. If possible, print a list of divisors */
+Znum FactorFactorial(const Znum &p) {
+    fList f;
+    size_t ctr = 0, ct2=0, ccpy=0;
+    std::vector <Znum> divlist;
+
+    long long pp = ZnumToLong(p);
+    FactoriseFactorial(pp, f);
+    f.print(false);      /* print prime factors */
+    putchar('\n');
+    auto divisors = f.NoOfDivs();  /* get number of divisors */
+    if (numLimbs(divisors) > 1 || divisors > LLONG_MAX)
+        return 0;  /* number of divisors is too large */
+
+    auto numdiv = ZnumToLong(divisors);   /* number of divisors of p */
+    auto numfactors = f.fsize();           /* number of unique prime factors of p */
+    divlist.resize(numdiv);
+    divlist[ctr++] = 1;  // 1st divisor
+    if (pp <= 1)
+        return 0;
+
+    for (size_t i = 0; i < numfactors; i++) {
+        ct2 = 0;
+        ccpy = ctr;
+        for (int x = 1; x <= f.f[i].exponent; x++) {
+            for (size_t j = 0; j < ctr; j++)
+                divlist[j + ccpy] = divlist[j + ct2] * f.f[i].Factor;
+            ct2 += ctr;
+            ccpy += ctr;
+        }
+        ctr = ccpy;
+    }
+    std::sort(divlist.begin(), divlist.end());
+
+    if (verbose > 0) {
+    	gmp_printf("divisors of %lld! are: ", pp);
+    	for (int i = 0; i < numdiv; i++) {
+    		gmp_printf("%Zd ", divlist[i]);
+    	}
+    	std::putchar('\n');
+    }
+    
+    return 0;
+}
+
 /* process one operator with 1 or 2 operands.
 NOT, unary minus and primorial  have 1 operand.
 Most of the others have two. GCD and LCM have an indefinate number of operands. 
@@ -2101,6 +2171,10 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (result < 0)
             return retCode::INVALID_PARAM;
         else break;
+    }
+    case opCode::fn_factfact: {
+        result = FactorFactorial(p[0]);
+        break;
     }
     default:
         std::abort();	// should never get here
