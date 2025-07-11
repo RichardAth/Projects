@@ -1342,9 +1342,14 @@ Znum FactorFactorial(const Znum &p) {
 
     long long pp = ZnumToLong(p);
     FactoriseFactorial(pp, f);
+    std::cout << "no of uique factors = " << f.f.size() << '\n';
     f.print(false);      /* print prime factors */
     putchar('\n');
     auto divisors = f.NoOfDivs();  /* get number of divisors */
+    std::cout << (lang ? "Cantidad de Divisores = " : "Number of Divisors = ");
+    ShowLargeNumber(divisors, groupSize, false, false);
+    putchar('\n');
+
     if (numLimbs(divisors) > 1 || divisors > LLONG_MAX)
         return 0;  /* number of divisors is too large */
 
@@ -2173,6 +2178,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         else break;
     }
     case opCode::fn_factfact: {
+        if (p[0] > 393203)
+            return retCode::NUMBER_TOO_HIGH;
         result = FactorFactorial(p[0]);
         break;
     }

@@ -948,11 +948,6 @@ static bool factor(fList &Factors) {
                 i = -1;			// restart loop at beginning!!
                 continue;
             }
-            //else if(result == 2)
-            //    if (getfactors(Zpower, 2, Factors)) {
-            //        i = -1;			// restart loop at beginning!!
-            //        continue;
-            //    }
         }
         if (Zpower <= PollardLimit) {
             unsigned long long f;
