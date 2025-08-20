@@ -956,6 +956,7 @@ void testerrors(void) {
     printf_s("16 - SIGFPE (invalid) \n");
     printf_s("17 - SIGFPE (raise) \n");
     printf_s("18 - SIGBREAK \n");
+    printf_s("19 - divide overflow \n");
     printf_s("Your choice >  ");
 
     int ExceptionType = 9999;
@@ -1088,6 +1089,14 @@ void testerrors(void) {
         }
     case 18: /* raise Break signal */ {
         std::raise(SIGBREAK);
+        break;
+    }
+
+    case 19: /* divide overflow */ {
+        uint128_t x = { ULLONG_MAX, ULLONG_MAX };
+        uint64_t quot, rem;
+        quot = _udiv128(x.hi, x.lo, 2ULL, &rem);
+        /* in debug mode, the overflow will be trapped */
         break;
     }
 

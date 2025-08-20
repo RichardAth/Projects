@@ -182,6 +182,9 @@
     <ClInclude Include="..\Json_parser\json.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="R3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt">

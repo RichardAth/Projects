@@ -714,12 +714,7 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
     return;
 }
 
-/* method to return prime divisor for n
-adapted from:
-https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
-This method generally works but for very large n it may be too slow. It uses a
-truly random number generator so could give different results given the same
-value of n */
+
 // return (x^2 + c) % n; Correct result even when intermediate value
 // exceeds 64 bits
 static unsigned long long PRf(unsigned long long x, unsigned long long c, unsigned long long n) {
@@ -736,6 +731,12 @@ static unsigned long long PRf(unsigned long long x, unsigned long long c, unsign
 #endif
     return result;
 }
+
+/* method to return prime divisor for n
+adapted from:
+https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
+This method generally works. It uses a truly random number generator so could
+give different results given the same value of n */
 unsigned long long int PollardRho(unsigned long long int n, int depth)
 {
     /* initialize random seed */
@@ -884,7 +885,7 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
     }
 }
 
-/* factorise toFactor; factor list returned in Factors. 
+/* factorise Factors.n ; factor list returned in Factors. 
 returns false only if ecm returns an error. */
 static bool factor(fList &Factors) {
     Znum toFactor = Factors.n;

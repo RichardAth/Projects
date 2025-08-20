@@ -14,6 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Alpertron Calculators.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <map>
 
 struct factorsS {
 	int factorcount;           // number of unique prime factors
@@ -32,11 +33,18 @@ struct sFactors
 extern long long SFhitcount, SFmisscount;
 extern int lang;    // 0 English, 1 = Spanish
 extern int groupSize;
+extern int verbose;
 
 bool isEven(const Znum& a); /* true iff a is even (works for -ve a as well) */
 void ShowLargeNumber(const Znum& Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag);
 long long ComputeNumDigits(const Znum& n, const Znum& radix);
 Znum power(const Znum& x, unsigned long long n);
+unsigned __int64 modMult(const unsigned __int64 a, const unsigned __int64 b,
+	const unsigned __int64 mod);
+Znum powerBi(const __int64 x, unsigned __int64 n);
+// calculate a^n%mod   
+unsigned __int64 modPowerLL(unsigned __int64 a, unsigned __int64 n,
+	unsigned __int64 mod);
 
 /*  get approximate size (1 limb = 64 bits) */
 #define numLimbs(a)  std::abs(ZT(a)->_mp_size)
@@ -130,7 +138,7 @@ public:
 	friend void insertCarmichaelFactor(Znum& Aux4, const Znum &p, fList& Factors,
 		bool& factorsFound, const int countdown, const int ctr, const int i, int ref);
 	friend int FactoriseFactorial(const unsigned long long num, fList& factorlist);
-	friend Znum FactorFactorial(const Znum& p);
+	friend Znum FactorFactorial(const Znum& p, const Znum& mod);
 
 	/* methods that are in the class */
 
@@ -464,6 +472,55 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		}
 		else
 			return -1;  /* n is -ve */
+	}
+
+/* get number of divisors that are perfect squares, or cubes, or 4th power etc
+ Divisor 1 is excluded 
+ 'roundness' is as defined in project Euler problem 926 */
+	long long roundness(long long mod) const {
+		long long r2 = 1;
+		std::map <unsigned int, unsigned int> dist;
+		unsigned int max;
+		long long divisors = 1;
+
+		if (this->f.empty())
+			return 0;
+		/* n=1 is a special case */
+		if (this->f.size() == 1 && this->f[0].Factor == 1)
+			return 0;
+
+		/* dist counts tne number of factors with exponent 1, 2 etc */
+		for (auto i : this->f) {
+			dist[i.exponent]++;
+		}
+		auto it = dist.crbegin();
+		max = (*it).first;   /* get largest exponent*/
+		
+		for (unsigned int i = 1; i <= max; i++) {
+			divisors = 1;
+			unsigned long long temp;
+			for (auto ex = dist.rbegin(); ex != dist.rend(); ex++) {
+				unsigned int exp = ex->first;  /* value of exponent of prime factor */
+				unsigned int count = ex->second;  /* number of primes that have this exponent */
+				if (exp >= i) {
+					if (count > 1)
+						temp = modPowerLL(exp / i + 1, count, mod);
+					else
+						temp = exp / i + 1;  /* short-cut when count = 1 */
+					divisors = modMult(divisors, temp, mod);
+				}
+				else
+					break;   /* when exp < i the  value of divisors does not change */
+			}
+			divisors--;
+			if (verbose >0) {
+				std::cout << "mod = " << mod << " e = " << i;
+				std::cout << " : Number of Divisors = " << divisors << '\n';
+			}
+			r2 += divisors;
+			r2 %= mod;
+		}
+		return r2 - 1;  
 	}
 
 /* Concatenates the prime factors (base 10) of num according to the mode
