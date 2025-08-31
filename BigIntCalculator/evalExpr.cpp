@@ -19,7 +19,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 /* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
-int get_uvar(const char *name, Znum data);
+int get_uvar(const char *name, Znum &data);
 static void free_uvars();
 
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
@@ -2973,7 +2973,7 @@ static int set_uvar(const char *name, const Znum &data) {
 
 /* look for 'name' in the global uvars structure
    if found, copy out data and return index else return -1 if not found */
-static int get_uvar(const char *name, Znum data)
+static int get_uvar(const char *name, Znum &data)
 {
     int i;
 

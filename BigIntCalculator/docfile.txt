@@ -103,7 +103,7 @@ Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer
                   m such that a^m ≡ 1 (mod n) for every integer a between 1 
                   and n that is coprime to n. Also known as the reduced totient
                   function.
-Dedekind(n)     : Dedekind psi function. product of p^(e-1)(p+1) where p=prime 
+Dedekind(n)     : Dedekind psi function. Product of p^(e-1)(p+1) where p=prime 
                   factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
@@ -327,7 +327,7 @@ TEST 2  test factorisation using pseudo-random numbers of a specified size.
         This is useful for benchmarking factorisation.
 
 TEST 3  Tests for the built-in bigintegers. These are based on DA's biginteger 
-        functions but made into a C++ class with arithmetic , shift, compare 
+        functions but made into a C++ class with arithmetic, shift, compare 
         operators, etc implemented. However the built-in bigintegers are now 
         only used in the the built-in ECM & SIQS, which themselves are only 
         used for numbers up to 59 digits, so this test is not normally included.
@@ -800,14 +800,14 @@ Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime
 IsPrime(n)  returns zero if n is composite, -1 if it is a probable prime.
 [BPSW]
 BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 4 for
-          probable prime, 3 for definite prime, 1 or 2 for base-2 pseudoprime
+          probable prime, 3 for definite prime, 1 or 2 for a base-2 pseudoprime
           which is NOT prime.
           considered to be 100% reliable for numbers up to 10000 digits
 [APRCL]
 APRCL(n)  Adleman-Pomerance-Rumely primality test. If the number is > 6021 
           digits it reverts to the BPSW test. Returns zero if n is 
           composite, 4 for probable prime (only if BPSW used), 3 for a
-          definite prime, , 1 or 2 for a BPSW base-2 pseudoprime. Unlike other, 
+          definite prime, or 1 or 2 for a BPSW base-2 pseudoprime. Unlike other, 
           more efficient algorithms for this purpose, it avoids the use of random 
           numbers, so it is a deterministic primality test. WARNING: very slow 
           for large numbers e.g. 20s for 400 digits
@@ -950,8 +950,8 @@ ISCARMICHAEL(n[, t]): returns 0 if n is a Carmichael number (probability = 1 - 2
               1 for composite non-Carmichael numbers, and 2 for prime numbers.
               If t is omitted its default value is 16, which gives a 99.998% 
               probability that the result is correct. if n < 2^192 then Korselt's
-              criterion is used and the value of t is ignored. This requires n 
-              to be factorised, but is 100% certain.
+              criterion is used instead, and the value of t is ignored. This 
+              requires n to be factorised, but is exact.
 [CHINESE]
 CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 
        x ≡ a2 (modulo n2) etc. If ni and nj are not co-prime there is a solution 

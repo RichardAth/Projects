@@ -429,23 +429,6 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		return result;
 	}
 
-// sum of divisors is the product of (p^(e+1)-1)/(p-1) where p=prime factor 
-// and e=exponent. See https://oeis.org/A000203  and 
-// https://en.wikipedia.org/wiki/Divisor_function
-	Znum DivisorSumOld() const {
-		Znum result = 1, term;
-		if (this->f.empty())
-			return 0;
-		if (this->f[0].Factor == 1)
-			return 1;		// special case: if original number is 1
-		for (auto i: this->f) {
-			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent + 1);  // p^(e+1)
-			term = (term - 1) / (i.Factor - 1);	                 // (p^(e+1)-1)/(p-1)
-			result *= term;
-		}
-		return result;
-	}
-
 /*  get sum of n-th power of divisors. If n =0 get number of divisors. If
     n = 1 get sum of divisors. */
 	Znum DivisorSum(int n = 1) const {
@@ -478,10 +461,10 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
  Divisor 1 is excluded 
  'roundness' is as defined in project Euler problem 926 */
 	long long roundness(long long mod) const {
-		long long r2 = 1;
+		long long r2 = 0;
 		std::map <unsigned int, unsigned int> dist;
 		unsigned int max;
-		long long divisors = 1;
+		unsigned long long divisors = 1;
 
 		if (this->f.empty())
 			return 0;
@@ -500,7 +483,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			divisors = 1;
 			unsigned long long temp;
 			for (auto ex = dist.rbegin(); ex != dist.rend(); ex++) {
-				unsigned int exp = ex->first;  /* value of exponent of prime factor */
+				unsigned int exp = ex->first;  /* value of exponent of prime factor(s) */
 				unsigned int count = ex->second;  /* number of primes that have this exponent */
 				if (exp >= i) {
 					if (count > 1)
@@ -510,9 +493,9 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 					divisors = modMult(divisors, temp, mod);
 				}
 				else
-					break;   /* when exp < i the  value of divisors does not change */
+					break;   /* when exp < i the  value of divisors does not change any more */
 			}
-			divisors--;
+			divisors--;   /* don't include 1 in count of divisors */
 			if (verbose >0) {
 				std::cout << "mod = " << mod << " e = " << i;
 				std::cout << " : Number of Divisors = " << divisors << '\n';
@@ -520,7 +503,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			r2 += divisors;
 			r2 %= mod;
 		}
-		return r2 - 1;  
+		return r2;  
 	}
 
 /* Concatenates the prime factors (base 10) of num according to the mode
