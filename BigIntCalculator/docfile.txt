@@ -202,7 +202,7 @@ GF(x)           : Gauss Factorial of x, defined as the product of all positive
 QUADDISC(x)     : Discriminant of quadratic field Q(sqrt(x)). 
 EULERFRAC(x)    : Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
                   x must be <= 9022 to limit the result to 30,000 digits. 
-PISANO(n)       : Pisano period for n. the largest factor of n must be < 2^31, 
+PISANO(n)       : Pisano period for n. The largest factor of n must be < 2^31, 
                   because for large factors of n the calculation might take too 
                   long.
 CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 

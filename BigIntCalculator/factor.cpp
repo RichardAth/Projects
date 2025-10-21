@@ -917,7 +917,7 @@ static bool factor(fList &Factors) {
     }
 
     // If toFactor is < PollardLimit it will be factorised completely using 
-    // trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
+    // trial division and Pollard-Rho without ever using ECM or SIQS factorisation. 
     TrialDiv(Factors, PollardLimit);
     /* Any small factors (up to 393,203) have now been found by trial division */
 
@@ -1544,14 +1544,14 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
         if  (factorlist.f.size() > 1) 
             if (numLimbs(num) < 4) 
                 if ((num & 7) < 7 ) {
-            /* use compute3squares if number has more than 1 unique prime factor, 
-            is small (<= 57 digits), and can be formed from 3 squares. 
-            (Each limb is up to 64 bits). Large numbers would take too long.  */
-            if (!sqplustwosq) {
-                compute3squares(r, num, quads);
-                return;
-            }
-        }
+                /* use compute3squares if number has more than 1 unique prime factor, 
+                is small (<= 57 digits), and can be formed from 3 squares. 
+                (Each limb is up to 64 bits). Large numbers would take too long.  */
+                    if (!sqplustwosq) {
+                        compute3squares(r, num, quads);
+                        return;
+                    }   
+                }
     }
 
     /* the method below will find 4 squares the sum of which is the required number.

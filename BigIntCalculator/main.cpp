@@ -118,7 +118,7 @@ void ErrorDisp(const char *lpszFunction)
     // ExitProcess(dw);
 }
 
-/* Convert number to hexdecimal. Ensure that if number is negative the leftmost
+/* Convert number to hexadecimal. Ensure that if number is negative the leftmost
 bit of the most significant digit is set, and conversely, if the number is positive
 the leftmost bit of the most significant digit is not set. This is done by 
 prefixing the output with '0' or 'f' when necessary. For -ve numbers, the
@@ -459,7 +459,7 @@ void strToUpper(const std::string &s, std::string &d) {
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format 
- For Windows systems, clock() measures wall-clock time, in msec.
+ For Windows systems, clock() measures wall-clock time, in milliseconds.
  ISO standard clock() would measure net CPU time */
 void PrintTimeUsed(double elapsed, const std::string &msg) {
 
@@ -2497,7 +2497,7 @@ static HWND CreateToolTip(int toolID, HWND hDlg, LPWSTR pszText, HINSTANCE hParn
 * additionalInfo1 = Menu identifier, or control notification code + control identifier
 additionalInfo2 = 0 or handle to control window.
 returns TRUE or FALSE. 
-Note that TRUE and FALSE are macros  used with C-stye BOOL variables, but true and false
+Note that TRUE and FALSE are macros  used with C-style BOOL variables, but true and false
 are C++ language words used with C++ bool variables. */
 static INT_PTR SetDialogAct(HWND DiBoxHandle,
     UINT message,
@@ -2918,7 +2918,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
     return FALSE;
 }
 
-/* set up dialog box for SET command. When the user select an action it is processed
+/* set up dialog box for SET command. When the user selects an action it is processed
 in the SetDialogAct function. */
 static long long setdiag(void) {
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
@@ -3597,7 +3597,7 @@ int main(int argc, char *argv[], char* envp[]) {
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
 
-        printf_s("\n*** unknown exception ocurred\n");
+        printf_s("\n*** unknown exception occurred\n");
         Beep(1200, 1000);              // sound at 1200 Hz for 1 second
         std::cout << "Press ENTER to continue...";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
