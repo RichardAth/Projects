@@ -19,7 +19,7 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 /* forward references */
 int new_uvar(const char *name);
 int set_uvar(const char *name, const Znum &data);
-int get_uvar(const char *name, Znum data);
+int get_uvar(const char *name, Znum &data);
 static void free_uvars();
 
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
@@ -185,6 +185,7 @@ enum class opCode {
     fn_radical,           /* get largest square-free divisor of n */
     fn_iscarmichael,      /* return -1 if n is a carmichael number */
     fn_chinese,           /* apply Chinese Remainder Theorem */
+    fn_factfact,          /* factorise factorial */
     fn_invalid = -1,
 };
 
@@ -218,6 +219,7 @@ const static struct functions functionList[]{
     "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
     "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
     "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
+    "FACTFACT",  SHORT_MAX,  opCode::fn_factfact,       // factorise factorial
     "F",         1,  opCode::fn_fib,			// fibonacci
     "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
     "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
@@ -875,7 +877,7 @@ static Znum R2p(const Znum& num) {
 }
 
 /* return x^n */
-static Znum powerBi(const __int64 x, unsigned __int64 n) {
+Znum powerBi(const __int64 x, unsigned __int64 n) {
     Znum result;
     mpz_ui_pow_ui(ZT(result), x, n);
     return result;
@@ -1309,10 +1311,123 @@ Znum pisanof(const long long n, const factorsS &f) {
     return result;
 }
 
+/* get the prime factors of num!  */
+int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
+
+    int i;
+    unsigned long long x;
+    zFactors factor;
+
+    generatePrimes(393203);  /* only needed if prime list not already set up */
+    assert(num <= primeListMax);
+    factorlist.f.clear();
+    for (i = 0; primeList[i] <= num; i++) {
+        factor.Factor = primeList[i];
+        factor.exponent = 0;
+        x = (int)num;
+        while (x > 0) {
+            x /= primeList[i];
+            factor.exponent += (int)x;
+        }
+        factorlist.f.push_back(factor);
+    }
+    return i;
+}
+
+/* factorise p! Print factors. If possible, print a list of divisors */
+Znum FactorFactorial(const Znum &p, const Znum &modbi) {
+    fList f;
+    size_t ctr = 0, ct2=0, ccpy=0;
+    std::vector <Znum> divlist;
+    Znum roundnessZn = 0;
+    long long roundness = 0;
+    std::map <unsigned int, unsigned int> dist;
+    unsigned int max;   /* largest exponent for a prime factor of p */
+    long long mod = ZnumToLong(modbi);
+    long long pp = ZnumToLong(p);
+    if (pp > (long long)primeListMax)
+        generatePrimes(pp+1);    /* ensure prime list contains sufficient primes */
+    FactoriseFactorial(pp, f);   /* get factors of p! */
+    std::cout << "no of unique factors = " << f.fsize() << '\n';
+    std::cout << "largest factor = " << f.fmax() << '\n';
+    if (f.fsize() < 1000) {
+        f.print(false);      /* print prime factors */
+        putchar('\n');
+    }
+    max = f.f[0].exponent;  /* get largest exponent */
+   
+    /* dist counts the number of factors with exponent 1, 2 etc */
+    for (auto i : f.f) {
+        dist[i.exponent]++;
+    }
+    if (mod <= 1) {
+        /* calculate roundness without using modulus */
+        Znum divisors = 1;
+        for (unsigned int i = 1; i <= max; i++) {
+            divisors = 1;
+            for (auto ex = dist.rbegin(); ex != dist.rend(); ex++) {
+                unsigned int exp = ex->first;     /* exponent of prime factors */
+                unsigned int count = ex->second;  /* number of primes with this exponent value */
+                if (exp >= i)
+                    divisors *= powerBi(exp / i + 1, count);
+                else
+                    break;   /* when exp < i the  value of divisors does not change */
+            }
+            divisors--;
+            if (pp < 10000) {
+                std::cout << "power " << i << " Number of Divisors = ";
+                ShowLargeNumber(divisors, groupSize, false, false);
+                putchar('\n');
+            }
+            roundnessZn += divisors;
+        }
+        std::cout << "roundness = " << roundnessZn << '\n';
+    }
+    else {    /* calculate roundness using modulus */
+        roundness = f.roundness(mod);
+    }
+    
+    if (verbose > 0) {
+        auto divisors = f.NoOfDivs();
+        if (divisors > 1000)
+            return 0;  /* number of divisors is too large */
+
+        auto numdiv = ZnumToLong(divisors);   /* number of divisors of p */
+        auto numfactors = f.fsize();           /* number of unique prime factors of p */
+        divlist.resize(numdiv);
+       divlist[ctr++] = 1;  // 1st divisor
+       if (pp <= 1)
+             return 0;
+
+       for (size_t i = 0; i < numfactors; i++) {
+          ct2 = 0;
+          ccpy = ctr;
+            for (int x = 1; x <= f.f[i].exponent; x++) {
+                for (size_t j = 0; j < ctr; j++)
+                    divlist[j + ccpy] = divlist[j + ct2] * f.f[i].Factor;
+                ct2 += ctr;
+                ccpy += ctr;
+            }
+            ctr = ccpy;
+        }
+        std::sort(divlist.begin(), divlist.end());
+
+       	printf_s("divisors of %lld! are: ", pp);
+    	for (int i = 0; i < numdiv; i++) {
+    		gmp_printf("%Zd ", divlist[i]);
+    	}
+    	std::putchar('\n');
+    }
+    if (mod <= 1)
+        return roundnessZn;
+    else
+        return roundness;
+}
+
 /* process one operator with 1 or 2 operands.
-NOT, unary minus and primorial  have 1 operand.
-Most of the others have two. GCD and LCM have an indefinate number of operands. 
-Some operators can genererate an error condition e.g. DIVIDE_BY_ZERO 
+NOTE, unary minus and primorial  have 1 operand.
+Most of the others have two. GCD and LCM have an indefinite number of operands. 
+Some operators can generate an error condition e.g. DIVIDE_BY_ZERO 
 otherwise return EXPR_OK. 
 For functions, do any further checks needed on the parameter values, then 
 evaluate the function. */
@@ -2102,6 +2217,26 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::INVALID_PARAM;
         else break;
     }
+    case opCode::fn_factfact: {
+        if (p.size() < 1)
+            return retCode::TOO_FEW_PARAMS;
+        
+        if (p.size() == 1) {
+            if (p[0] > 1000)
+                return retCode::NUMBER_TOO_HIGH;
+            result = FactorFactorial(p[0], 0);
+        }
+        else {
+            if (p[0] > 10'000'000)
+                return retCode::NUMBER_TOO_HIGH;
+            if (p[1] > LLONG_MAX)
+                return retCode::NUMBER_TOO_HIGH;
+            if (p[1] < 2)
+                return retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE;
+            result = FactorFactorial(p[0], p[1]);
+        }
+        break;
+    }
     default:
         std::abort();	// should never get here
     }
@@ -2210,7 +2345,7 @@ static void operSearch(const std::string &expr, int &opcode) {
 /* convert an expression which is already tokenised to reverse polish.
 Syntax checking is done, but it is not guaranteed that all syntax errors will
 be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
-The well-known shunting algorith is used, but for function parameters a recursive
+The well-known shunting algorithm is used, but for function parameters a recursive
 call to reversePolish is made, which also takes care of nested function calls.
 Also, the initial tokenisation does not distinguish unary - from normal -, so
 that is deduced from the sequence of tokens and the op code is changed if necessary.
@@ -2838,7 +2973,7 @@ static int set_uvar(const char *name, const Znum &data) {
 
 /* look for 'name' in the global uvars structure
    if found, copy out data and return index else return -1 if not found */
-static int get_uvar(const char *name, Znum data)
+static int get_uvar(const char *name, Znum &data)
 {
     int i;
 

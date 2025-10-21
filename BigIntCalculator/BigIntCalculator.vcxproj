@@ -365,6 +365,7 @@
     <ClInclude Include="paristio.h" />
     <ClInclude Include="parisys.h" />
     <ClInclude Include="quadmodLL.h" />
+    <ClInclude Include="R3.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="showtime.h" />
     <ClInclude Include="pch.h" />

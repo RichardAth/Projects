@@ -187,7 +187,7 @@ public:
 	friend void expBigInt      (BigInteger &BigInt, double logar); /* BigInt = e^logar */
 	friend void DoubleToBigInt(BigInteger &bigInt, double dvalue);
 	friend double logBigInt(const BigInteger &BigInt); /* natural log of BigInt */
-	friend static void BigIntMutiplyPower2(BigInteger &pArg, int power2);
+	friend void BigIntMutiplyPower2(BigInteger &pArg, int power2);
 	//friend void IntsToBigInteger(/*@in@*/const int *ptrValues, /*@out@*/BigInteger &bigint);
 	//friend void BigIntegerToInts(/*@out@*/int *ptrValues, /*@in@*/const BigInteger &bigint);
 	friend void LimbsToBigInteger(/*@in@*/const limb *ptrValues,

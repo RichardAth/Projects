@@ -291,7 +291,7 @@ Use YAFU         Generally faster than Msieve. For a 94 digit Mersenne number
                  or https://download.mersenne.ca/
 
 use PARI-GP     VERY rich set of functions. This is much more than just an integer calculator.
-                To understand PARI-GP fully, you need to be an expert mathematician. Hwever
+                To understand PARI-GP fully, you need to be an expert mathematician. However
                 it is quite possible to use the parts you do understand without mastering
                 the other features.
                 Factorisation not as fast as YAFU. 

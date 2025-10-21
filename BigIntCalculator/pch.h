@@ -41,8 +41,8 @@ typedef boost::multiprecision::mpz_int Znum;
 #include "bignbr.h"
 #include "bigint.h"
 #include "factor.h"
+#include "r3.h"
 #include "main.h"
-
 #define ENABLE_INTSAFE_SIGNED_FUNCTIONS 1
 #include <intsafe.h>
 #include <intrin.h>

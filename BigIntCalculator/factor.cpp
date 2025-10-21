@@ -461,7 +461,7 @@ bool insertBigFactor(fList &Factors, const Znum &divisor) {
 /* n is a pseudoprime to base b. Find some divisors. This will not work if n is
    a strong pseudoprime to base b. See 
    https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Variants_for_finding_factors */
-static bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
+bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     /* divide (n-1) by 2 until it is odd*/
     Znum two = 2;
     Znum f, kf, nm1, modpow, zb, div1, div2;
@@ -615,7 +615,7 @@ Return: false = No factors found, true = factors found.
       (x-R)(x+R) ≡ 0 (modulo n)
       We also look for square roots of 1 (modulo n) in the same way.
 */
-bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
+static bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
 {
     uint64_t PsRand = 0;  // pseudo-random number
     bool factorsFound = false;
@@ -714,18 +714,35 @@ static void PollardFactor(const unsigned long long num, long long &factor) {
     return;
 }
 
+
+// return (x^2 + c) % n; Correct result even when intermediate value
+// exceeds 64 bits
+static unsigned long long PRf(unsigned long long x, unsigned long long c, unsigned long long n) {
+    uint128_t rv = { 0,0 };
+    unsigned long long temp, result;
+    temp = modMult(x, x, n);     // temp = x^2 mod n
+    rv.lo = temp + c;
+    if (rv.lo < temp)
+        rv.hi++;       /* overflow i.e. carry > 0 */
+    divide_uint128_by_uint64(rv, n, &result);  /* get remainder i.e. rv (mod n) in result */
+#ifdef _DEBUG
+    // if (rv.hi > 0)
+   //     std::cout << "Prf(" << x << ", " << c << ", " << n << ") = " << result << "\n";
+#endif
+    return result;
+}
+
 /* method to return prime divisor for n
 adapted from:
 https://www.geeksforgeeks.org/pollards-rho-algorithm-prime-factorization/
-This method generally works but for very large n it may be too slow. It uses a
-truly random number generator so could give different results given the same
-value of n */
+This method generally works. It uses a truly random number generator so could
+give different results given the same value of n */
 unsigned long long int PollardRho(unsigned long long int n, int depth)
 {
     /* initialize random seed */
     std::random_device rd;   // non-deterministic generator
     std::mt19937_64 gen(rd());  // to seed mersenne twister.
-    std::uniform_int_distribution<unsigned long long> dist(1, LLONG_MAX); // distribute results between 1 and MAX inclusive.
+    std::uniform_int_distribution<unsigned long long> dist(1, ULONG_MAX); // distribute results between 1 and MAX inclusive.
     long long ctr = 0;     /* loop counter*/
     /* no prime divisor for 1 */
     if (n == 1) return n;
@@ -741,7 +758,7 @@ unsigned long long int PollardRho(unsigned long long int n, int depth)
     y = x;
 
 
-    /* the constant in f(x).
+    /* set the constant in f(x).
      * Algorithm can be re-run with a different c
      * if it throws failure for a composite. */
     long long int c = dist(gen);  // c is in range 1 to max
@@ -755,11 +772,11 @@ unsigned long long int PollardRho(unsigned long long int n, int depth)
     while (d == 1)
     {
         /* Tortoise Move: x(i+1) = f(x(i)) */
-        x = (modPowerLL(x, 2, n) + c + n) % n;
+        x = PRf(x, c, n);
 
         /* Hare Move: y(i+1) = f(f(y(i))) */
-        y = (modPowerLL(y, 2, n) + c + n) % n;
-        y = (modPowerLL(y, 2, n) + c + n) % n;
+        y = PRf(y, c, n);
+        y = PRf(y, c, n);
 
         /* check gcd of |x-y| and n */
         d = std::gcd(x>y?(x - y):(y-x), n);
@@ -868,13 +885,13 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
     }
 }
 
-/* factorise toFactor; factor list returned in Factors. 
+/* factorise Factors.n ; factor list returned in Factors. 
 returns false only if ecm returns an error. */
 static bool factor(fList &Factors) {
     Znum toFactor = Factors.n;
     unsigned long long testP;
-    const unsigned long long MaxP = 393203;       // use 1st 33334 primes 
-    //const unsigned long long MaxP = 2'097'143;  // use 1st 155611 primes
+    const unsigned long long MaxP = 393203;   // use 1st  33334 primes 
+    //const unsigned long long MaxP = 2'097'152;  // use 1st 155611 primes
     /* larger value for Maxp seems to slow down factorisation overall. */
     // MaxP must never exceed 2'097'152 to avoid overflow.
     const unsigned long long PollardLimit = MaxP*MaxP*MaxP;
@@ -900,7 +917,7 @@ static bool factor(fList &Factors) {
     }
 
     // If toFactor is < PollardLimit it will be factorised completely using 
-    // trial division and Pollard-Rho without ever using ECM or SIQS factorisiation. 
+    // trial division and Pollard-Rho without ever using ECM or SIQS factorisation. 
     TrialDiv(Factors, PollardLimit);
     /* Any small factors (up to 393,203) have now been found by trial division */
 
@@ -932,11 +949,6 @@ static bool factor(fList &Factors) {
                 i = -1;			// restart loop at beginning!!
                 continue;
             }
-            //else if(result == 2)
-            //    if (getfactors(Zpower, 2, Factors)) {
-            //        i = -1;			// restart loop at beginning!!
-            //        continue;
-            //    }
         }
         if (Zpower <= PollardLimit) {
             unsigned long long f;
@@ -1532,14 +1544,14 @@ static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num)
         if  (factorlist.f.size() > 1) 
             if (numLimbs(num) < 4) 
                 if ((num & 7) < 7 ) {
-            /* use compute3squares if number has more than 1 unique prime factor, 
-            is small (<= 57 digits), and can be formed from 3 squares. 
-            (Each limb is up to 64 bits). Large numbers would take too long.  */
-            if (!sqplustwosq) {
-                compute3squares(r, num, quads);
-                return;
-            }
-        }
+                /* use compute3squares if number has more than 1 unique prime factor, 
+                is small (<= 57 digits), and can be formed from 3 squares. 
+                (Each limb is up to 64 bits). Large numbers would take too long.  */
+                    if (!sqplustwosq) {
+                        compute3squares(r, num, quads);
+                        return;
+                    }   
+                }
     }
 
     /* the method below will find 4 squares the sum of which is the required number.
