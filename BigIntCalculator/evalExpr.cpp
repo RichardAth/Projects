@@ -425,7 +425,7 @@ static Znum ComputeDedekind(const Znum & n) {
 
 /* Calculate Carmichael Function AKA reduced totient.
 see https://en.wikipedia.org/wiki/Carmichael_function, 
-alse https://oeis.org/A002322 */
+also https://oeis.org/A002322 */
 static Znum ComputeCarmichael(const Znum& n) {
     fList factorlist;
 
@@ -1267,7 +1267,7 @@ uint64_t lcm(const uint64_t a, const uint64_t b) {
 https://en.wikipedia.org/wiki/Pisano_period
 In general, the pisano period π(p) <= 4p.
 If p is of the form 2 * 5^i, π(p)  =6p.*/
-long long pisano(const long long p) {
+static long long pisano(const long long p) {
     long long x[2] = { 1, 1 };
     long long y[2];
     long long k = 1;
@@ -1292,7 +1292,7 @@ long long pisano(const long long p) {
 Otherwise π(n) ≤ 4n.
 by factorising n, we can calculate π(p) for much smaller numbers,
 then combine them, hopefully speeding up the calculation.*/
-Znum pisanof(const long long n, const factorsS &f) {
+static Znum pisanof(const long long n, const factorsS &f) {
 
     Znum result = 1;
     Znum pisanoV;
@@ -1312,7 +1312,7 @@ Znum pisanof(const long long n, const factorsS &f) {
 }
 
 /* get the prime factors of num!  */
-int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
+static int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 
     int i;
     unsigned long long x;
@@ -1335,7 +1335,7 @@ int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 }
 
 /* factorise p! Print factors. If possible, print a list of divisors */
-Znum FactorFactorial(const Znum &p, const Znum &modbi) {
+static Znum FactorFactorial(const Znum &p, const Znum &modbi) {
     fList f;
     size_t ctr = 0, ct2=0, ccpy=0;
     std::vector <Znum> divlist;
@@ -1424,8 +1424,8 @@ Znum FactorFactorial(const Znum &p, const Znum &modbi) {
         return roundness;
 }
 
-/* process one operator with 1 or 2 operands.
-NOTE, unary minus and primorial  have 1 operand.
+/* process one operator, usually with 1 or 2 operands.
+The operators NOT, unary minus and primorial have 1 operand.
 Most of the others have two. GCD and LCM have an indefinite number of operands. 
 Some operators can generate an error condition e.g. DIVIDE_BY_ZERO 
 otherwise return EXPR_OK. 
@@ -1545,7 +1545,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::notfn: /* Perform binary NOT */ {   
         //result = -1 - p[0];  // assumes 2s complement binary numbers
-        mpz_com(ZT(result), ZT(p[0]));
+        mpz_com(ZT(result), ZT(p[0]));  /* one's complement */
         return retCode::EXPR_OK;
     }
     case opCode::andfn: /* Perform binary AND. */ {  
@@ -2534,7 +2534,7 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) 
 If the final operation is a function call that returns multiple values,
-multiValue is set to true, otherwise it is set to false*/
+multiV is set to true, otherwise it is set to false*/
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
     Znum val;
@@ -2559,7 +2559,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
     
         /* operators and functions are processed by taking the operand values
             from the stack, executing the operation or function and putting
-            the returned value onto the stack. If there are insuffficient values
+            the returned value onto the stack. If there are insufficient values
             on the stack or if the operator or function returns an error code
             exit immediately. */
         case types::func: 
@@ -2660,7 +2660,7 @@ It was divided into 3 parts:
     (this would indicate a syntax error not detected earlier). The value found 
     is returned in Result, if the return code is EXPR_OK.
     If the outermost (i.e. the last) operation is evaluating a function that
-    returns multiple values e.g. modsqrt() then the global variable multiValue 
+    returns multiple values e.g. modsqrt() then the parameter multiV 
     is set to 'true' and the full set of return values is returned in global 
     vector roots */
 retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {

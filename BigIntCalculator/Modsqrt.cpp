@@ -246,11 +246,11 @@ static std::vector <Znum> ModSqrt2(const Znum& cc, const Znum& prime, const int 
 
 
 /* divide x by 2^p, return modulus and quotient. */
-long long divremp2(const Znum x, const int p, Znum& quot) {
-	assert(p > 0 && p <= 63);
-	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
-	return mpz_fdiv_ui(ZT(x), 2 << p);
-}
+//long long divremp2(const Znum x, const int p, Znum& quot) {
+//	assert(p > 0 && p <= 63);
+//	mpz_fdiv_q_2exp(ZT(quot), ZT(x), p);
+//	return mpz_fdiv_ui(ZT(x), 2 << p);
+//}
 
 /* get result of bitwise and of a and x (a must be +ve) */
 static long long ZandInt(const Znum a, long long x) {
@@ -400,7 +400,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 
 /* Solve the equation given a and m.
 	x^2 ≡ a mod m
-to find the moduluar square root modulo m where m is not prime we need to 
+to find the modular square root modulo m where m is not prime we need to 
 find the square root modulo each prime factor p1, p2 ... of m. We can combine 
 one root for each prime factor using the Chinese remainder theorem (CRT). 
 If m has x unique prime factors there are generally 2^x combinations 
