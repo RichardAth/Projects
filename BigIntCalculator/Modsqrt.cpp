@@ -299,7 +299,7 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
 	/* Check solution existence for odd prime. Because it is prime the Jacobi
 	symbol is the same as the Legendre symbol. */
 	if (jacobi(a, prime) != 1) {
-		printroots(a, prime, roots);
+		printroots(a, prime, result);
 		return result;    // empty list; no solutions
 	}
 #ifdef _DEBUG

@@ -454,6 +454,7 @@ static Znum ComputeNumDivs(const Znum &n) {
 /* generate sorted list of all divisors of tnum
 N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
+If number of divisors > 33333333, do not produce the divisor list and return -1.
 */
 static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
@@ -1670,7 +1671,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::EXPONENT_TOO_LARGE;
         result = ComputeSumDivs(p[0], p[1]);  /* get sum of n-th power of divisors. */
         if (result < 0)
-            return retCode::INTERIM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH; /* result > 30,000 digits */
         break;
     }
 
@@ -2051,7 +2052,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         result = DivisorList(p[0], roots);
         if (result < 0)
-            return retCode::INTERIM_TOO_HIGH;
+            return retCode::NUMBER_TOO_HIGH;  /* too many divisors; don't calculate them. */
         multiValue = true;     /* indicate multiple return values */
         break;
     }
