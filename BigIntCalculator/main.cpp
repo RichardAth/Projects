@@ -584,7 +584,7 @@ static void doFactors(const Znum &Result) {
         rv = factorise(Result, factorlist, Quad);
     else
         rv = factorise(Result, factorlist, nullptr);
-    if (rv && factorlist.fsize() > 0) {
+    if (rv && factorlist.fsize() > 0 && abs(Result) > 1) {
         factorlist.print(Result < 0);   /* print factors */
         std::cout << '\n';
         if (factorFlag > 1) {
@@ -2297,7 +2297,7 @@ return -1 if syntax is invalid
  return 0 if expression is 0 for STOP or REPEAT
  return 1 if expression NE 0 and action is STOP
  return 2 if expression NE 0 and action is REPEAT 
- return 3 if THEN or ELSE expression evaluated succesfully */
+ return 3 if THEN or ELSE expression evaluated successfully */
 static int ifCommand(const std::string &command) {
     int ixx, ixx2, exprLen;
     int asgCt = 0;  /* number of assignment operators*/

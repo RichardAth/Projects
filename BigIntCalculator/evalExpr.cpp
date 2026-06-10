@@ -207,71 +207,71 @@ const static struct functions functionList[]{
   // names are approximately in alphabetical order, but longer names with the same
   // starting letter(s) come before shorter ones.
   // name, number of parameters, code   
-    "APRCL",     1,  opCode::fn_aprcl,         // APR-CL prime test
-    "ABS",       1,  opCode::fn_abs,           /* absolute value */
-    "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
-    "B",         1,  opCode::fn_pp,			   // previous prime
-    "CHINESE",   SHORT_MAX,  opCode::fn_chinese,   // Chinese Remainder Theorem
-    "CLASSNO",   1,  opCode::fn_classno,       // class number
-    "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
-    "CORE",      1,  opCode::fn_core,          /* get square-free number */
-    "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
-    "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
-    "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
-    "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
+    "APRCL",             1,  opCode::fn_aprcl,          // APR-CL prime test
+    "ABS",               1,  opCode::fn_abs,            /* absolute value */
+    "BPSW",              1,  opCode::fn_bpsw,           // Baillie-Pomerance-Selfridge-Wagstaff prime test 
+    "B",                 1,  opCode::fn_pp,		        // previous prime
+    "CHINESE",   SHORT_MAX,  opCode::fn_chinese,        // Chinese Remainder Theorem
+    "CLASSNO",           1,  opCode::fn_classno,        // class number
+    "CARMICHAEL",        1,  opCode::fn_carmichael,     /* reduced totient */
+    "CORE",              1,  opCode::fn_core,           /* get square-free number */
+    "DEDEKIND",          1,  opCode::fn_dedekind,       /* Dedekind psi function */
+    "DIVISORS",          1,  opCode::fn_divisors,       // count + list of divisors    
+    "EULERFRAC",         1,  opCode::fn_eulerfrac,      /* Euler number E_n */
+    "FactConcat",        2,  opCode::fn_concatfact,     // FactConcat must come before F
     "FACTFACT",  SHORT_MAX,  opCode::fn_factfact,       // factorise factorial
-    "F",         1,  opCode::fn_fib,			// fibonacci
-    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
-    "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
-    "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
-    "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
-    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
-    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael,  /* is a carmichael number? */
-    "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
-    "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
-    "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
-    "ISSQUAREFREE",1, opCode::fn_squarefree,    /* squarefree number */
-    "ISPRIME",   1,	 opCode::fn_isprime,
-    "ISPOW",     1,  opCode::fn_ispow,
-    "JA",		 2,  opCode::fn_jacobi,
-    "KR",		 2,  opCode::fn_kronecker,
-    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
-    "LLT",	     1,  opCode::fn_llt,            // lucas-Lehmer test
-    "LE",		 2,  opCode::fn_legendre,
-    "L",         1,  opCode::fn_luc,			// Lucas Number
-    "MAXFACT",   1,  opCode::fn_maxfact,
-    "MINFACT",   1,  opCode::fn_minfact,
-    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
-    "MODSQRT",   2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
-    "MODPOW",    3,  opCode::fn_modpow,  		
-    "MODINV",    2,  opCode::fn_modinv,
-    "NUMDIGITS", 2,  opCode::fn_numdigits,
-    "NUMDIVS",   1,  opCode::fn_numdivs,       /* number of divisors */
-    "NUMFACT",   1,  opCode::fn_numfact,
-    "NROOT",     2,  opCode::fn_nroot,
-    "N",         1,  opCode::fn_np,			// next prime
-    "PISANO",    1,  opCode::fn_pisano,     // Pisano period
-    "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
-    "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
-    "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
-    "P",         1,  opCode::fn_part,	    // number of partitions
+    "F",                 1,  opCode::fn_fib,			// fibonacci
+    "GCD",       SHORT_MAX,  opCode::fn_gcd,            /* gcd, variable no of parameters */
+    "GF",                1,  opCode::fn_gf,             /* Gauss factorial*/
+    "HAMDIST",           2,  opCode::fn_hamdist,        // Hamming distance
+    "HCLASS",            1,  opCode::fn_hurwitz,        // hurwitz class number
+    "InvTot",            1,  opCode::fn_invtot,         // inverse totient
+    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael, /* is a carmichael number? */
+    "ISFUNDAMENTAL",     1, opCode::fn_fundamental,     // fundamental discriminant
+    "ISPOLYGONAL",       2, opCode::fn_polygonal,       /* polygonal number */
+    "ISPOWERFUL",        1,  opCode::fn_powerful,       /* powerful number */
+    "ISSQUAREFREE",      1, opCode::fn_squarefree,      /* squarefree number */
+    "ISPRIME",           1,	 opCode::fn_isprime,
+    "ISPOW",             1,  opCode::fn_ispow,
+    "JA",	      	     2,  opCode::fn_jacobi,
+    "KR",		         2,  opCode::fn_kronecker,
+    "LCM",       SHORT_MAX,  opCode::fn_lcm,         /* lcm, variable no of parameters */
+    "LLT",	             1,  opCode::fn_llt,            // lucas-Lehmer test
+    "LE",		         2,  opCode::fn_legendre,
+    "L",                 1,  opCode::fn_luc,			// Lucas Number
+    "MAXFACT",           1,  opCode::fn_maxfact,
+    "MINFACT",           1,  opCode::fn_minfact,
+    "MODSQRTNEW",        2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
+    "MODSQRT",           2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
+    "MODPOW",            3,  opCode::fn_modpow,  		
+    "MODINV",            2,  opCode::fn_modinv,
+    "NUMDIGITS",         2,  opCode::fn_numdigits,
+    "NUMDIVS",           1,  opCode::fn_numdivs,       /* number of divisors */
+    "NUMFACT",           1,  opCode::fn_numfact,
+    "NROOT",             2,  opCode::fn_nroot,
+    "N",                 1,  opCode::fn_np,			// next prime
+    "PISANO",            1,  opCode::fn_pisano,     // Pisano period
+    "PrimRoot",          1,  opCode::fn_primroot,   /* smallest primitive root */
+    "POPCNT",            1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
+    "PI",		         1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
+    "P",                 1,  opCode::fn_part,	    // number of partitions
 
-    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
-                                               quadratic field Q(sqrt(x))*/
-    "RAD",       1,  opCode::fn_radical,    /* get largest square-free divisor */
-    "REVDIGITS", 2,  opCode::fn_revdigits,
-    "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
-    "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
-                                            // calculated using hurwitz class number
-    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
-    "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as sum of 4 squares
-    "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of nth power of divisors
-    "SQRT",      1,  opCode::fn_sqrt,
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
-    "TOTIENT",   1,  opCode::fn_totient,
-    "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
+    "QUADDISC",          1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
+                                                     quadratic field Q(sqrt(x))*/
+    "RAD",               1,  opCode::fn_radical,    /* get largest square-free divisor */
+    "REVDIGITS",         2,  opCode::fn_revdigits,
+    "R2P",               1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
+    "R3h",               1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
+                                                    // calculated using hurwitz class number
+    "R2",		         1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+    "R3",                1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
+    "R4",                1,  opCode::fn_r4,         // number of ways n can be expressed as sum of 4 squares
+    "SUMDIGITS",         2,  opCode::fn_sumdigits,
+    "SUMDIVS",           2,  opCode::fn_sumdivs,    // sum of nth power of divisors
+    "SQRT",              1,  opCode::fn_sqrt,
+    "STIRLING",          3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+    "TOTIENT",           1,  opCode::fn_totient,
+    "TAU",               1,  opCode::fn_tau,        // Ramanujan's tau function
 };
 
 /* list of operators.  */
@@ -282,7 +282,7 @@ struct oper_list{
     bool left;   /* associativity ; true = left to right, false = right to left
         operators with the same precedence must have the same associativity. */
     bool pre;    /* true if unary operator e.g. - precedes expression, false if
-                    it follows e.g. !, otherwise not used */
+                 it follows the expression e.g. !, only relevant for unary operators. */
     int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 /* list of operators with corresponding codes and priority. For the search to
@@ -652,7 +652,7 @@ static int PrimalityTest(const Znum &Value) {
 }
 
 /* same purpose as PrimalityTest but optimised for smaller numbers. 1st call can be very slow,
-but subsequent calls are very quick. -1 means definately prime*/
+but subsequent calls are very quick. -1 means definitely prime*/
 //static int PrimalityTestSmall(const long long Value) {
 //    assert(Value >= 0);
 //    /* deal with even values first, because getBit below only handles odd values*/
@@ -2429,6 +2429,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
             if (expr[exprIndex].oper != opCode::leftb
                 && expr[exprIndex].oper != opCode::rightb) {
 
+                /* check if minus is actually a unary minus. If so adjust op code*/
                 if (expr[exprIndex].oper == opCode::minus && !leftNumber) {
                     expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
                     expr[exprIndex].numops = 1;            /* adjust number of operands */
@@ -2436,7 +2437,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                     expr[exprIndex].function = sizeof(operators) / sizeof(operators[0]) - 1; 
                 }
 
-                bool left = operators[expr[exprIndex].function].left; /* assocativity*/
+                bool left = operators[expr[exprIndex].function].left; /* associativity*/
                 bool pre = operators[expr[exprIndex].function].pre;  /* true when unary operator precedes expr*/
                 bool unary = operators[expr[exprIndex].function].numOps == 1; /* true for unary operator */
 
