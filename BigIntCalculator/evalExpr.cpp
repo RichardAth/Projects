@@ -207,71 +207,71 @@ const static struct functions functionList[]{
   // names are approximately in alphabetical order, but longer names with the same
   // starting letter(s) come before shorter ones.
   // name, number of parameters, code   
-    "APRCL",     1,  opCode::fn_aprcl,         // APR-CL prime test
-    "ABS",       1,  opCode::fn_abs,           /* absolute value */
-    "BPSW",      1,  opCode::fn_bpsw,          // Baillie-Pomerance-Selfridge-Wagstaff prime test 
-    "B",         1,  opCode::fn_pp,			   // previous prime
-    "CHINESE",   SHORT_MAX,  opCode::fn_chinese,   // Chinese Remainder Theorem
-    "CLASSNO",   1,  opCode::fn_classno,       // class number
-    "CARMICHAEL",1,  opCode::fn_carmichael,    /* reduced totient */
-    "CORE",      1,  opCode::fn_core,          /* get square-free number */
-    "DEDEKIND",  1,  opCode::fn_dedekind,      /* Dedekind psi function */
-    "DIVISORS",  1,  opCode::fn_divisors,       // count + list of divisors    
-    "EULERFRAC", 1,  opCode::fn_eulerfrac,      /* Euler number E_n */
-    "FactConcat",2,  opCode::fn_concatfact,     // FactConcat must come before F
+    "APRCL",             1,  opCode::fn_aprcl,          // APR-CL prime test
+    "ABS",               1,  opCode::fn_abs,            /* absolute value */
+    "BPSW",              1,  opCode::fn_bpsw,           // Baillie-Pomerance-Selfridge-Wagstaff prime test 
+    "B",                 1,  opCode::fn_pp,		        // previous prime
+    "CHINESE",   SHORT_MAX,  opCode::fn_chinese,        // Chinese Remainder Theorem
+    "CLASSNO",           1,  opCode::fn_classno,        // class number
+    "CARMICHAEL",        1,  opCode::fn_carmichael,     /* reduced totient */
+    "CORE",              1,  opCode::fn_core,           /* get square-free number */
+    "DEDEKIND",          1,  opCode::fn_dedekind,       /* Dedekind psi function */
+    "DIVISORS",          1,  opCode::fn_divisors,       // count + list of divisors    
+    "EULERFRAC",         1,  opCode::fn_eulerfrac,      /* Euler number E_n */
+    "FactConcat",        2,  opCode::fn_concatfact,     // FactConcat must come before F
     "FACTFACT",  SHORT_MAX,  opCode::fn_factfact,       // factorise factorial
-    "F",         1,  opCode::fn_fib,			// fibonacci
-    "GCD",       SHORT_MAX,  opCode::fn_gcd,    /* gcd, variable no of parameters */
-    "GF",        1,  opCode::fn_gf,             /* Gauss factorial*/
-    "HAMDIST",   2,  opCode::fn_hamdist,        // Hamming distance
-    "HCLASS",    1,  opCode::fn_hurwitz,        // hurwitz class number
-    "InvTot",    1,  opCode::fn_invtot,         // inverse totient
-    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael,  /* is a carmichael number? */
-    "ISFUNDAMENTAL", 1, opCode::fn_fundamental, // fundamental discriminant
-    "ISPOLYGONAL", 2, opCode::fn_polygonal,     /* polygonal number */
-    "ISPOWERFUL",1,  opCode::fn_powerful,       /* powerful number */
-    "ISSQUAREFREE",1, opCode::fn_squarefree,    /* squarefree number */
-    "ISPRIME",   1,	 opCode::fn_isprime,
-    "ISPOW",     1,  opCode::fn_ispow,
-    "JA",		 2,  opCode::fn_jacobi,
-    "KR",		 2,  opCode::fn_kronecker,
-    "LCM",       SHORT_MAX,  opCode::fn_lcm,    /* lcm, variable no of parameters */
-    "LLT",	     1,  opCode::fn_llt,            // lucas-Lehmer test
-    "LE",		 2,  opCode::fn_legendre,
-    "L",         1,  opCode::fn_luc,			// Lucas Number
-    "MAXFACT",   1,  opCode::fn_maxfact,
-    "MINFACT",   1,  opCode::fn_minfact,
-    "MODSQRTNEW",2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
-    "MODSQRT",   2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
-    "MODPOW",    3,  opCode::fn_modpow,  		
-    "MODINV",    2,  opCode::fn_modinv,
-    "NUMDIGITS", 2,  opCode::fn_numdigits,
-    "NUMDIVS",   1,  opCode::fn_numdivs,       /* number of divisors */
-    "NUMFACT",   1,  opCode::fn_numfact,
-    "NROOT",     2,  opCode::fn_nroot,
-    "N",         1,  opCode::fn_np,			// next prime
-    "PISANO",    1,  opCode::fn_pisano,     // Pisano period
-    "PrimRoot",  1,  opCode::fn_primroot,   /* smallest primitive root */
-    "POPCNT",    1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
-    "PI",		 1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
-    "P",         1,  opCode::fn_part,	    // number of partitions
+    "F",                 1,  opCode::fn_fib,			// fibonacci
+    "GCD",       SHORT_MAX,  opCode::fn_gcd,            /* gcd, variable no of parameters */
+    "GF",                1,  opCode::fn_gf,             /* Gauss factorial*/
+    "HAMDIST",           2,  opCode::fn_hamdist,        // Hamming distance
+    "HCLASS",            1,  opCode::fn_hurwitz,        // hurwitz class number
+    "InvTot",            1,  opCode::fn_invtot,         // inverse totient
+    "ISCARMICHAEL", SHORT_MAX, opCode::fn_iscarmichael, /* is a carmichael number? */
+    "ISFUNDAMENTAL",     1, opCode::fn_fundamental,     // fundamental discriminant
+    "ISPOLYGONAL",       2, opCode::fn_polygonal,       /* polygonal number */
+    "ISPOWERFUL",        1,  opCode::fn_powerful,       /* powerful number */
+    "ISSQUAREFREE",      1, opCode::fn_squarefree,      /* squarefree number */
+    "ISPRIME",           1,	 opCode::fn_isprime,
+    "ISPOW",             1,  opCode::fn_ispow,
+    "JA",	      	     2,  opCode::fn_jacobi,
+    "KR",		         2,  opCode::fn_kronecker,
+    "LCM",       SHORT_MAX,  opCode::fn_lcm,         /* lcm, variable no of parameters */
+    "LLT",	             1,  opCode::fn_llt,            // lucas-Lehmer test
+    "LE",		         2,  opCode::fn_legendre,
+    "L",                 1,  opCode::fn_luc,			// Lucas Number
+    "MAXFACT",           1,  opCode::fn_maxfact,
+    "MINFACT",           1,  opCode::fn_minfact,
+    "MODSQRTNEW",        2,  opCode::fn_modsqrtNew,    // find x such that x^2 = a mod p
+    "MODSQRT",           2,  opCode::fn_modsqrt,       // find x such that x^2 = a mod p
+    "MODPOW",            3,  opCode::fn_modpow,  		
+    "MODINV",            2,  opCode::fn_modinv,
+    "NUMDIGITS",         2,  opCode::fn_numdigits,
+    "NUMDIVS",           1,  opCode::fn_numdivs,       /* number of divisors */
+    "NUMFACT",           1,  opCode::fn_numfact,
+    "NROOT",             2,  opCode::fn_nroot,
+    "N",                 1,  opCode::fn_np,			// next prime
+    "PISANO",            1,  opCode::fn_pisano,     // Pisano period
+    "PrimRoot",          1,  opCode::fn_primroot,   /* smallest primitive root */
+    "POPCNT",            1,  opCode::fn_popcnt,     // population count i.e. number of 1-bits
+    "PI",		         1,  opCode::fn_primePi,	// prime-counting function. PI must come before P
+    "P",                 1,  opCode::fn_part,	    // number of partitions
 
-    "QUADDISC",  1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
-                                               quadratic field Q(sqrt(x))*/
-    "RAD",       1,  opCode::fn_radical,    /* get largest square-free divisor */
-    "REVDIGITS", 2,  opCode::fn_revdigits,
-    "R2P",       1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
-    "R3h",       1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
-                                            // calculated using hurwitz class number
-    "R2",		 1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
-    "R3",        1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
-    "R4",        1,  opCode::fn_r4,         // number of ways n can be expressed as sum of 4 squares
-    "SUMDIGITS", 2,  opCode::fn_sumdigits,
-    "SUMDIVS",   2,  opCode::fn_sumdivs,    // sum of nth power of divisors
-    "SQRT",      1,  opCode::fn_sqrt,
-    "STIRLING",  3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
-    "TOTIENT",   1,  opCode::fn_totient,
-    "TAU",       1,  opCode::fn_tau,        // Ramanujan's tau function
+    "QUADDISC",          1,  opCode::fn_quaddisc,   /* quaddisc(x): discriminant of the 
+                                                     quadratic field Q(sqrt(x))*/
+    "RAD",               1,  opCode::fn_radical,    /* get largest square-free divisor */
+    "REVDIGITS",         2,  opCode::fn_revdigits,
+    "R2P",               1,  opCode::fn_r2p,        // number of ways n can be expressed as sum of 2 squares ignoring order and signs
+    "R3h",               1,  opCode::fn_r3h,        // number of ways n can be expressed as sum of 3 squares
+                                                    // calculated using hurwitz class number
+    "R2",		         1,  opCode::fn_r2,			// number of ways n can be expressed as sum of 2 squares
+    "R3",                1,  opCode::fn_r3,         // number of ways n can be expressed as sum of 3 squares
+    "R4",                1,  opCode::fn_r4,         // number of ways n can be expressed as sum of 4 squares
+    "SUMDIGITS",         2,  opCode::fn_sumdigits,
+    "SUMDIVS",           2,  opCode::fn_sumdivs,    // sum of nth power of divisors
+    "SQRT",              1,  opCode::fn_sqrt,
+    "STIRLING",          3,  opCode::fn_stirling,   // Stirling number (either 1st or 2nd kind)
+    "TOTIENT",           1,  opCode::fn_totient,
+    "TAU",               1,  opCode::fn_tau,        // Ramanujan's tau function
 };
 
 /* list of operators.  */
@@ -282,7 +282,7 @@ struct oper_list{
     bool left;   /* associativity ; true = left to right, false = right to left
         operators with the same precedence must have the same associativity. */
     bool pre;    /* true if unary operator e.g. - precedes expression, false if
-                    it follows e.g. !, otherwise not used */
+                 it follows the expression e.g. !, only relevant for unary operators. */
     int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 /* list of operators with corresponding codes and priority. For the search to
@@ -425,7 +425,7 @@ static Znum ComputeDedekind(const Znum & n) {
 
 /* Calculate Carmichael Function AKA reduced totient.
 see https://en.wikipedia.org/wiki/Carmichael_function, 
-alse https://oeis.org/A002322 */
+also https://oeis.org/A002322 */
 static Znum ComputeCarmichael(const Znum& n) {
     fList factorlist;
 
@@ -454,6 +454,7 @@ static Znum ComputeNumDivs(const Znum &n) {
 /* generate sorted list of all divisors of tnum
 N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
+If number of divisors > 33333333, do not produce the divisor list and return -1.
 */
 static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
@@ -651,7 +652,7 @@ static int PrimalityTest(const Znum &Value) {
 }
 
 /* same purpose as PrimalityTest but optimised for smaller numbers. 1st call can be very slow,
-but subsequent calls are very quick. -1 means definately prime*/
+but subsequent calls are very quick. -1 means definitely prime*/
 //static int PrimalityTestSmall(const long long Value) {
 //    assert(Value >= 0);
 //    /* deal with even values first, because getBit below only handles odd values*/
@@ -1267,7 +1268,7 @@ uint64_t lcm(const uint64_t a, const uint64_t b) {
 https://en.wikipedia.org/wiki/Pisano_period
 In general, the pisano period π(p) <= 4p.
 If p is of the form 2 * 5^i, π(p)  =6p.*/
-long long pisano(const long long p) {
+static long long pisano(const long long p) {
     long long x[2] = { 1, 1 };
     long long y[2];
     long long k = 1;
@@ -1292,7 +1293,7 @@ long long pisano(const long long p) {
 Otherwise π(n) ≤ 4n.
 by factorising n, we can calculate π(p) for much smaller numbers,
 then combine them, hopefully speeding up the calculation.*/
-Znum pisanof(const long long n, const factorsS &f) {
+static Znum pisanof(const long long n, const factorsS &f) {
 
     Znum result = 1;
     Znum pisanoV;
@@ -1312,7 +1313,7 @@ Znum pisanof(const long long n, const factorsS &f) {
 }
 
 /* get the prime factors of num!  */
-int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
+static int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 
     int i;
     unsigned long long x;
@@ -1335,7 +1336,7 @@ int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 }
 
 /* factorise p! Print factors. If possible, print a list of divisors */
-Znum FactorFactorial(const Znum &p, const Znum &modbi) {
+static Znum FactorFactorial(const Znum &p, const Znum &modbi) {
     fList f;
     size_t ctr = 0, ct2=0, ccpy=0;
     std::vector <Znum> divlist;
@@ -1424,8 +1425,8 @@ Znum FactorFactorial(const Znum &p, const Znum &modbi) {
         return roundness;
 }
 
-/* process one operator with 1 or 2 operands.
-NOTE, unary minus and primorial  have 1 operand.
+/* process one operator, usually with 1 or 2 operands.
+The operators NOT, unary minus and primorial have 1 operand.
 Most of the others have two. GCD and LCM have an indefinite number of operands. 
 Some operators can generate an error condition e.g. DIVIDE_BY_ZERO 
 otherwise return EXPR_OK. 
@@ -1545,7 +1546,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::notfn: /* Perform binary NOT */ {   
         //result = -1 - p[0];  // assumes 2s complement binary numbers
-        mpz_com(ZT(result), ZT(p[0]));
+        mpz_com(ZT(result), ZT(p[0]));  /* one's complement */
         return retCode::EXPR_OK;
     }
     case opCode::andfn: /* Perform binary AND. */ {  
@@ -1670,7 +1671,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::EXPONENT_TOO_LARGE;
         result = ComputeSumDivs(p[0], p[1]);  /* get sum of n-th power of divisors. */
         if (result < 0)
-            return retCode::INTERIM_TOO_HIGH;
+            return retCode::INTERIM_TOO_HIGH; /* result > 30,000 digits */
         break;
     }
 
@@ -2051,7 +2052,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         result = DivisorList(p[0], roots);
         if (result < 0)
-            return retCode::INTERIM_TOO_HIGH;
+            return retCode::NUMBER_TOO_HIGH;  /* too many divisors; don't calculate them. */
         multiValue = true;     /* indicate multiple return values */
         break;
     }
@@ -2428,6 +2429,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
             if (expr[exprIndex].oper != opCode::leftb
                 && expr[exprIndex].oper != opCode::rightb) {
 
+                /* check if minus is actually a unary minus. If so adjust op code*/
                 if (expr[exprIndex].oper == opCode::minus && !leftNumber) {
                     expr[exprIndex].oper = opCode::unary_minus;  /* adjust op code */
                     expr[exprIndex].numops = 1;            /* adjust number of operands */
@@ -2435,7 +2437,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                     expr[exprIndex].function = sizeof(operators) / sizeof(operators[0]) - 1; 
                 }
 
-                bool left = operators[expr[exprIndex].function].left; /* assocativity*/
+                bool left = operators[expr[exprIndex].function].left; /* associativity*/
                 bool pre = operators[expr[exprIndex].function].pre;  /* true when unary operator precedes expr*/
                 bool unary = operators[expr[exprIndex].function].numOps == 1; /* true for unary operator */
 
@@ -2534,7 +2536,7 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) 
 If the final operation is a function call that returns multiple values,
-multiValue is set to true, otherwise it is set to false*/
+multiV is set to true, otherwise it is set to false*/
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
     Znum val;
@@ -2559,7 +2561,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
     
         /* operators and functions are processed by taking the operand values
             from the stack, executing the operation or function and putting
-            the returned value onto the stack. If there are insuffficient values
+            the returned value onto the stack. If there are insufficient values
             on the stack or if the operator or function returns an error code
             exit immediately. */
         case types::func: 
@@ -2660,7 +2662,7 @@ It was divided into 3 parts:
     (this would indicate a syntax error not detected earlier). The value found 
     is returned in Result, if the return code is EXPR_OK.
     If the outermost (i.e. the last) operation is evaluating a function that
-    returns multiple values e.g. modsqrt() then the global variable multiValue 
+    returns multiple values e.g. modsqrt() then the parameter multiV 
     is set to 'true' and the full set of return values is returned in global 
     vector roots */
 retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {

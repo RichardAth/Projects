@@ -18,7 +18,7 @@ coefficients of Bézout's identity, that is integers x and y such that
 
 	  a*x + b*y = gcd (a, b )
 */
-int64_t extendedGcd(const int64_t a, const int64_t b, int64_t* x, int64_t* y) {
+static int64_t extendedGcd(const int64_t a, const int64_t b, int64_t* x, int64_t* y) {
 	int64_t s = 0, old_s = 1;;
 	int64_t t = 1, old_t = 0;
 	int64_t r = b, old_r = a;
@@ -291,8 +291,8 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd \n",
 					a, m, b, n);
 				std::cout << buf;
-				g = -3;   /* there is no solution */
 			}
+			g = -3;   /* there is no solution */
 			return;
 		}
 	}
