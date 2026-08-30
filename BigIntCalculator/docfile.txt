@@ -324,7 +324,7 @@ TEST 2  test factorisation using pseudo-random numbers of a specified size.
         If num3 = 2 a truly random seed value is used. 
         If num3 > 2 the value of num3 is used as the 'seed' value. 
 
-        If the value for num2 is the same and num3 ≠ 2 in two TEST 2 commands
+        If the value for num2 is the same and num3 is not 2 in two TEST 2 commands
         the same sequence of numbers to be factored is generated. each time.  
         This is useful for benchmarking factorisation.
 

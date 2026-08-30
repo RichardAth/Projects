@@ -1,5 +1,8 @@
 ﻿#include "pch.h"
 
+/* return true if n is a quartic residue modulo mod, otherwise return false */
+static bool isQuarticResidue(Znum n, Znum mod);
+
 // calculate x^n. Returns a Big Integer so should be no overflow problem.
 static Znum powerBi(const __int64 x, unsigned __int64 n) {
     Znum result;
@@ -341,16 +344,30 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
         return result;
     }
 
-    case 5: /* Legendre solution */ { 
+    case 5: /* Legendre solution. See https://docs.xanhacks.xyz/crypto/modular-arithmetic/02-quadratic-residue/ */ { 
         Znum v, i;
+#ifdef _DEBUG
+        Znum R2;
+#endif
         v = modPower((2 * a), (prime - 5) / 8, prime);
         //i = (2 * a * v * v) % prime;
-        i = modMult(2 * a, v * v, prime);
+        i = modMult(2 * a, v * v, prime); /* i = 2av^2 (mod prime)*/
         //R = (a * v * (i - 1)) % prime;
         R = modMult(a * v, i - 1, prime);
         result.push_back(R);
         result.push_back(prime - R);
         printroots(a, prime, result);
+#ifdef _DEBUG
+        /* calculate root exactly as described in Wikipedia. Should get R2 == R */
+        R2 = modPower(a, (prime + 3) / 8, prime);
+        if (isQuarticResidue(a, prime)) {
+            std::cout << a << " is a quartic residue \n";
+        }
+        else  /* a is quartic non-residue modulo prime */
+            R2 = modMult(R2, modPower(2, (prime - 1) / 4, prime), prime);
+        std::cout << "prime =" << prime << " a = " << a << " v =" << v << " i =" << i << " R =" << R << " R2 =" << R2 << '\n';
+        assert(R2 == R);
+#endif
         return result;
     }
 
@@ -517,6 +534,20 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
     }
     std::sort(roots.begin(), roots.end());
     return roots;
+}
+
+/* return true if n is a quartic residue modulo mod, otherwise return false */
+static bool isQuarticResidue(Znum n, Znum mod) {
+    Znum i=0, i4=0;
+
+    do {
+        i4 = modPower(i, 4, mod);
+        if (i4 == n)
+            return true;
+        i++;
+    } while (i < mod);
+
+    return false;
 }
 
 /* do timed modsqrt tests. type = 0 for standard modsqrt, 1 for brute force, 
