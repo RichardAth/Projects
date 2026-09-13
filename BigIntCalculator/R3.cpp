@@ -201,7 +201,7 @@ extended precision functions */
 Znum modMult(const Znum &a, const Znum &b, const Znum &mod) {
     Znum res;
     res = a * b;
-    mpz_mod(ZT(res), ZT(res), ZT(mod));
+    mpz_mod(ZT(res), ZT(res), ZT(mod));   /* res = (a*b) %mod */
     return res;
 }
 

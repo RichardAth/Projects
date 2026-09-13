@@ -192,7 +192,7 @@ enum class opCode {
 
 struct  functions {
     char fname[14];        // maximum name length 13 chars (allow for null terminator)
-    int  NoOfParams;       // number of parameters 
+    int  NoOfParams;       // number of parameters (SHORT_MAX for variable number of parameters)
     opCode  fCode;        // integer code for function
 };
 
@@ -322,7 +322,7 @@ const static struct oper_list operators[]{
         { ")",   opCode::rightb,     -1,  true,  false, 0},      // right bracket
         {"=",    opCode::assign,     12,  false, false, 2},      // assignment
         /* unary - must be the last entry */
-        {"U-",   opCode::unary_minus, 1, false, true,  1 },     // unary -
+        {"U-",   opCode::unary_minus, 1,  false, true,  1 },     // unary -
 };
 
 enum class types { Operator, func, number, comma, error, uservar, end };

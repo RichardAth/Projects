@@ -324,7 +324,7 @@ TEST 2  test factorisation using pseudo-random numbers of a specified size.
         If num3 = 2 a truly random seed value is used. 
         If num3 > 2 the value of num3 is used as the 'seed' value. 
 
-        If the value for num2 is the same and num3 ≠ 2 in two TEST 2 commands
+        If the value for num2 is the same and num3 is not 2 in two TEST 2 commands
         the same sequence of numbers to be factored is generated. each time.  
         This is useful for benchmarking factorisation.
 
@@ -845,7 +845,7 @@ SumDigits(n, r) Sum of digits of n in base r.
 RevDigits(n, r) finds the value obtained by writing backwards the digits of n 
                 in base r.
 [SQRT]
-Sqrt(n)   square root of n, rounded down to nearest integer.
+Sqrt(n)   square root of n, rounded down to nearest integer. n must be >= 0.
 [NROOT]
 Nroot(n, r)  rth root of n e.g.r=3 for cube root, rounded down to nearest 
              integer. r must be < 2^31. 
@@ -942,23 +942,27 @@ QUADDISC(x)  Discriminant of quadratic field Q(sqrt(x)).
 EULERFRAC(x)  Euler number E(x). Undefined for x < 0. If x is odd E(x) is zero.
               x must be <= 9022 to limit the result to 30,000 digits. 
 [PISANO]
-PISANO(n)    Pisano period for n. n must be < 2^63. The largest factor of n must 
+PISANO(n)    The sequence of Fibonacci numbers is periodic modulo any modulus n, 
+             and the period (mod n) is the known as the Pisano period.
+             n is limited to 2^63 -1, . The largest factor of n must 
              be < 2^31, because for large factors of n the calculation might take 
              too long.
              If n = 2 * 5^r, then pisano(n) = 6n.
              If n = 5^r, or n = 6 * 5^r, then pisano(n) = 4n, otherwise pisano(n) < 4n. 
 [CORE]
-CORE(n): unique square-free integer d dividing n such that n/d is a square. If n 
-         is a perfect square core(n) = 1. If n is square-free, core(n) = n.
+CORE(n): unique square-free integer d dividing n such that n/d is a square.  
+         e.g. CORE(60) = 15. If n is a perfect square core(n) = 1. If n is 
+         square-free, core(n) = n.
 [RAD]
-RAD(n): largest square-free divisor of n. If n is square-free rad(n) = n.
+RAD(n): largest square-free divisor of n, e.g. RAD(60) =30. If n is square-free 
+        rad(n) = n.
 [ISCARMICHAEL]
 ISCARMICHAEL(n[, t]): returns 0 if n is a Carmichael number (probability = 1 - 2^(-t)), 
               1 for composite non-Carmichael numbers, and 2 for prime numbers.
               If t is omitted its default value is 16, which gives a 99.998% 
-              probability that the result is correct. if n < 2^192 then Korselt's
+              probability that the result is correct. If n < 2^192 then Korselt's
               criterion is used instead, and the value of t is ignored. This 
-              requires n to be factorised, but is exact.
+              requires n to be factorised, but is exact, not probailistic.
 [CHINESE]
 CHINESE(a1, n1, a2, n2, ...) : finds a number x such that x ≡ a1 (modulo n1) and 
        x ≡ a2 (modulo n2) etc. If ni and nj are not co-prime there is a solution 
