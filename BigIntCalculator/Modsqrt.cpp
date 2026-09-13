@@ -361,12 +361,14 @@ std::vector <Znum> primeModSqrt(const Znum &aa, const Znum &prime) {
         /* calculate root exactly as described in Wikipedia. Should get R2 == R */
         R2 = modPower(a, (prime + 3) / 8, prime);
         if (isQuarticResidue(a, prime)) {
-            std::cout << a << " is a quartic residue \n";
+            if (verbose >1)
+                std::cout << a << " is a quartic residue \n";
         }
         else  /* a is quartic non-residue modulo prime */
             R2 = modMult(R2, modPower(2, (prime - 1) / 4, prime), prime);
-        std::cout << "prime =" << prime << " a = " << a << " v =" << v << " i =" << i << " R =" << R << " R2 =" << R2 << '\n';
-        assert(R2 == R);
+        if (verbose >1)
+            std::cout << "prime =" << prime << " a = " << a << " v =" << v << " i =" << i << " R =" << R << " R2 =" << R2 << '\n';
+        assert((R2 == R) || (R2 == prime-R));
 #endif
         return result;
     }
@@ -536,18 +538,15 @@ static std::vector<long long> ModSqrtBF(long long a, long long m) {
     return roots;
 }
 
-/* return true if n is a quartic residue modulo mod, otherwise return false */
+/* return true if n is a quartic residue modulo mod, otherwise return false
+Claim: A residue a is a quartic residue if and only if a^(mod-1)/4 ≡ 1 (modulo mod)
+(similar to the formula for the Legendre function, but for quartic instead of
+quadratic roots */
 static bool isQuarticResidue(Znum n, Znum mod) {
-    Znum i=0, i4=0;
-
-    do {
-        i4 = modPower(i, 4, mod);
-        if (i4 == n)
-            return true;
-        i++;
-    } while (i < mod);
-
-    return false;
+    Znum qr;
+    qr = modPower(n, (mod - 1) / 4, mod);
+    return (qr == 1);
+   
 }
 
 /* do timed modsqrt tests. type = 0 for standard modsqrt, 1 for brute force, 
