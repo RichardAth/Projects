@@ -314,7 +314,7 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 /* find g such that g ≡ p[0] (mod p[1], g ≡ p[2] (mod[p3]) etc.
 Return -ve value for any error.
 -1 if p[0] or p[2] or p[4] etc < 0
--2 if p[1] or p[3] or p[5] etc < 1 (modulus must be > 1) 
+-2 if p[1] or p[3] or p[5] etc <= 1 (modulus must be > 1) 
 -3 if there is no solution. */
 void ChineseRemV(const std::vector <Znum>& p, Znum& result) {
 	Znum modulus = p[1];

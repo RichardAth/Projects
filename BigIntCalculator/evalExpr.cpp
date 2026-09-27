@@ -328,7 +328,7 @@ const static struct oper_list operators[]{
 enum class types { Operator, func, number, comma, error, uservar, end };
 
 struct token {
-    types typecode; /* type of token (operator, function, number, etc) */
+    types typecode; /* type of token (operator, function, number, etc) */ 
     int function;   /* contains function code index, when typecode = func 
                        contains operator index when typecode = Operator */
     opCode oper;    /* contains operator value, only when typecode = Operator or func */
@@ -336,8 +336,28 @@ struct token {
     size_t userIx;  /* index into user variable list (only when typecode = uservar) */
     short numops;   /* number of operands/parameters */
 };
+
+/* this list contains names of functions and operators, indexed by opCode*/
+std::vector<std::string> funcNames(200);
+
 /* forward reference */
 static retCode tokenise(const std::string expr, std::vector <token>& tokens, int& asgCt);
+
+/* set up list of function or operator names, indexed by opCode */
+void initFuncNames() {
+    for (auto op: operators){
+        funcNames[(int)op.operCode] = op.oper;
+    }
+    for (auto fn : functionList) {
+        funcNames[(int)fn.fCode] = fn.fname;
+    }
+/*#ifdef _DEBUG
+    for (int i = 0; i < funcNames.size(); i++) {
+        if (funcNames[i].size() > 0)
+            printf_s(" % 4d % s \n", i, funcNames[i].c_str());
+    }
+#endif    */   
+}
 
 // returns true if num is a perfect square.
 static bool isPerfectSquare(const Znum &num) {
@@ -389,7 +409,7 @@ statements holds:
 
     if (remainder == 1) {
         if (factorise(n, f, nullptr))
-            return f.squarefree();
+            return f.squarefree();  /* n = 1 (mod 4) and is squarefree */
         else
             return false;  /* could not factorise */
     }
@@ -1446,7 +1466,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[1] < 1)
             return retCode::NUMBER_TOO_LOW;
         long long k = ZnumToLong(p[1]);
-        mpz_bin_ui(ZT(result), ZT(p[0]), k);
+        mpz_bin_ui(ZT(result), ZT(p[0]), k); /* calculate binomial coeff */
         return retCode::EXPR_OK;
     }
     case opCode::plus: {
@@ -1477,7 +1497,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::remainder: {
         if (p[1] == 0)
-            return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+            return retCode::DIVIDE_BY_ZERO;  // result undefined
         //result = p[0] % p[1];
         /* use truncation division */
         mpz_tdiv_r(ZT(result), ZT(p[0]), ZT(p[1]));
@@ -1545,7 +1565,6 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         return ShiftLeft(p[0], -p[1], result);
     }
     case opCode::notfn: /* Perform binary NOT */ {   
-        //result = -1 - p[0];  // assumes 2s complement binary numbers
         mpz_com(ZT(result), ZT(p[0]));  /* one's complement */
         return retCode::EXPR_OK;
     }
@@ -1616,7 +1635,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::fn_modpow: {						// MODPOW
         if (p[2] == 0)
-            return retCode::DIVIDE_BY_ZERO;
+            return retCode::DIVIDE_BY_ZERO;  /* modulus must not be 0 */
         if (p[1] < 0) {
             if (gcd(p[0], p[2]) != 1)
                 return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
@@ -2274,10 +2293,10 @@ static void printTokens(const std::vector <token> expr) {
     for (int ix = 0; ix < expr.size(); ix++) {
         switch (expr[ix].typecode) {
         case types::number:
-            std::cout << expr[ix].value << ' ';
+            std::cout << expr[ix].value << ' ';  /* number value (displayed in decimal) */
             break;
         case types::func:
-            std::cout << functionList[expr[ix].function].fname << ' ';
+            std::cout << functionList[expr[ix].function].fname << ' '; /* function name */
             break;
         case types::comma:
             std::cout << ',';
@@ -2345,12 +2364,27 @@ static void operSearch(const std::string &expr, int &opcode) {
 
 /* convert an expression which is already tokenised to reverse polish.
 Syntax checking is done, but it is not guaranteed that all syntax errors will
-be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
+be detected. If an error is detected return an error code >=1, 
+otherwise EXIT_SUCCESS (= 0).
 The well-known shunting algorithm is used, but for function parameters a recursive
 call to reversePolish is made, which also takes care of nested function calls.
 Also, the initial tokenisation does not distinguish unary - from normal -, so
 that is deduced from the sequence of tokens and the op code is changed if necessary.
-Unary + is recognised as a special case which requires no output */
+Unary + is recognised as a special case which requires no output 
+error codes:
+1    number directly follows a number or user variable without an operator between
+2    user variable directly follows a number or user variable without an operator between
+3    function directly follows a user variable or number without an operator between
+4    function name not followed by (
+5 or 6  function parameter not found, or invalid
+7    function has wrong number of parameters
+8    non-unary operator not preceded by a number or expression
+9    unary operator preceded by a number or expression
+10   left bracket found when not allowed
+11   right bracket found when not allowed
+12   missing an opening bracket (program bug?)
+13   invalid token found (program bug)
+*/
 static int reversePolish(token expr[], const int exprLen, std::vector <token> &rPolish) {
     int exprIndex = 0;
 
@@ -2365,7 +2399,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
         case types::number: {
             if (leftNumber)
-                return EXIT_FAILURE;  /* syntax error */
+                return 1;  /* syntax error */
 
             rPolish.push_back(expr[exprIndex]);
             leftNumber = true;
@@ -2375,7 +2409,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         /* a user variable is treated the same as a number */
         case types::uservar: {
             if (leftNumber)
-                return EXIT_FAILURE;  /* syntax error */
+                return 2;  /* syntax error */
 
             rPolish.push_back(expr[exprIndex]);
             leftNumber = true;
@@ -2385,12 +2419,12 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         case types::func: {
             /* process function. 1st get number of parameters */
             if (leftNumber)
-                return EXIT_FAILURE; /* syntax error */
+                return 3; /* syntax error function name followed number */
             int numparams = expr[exprIndex].numops;
 
             if (expr[exprIndex + 1].typecode != types::Operator ||
                 expr[exprIndex + 1].oper != opCode::leftb) {
-                return EXIT_FAILURE; /* function name not followed by (*/
+                return 4; /* function name not followed by (*/
             }
             int paramLen = 0;
             int ix3 = 0;
@@ -2400,9 +2434,9 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                 /* find delimiter marking end of parameter*/
                 nextsep(expr + exprIndex + 2 + ix3, paramLen); // get next , or )
                 if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
-                    return EXIT_FAILURE; /* parameter sep. not found */
+                    return 5; /* parameter sep. not found */
                 if (paramLen == 0)
-                    return EXIT_FAILURE;  /* syntax error */
+                    return 6;  /* syntax error */
                 int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
                 if (rv != EXIT_SUCCESS)
                     return rv;  /* syntax error? */
@@ -2417,7 +2451,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                 expr[exprIndex].numops = pcount;  
             }
             else if (pcount != numparams)
-                return EXIT_FAILURE;  /* wrong number of parameters */
+                return 7;  /* wrong number of parameters */
 
             rPolish.push_back(expr[exprIndex]); /* copy function token to output */
             exprIndex += (ix3 + 1); /* move past ) after function name */
@@ -2450,12 +2484,12 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                         break; /* step past unary plus; no output required*/
                     }
                     else if (!unary || !pre)
-                        return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
+                        return 8;  /* non-unary operator not preceded by a number or expression */
                 }
                 else {
                     /* operator follows expression */
                     if (unary && pre)
-                        return EXIT_FAILURE; /* unary operator preceded by a number or expression */
+                        return 9; /* unary operator preceded by a number or expression */
                 }
 
                 /* Transfer higher priority operators from stack to output.
@@ -2489,13 +2523,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
             else if (expr[exprIndex].oper == opCode::leftb) {
                 if (leftNumber)
-                    return EXIT_FAILURE; /* syntax error */
+                    return 10; /* syntax error */
                 operStack.push_back(expr[exprIndex]);
             }
 
             else if (expr[exprIndex].oper == opCode::rightb) {
                 if (!leftNumber)
-                    return EXIT_FAILURE; /* syntax error */
+                    return 11; /* syntax error */
                 /* right bracket; remove stacked operators up to left bracket */
                 while (operStack.size() > 0
                     && operStack.back().typecode == types::Operator
@@ -2504,7 +2538,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                     operStack.pop_back();
                 };
                 if (operStack.empty())
-                    return EXIT_FAILURE;  /* missing ( */
+                    return 12;  /* missing ( */
                 operStack.pop_back(); /* discard left bracket */
                 leftNumber = true;
             }
@@ -2513,7 +2547,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         }
 
         default:
-            return EXIT_FAILURE;  /* unkown token in input */
+            return 13;  /* unkown token in input */
         }
 
         exprIndex++;  /* move index to next token */
@@ -2536,8 +2570,12 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) 
 If the final operation is a function call that returns multiple values,
-multiV is set to true, otherwise it is set to false*/
-static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
+multiV is set to true, otherwise it is set to false. 
+When expression evaluation is successful return EXPR_OK.
+If an error occurs return an error code and moreinfo may contain more diagnostics,
+e.g. for SYNTAX_ERROR moreinfo will be 21, 22 or 23. */
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, 
+    bool *multiV, long long *const moreinfo) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
     Znum val;
     std::vector <Znum> args;
@@ -2570,16 +2608,22 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                 opCode oper = rPolish[index].oper;
 
                 int NoOfArgs = rPolish[index].numops;
-                if (NoOfArgs > nums.size())
+                if (NoOfArgs > nums.size()) {
+                    if (moreinfo != nullptr)
+                        *moreinfo = 21;
                     return retCode::SYNTAX_ERROR;  /* not enough operands on stack*/
+                }
 
                 if (oper == opCode::assign) {
                     /* assignment operator is fully processed here */
                     temp = nums.top();  /* remove top token from stack */
                     nums.pop();
 
-                    if (nums.top().typecode != types::uservar)
-                        return retCode::SYNTAX_ERROR;
+                    if (nums.top().typecode != types::uservar) {
+                        if (moreinfo != nullptr)
+                            *moreinfo = 22;
+                        return retCode::SYNTAX_ERROR;  /* don't have user var name befor e assignment operator */
+                    }
                     size_t Userix = nums.top().userIx;
 
                     /* store new value in user variable */
@@ -2587,9 +2631,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                         uvars.vars[Userix].data = temp.value;
                     else if (temp.typecode == types::uservar)
                         uvars.vars[Userix].data = uvars.vars[temp.userIx].data;
-                    else
+                    else {
+                        if (moreinfo != nullptr)
+                            *moreinfo = 23;
                         return retCode::SYNTAX_ERROR;  /* wrong type of token on stack */
-
+                    }
                     nums.pop();  /* remove variable from stack */
                     nums.push(temp);  /* put value back on stack */
                 }
@@ -2612,8 +2658,12 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                         args.push_back(rPolish[index].value);
                     }
                     retcode = ComputeSubExpr(oper, args, val);
-                    if (retcode != retCode::EXPR_OK)
-                        return retcode;
+                    if (retcode != retCode::EXPR_OK) {
+                        if (moreinfo != nullptr)
+                            *moreinfo = (long long)oper;
+                        return retcode;   /* error while processing function or operator.
+                                          Stop processing expression */
+                    }
                     temp.typecode = types::number;
                     temp.value = val;  /* put value returned by function or operator */
                     nums.push(temp);  /*  onto stack */
@@ -2637,8 +2687,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
             *multiV = multiValue;
         return retCode::EXPR_OK;
     }
-    else
+    else {
+        if (moreinfo != nullptr)
+            *moreinfo = 24;
         return retCode::SYNTAX_ERROR;  /* too many operands on stack*/
+    }
 }
 
 /*
@@ -2665,18 +2718,21 @@ It was divided into 3 parts:
     returns multiple values e.g. modsqrt() then the parameter multiV 
     is set to 'true' and the full set of return values is returned in global 
     vector roots */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV,
+    long long *const moreinfo) {
     retCode rv;
     std::vector <token> tokens;
     std::vector <token> rPolish;
 
+    if (moreinfo != nullptr)
+        *moreinfo = 0;
     rv = tokenise(expr, tokens, asgCt); /* 'tokenise' the expression */
     if (rv == retCode::EXPR_OK) {
         rPolish.clear();
         int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish);
         /* convert expression to reverse polish */
         if (ircode == EXIT_SUCCESS) {
-            rv = evalExpr(rPolish, Result, multiV);
+            rv = evalExpr(rPolish, Result, multiV, moreinfo);
             if (rv != retCode::EXPR_OK && verbose > 0) {
                 std::cout << "Expression could not be evaluated \n";
                 printTokens(rPolish);
@@ -2684,13 +2740,15 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
         }
         else {
             if (verbose > 0) {
-                std::cout << "** error: could not convert to reverse polish \n";
+                std::cout << "** error: could not convert to reverse polish: error code " << ircode << "\n";
                 printTokens(rPolish);
             }
+            if (moreinfo != nullptr)
+                *moreinfo = ircode;  /* ircode contains value 1 to 13, returned by reversePolish */
             return retCode::SYNTAX_ERROR;
         }
     }
-    else {
+    else {  /* unable to tokenise expression */
         if (verbose > 0) {
             std::cout << "** error: could not tokenise expression «"
                 << expr << "»\n";
@@ -2702,6 +2760,8 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
             //}
             //std::putchar('\n');
         }
+        if (moreinfo != nullptr)
+            *moreinfo = 20;  /* unable to tokenise expression */
     }
 
     return rv;
@@ -2711,6 +2771,8 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
 retCode ComputeMultiExpr(std::string expr, Znum result) {
     std::string subExpr;
     retCode rv = retCode::EXPR_OK;
+    bool multiv;
+    long long moreinfo;
     size_t subStart = 0, subEnd;
     int bc = 0;   /* bracket count */
     int asgCt = 0;   /* number of assignment operators */
@@ -2730,9 +2792,9 @@ retCode ComputeMultiExpr(std::string expr, Znum result) {
         subExpr = expr.substr(subStart, subEnd - subStart);
         removeInitTrail(subExpr);  /* remove initial & trailing blanks */
         removeIntSpace(subExpr);   /* remove spaces between digits */
-        rv = ComputeExpr(subExpr, result, asgCt);
+        rv = ComputeExpr(subExpr, result, asgCt, &multiv, &moreinfo);
         if (rv != retCode::EXPR_OK) {
-            textError(rv);   // invalid expression; print error message
+            textError(rv, moreinfo);   // invalid expression; print error message
             return rv;
         }
         else {

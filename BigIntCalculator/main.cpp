@@ -347,8 +347,10 @@ void generatePrimes(unsigned long long int max_val) {
 }
 
 
-/* translate error code to text and output it*/
-void textError(retCode rc) {
+/* translate error code to text and output it. For syntax errors moreinfo 
+   contains a code number.
+   For most other errors moreinfo contains the opCode */
+void textError(retCode rc, long long moreinfo) {
     /*
     error codes currently used include:
     NUMBER_TOO_LOW,
@@ -364,53 +366,85 @@ void textError(retCode rc) {
     EXPONENT_NEGATIVE,				
     EXPR_OK = 0
     */
+
+    
     switch (rc)
     {
     case retCode::NUMBER_TOO_LOW:
-        std::cout << (lang ? "Número muy pequeño\n" : "Number too low\n");
+        std::cout << (lang ? "Número muy pequeño " : "Number too low ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::NUMBER_TOO_HIGH:
-        std::cout << (lang ? "Número muy grande \n" :
-            "Number too high \n");
+        std::cout << (lang ? "Número muy grande " :
+            "Number too high ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::INTERIM_TOO_HIGH:
-        std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos\n" :
-            "Intermediate number too high (more than 20000 digits)\n");
+        std::cout << (lang ? "Número intermedio muy grande (más de 20000 dígitos " :
+            "Intermediate number too high (more than 20000 digits) ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::DIVIDE_BY_ZERO:
-        std::cout << (lang ? "División por cero\n" : "Division by zero\n");
+        std::cout << (lang ? "División por cero " : "Division by zero ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::PAREN_MISMATCH:
         std::cout << (lang ? "Error de paréntesis\n" : "Parenthesis mismatch\n");
         break;
+
     case retCode::SYNTAX_ERROR:
         if (lang) 	{
-            std::cout << ( "Error de sintaxis\n");
+            std::cout << "Error de sintaxis código: " << moreinfo << "\n";
         }
         else {
-            std::cout << ("Syntax error\n");
+            std::cout << "Syntax error. code: " << moreinfo  << "\n";
         }
         break;
+
     case retCode::TOO_MANY_PAREN:
         std::cout << (lang ? "Demasiados paréntesis\n" : "Too many parenthesis\n");
         break;
+
     case retCode::INVALID_PARAM:
-        std::cout << (lang ? "Parámetro inválido\n" : "Invalid parameter\n");
+        std::cout << (lang ? "Parámetro inválido " : "Invalid parameter ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::ARGUMENTS_NOT_RELATIVELY_PRIME:
-        std::cout << (lang ? "MCD de los argumentos no es 1\n" : "GCD of arguments is not 1\n");
+        std::cout << (lang ? "MCD de los argumentos no es 1 " : "GCD of arguments is not 1 ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     /*case EXPR_BREAK:
         std::cout << (lang ? "Detenido por el usuario\n" : "Stopped by use\nr");
         break;*/
+
     case retCode::EXPONENT_NEGATIVE: {
         std::cout << (lang? "Exponente no debe ser negativo\n" : "Exponent must not be negative\n");
         break;
     }
+
     case retCode::EXPONENT_TOO_LARGE: {
         std::cout << (lang? "El exponente es mayor que 2^31-1\n": "Exponent exceeds 2^31-1\n");
         break;
     }
+
     /*case retCode::EXPR_VAR_OR_COUNTER_REQUIRED:
         if (lang)
         {
@@ -422,29 +456,48 @@ void textError(retCode rc) {
         }
         break;*/
     case retCode::EXPR_BASE_MUST_BE_POSITIVE:
-        std::cout << (lang ? "La base debe ser mayor que un\n" :
-            "Base must be greater than one\n");
+        std::cout << (lang ? "La base debe ser mayor que un " :
+            "Base must be greater than one ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     //case retCode::EXPR_POWER_MUST_BE_POSITIVE:
     //	std::cout << (lang ? "La potencia debe ser mayor que cero\n" :
     //		"Power must be greater than zero\n");
     //	break;
+
     case retCode::EXPR_MODULUS_MUST_BE_GREATER_THAN_ONE:
     	std::cout << (lang ? "El módulo debe ser mayor que 1\n" : "Modulus must be greater than one\n");
     	break;
+
     case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
-        std::cout << (lang ? "El módulo no debe ser negativo\n" :
-            "Modulus must not be negative\n");
+        std::cout << (lang ? "El módulo debe ser mayor que 0\n" :
+            "Modulus must be greater than zero\n");
         break;
+
     case retCode::TOO_FEW_PARAMS:
-        std::cout << (lang ? "Muy pocos parámetros\n" :
-            "Too few parameters\n");
+        std::cout << (lang ? "Muy pocos parámetros " :
+            "Too few parameters ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
+
     case retCode::NUMBER_OF_PARAMS_NOT_EVEN:
-        std::cout << (lang ? "El número de parámetros debe ser par\n" :
-            "There must be an even number of parameters\n");
+        std::cout << (lang ? "El número de parámetros debe ser par " :
+            "There must be an even number of parameters ");
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
+        break;
+
     default:
-        printf_s( "unknown error code: %d\n", (int)rc);
+        printf_s( "unknown error code: %d ", (int)rc);
+        if (funcNames[moreinfo].size() > 0)
+            std::cout << '(' << funcNames[moreinfo] << ')';
+        putchar('\n');
         break;
     }
 }
@@ -2299,6 +2352,8 @@ return -1 if syntax is invalid
  return 3 if THEN or ELSE expression evaluated successfully */
 static int ifCommand(const std::string &command) {
     int ixx, ixx2, exprLen;
+    long long moreinfo = 0;
+    bool multiv;
     int asgCt = 0;  /* number of assignment operators*/
     std::string expr;
     Znum result;
@@ -2331,9 +2386,9 @@ static int ifCommand(const std::string &command) {
     /* evaluate expression betwen brackets */
     exprLen = ixx2 - ixx - 1;
     expr = command.substr(ixx + 1, exprLen);
-    retCode rv = ComputeExpr(expr, result, asgCt);
+    retCode rv = ComputeExpr(expr, result, asgCt,&multiv, &moreinfo);
     if (rv != retCode::EXPR_OK) {
-        textError(rv);   // invalid expression; print error message
+        textError(rv, moreinfo);   // invalid expression; print error message
         return -1;
     }
 
@@ -3360,6 +3415,8 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
     if (iccRV == FALSE)
         ErrorDisp(__FUNCTION__);
 
+    initFuncNames();    /* set up list of function or operator names, indexed by opCode */
+
     return;
 }
 
@@ -3418,6 +3475,7 @@ int main(int argc, char *argv[], char* envp[]) {
     retCode rv;
     int asgCt;  /* number of assignment operators */
     bool multiV = false;
+    long long moreinfo;  /* in case of error evaluating an expression, may contain more info */
 
     try {
   /*      if (verbose > 0) {
@@ -3480,10 +3538,10 @@ int main(int argc, char *argv[], char* envp[]) {
             // ISO standard clock() would measure net CPU time
 
             removeIntSpace(expr);   /* remove spaces between digits */
-            rv = ComputeExpr(expr, Result, asgCt, &multiV); /* analyse expression, compute value*/
+            rv = ComputeExpr(expr, Result, asgCt, &multiV, &moreinfo); /* analyse expression, compute value*/
 
             if (rv != retCode::EXPR_OK) {
-                textError(rv);   // invalid expression; print error message
+                textError(rv, moreinfo);   // invalid expression; print error message
             }
             else {
                 exprList.push_back(expr);  /* save text of expression */
