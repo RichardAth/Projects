@@ -2573,7 +2573,7 @@ If the final operation is a function call that returns multiple values,
 multiV is set to true, otherwise it is set to false. 
 When expression evaluation is successful return EXPR_OK.
 If an error occurs return an error code and moreinfo may contain more diagnostics,
-e.g. for SYNTAX_ERROR moreinfo will be 21, 22 or 23. */
+e.g. for SYNTAX_ERROR moreinfo will be 21, 22, 23 or 24. */
 static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, 
     bool *multiV, long long *const moreinfo) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
@@ -2622,7 +2622,7 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result,
                     if (nums.top().typecode != types::uservar) {
                         if (moreinfo != nullptr)
                             *moreinfo = 22;
-                        return retCode::SYNTAX_ERROR;  /* don't have user var name befor e assignment operator */
+                        return retCode::SYNTAX_ERROR;  /* don't have user var name before assignment operator */
                     }
                     size_t Userix = nums.top().userIx;
 

@@ -82,6 +82,33 @@ Assign values to variables using the assignment operator =
 Assignment statements are also expressions which return the value to the right of 
 the = operator.
 
+For complicated expressions, if an error is reported, it could be difficult to 
+find out which part of the expression caused the error. To help find errors
+the fixed error message text may be enhanced with extra information.
+
+For "Syntax Error" an error code is appended. Codes used include:
+1    number directly follows a number or user variable without an operator between
+2    user variable directly follows a number or user variable without an operator between
+3    function directly follows a user variable or number without an operator between
+4    function name not followed by (
+5 or 6  function parameter not found, or invalid
+7    function has wrong number of parameters
+8    non-unary operator not preceded by a number or expression
+9    unary operator preceded by a number or expression
+10   left bracket found when not allowed
+11   right bracket found when not allowed
+12   missing an opening bracket (program bug?)
+13   invalid token found.
+
+20   Unable to 'tokenise´the expression, i.e. unable to recognise part of the
+     expression text as a number, operator, user name, function name or allowed
+     symbol (bracket or ,)
+
+21   not enough operands on stack (program bug?)
+22   don't have user var name before assignment operator
+23   unable to store value in user variable (program bug?)
+24   after evaluating the expression, more than one operand on stack (program bug?)
+
 [FUNCTION]
 B(n)            : Previous probable prime before n
 F(n)            : Fibonacci number Fn (maximum value of n is 95700, mimimum is -95700,

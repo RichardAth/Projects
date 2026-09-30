@@ -3015,6 +3015,8 @@ static int processCmd(const std::string &txt) {
         p.push_back(token);
         token = strtok_s(nullptr, seps, &next);
     }
+    if (p.empty())
+        return 0;       /* nothing but separators in buffer*/
     if (p.size() >= 2 &&  std::isdigit(p[1][0]))
         p1 = std::atoi(p[1].c_str());  /* if p[1] is a +ve decimal number set p1 to value */
 
