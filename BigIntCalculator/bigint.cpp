@@ -239,9 +239,9 @@ Does not appear to handle -ve divisor */
 void subtractdivide(BigInteger& i, int subt, int divisor)
 {
     int nbrLimbs = i.nbrLimbs;
-    int remainder = 0;
 
 #if 0
+    int remainder = 0;
     char* ptrOutput = output;
     *ptrOutput++ = '2';
     *ptrOutput++ = '(';
@@ -396,7 +396,7 @@ void MultBigIntByInt(BigInteger &m, int n) {
         m.nbrLimbs++;
     }
     if (!pos) {  // if n is -ve flip sign of product 
-        if (m.sign = SIGN_POSITIVE)
+        if (m.sign == SIGN_POSITIVE)
             m.sign = SIGN_NEGATIVE;
         else
             m.sign = SIGN_POSITIVE;
@@ -681,8 +681,8 @@ bool TestBigIntLess(const BigInteger &Nbr1, const BigInteger &Nbr2) {
 /* calculate GCD of arg1 & arg2. Use Base and Power as working space */
 void BigIntGcd(const BigInteger &Arg1, const BigInteger &Arg2, BigInteger &Result)
 {
-    int nbrLimbs1 = Arg1.nbrLimbs;
-    int nbrLimbs2 = Arg2.nbrLimbs;
+    // int nbrLimbs1 = Arg1.nbrLimbs;
+    // int nbrLimbs2 = Arg2.nbrLimbs;
     int power2;
     static BigInteger Power;
     if (Arg1 == 0)

@@ -336,7 +336,7 @@ static void PowerPM1Check(fList &Factors, const Znum &nbrToFactor,
 /* sort factors into ascending order. If two factors are equal, merge them by 
 adding the 2nd exponent to the 1st then removing the second entry and moving any 
 following entries up 1 position */
-static void SortFactors(fList &Factors) {
+void SortFactors(fList &Factors) {
     std::sort(Factors.f.begin(), Factors.f.end());
 /* if two factors have the same value they are merged.  */
     for (ptrdiff_t i = 0; i < (ptrdiff_t)Factors.f.size()-1; i++) {
@@ -374,7 +374,7 @@ static void SortFactors(fList &Factors) {
 of divisor. either pi is the index into the prime list of the divisor, or the  
 divisor value is in div. This function is used for smaller factors found by trial
  division or Pollard Rho. */
-static void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix) {
+void insertIntFactor(fList &Factors, int pi, unsigned long long div, ptrdiff_t ix) {
     auto lastfactor = Factors.f.size();
     Znum quot, qnew;
     Znum divisor;
@@ -473,7 +473,7 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
     mpz_powm(ZT(modpow), ZT(zb), ZT(nm1), ZT(n));
     if (modpow != 1) {
         if (verbose > 0)
-            gmp_printf("%Zd is not a pseudoprime to base %d\n", n, b);
+            gmp_printf("%Zd is not a pseudoprime to base %d\n", ZT(n), b);
         return false;
     }
 
@@ -491,7 +491,7 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
             if (div1 > 1 || div2 > 1) {
                 if (verbose > 0)
                     gmp_printf("pseudoprime getfactors: %Zd and %Zd are divisors of %Zd (k = %d, s = %d)\n", 
-                        div1, div2, n, k, shift);
+                        ZT(div1), ZT(div2), ZT(n), k, shift);
                 if (div1 > 1)
                     if (insertBigFactor(Factors, div1)) {
                         factorsfound = true;
@@ -515,7 +515,7 @@ bool getfactors(const Znum& n, uint32_t b, fList& Factors) {
 /* common code to (maybe) insert factor. If factor added, factorsFound is
 * set to true & the counter is incremented.
 countdown, ctr, i & ref are only used if verbose > 0, to print messages. */
-static void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
+void insertCarmichaelFactor(Znum &Aux4, const Znum &p, fList& Factors, 
     bool &factorsFound, const int countdown, const int ctr, const int i, int ref) {
     Znum gcdVall;
     mpz_mod(ZT(Aux4), ZT(Aux4), ZT(p));
@@ -615,7 +615,7 @@ Return: false = No factors found, true = factors found.
       (x-R)(x+R) ≡ 0 (modulo n)
       We also look for square roots of 1 (modulo n) in the same way.
 */
-static bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
+bool factorCarmichael(const Znum &p, fList &Factors, bool pseudoP)
 {
     uint64_t PsRand = 0;  // pseudo-random number
     bool factorsFound = false;
@@ -687,7 +687,7 @@ constexpr unsigned long long int gcd(unsigned long long int u, unsigned long lon
 /* factorise number where we know that it only has 2 prime factors. 
 see https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm 
 Note: there is another (probably better) version called PollardRho. */
-static void PollardFactor(const unsigned long long num, long long &factor) {
+static void PollardFactor(const unsigned long long num, unsigned long long &factor) {
     long long x_fixed = 2, cycle_size = 2, x = 2; 
     factor = 1;
     while (factor == 1) {
@@ -797,7 +797,7 @@ unsigned long long int PollardRho(unsigned long long int n, int depth)
 
 /* trial division & Pollard-Rho. Uses first 33334 primes. Also weak
   pseudoprimes base 2 are factorised (maybe only partly) if < 190 digits. */
-static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
+void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
     bool restart = false;  // set true if trial division has to restart
     int upperBound;
     int numtype;
@@ -887,7 +887,7 @@ static void TrialDiv(fList &Factors, const unsigned long long PollardLimit) {
 
 /* factorise Factors.n ; factor list returned in Factors. 
 returns false only if ecm returns an error. */
-static bool factor(fList &Factors) {
+bool factor(fList &Factors) {
     Znum toFactor = Factors.n;
     unsigned long long testP;
     const unsigned long long MaxP = 393203;   // use 1st  33334 primes 
@@ -1038,7 +1038,7 @@ This function is intended for 8k+1 primes if we want p = x^2 + 2*y^2
 rather than p = x^2 + y^2. */
 static void compute3squares(const Znum& p, Znum Mult[4]) {
     Znum q, Tmp, Tmp1, Tmp2, Tmp3, K, M1, M2, M3, M4;
-    std::vector <Znum> roots;
+    std::vector <Znum> rootsv;
 
     q = (p - 1) / 2; //  q = (prime-1)/2
     Mult[0] = 0;
@@ -1053,9 +1053,9 @@ static void compute3squares(const Znum& p, Znum Mult[4]) {
 
     // After the loop finishes, Tmp = (-1 - Mult[0]^2) is a quadratic residue mod p.
     Tmp1 = -1 - Mult[0] * Mult[0];
-    roots = primeModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
-    assert(!roots.empty());
-    Mult[1] = roots[0];
+    rootsv = primeModSqrt(Tmp1, p);  /* use Tonelli-Shanks to get Mod sqrt */
+    assert(!rootsv.empty());
+    Mult[1] = rootsv[0];
     /* at this point Mult[0]^2 + Mult[1]^2 + 1 ≡ 0 (mod p)*/
 
     if (verbose > 1) {
@@ -1187,8 +1187,8 @@ If p = 7 (mod 8) it can only be expressed as the sum of 4 squares. */
 
 static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwosq) {
     Znum a, q, K, Tmp, Tmp1, Tmp2, Tmp3, Tmp4, M1, M2, M3, M4; 
-    Znum TestNbr;
-    std::vector<Znum>roots;
+    //  Znum TestNbr;
+    std::vector<Znum>roots2;
 
     if (p == 2) {   /* Prime factor is 2 */
         Mult[0] = 1;  // 2 = 1^2 + 1^2 + 0^2 + 0^2
@@ -1209,9 +1209,9 @@ static void ComputeFourSquares(const Znum &p, Znum Mult[4], const bool sqplustwo
                 return;
             }
             /* in this case p can be expressed as the sum of 2 squares */
-            roots = primeModSqrt(-1, p);  /* use Legendre formula or Tonelli-Shanks to get mod sqrt */
-            assert(roots.size() >= 2);
-            Mult[0] = std::min(roots[0], roots[1]);   /* Mult[0]² = p-1(mod p)*/
+            roots2 = primeModSqrt(-1, p);  /* use Legendre formula or Tonelli-Shanks to get mod sqrt */
+            assert(roots2.size() >= 2);
+            Mult[0] = std::min(roots2[0], roots2[1]);   /* Mult[0]² = p-1(mod p)*/
 
             if (verbose > 1) {
                 std::cout << "4 squares: prime = " << p << " initial Mult[0] = " << Mult[0] << '\n';
@@ -1503,7 +1503,7 @@ appropriate values.
 If the number can be expressed as the sum of 3 squares try to find appropriate values.
 For large numbers this may not be practical. 
 The fallback is to find 4 squares, if none of the above are feasible- */
-static void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
+void ComputeFourSquares(const fList &factorlist, Znum quads[4], Znum num) {
     Znum Mult[4], Tmp1, Tmp2, Tmp3;
     Znum pr;
     bool twoSq;       /* value changed to true if num can be expressed as the sum 

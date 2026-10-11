@@ -204,8 +204,8 @@ int64_t ExtChineseRem(int64_t a1, uint64_t n1, int64_t a2, uint64_t n2) {
 		}
 	}
 	//printf_s("ext C R: x=%lld a1=%lld, n1=%lld, a2=%lld, n2=%lld\n", x, a1, n1, a2, n2);
-	assert(x % n1 == a1);   // check for bugs
-	assert(x % n2 == a2);
+	assert(x % n1 == (uint64_t)a1);   // check for bugs
+	assert(x % n2 == (uint64_t)a2);
 	return x;
 }
 
@@ -289,7 +289,7 @@ void ChineseRem(const Znum& a, const Znum& m, const Znum& b, const Znum& n, Znum
 				char buf[4000];  /* guess how big buffer should be; if it's too small the
 								 message will be truncated */
 				gmp_snprintf(buf, sizeof(buf), "Chinese Rem: no solution for %Zd, %Zd, %Zd, %Zd \n",
-					a, m, b, n);
+					ZT(a), ZT(m), ZT(b), ZT(n));
 				std::cout << buf;
 			}
 			g = -3;   /* there is no solution */

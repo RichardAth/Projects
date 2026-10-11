@@ -93,7 +93,7 @@ For "Syntax Error" an error code is appended. Codes used include:
 4    function name not followed by (
 5 or 6  function parameter not found, or invalid
 7    function has wrong number of parameters
-8    non-unary operator not preceded by a number or expression
+8    number or expression require by an operator is missing
 9    unary operator preceded by a number or expression
 10   left bracket found when not allowed
 11   right bracket found when not allowed

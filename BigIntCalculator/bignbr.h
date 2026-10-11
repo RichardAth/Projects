@@ -31,7 +31,7 @@ can handle maximum length numbers */
 #define SMALL_NUMBER_BOUND 32768
 #define _USING64BITS_ 1
 
-#define MAX_VALUE_LIMB (LIMB_RANGE-1)
+#define MAX_VALUE_LIMB ((int)(LIMB_RANGE-1))
 
 typedef int limb;
 

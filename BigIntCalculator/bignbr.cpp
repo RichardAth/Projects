@@ -353,13 +353,13 @@ long long PowerCheck(const Znum &factor, Znum &Base, long long upperBound) {
         ProcessExpon[h] = true;
     }
 
-    for (size_t ix = 5, h = primeList[ix]; h < maxPrime / 2; ix++, h = primeList[ix]) {
+    for (size_t ix = 5, hx = primeList[ix]; hx < maxPrime / 2; ix++, hx = primeList[ix]) {
         int processed = 0;
-        for (j = 2 * h + 1; j < maxPrime; j += 2 * h) {
+        for (j = 2 * hx + 1; j < maxPrime; j += 2 * hx) {
             if (isPrime2(j)) {
                 modulus = mpz_mod_ui(ZT(Zmod), ZT(factor), j); // getRemainder(factor, j);
-                if (intModPow(modulus, j / h, j) > 1) {
-                    for (j = h; j <= maxExpon; j += h) {
+                if (intModPow(modulus, j / hx, j) > 1) {
+                    for (j = hx; j <= maxExpon; j += hx) {
                         ProcessExpon[j] = false;
                     }
                     break;

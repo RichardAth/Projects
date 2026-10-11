@@ -320,7 +320,7 @@ static void GENtoMP(const GEN x, mpz_t value, mpz_t denom, double& val_d) {
     switch (typx) {
     case t_INT: {
         int64_t s = signe(x);
-        int64_t lx = lgefint(x);   /* lx = effective length of x */
+        // int64_t lx = lgefint(x);   /* lx = effective length of x */
 
         mpz_set_ui(denom, 1);
         if (s == 0) {

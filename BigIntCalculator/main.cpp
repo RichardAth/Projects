@@ -29,7 +29,7 @@ dll for Windows 7 would be used */
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-//#define BIGNBR       // define to include bignbr tests 
+// #define BIGNBR       // define to include bignbr tests 
 #ifdef BIGNBR
 extern Znum zR, zR2, zNI, zN;
 #endif
@@ -165,13 +165,13 @@ static char* getHex(Znum Bi_Nbr) {
 
 /* output value of Nbr as ascii text to stdout. DigitsInGroup controls the spacing
 between groups of digits. If size = true and the number is large show the number 
-of digits. If hexPrFlag is true output in hex instead of decimal. */
-void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexPrFlag) {
+of digits. If hexPr is true output in hex instead of decimal. */
+void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexPr) {
     std::string nbrOutput = "";
     char* buffer = NULL;
     size_t msglen, index = 0;
 
-    if (!hexPrFlag) {
+    if (!hexPr) {
         // convert to null-terminated ascii string, base 10, with sign if -ve
         // corrrectly-sized buffer is allocated automatically.
         buffer = mpz_get_str(NULL, 10, ZT(Bi_Nbr));
@@ -184,7 +184,7 @@ void ShowLargeNumber(const Znum &Bi_Nbr, int digitsInGroup, bool size, bool hexP
         nbrOutput = "-";
         index = 1;
     }
-    if (hexPrFlag) 
+    if (hexPr) 
         nbrOutput += "0x";
     for (; index < msglen; index++) {
         if (digitsInGroup > 0 && (msglen - index) % digitsInGroup == 0) {
@@ -320,7 +320,7 @@ void generatePrimes(unsigned long long int max_val) {
             count++;
             numsave = num;
 
-            if (num <= sqrt_max_val)  /* check whether starting value for i is already
+            if (num <= sqrt_max_val)  /* check whether starting value for j is already
                                       more than max_val, while avoiding an integer overflow*/
                 for (unsigned long long int i = num*num; i <= max_val; i += (num * 2))
                 { /* mark all odd multiples of num in range as not prime */
@@ -348,8 +348,31 @@ void generatePrimes(unsigned long long int max_val) {
 
 
 /* translate error code to text and output it. For syntax errors moreinfo 
-   contains a code number.
-   For most other errors moreinfo contains the opCode */
+   contains a code number. Codes used include:
+1    number directly follows a number or user variable without an operator between
+2    user variable directly follows a number or user variable without an operator between
+3    function directly follows a user variable or number without an operator between
+4    function name not followed by (
+5 or 6  function parameter not found, or invalid
+7    function has wrong number of parameters
+8    operator not preceded by a number or expression
+9    unary operator preceded by a number or expression
+10   left bracket found when not allowed
+11   right bracket found when not allowed
+12   missing an opening bracket (program bug?)
+13   invalid token found.
+
+20   Unable to 'tokenise´the expression, j.e. unable to recognise part of the
+     expression text as a number, operator, user name, function name or allowed
+     symbol (bracket or ,)
+
+21   not enough operands on stack (program bug?)
+22   don't have user var name before assignment operator
+23   unable to store value in user variable (program bug?)
+24   after evaluating the expression, more than one operand on stack (program bug?)
+
+   For most other errors moreinfo contains the relevant opCode, whuch is translated
+   back into text j.e. function name or operator.  */
 void textError(retCode rc, long long moreinfo) {
     /*
     error codes currently used include:
@@ -473,7 +496,7 @@ void textError(retCode rc, long long moreinfo) {
     	break;
 
     case retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE:
-        std::cout << (lang ? "El módulo debe ser mayor que 0\n" :
+        std::cout << (lang ? "El módulo debe ser mayor que cero\n" :
             "Modulus must be greater than zero\n");
         break;
 
@@ -508,7 +531,7 @@ void strToUpper(const std::string &s, std::string &d) {
     if (&d != &s)
         d.resize(s.size());  // resize d unless it's the same string as s
     for (size_t ix = 0; ix < s.size(); ix++)
-        d[ix] = std::toupper(s[ix]);
+        d[ix] = (char)std::toupper(s[ix]);
 }
 
 /* print elapsed time. If > 60 seconds print in hour min sec format 
@@ -700,7 +723,7 @@ method = 0 for standard factorisation, != 0 to use only YAFU for factorisation *
 bool factortest(const Znum &x3, const int testnum, const int method) {
     fList factorlist;
     Znum Quad[4], result;
-    long long totalFactors = 0;
+    // long long totalFactors = 0;
     summary sum;    // save summary of test
 
     auto start = std::clock();	// used to measure execution time
@@ -1020,22 +1043,28 @@ static void doTests(void) {
     auto start = std::clock();	// used to measure execution time
     for (i = 0; i < sizeof(testvalues) / sizeof(testvalues[0]); i++) {
 
-        auto  rv =ComputeExpr(testvalues[i].text, result, asgCt);
+        auto  rv = ComputeExpr(testvalues[i].text, result, asgCt);
         if (rv != retCode::EXPR_OK || result != testvalues[i].expected_result) {
             std::cout << "test " << i + 1 << " failed\n" <<
-                "expected " << testvalues[i].text << " = " 
+                "expected " << testvalues[i].text << " = "
                 << testvalues[i].expected_result << '\n';
             std::cout << "got " << result << '\n';
             Beep(750, 1000);
         }
+        else {
+            if (verbose > 0) {
+                std::cout << "test " << i + 1 << ": " << testvalues[i].text << " = "
+                    << result << '\n';
+            }
+        }
     }
     std::cout << i << (lang ? "  pruebas completadas\n" : " tests completed\n");
 
-     for (Znum i = 1000; i <= 100000000000000000; ) {
+     for (Znum j = 1000; j <= 100000000000000000; ) {
         Znum x1, x2;
-        mpz_nextprime(ZT(x1), ZT(i));  // get next prime
-        i *= 10;
-        mpz_nextprime(ZT(x2), ZT(i));  // get next prime
+        mpz_nextprime(ZT(x1), ZT(j));  // get next prime
+        j *= 10;
+        mpz_nextprime(ZT(x2), ZT(j));  // get next prime
         x3 = x1*x2;
         testcnt++;
         factortest(x3, testcnt);
@@ -1048,9 +1077,9 @@ static void doTests(void) {
     /* tests below have shown a problem with pollard-rho for certain numbers */
     long long int PollRho[] = {99999999973789, 183038861417, 183475587821,
         181919916457, 199996999457, 204493418837 };
-    for (int i = 0; i < sizeof(PollRho) / sizeof(PollRho[0]); i++) {
+    for (int j = 0; j < sizeof(PollRho) / sizeof(PollRho[0]); j++) {
         testcnt++;
-        factortest(PollRho[i], testcnt);
+        factortest(PollRho[j], testcnt);
     }
 
 
@@ -1097,9 +1126,9 @@ static void doTests(void) {
     unsigned long long int carmichael[] = { 90256390764228001, 18118463305678126129, 
         18265521244069461529,  18349357898532971521, 18308657203978189969,
         804230935331967001, 1452868638752967041 };
-    for (int i = 0; i < sizeof(carmichael) / sizeof(carmichael[0]); i++) {
+    for (int j = 0; j < sizeof(carmichael) / sizeof(carmichael[0]); j++) {
         testcnt++;
-        factortest(carmichael[i], testcnt);
+        factortest(carmichael[j], testcnt);
     }
 
     // ComputeExpr("16344221851913485532689", x3, asgCt);
@@ -1205,11 +1234,11 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     SUMMARY: a strong prime p is generated.
     1. Generate two large random primes s and t of roughly equal bitlength (see Note 4.54).
     2. Select an integer i0. Find the first prime in the sequence 2it + 1,
-    for i = i0; i0 + 1; i0 + 2; : : : (see Note 4.54). Denote this prime by r = 2it+ 1.
+    for j = i0; i0 + 1; i0 + 2; : : : (see Note 4.54). Denote this prime by r = 2it+ 1.
     3. Compute p0 = 2(sr-2 mod r)s - 1.
     4. Select an integer j0. Find the first prime in the sequence p0 +2jrs,
     for j = j0; j0 + 1; j0 + 2; : : : (see Note 4.54). Denote this prime by
-    p = p0 + 2jrs. Note: if p0 is has a common factor with r this sequence will 
+    prime = p0 + 2jrs. Note: if p0 is has a common factor with r this sequence will 
     never find a prime. 
     5. Return(p).
 
@@ -1257,7 +1286,7 @@ static void gordon(Znum &p, gmp_randstate_t &state, const long long bits) {
     // 3. Compute p0 = 2(sr-2 mod r)s - 1.
     p0 = ((s*r - 2) % r)*s * 2 - 1;
 
-    // 4. Find the first prime p in the sequence p0, p0 +2rs p0+4rs ....,
+    // 4. Find the first prime prime in the sequence p0, p0 +2rs p0+4rs ....,
     p = p0;
     while (gcd(p, r*s) != 1)
         p+=2;  /* if p has any common factors with r or s we need to make an
@@ -1381,7 +1410,7 @@ static void XlargeRand(Znum& a, int size) {
     4 & 5. Modular Multiplication using Mongomery Encoding (REDC)
 */
 static void doTests3(void) {
-    Znum a, a1, am, b, b1, bm, mod, p, p2, pm;
+    Znum a, a1, am, b, b1, bm, mod, prime, p2, pm;
     limb aL[MAX_LEN], modL[MAX_LEN], alM[MAX_LEN], al2[MAX_LEN];
     limb one[MAX_LEN];
     int numLen = MAX_LEN-2, l2, exp;
@@ -1407,152 +1436,152 @@ static void doTests3(void) {
         assert(a1 == a);              // verify conversion to & from Biginteger
 
         pBI = aBI + bBI;
-        BigtoZ(p, pBI);
-        assert(p == (a + b));         // verify addition        
+        BigtoZ(prime, pBI);
+        assert(prime == (a + b));         // verify addition        
 
         pBI = aBI;
         pBI += bBI;
-        assert(p == (a + b));         // verify addition
+        assert(prime == (a + b));         // verify addition
 
         pBI = aBI - bBI;
-        BigtoZ(p, pBI);
-        assert(p == (a - b));         // verify subtraction
+        BigtoZ(prime, pBI);
+        assert(prime == (a - b));         // verify subtraction
 
         pBI = aBI;
         pBI -= bBI;
-        assert(p == (a - b));         // verify subtraction
+        assert(prime == (a - b));         // verify subtraction
 
         pBI = -aBI;           /* unary - */
-        BigtoZ(p, pBI);
-        assert(p = -a);
+        BigtoZ(prime, pBI);
+        assert(prime = -a);
 
         pBI = aBI * bBI;
-        BigtoZ(p, pBI);
+        BigtoZ(prime, pBI);
         Znum prod;
         Znum diff;
         prod = a * b;
-        diff = p ^ prod;   // p XOR prod (0 if they are equal)
+        diff = prime ^ prod;   // prime XOR prod (0 if they are equal)
         if (diff != 0) {              // verify multiplication
             std::cout << "a = " << a << " b = " << b << '\n';
-            gmp_printf("p     = %Zx \na * b = %Zx \n", p, prod);
-            gmp_printf("diffference = %Zx \n", diff);
+            gmp_printf("prime     = %Zx \na * b = %Zx \n", ZT(prime), ZT(prod));
+            gmp_printf("diffference = %Zx \n", ZT(diff));
         }
 
         pBI = aBI;
         pBI *= bBI;
-        BigtoZ(p, pBI);               // p = pBI = aBI * bBI
-        assert(p == (a * b));         // verify multiplication
+        BigtoZ(prime, pBI);               // prime = pBI = aBI * bBI
+        assert(prime == (a * b));         // verify multiplication
 
         pBI = aBI;
         pBI *= INT_MAX;
-        BigtoZ(p, pBI);               // p = pBI = aBI * INT_MAX
-        assert(p == a * INT_MAX);	  // verify multiplication by int
+        BigtoZ(prime, pBI);               // prime = pBI = aBI * INT_MAX
+        assert(prime == a * INT_MAX);	  // verify multiplication by int
 
         pBI = aBI / bBI;
-        BigtoZ(p, pBI);                // p = pBI = aBI / bBI
-        if (p != (a / b)) {              // verify division
+        BigtoZ(prime, pBI);                // prime = pBI = aBI / bBI
+        if (prime != (a / b)) {              // verify division
             std::cout << "a = " << a << "\nb = " << b << '\n';
-            std::cout << "p = " << p << "\na/b = " << a / b << '\n';
+            std::cout << "prime = " << prime << "\na/b = " << a / b << '\n';
         }
 
         pBI = aBI;
         pBI /= bBI;            
-        BigtoZ(p, pBI);                  // p = pBI = aBI / bBI
-        if (p != (a / b)) {              // verify division
+        BigtoZ(prime, pBI);                  // prime = pBI = aBI / bBI
+        if (prime != (a / b)) {              // verify division
             std::cout << "a = " << a << " b = " << b << '\n';
-            std::cout << "p = " << p << "\na/b = " << a / b << '\n';
+            std::cout << "prime = " << prime << "\na/b = " << a / b << '\n';
         }
 
         pBI = aBI % bBI;
-        BigtoZ(p, pBI);               // p = pBI = aBI % bBI
-        if (p != (a%b))               // verify modulus
-            std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+        BigtoZ(prime, pBI);               // prime = pBI = aBI % bBI
+        if (prime != (a%b))               // verify modulus
+            std::cout << "prime = " << prime << "\na%b = " << a % b << '\n';
 
         pBI = aBI;
         pBI %= bBI;
-        BigtoZ(p, pBI);                 // p = pBI = aBI % bBI
-        if (p != (a%b))               // verify modulus
-            std::cout << "p = " << p << "\na%b = " << a % b << '\n';
+        BigtoZ(prime, pBI);                 // prime = pBI = aBI % bBI
+        if (prime != (a%b))               // verify modulus
+            std::cout << "prime = " << prime << "\na%b = " << a % b << '\n';
 
         l2 = (int)BigToLL(bBI, exp);  /* create a 'random' 32 bit integer */
         pBI = aBI / l2;
-        BigtoZ(p, pBI);
-        if (p != (a / l2))
-            std::cout << "p = " << p << "\na/l2 = " << a / l2 << '\n';
+        BigtoZ(prime, pBI);
+        if (prime != (a / l2))
+            std::cout << "prime = " << prime << "\na/l2 = " << a / l2 << '\n';
         pBI = -aBI / l2;
-        BigtoZ(p, pBI);
-        if (p != (-a / l2))
-            std::cout << "p = " << p << "\n-a/l2 = " << -a / l2 << '\n';
+        BigtoZ(prime, pBI);
+        if (prime != (-a / l2))
+            std::cout << "prime = " << prime << "\n-a/l2 = " << -a / l2 << '\n';
 
         pBI = aBI % l2;
-        BigtoZ(p, pBI);
-        if (p != a%l2)
-            std::cout << "p = " << p << "\na%l2 = " << a%l2 << " = " << a << '%' << l2 << '\n';
+        BigtoZ(prime, pBI);
+        if (prime != a%l2)
+            std::cout << "prime = " << prime << "\na%l2 = " << a%l2 << " = " << a << '%' << l2 << '\n';
 
         /* check BigtoLL function */
         int exp;
         a1 = BigToLL(aBI, exp);  // a1 * 2^exp = aBI
         mpz_div_2exp(ZT(b1), ZT(a), exp);   // b1 = a/(2^exp)
         if (b1 != a1)
-            gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", a, a1, exp);
+            gmp_printf("a = %Zx a1 = %Zx, exp = %d \n", ZT(a), ZT(a1), exp);
         assert(b1 == a1);
 
         pBI = aBI << 4;      // check left shift
-        BigtoZ(p, pBI);      // p = pBI = aBI << 4
+        BigtoZ(prime, pBI);      // prime = pBI = aBI << 4
         p2 = a << 4;
-        if (p != p2) {
-            gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+        if (prime != p2) {
+            gmp_printf("a = %#Zx prime = %#Zx expected %#Zx \n", ZT(a), ZT(prime), p2);
         }
 
 
         pBI = aBI << 56;    // check left shift
-        BigtoZ(p, pBI);     // p = pBI = aBI << 56
+        BigtoZ(prime, pBI);     // prime = pBI = aBI << 56
         p2 = a << 56;
-        if (p != p2) {
-            gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+        if (prime != p2) {
+            gmp_printf("a = %#Zx prime = %#Zx expected %#Zx \n", ZT(a), ZT(prime), ZT(p2));
         }
 
         pBI = aBI << 567;      // check left shift
-        BigtoZ(p, pBI);        // p = pBI = aBI << 567
+        BigtoZ(prime, pBI);        // prime = pBI = aBI << 567
         p2 = a << 567;
-        if (p != p2) {
-            gmp_printf("a = %#Zx p = %#Zx expected %#Zx \n", a, p, p2);
+        if (prime != p2) {
+            gmp_printf("a = %#Zx prime = %#Zx expected %#Zx \n", ZT(a), ZT(prime), ZT(p2));
         }
 
         pBI = aBI + INT_MAX;
-        BigtoZ(p, pBI);              // p = pBI = aBI + max;
-        assert(p == a + INT_MAX);    // veryify addition of int
+        BigtoZ(prime, pBI);              // prime = pBI = aBI + max;
+        assert(prime == a + INT_MAX);    // veryify addition of int
 
         pBI = aBI + INT_MIN;
-        BigtoZ(p, pBI);              // p = pBI = aBI + (-max);
+        BigtoZ(prime, pBI);              // prime = pBI = aBI + (-max);
         b1 = a + INT_MIN;
-        if (p != b1) {
-            gmp_printf("a =%Zd p = %Zd expected %Zd  \n", a, p, b1);
+        if (prime != b1) {
+            gmp_printf("a =%Zd prime = %Zd expected %Zd  \n", ZT(a), ZT(prime), ZT(b1));
         }
-        assert(p == b1);       // veryify addition of -ve int
+        assert(prime == b1);       // veryify addition of -ve int
 
         pBI = aBI - INT_MAX;
-        BigtoZ(p, pBI);               // p = pBI = aBI - max;
-        assert(p == a - INT_MAX);;    // veryify subtraction of int
+        BigtoZ(prime, pBI);               // prime = pBI = aBI - max;
+        assert(prime == a - INT_MAX);;    // veryify subtraction of int
 
         pBI = aBI - (long long)INT_MIN;
-        BigtoZ(p, pBI);               // p = pBI = aBI - max;
+        BigtoZ(prime, pBI);               // prime = pBI = aBI - max;
         b1 = a - (long long)INT_MIN;
-        if (p != b1) {
-            gmp_printf("a =%Zd p = %Zd expected %Zd  \n", a, p, b1);
+        if (prime != b1) {
+            gmp_printf("a =%Zd prime = %Zd expected %Zd  \n", ZT(a), ZT(prime), ZT(b1));
         }
 
         pBI = aBI & bBI.abs();
-        BigtoZ(p, pBI);
-        if (p != (a & abs(b))) {
+        BigtoZ(prime, pBI);
+        if (prime != (a & abs(b))) {
             gmp_printf("logical and of %Zx & %Zx failed; \ngot %Zx, expected %Zx \n",
-                a, abs(b), p, (a & abs(b)));
+                ZT(a), (abs(b)), ZT(prime), (a & abs(b)));
         }
-        assert(p == (a & abs(b)));
+        assert(prime == (a & abs(b)));
 
         pBI = aBI;
         pBI &= bBI.abs();
-        assert(p == (a & abs(b)));
+        assert(prime == (a & abs(b)));
 
         a *= 1237953;                 // increase a & b, then repeat
         b *= -129218;
@@ -1580,7 +1609,7 @@ static void doTests3(void) {
     /* check multiplication of large numbers */
     aBI = 17341;
     a = 17341;
-    for (int i = 1; i < 13; i++) {
+    for (int j = 1; j < 13; j++) {
         if (aBI.bitLength() > MAX_LEN*BITS_PER_GROUP / 2)
             break;  // exit loop if a is too large to square it
         aBI = aBI * aBI;
@@ -1598,33 +1627,33 @@ static void doTests3(void) {
 
     
     /* check conversion to & from floating point */
-    /*for (int i = 1; i <= 30; i++) {
-        expBigInt(amBI, i);
-        std::cout << "e^=" << amBI << " expected " << std::exp(i) << '\n';
+    /*for (int j = 1; j <= 30; j++) {
+        expBigInt(amBI, j);
+        std::cout << "e^=" << amBI << " expected " << std::exp(j) << '\n';
     }*/
 
-    p = 10;
+    prime = 10;
 
     Znum error, relerror;
-    for (int i = 1; i < 99;  i++, p *= 1000000 ) {
-        if (!ZtoBig(pBI, p))
-            break;            // p too large to convert so stop
-        double pdb = pBI.log();  // get natural log of p
+    for (int j = 1; j < 99;  j++, prime *= 1000000 ) {
+        if (!ZtoBig(pBI, prime))
+            break;            // prime too large to convert so stop
+        double pdb = pBI.log();  // get natural log of prime
         /*if (pdb > 708)
             break;*/
         expBigInt(amBI, pdb);   // convert back from log
         BigtoZ(am, amBI);       // convert back to Znum
-        error = p - am;         // get error
+        error = prime - am;         // get error
         if (error != 0) {
             double e1, e2, relErrf;
             long e1l, e2l;
-            e1 = mpz_get_d_2exp(&e1l, ZT(p));
+            e1 = mpz_get_d_2exp(&e1l, ZT(prime));
             e2 = mpz_get_d_2exp(&e2l, ZT(am));
             assert(e1l == e2l);   // check power of 2 exponent is correct
             relErrf = std::abs(e1 - e2) / e1;   /* should be less than 10E-14 */
             if (relErrf > 10E-13) {
-                relerror = (10'000'000'000'000'000LL * error) / p;  /* error * 10^15 */
-                /* print log base 10 of p, then error ratio */
+                relerror = (10'000'000'000'000'000LL * error) / prime;  /* error * 10^15 */
+                /* print log base 10 of prime, then error ratio */
                 std::cout << " pdb = " << pdb / std::log(10)
                     << " error ratio = " << relErrf << " error*10^15 = " << relerror << '\n';
             }
@@ -1632,32 +1661,32 @@ static void doTests3(void) {
     }
 
     /* check division with large numbers */
-    p = 12345678901;
+    prime = 12345678901;
     p2 = 11;
     for (l2 = 1; l2 < 4560; l2++) {
-        if (!ZtoBig(pBI, p))
-            break;                 // exit loop if p is too big to fit BigInteger (approximately 20000 digits)
+        if (!ZtoBig(pBI, prime))
+            break;                 // exit loop if prime is too big to fit BigInteger (approximately 20000 digits)
         if (!ZtoBig(amBI, p2))
             break;
-        bBI = pBI / amBI;         // calculçate p/p2 using Bigintegers
+        bBI = pBI / amBI;         // calculçate prime/p2 using Bigintegers
         BigtoZ(b1, bBI);          // convert quotient back to Znum in b1
-        if (b1 != p / p2) {
-            std::cout << "p      = " << p
+        if (b1 != prime / p2) {
+            std::cout << "prime      = " << prime
                 << "\np2     = " << p2
-                << "\nexpected " << p / p2
+                << "\nexpected " << prime / p2
                 << "\ngot      " << b1;
             break;
         }
         bBI = pBI % amBI;
         BigtoZ(b1, bBI);
-        if (b1 != p % p2) {
-            std::cout << "p      = " << p
+        if (b1 != prime % p2) {
+            std::cout << "prime      = " << prime
                 << "\np2     = " << p2
-                << "\nexpected " << p % p2
+                << "\nexpected " << prime % p2
                 << "\ngot      " << b1;
             break;
         }
-        p *= (long long)std::rand() * 2 + 3;
+        prime *= (long long)std::rand() * 2 + 3;
         p2 *= std::rand();
     }
     std::cout << "division test " << l2 << " cycles\n";
@@ -1679,7 +1708,7 @@ static void doTests3(void) {
         numLen = MAX_LEN - 2;
         ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
         while (modL[numLen - 1] == 0)
-            numLen--;                    // adjust length i.e. remove leading zeros
+            numLen--;                    // adjust length j.e. remove leading zeros
         std::memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
         NumberLength = numLen;
         GetMontgomeryParms(numLen);
@@ -1689,7 +1718,7 @@ static void doTests3(void) {
         numLen = MAX_LEN - 2;
         ZtoLimbs(aL, a, numLen);		     // copy value of a to aL (limbs)
         while (aL[numLen - 1] == 0)
-            numLen--;                    // adjust length i.e. remove leading zeros
+            numLen--;                    // adjust length j.e. remove leading zeros
         //NumberLength = numLen;
         modmult(aL, MontgomeryMultR2, alM);  // convert a to Mongomery (limbs)
         modmult(alM, one, al2);          // convert a from Mongomery (limbs) 
@@ -1702,7 +1731,7 @@ static void doTests3(void) {
 
     /* test square root function */
     a = 1;
-    for (int i = 1; i <= 20; i++) {
+    for (int j = 1; j <= 20; j++) {
         a *= std::rand();
         b = sqrt(a);         /* get square root of Znum, use Boost Library function */
         aBI = a;             /* convert Znum to BigInteger*/
@@ -1719,7 +1748,7 @@ static void doTests3(void) {
     //numLen = MAX_LEN - 2;
     //ZtoLimbs(modL, mod, MAX_LEN);    // copy value of mod to modL
     //while (modL[numLen - 1] == 0)
-    //    numLen--;                    // adjust length i.e. remove leading zeros
+    //    numLen--;                    // adjust length j.e. remove leading zeros
     //memcpy(TestNbr, modL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     //NumberLength = numLen;
     //GetMontgomeryParms(numLen);
@@ -1735,33 +1764,33 @@ static void doTests3(void) {
     //ZtoLimbs(bL, b, numLen);		 // copy value of b to bL
     //
     //while (bL[numLen - 1] == 0)
-    //    numLen--;                    // adjust length i.e. remove leading zeros
+    //    numLen--;                    // adjust length j.e. remove leading zeros
     ////NumberLength = numLen;
 
     ////memcpy(TestNbr, bL, numLen * sizeof(limb));  // set up for GetMontgomeryParms
     ////GetMontgomeryParms(numLen);
     //modmult(bL, MontgomeryMultR2, blM);  // convert b to Mongomery (limbs)
 
-    //for (int i = 1; i < 200000000; i++) {
-    //    modmult(alM, blM, plm);                   // p = a*b modulo mod (limbs)
-    //    memcpy(alM, plm, numLen * sizeof(limb));  // a = p (limbs)
-    //    modmult(am, bm, pm);                      // p = a*b modulo mod (Znum)
-    //    am = pm;						          //a = p (Znum)
-    //    REDC(p, pm);					 // convert p from montgomery (Znum)
-    //    modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-    //    LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-    //    assert(p2 == p);
-    //    if (i % 20000000 == 0) {
-    //        std::cout << "test stage 5 " << i / 2000000 << "% complete \n";
+    //for (int j = 1; j < 200000000; j++) {
+    //    modmult(alM, blM, plm);                   // prime = a*b modulo mod (limbs)
+    //    memcpy(alM, plm, numLen * sizeof(limb));  // a = prime (limbs)
+    //    modmult(am, bm, pm);                      // prime = a*b modulo mod (Znum)
+    //    am = pm;						          //a = prime (Znum)
+    //    REDC(prime, pm);					 // convert prime from montgomery (Znum)
+    //    modmult(plm, one, pl);           // convert prime from Mongomery (limbs)
+    //    LimbstoZ(pl, p2, numLen);        // convert value of prime to p2 (Znum)
+    //    assert(p2 == prime);
+    //    if (j % 20000000 == 0) {
+    //        std::cout << "test stage 5 " << j / 2000000 << "% complete \n";
     //    }
-    //    if (p == 0)
+    //    if (prime == 0)
     //        break;
     //}
 
-    ////REDC(p, pm);					 // convert p from montgomery (Znum)
-    ////modmult(plm, one, pl);           // convert p from Mongomery (limbs)
-    ////LimbstoZ(pl, p2, numLen);        // convert value of p to p2 (Znum)
-    ////assert(p2 == p);
+    ////REDC(prime, pm);					 // convert prime from montgomery (Znum)
+    ////modmult(plm, one, pl);           // convert prime from Mongomery (limbs)
+    ////LimbstoZ(pl, p2, numLen);        // convert value of prime to p2 (Znum)
+    ////assert(p2 == prime);
 
     end = std::clock();              // measure amount of time used
     elapsed = (double)end - start;
@@ -1857,8 +1886,8 @@ static void doTests4(void) {
             break;
         }
         std::cout << '\n' << myTimeP() << " test " << px + 1 << " of " << pmax + 1;
-        mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^p
-        m--;                // get 2^p -1
+        mpz_ui_pow_ui(ZT(m), 2, primeList[px]);  // get  m= 2^prime
+        m--;                // get 2^px -1
         if (factortest(m, px+1)) /* factorise m, calculate number of divisors etc */
             std::cout << "2^" << primeList[px] << " - 1 is prime \n";
     }
@@ -1957,7 +1986,7 @@ static void doTests6(bool usesMsieve = true) {
     auto start = std::clock();	// used to measure execution time
 
     mpz_ui_pow_ui(ZT(m), 2, 277);  // get  m= 2^p
-    m--;                // get 2^p -1
+    m--;                // get 2^prime -1
     factortest(m, testcnt);      // 84 digits
     /* p7  factor: 1121297
        p38 factor: 31133636305610209482201109050392404721
@@ -1965,15 +1994,15 @@ static void doTests6(bool usesMsieve = true) {
     */
 
     testcnt++;
-    mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^p
-    m--;                // get 2^p -1
+    mpz_ui_pow_ui(ZT(m), 2, 293);  // get  m= 2^prime
+    m--;                // get 2^prime -1
     factortest(m, testcnt);      // 89 digits
     /* p26 factor: 40122362455616221971122353
        p63 factor: 396645227028138890415611220710757921643910743103031701971222447 */
 
     testcnt++;
-    mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^p
-    m--;                // get 2^p -1
+    mpz_ui_pow_ui(ZT(m), 2, 311);  // get  m= 2^prime
+    m--;                // get 2^prime -1
     factortest(m, testcnt);      // 94 digits
     /* p7  factor: 5344847
        p31 factor: 2647649373910205158468946067671
@@ -1981,8 +2010,8 @@ static void doTests6(bool usesMsieve = true) {
     */
 
     testcnt++;
-    mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^p
-    m--;                // get 2^p -1
+    mpz_ui_pow_ui(ZT(m), 2, 313);  // get  m= 2^prime
+    m--;                // get 2^prime -1
     factortest(m, testcnt);      // 95 digits
     /* p8  factor: 10960009
        p17 factor: 14787970697180273
@@ -1991,8 +2020,8 @@ static void doTests6(bool usesMsieve = true) {
     */
 
     testcnt++;
-    mpz_ui_pow_ui(ZT(m), 2, 349);  // get  m= 2^p
-    m--;                // get 2^p -1
+    mpz_ui_pow_ui(ZT(m), 2, 349);  // get  m= 2^prime
+    m--;                // get 2^prime -1
     factortest(m, testcnt);      // 106 digits
     /* p34 factor: 2927455476800301964116805545194017
        p67 factor: 6725414756111955781503880188940925566051960039574573675843402666863
@@ -2029,8 +2058,8 @@ static void doTests7(const std::vector<std::string> &p) {
     generatePrimes(limit);    /* make prime list if not already done */
 
     for (i = 0; primeList[i] < limit; i++) {
-        Znum p = primeList[i];
-        Znum rv = llt(p); /* Return 0 if 2^p-1 is composite, 1 if prime  */
+        Znum prime = primeList[i];
+        Znum rv = llt(prime); /* Return 0 if 2^prime-1 is composite, 1 if prime  */
         if (rv == 1) {
             std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is prime *** \n";
             mPrimes.push_back(primeList[i]);
@@ -2045,8 +2074,8 @@ static void doTests7(const std::vector<std::string> &p) {
     /* see https://oeis.org/A000043 */
     std::cout << "Found " << mPrimes.size() << " Mersenne primes  out of " << i 
         << " numbers tested \n" ;
-    for (auto p : mPrimes) {
-        std::cout << p << ", ";
+    for (auto pr : mPrimes) {
+        std::cout << pr << ", ";
     }
     std::putchar('\n');
     long long other = (long long)i - (lltPriCnt+ lltTdivCnt+ lltCmpCnt);
@@ -2072,7 +2101,7 @@ static void doTests12(const std::vector<std::string>& p) {
                        // maximum is 29, also design of R4alt limits p2 to 31)
     long long p3 = 0;
     long long xl;
-    unsigned long long rv;
+    long long rv;
     gmp_randstate_t state;  /* use gmp/mpir random number generator */
     Znum x;
     long long rv3;
@@ -2142,10 +2171,10 @@ static void doTests13(const std::vector<std::string>& p) {
                 "where p1=number of tests (default 20)\n"
                 "p2 = value for 1st prime (default 23, p2 is incremented to next prime if necessary)\n"
                 "pseudoprimes are generated from the formulas: \n"
-                "n1= (b^p - 1) / (b - 1) \n"
-                "n2= (b^p + 1) / (b + 1).\n"
+                "n1= (b^prime - 1) / (b - 1) \n"
+                "n2= (b^prime + 1) / (b + 1).\n"
                 "N = n1*n2           (N is a weak pseudoprime to base b. In this case b=2) \n"
-                "for each subsequent test p is incremented to the next prime (up to p=331) \n";
+                "for each subsequent test prime is incremented to the next prime (up to prime=331) \n";
             return;
         }
     }
@@ -2476,7 +2505,7 @@ static int ifCommand(const std::string &command) {
         else 
             return 3;  /* no ELSE expression to evaluate */
 
-        retCode rv = ComputeMultiExpr(expr, result);
+        retCode rv2 = ComputeMultiExpr(expr, result);
         return 3;  /* IF (...) THEN (...) ELSE (...) processed OK*/
     }
 
@@ -3055,17 +3084,17 @@ static int processCmd(const std::string &txt) {
         return 1; 
     }	          
     case 6: /* F */ { 
-        int ix = 0;
+        int ix2 = 0;
         if (p.size() >= 2) {
             /* check whether or not F is followed by a ( */
-            for (ix = 0; ix < txt.size(); ix++) {
-                if (toupper(txt[ix]) == 'F')
+            for (ix2 = 0; ix2 < txt.size(); ix2++) {
+                if (toupper(txt[ix2]) == 'F')
                     break;  /* find the F*/
             }
-            for (ix++; ix < txt.size(); ix++) {
-                if (txt[ix] == ' ')
+            for (ix2++; ix2 < txt.size(); ix2++) {
+                if (txt[ix2] == ' ')
                     continue;    /* move past any spaces following the F */
-                if (txt[ix] == '(')
+                if (txt[ix2] == '(')
                     return 0;    // F(n) is a function, not a command
             }
  
@@ -3087,7 +3116,7 @@ static int processCmd(const std::string &txt) {
              return 1;
          }
 
-         char ttype = std::toupper(p[1][0]);  /* print help message? */
+         char ttype = (char)std::toupper(p[1][0]);  /* print help message? */
          if (ttype == 'H') {
              std::cout << "Test command format: \n"
                  << "      Test    (with no parameters) do basic tests of calculator and factorisation \n"
@@ -3280,7 +3309,7 @@ static int processCmd(const std::string &txt) {
                     }
 
                     /* recalculate each stored expression */
-                    retCode rv = ComputeMultiExpr(expr, result);
+                    retCode rv2 = ComputeMultiExpr(expr, result);
                 }
                 return 1;  /* loop completed */
             }
@@ -3481,11 +3510,11 @@ int main(int argc, char *argv[], char* envp[]) {
 
     try {
   /*      if (verbose > 0) {
-            for (int i = 0;; i++) {
-                char* env = envp[i];
+            for (int j = 0;; j++) {
+                char* env = envp[j];
                 if (env == nullptr)
                     break;
-                std::cout << "env[" << i << "] = " << env << '\n';
+                std::cout << "env[" << j << "] = " << env << '\n';
             }
         }*/
         initialise(argc, argv);  /* initialisation code only executed once */
