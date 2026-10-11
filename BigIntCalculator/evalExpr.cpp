@@ -17,9 +17,9 @@ along with Alpertron Calculators.If not, see < http://www.gnu.org/licenses/>.
 #include <stack>
 
 /* forward references */
-int new_uvar(const char *name);
-int set_uvar(const char *name, const Znum &data);
-int get_uvar(const char *name, Znum &data);
+static int new_uvar(const char *name);
+static int set_uvar(const char *name, const Znum &data);
+static int get_uvar(const char *name, Znum &data);
 static void free_uvars();
 
 const unsigned long long max_prime = 1000000007;  // arbitrary limit 10^9,
@@ -97,7 +97,8 @@ SumDivs(n, x): Sum of xth power of positive divisors of n either prime or compos
 FactConcat(m,n): Concatenates the prime factors of n according to the mode expressed in m
 
 */
-enum class opCode {
+
+enum class opCode: short{
     fact        = 21,	// !   factorial 
     prim        = 23,	// #   primorial
     unary_minus = 1,    // C and Python put unary minus above multiply, divide & modulus
@@ -192,7 +193,7 @@ enum class opCode {
 
 struct  functions {
     char fname[14];        // maximum name length 13 chars (allow for null terminator)
-    int  NoOfParams;       // number of parameters (SHORT_MAX for variable number of parameters)
+    short  NoOfParams;       // number of parameters (SHORT_MAX for variable number of parameters)
     opCode  fCode;        // integer code for function
 };
 
@@ -278,12 +279,12 @@ const static struct functions functionList[]{
 struct oper_list{
     char oper[4];       /* operator as ascii string*/
     opCode operCode;
-    int pri;     /* operator precedence, 0 is highest, 99 is lowest */
-    bool left;   /* associativity ; true = left to right, false = right to left
+    short pri;     /* operator precedence, 0 is highest, 99 is lowest */
+    bool  left;   /* associativity ; true = left to right, false = right to left
         operators with the same precedence must have the same associativity. */
-    bool pre;    /* true if unary operator e.g. - precedes expression, false if
+    bool  pre;    /* true if unary operator e.g. - or NOT precedes expression, false if
                  it follows the expression e.g. !, only relevant for unary operators. */
-    int numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
+    short numOps;  /* number of operands; 1 = unary, or 2 normally, or 0 for bracket)*/
 };
 /* list of operators with corresponding codes and priority. For the search to
 work correctly
@@ -325,19 +326,40 @@ const static struct oper_list operators[]{
         {"U-",   opCode::unary_minus, 1,  false, true,  1 },     // unary -
 };
 
-enum class types { Operator, func, number, comma, error, uservar, end };
+/* types of token */
+enum class types: short{ Operator, func, number, comma, error, uservar, end };
 
 struct token {
-    types typecode; /* type of token (operator, function, number, etc) */
-    int function;   /* contains function code index, when typecode = func 
+    types typecode; /* type of token (operator, function, number, etc) */ 
+    short function;   /* contains function code index, when typecode = func 
                        contains operator index when typecode = Operator */
     opCode oper;    /* contains operator value, only when typecode = Operator or func */
     Znum value;     /* contains numeric value,  only when typecode = number */
     size_t userIx;  /* index into user variable list (only when typecode = uservar) */
-    short numops;   /* number of operands/parameters */
+    short numops;   /* number of operands/parameters (only used for functions & operators)*/
 };
+
+/* this list contains names of functions and operators, indexed by opCode*/
+std::vector<std::string> funcNames(200);
+
 /* forward reference */
 static retCode tokenise(const std::string expr, std::vector <token>& tokens, int& asgCt);
+
+/* set up list of function or operator names, indexed by opCode */
+void initFuncNames() {
+    for (auto op: operators){
+        funcNames[(int)op.operCode] = op.oper;
+    }
+    for (auto fn : functionList) {
+        funcNames[(int)fn.fCode] = fn.fname;
+    }
+/*#ifdef _DEBUG
+    for (int i = 0; i < funcNames.size(); i++) {
+        if (funcNames[i].size() > 0)
+            printf_s(" % 4d % s \n", i, funcNames[i].c_str());
+    }
+#endif    */   
+}
 
 // returns true if num is a perfect square.
 static bool isPerfectSquare(const Znum &num) {
@@ -389,7 +411,7 @@ statements holds:
 
     if (remainder == 1) {
         if (factorise(n, f, nullptr))
-            return f.squarefree();
+            return f.squarefree();  /* n = 1 (mod 4) and is squarefree */
         else
             return false;  /* could not factorise */
     }
@@ -456,7 +478,7 @@ N.B. includes non-prime factors e.g. 1, 2, 4, 8 and 16 are divisors of 16.
 the value returned is the number of divisors.
 If number of divisors > 33333333, do not produce the divisor list and return -1.
 */
-static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
+long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
 
     fList f;          /* prime factors of tnum */
     Znum divisors;    /* number of divisors */
@@ -499,9 +521,9 @@ static long long DivisorList(const Znum &tnum, std::vector <Znum> &divlist) {
     std::sort(divlist.begin(), divlist.end());
 #ifdef _DEBUG
     //if (verbose > 0) {
-    //	gmp_printf("divisors of %Zd are: ", tnum);
+    //	gmp_printf("divisors of %Zd are: ", ZT(tnum));
     //	for (int i = 0; i < numdiv; i++) {
-    //		gmp_printf("%Zd ", divlist[i]);
+    //		gmp_printf("%Zd ", ZT(divlist[i]));
     //	}
     //	std::putchar('\n');
     //}
@@ -988,7 +1010,7 @@ Znum R4(Znum num) {
 
 /* find smallest primitive root of num. return -1 for error 
 see https://en.wikipedia.org/wiki/Primitive_root_modulo_n */
-static Znum primRoot(const Znum &num) {
+Znum primRoot(const Znum &num) {
     fList factorlist, totF;
     std::vector <Znum> powers;  /* values of exponent that we need to use in testing */
     Znum mp;    /* mp = a^p mod num*/
@@ -1068,7 +1090,7 @@ static int lltTrialDiv(const Znum& n, const long long p) {
     if (limit > maxlimit) {
         /* hit this limit if p >= 41 */
         if (verbose > 1)
-            gmp_printf("limit reduced from %Zd to %lld\n", limit, maxlimit);
+            gmp_printf("limit reduced from %Zd to %lld\n", ZT(limit), maxlimit);
         limit = maxlimit;   // larger limit would take too long (also encounter > 64-bit integers)
     }
 
@@ -1092,7 +1114,7 @@ static int lltTrialDiv(const Znum& n, const long long p) {
 
     if (composite) {
         if (ncopy > 1 && verbose > 0)
-            gmp_printf("%Zd is a factor\n", ncopy);
+            gmp_printf("%Zd is a factor\n", ZT(ncopy));
         lltTdivCnt++;   /* increment counter */
         return 0; /* not prime */
     }
@@ -1166,10 +1188,10 @@ Znum llt(const Znum& p) {
         t1 = std::clock();
         /* use trial division if verbose > 1 because this can give some factors,
         whereas the other tests only show whether n is prime or composite */
-        int rv = lltTrialDiv(n, exp);
+        int rv2 = lltTrialDiv(n, exp);
         t2 = std::clock();
         printf_s("time used by trial division = %.2f sec \n", (double)(t2 - t1) / CLOCKS_PER_SEC);
-        if (rv == 0) {
+        if (rv2 == 0) {
             std::cout << myTimeP() << " 2^" << exp << " -1 is not prime *** \n";
             return 0;   /* factor found -> n is composite */
         }
@@ -1293,7 +1315,7 @@ static long long pisano(const long long p) {
 Otherwise π(n) ≤ 4n.
 by factorising n, we can calculate π(p) for much smaller numbers,
 then combine them, hopefully speeding up the calculation.*/
-static Znum pisanof(const long long n, const factorsS &f) {
+static Znum pisanof(const factorsS &f) {
 
     Znum result = 1;
     Znum pisanoV;
@@ -1313,7 +1335,7 @@ static Znum pisanof(const long long n, const factorsS &f) {
 }
 
 /* get the prime factors of num!  */
-static int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
+int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 
     int i;
     unsigned long long x;
@@ -1336,7 +1358,7 @@ static int FactoriseFactorial(const unsigned long long num, fList& factorlist) {
 }
 
 /* factorise p! Print factors. If possible, print a list of divisors */
-static Znum FactorFactorial(const Znum &p, const Znum &modbi) {
+Znum FactorFactorial(const Znum &p, const Znum &modbi) {
     fList f;
     size_t ctr = 0, ct2=0, ccpy=0;
     std::vector <Znum> divlist;
@@ -1344,7 +1366,7 @@ static Znum FactorFactorial(const Znum &p, const Znum &modbi) {
     long long roundness = 0;
     std::map <unsigned int, unsigned int> dist;
     unsigned int max;   /* largest exponent for a prime factor of p */
-    long long mod = ZnumToLong(modbi);
+    unsigned long long mod = (unsigned long long)ZnumToLong(modbi);  /* modbi previously checked to be +ve */
     long long pp = ZnumToLong(p);
     if (pp > (long long)primeListMax)
         generatePrimes(pp+1);    /* ensure prime list contains sufficient primes */
@@ -1415,7 +1437,7 @@ static Znum FactorFactorial(const Znum &p, const Znum &modbi) {
 
        	printf_s("divisors of %lld! are: ", pp);
     	for (int i = 0; i < numdiv; i++) {
-    		gmp_printf("%Zd ", divlist[i]);
+    		gmp_printf("%Zd ",ZT( divlist[i]));
     	}
     	std::putchar('\n');
     }
@@ -1446,7 +1468,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[1] < 1)
             return retCode::NUMBER_TOO_LOW;
         long long k = ZnumToLong(p[1]);
-        mpz_bin_ui(ZT(result), ZT(p[0]), k);
+        mpz_bin_ui(ZT(result), ZT(p[0]), k); /* calculate binomial coeff */
         return retCode::EXPR_OK;
     }
     case opCode::plus: {
@@ -1477,7 +1499,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::remainder: {
         if (p[1] == 0)
-            return retCode::DIVIDE_BY_ZERO;  // result would be infinity
+            return retCode::DIVIDE_BY_ZERO;  // result undefined
         //result = p[0] % p[1];
         /* use truncation division */
         mpz_tdiv_r(ZT(result), ZT(p[0]), ZT(p[1]));
@@ -1545,7 +1567,6 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         return ShiftLeft(p[0], -p[1], result);
     }
     case opCode::notfn: /* Perform binary NOT */ {   
-        //result = -1 - p[0];  // assumes 2s complement binary numbers
         mpz_com(ZT(result), ZT(p[0]));  /* one's complement */
         return retCode::EXPR_OK;
     }
@@ -1570,13 +1591,13 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] > LLONG_MAX)
             return retCode::NUMBER_TOO_HIGH;
 
-        long long temp = llabs(ZnumToLong(p[0]));
+        long long temp2 = llabs(ZnumToLong(p[0]));
         long long t2 = ZnumToLong(p[1]);
-        if (t2 < sizeof(limits) / sizeof(limits[0]) && temp > limits[t2])
+        if (t2 < sizeof(limits) / sizeof(limits[0]) && temp2 > limits[t2])
             /* more than 20,000 digits in base 10 */
             return retCode::INTERIM_TOO_HIGH;
 
-        mpz_mfac_uiui(ZT(result), temp, t2);  // get multi-factorial
+        mpz_mfac_uiui(ZT(result), temp2, t2);  // get multi-factorial
         if (ZT(result)->_mp_size > 1039)
             /* more than 20,000 digits in base 10 */
             return retCode::INTERIM_TOO_HIGH;
@@ -1589,8 +1610,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] < 0)
             return retCode::NUMBER_TOO_LOW;
 
-        long long temp = llabs(ZnumToLong(p[0]));
-        mpz_primorial_ui(ZT(result), temp);  // get primorial
+        long long temp3 = llabs(ZnumToLong(p[0]));
+        mpz_primorial_ui(ZT(result), temp3);  // get primorial
         return retCode::EXPR_OK;
     }
     case opCode::fn_abs: /* absolute value */ {
@@ -1616,7 +1637,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::fn_modpow: {						// MODPOW
         if (p[2] == 0)
-            return retCode::DIVIDE_BY_ZERO;
+            return retCode::DIVIDE_BY_ZERO;  /* modulus must not be 0 */
         if (p[1] < 0) {
             if (gcd(p[0], p[2]) != 1)
                 return retCode::ARGUMENTS_NOT_RELATIVELY_PRIME;  // p[0] and p[2] not mutually prime
@@ -1696,20 +1717,20 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
 
     case opCode::fn_isprime: {  // isprime
         /* -1 indicates probably prime, 0 = composite */
-        int rv = PrimalityTest(abs(p[0]), 0);
-        /* rv: 0 = probable prime.
+        int rv2 = PrimalityTest(abs(p[0]), 0);
+        /* rv2: 0 = probable prime.
                1 = composite: not 2-Fermat pseudoprime.
                2 = composite: does not pass 2-SPRP test.
                3 = composite: does not pass BPSW test, but passes other tests.*/
         if (verbose > 0) {
-            if (rv == 2)
+            if (rv2 == 2)
                 std::cout << "pseudo-prime base 2; passes 2-fermat test but not 2-SPRP test \n";
-            if (rv == 3)
+            if (rv2 == 3)
                 std::cout << "strong pseudo-prime base 2; passes 2-SPRP test but not BPSW test \n";
-            if (rv == 1)
+            if (rv2 == 1)
                 std::cout << "composite; not a pseudoprime base 2 \n";
         }
-        if (rv == 0)
+        if (rv2 == 0)
             result = -1;   /* prime */
         else
             result = 0;    /* composite */
@@ -1720,14 +1741,14 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         {  /* result would exceed 20,000 digits */
             return retCode::INTERIM_TOO_HIGH;
         }
-        long long temp = ZnumToLong(ZT(p[0]));
+        long long temp2 = ZnumToLong(ZT(p[0]));
         bool neg = false;
-        if (temp < 0) {
+        if (temp2 < 0) {
             /* is it a "negafibonacci" number? */
-            if ((temp & 1) == 0) { neg = true; } /* set for even -ve number */
-            temp = -temp;
+            if ((temp2 & 1) == 0) { neg = true; } /* set for even -ve number */
+            temp2 = -temp2;
         }
-        mpz_fib_ui(ZT(result), temp);  // calculate fibonacci number
+        mpz_fib_ui(ZT(result), temp2);  // calculate fibonacci number
         if (neg) { result = -result; } /* flip sign for even -ve number */
         break;
     }
@@ -1738,8 +1759,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (p[0] > 95700)  {
             return retCode::INTERIM_TOO_HIGH; /* result would exceed 20,000 digits */
         }
-        long long temp = ZnumToLong(p[0]);
-        mpz_lucnum_ui(ZT(result), temp);  // calculate lucas number
+        long long temp2 = ZnumToLong(p[0]);
+        mpz_lucnum_ui(ZT(result), temp2);  // calculate lucas number
         break;
     }
 
@@ -1752,8 +1773,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_LOW;
             // note: biperm is limited to values <= 1,000,000
         }
-        int temp = (int)ZnumToLong(p[0]);
-        biperm(temp, result);   // calculate number of partitions
+        int temp2 = (int)ZnumToLong(p[0]);
+        biperm(temp2, result);   // calculate number of partitions
         break;
     }
     case opCode::fn_np: /* next prime */ {
@@ -1798,7 +1819,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
     }
     case opCode::fn_r3h: {
         if (p[0] < 0) {
-            return retCode::INVALID_PARAM;  // parameter out of range
+            result = 0;
+            break;
         }
         if (mpz_sizeinbase(ZT(p[0]), 10) > 35)
             return retCode::NUMBER_TOO_HIGH;  /* very large numbers cause pari stack overflow */
@@ -1813,7 +1835,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         if (mpz_sizeinbase(ZT(p[0]), 10) >35)
             return retCode::NUMBER_TOO_HIGH;    /* very large numbers cause pari stack overflow */
         if (p[0] < 0)
-            return retCode::INVALID_PARAM;
+            return retCode::NUMBER_TOO_LOW;
         result = Hclassno12(p[0]);  /* returns 12 x hurwitz class number */
         break;
     }
@@ -1869,7 +1891,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         break;
     }
     case opCode::fn_sqrt: {
-        if (p[0] < 0) return retCode::INVALID_PARAM;
+        if (p[0] < 0) return retCode::NUMBER_TOO_LOW;
         mpz_sqrt(ZT(result), ZT(p[0]));  /* result = square root of p[0]*/
         break;
     }
@@ -1894,8 +1916,8 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             return retCode::NUMBER_TOO_HIGH;
         }
 
-        long long temp = ZnumToLong(ZT(p[1]));
-        mpz_root(ZT(result), ZT(p[0]), temp);  /* result = nth root of p[0]*/
+        long long temp2 = ZnumToLong(ZT(p[1]));
+        mpz_root(ZT(result), ZT(p[0]), temp2);  /* result = nth root of p[0]*/
         break;
     }
     case opCode::fn_bpsw:    /* Baillie-Pomerance-Selfridge-Wagstaff probabilistic
@@ -1978,11 +2000,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         roots = ModSqrtQE(p[0], p[1]);
         if (verbose > 0) {
             if (roots.empty())
-                gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
+                gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", ZT(p[0]), ZT(p[1]));
             else {
-                gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
+                gmp_printf("modsqrt(%Zd, %Zd) = ", ZT(p[0]), ZT(p[1]));
                 for (Znum r : roots)
-                    gmp_printf("%Zd, ", r);
+                    gmp_printf("%Zd, ", ZT(r));
                 std::putchar('\n');
             }
         }
@@ -2003,11 +2025,11 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         roots = ModSqrt(p[0], p[1]);  /* uses Tonelli-Shanks algorithm */
         if (verbose > 0) {
             if (roots.empty())
-                gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", p[0], p[1]);
+                gmp_printf("modsqrt(%Zd, %Zd) has no roots \n", ZT(p[0]), ZT(p[1]));
             else {
-                gmp_printf("modsqrt(%Zd, %Zd) = ", p[0], p[1]);
+                gmp_printf("modsqrt(%Zd, %Zd) = ", ZT(p[0]), ZT(p[1]));
                 for (Znum r : roots)
-                    gmp_printf("%Zd, ", r);
+                    gmp_printf("%Zd, ", ZT(r));
                 std::putchar('\n');
             }
         }
@@ -2156,7 +2178,7 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         primeFactors(n, f);  /* get prime factors of n in f */
         if (f.factorlist[f.factorcount - 1][0] > INT_MAX)
             return retCode::NUMBER_TOO_HIGH;  /* largest prime factor > INT_MAX */
-        result = pisanof(n, f);
+        result = pisanof(f);
         break;
     }
     case opCode::fn_core: /* unique squarefree integer d dividing n such that
@@ -2182,9 +2204,9 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
         }
         break;
     }
-    case opCode::fn_iscarmichael: {/* returns 0 for Carmichael number 
+    case opCode::fn_iscarmichael: /* returns 0 for Carmichael number 
         (probability = 1 - 2^(-tries),  1 for composite non-Carmichael numbers, 
-        and 2 for prime numbers. */
+        and 2 for prime numbers. */ {
         int tries;
         if (p.size() == 1) {
             result = isCarmichael(p[0]);  /* use default number of tries */
@@ -2274,10 +2296,10 @@ static void printTokens(const std::vector <token> expr) {
     for (int ix = 0; ix < expr.size(); ix++) {
         switch (expr[ix].typecode) {
         case types::number:
-            std::cout << expr[ix].value << ' ';
+            std::cout << expr[ix].value << ' ';  /* number value (displayed in decimal) */
             break;
         case types::func:
-            std::cout << functionList[expr[ix].function].fname << ' ';
+            std::cout << functionList[expr[ix].function].fname << ' '; /* function name */
             break;
         case types::comma:
             std::cout << ',';
@@ -2299,7 +2321,7 @@ static void printTokens(const std::vector <token> expr) {
             }
             else {
                 int ixx = expr[ix].function; 
-                /* search for oper code in list of operators */
+             
                 std::cout << operators[ixx].oper << ' ';
             }
             break;
@@ -2345,12 +2367,27 @@ static void operSearch(const std::string &expr, int &opcode) {
 
 /* convert an expression which is already tokenised to reverse polish.
 Syntax checking is done, but it is not guaranteed that all syntax errors will
-be detected. If an error is detected return EXIT_FAIL, otherwise EXIT_SUCCESS.
+be detected. If an error is detected return an error code >=1, 
+otherwise EXIT_SUCCESS (= 0).
 The well-known shunting algorithm is used, but for function parameters a recursive
 call to reversePolish is made, which also takes care of nested function calls.
 Also, the initial tokenisation does not distinguish unary - from normal -, so
 that is deduced from the sequence of tokens and the op code is changed if necessary.
-Unary + is recognised as a special case which requires no output */
+Unary + is recognised as a special case which requires no output 
+error codes:
+1    number directly follows a number or user variable without an operator between
+2    user variable directly follows a number or user variable without an operator between
+3    function directly follows a user variable or number without an operator between
+4    function name not followed by (
+5 or 6  function parameter not found, or invalid
+7    function has wrong number of parameters
+8    operator not preceded by a number or expression
+9    unary operator preceded by a number or expression
+10   left bracket found when not allowed
+11   right bracket found when not allowed
+12   missing an opening bracket (program bug?)
+13   invalid token found (program bug)
+*/
 static int reversePolish(token expr[], const int exprLen, std::vector <token> &rPolish) {
     int exprIndex = 0;
 
@@ -2365,7 +2402,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
         case types::number: {
             if (leftNumber)
-                return EXIT_FAILURE;  /* syntax error */
+                return 1;  /* syntax error */
 
             rPolish.push_back(expr[exprIndex]);
             leftNumber = true;
@@ -2375,7 +2412,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         /* a user variable is treated the same as a number */
         case types::uservar: {
             if (leftNumber)
-                return EXIT_FAILURE;  /* syntax error */
+                return 2;  /* syntax error */
 
             rPolish.push_back(expr[exprIndex]);
             leftNumber = true;
@@ -2385,24 +2422,25 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         case types::func: {
             /* process function. 1st get number of parameters */
             if (leftNumber)
-                return EXIT_FAILURE; /* syntax error */
+                return 3; /* syntax error function name followed number */
             int numparams = expr[exprIndex].numops;
 
             if (expr[exprIndex + 1].typecode != types::Operator ||
                 expr[exprIndex + 1].oper != opCode::leftb) {
-                return EXIT_FAILURE; /* function name not followed by (*/
+                return 4; /* function name not followed by (*/
             }
             int paramLen = 0;
             int ix3 = 0;
-            int pcount = 1;
+            short pcount = 1;
             for (; ; pcount++) {
 
                 /* find delimiter marking end of parameter*/
                 nextsep(expr + exprIndex + 2 + ix3, paramLen); // get next , or )
                 if (expr[exprIndex + 2 + ix3 + paramLen].typecode == types::end)
-                    return EXIT_FAILURE; /* parameter sep. not found */
+                    return 5; /* parameter sep. not found */
                 if (paramLen == 0)
-                    return EXIT_FAILURE;  /* syntax error */
+                    return 6;  /* syntax error */
+                /* convert 1 parameter of function to reverse polish */
                 int rv = reversePolish(expr + exprIndex + 2 + ix3, paramLen, rPolish);
                 if (rv != EXIT_SUCCESS)
                     return rv;  /* syntax error? */
@@ -2410,14 +2448,14 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
                 if (expr[exprIndex + 1 + ix3].typecode == types::Operator &&
                     expr[exprIndex + 1 + ix3].oper == opCode::rightb)
-                    break; /* ) found */
+                    break; /* ) found i.e. all function parameters processed */
             }
             if (numparams == SHORT_MAX) {
                 /* variable number of parameters; use actual number */
                 expr[exprIndex].numops = pcount;  
             }
             else if (pcount != numparams)
-                return EXIT_FAILURE;  /* wrong number of parameters */
+                return 7;  /* wrong number of parameters */
 
             rPolish.push_back(expr[exprIndex]); /* copy function token to output */
             exprIndex += (ix3 + 1); /* move past ) after function name */
@@ -2450,12 +2488,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                         break; /* step past unary plus; no output required*/
                     }
                     else if (!unary || !pre)
-                        return EXIT_FAILURE;  /* non-unary operator not preceded by a number or expression */
+                        return 8;  /* non-unary operator not preceded by a number or expression,
+                                      or unary operator that should follow a number doesn't have one */
                 }
                 else {
                     /* operator follows expression */
                     if (unary && pre)
-                        return EXIT_FAILURE; /* unary operator preceded by a number or expression */
+                        return 9; /* unary operator preceded by a number or expression */
                 }
 
                 /* Transfer higher priority operators from stack to output.
@@ -2489,13 +2528,13 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
 
             else if (expr[exprIndex].oper == opCode::leftb) {
                 if (leftNumber)
-                    return EXIT_FAILURE; /* syntax error */
+                    return 10; /* syntax error */
                 operStack.push_back(expr[exprIndex]);
             }
 
             else if (expr[exprIndex].oper == opCode::rightb) {
                 if (!leftNumber)
-                    return EXIT_FAILURE; /* syntax error */
+                    return 11; /* syntax error */
                 /* right bracket; remove stacked operators up to left bracket */
                 while (operStack.size() > 0
                     && operStack.back().typecode == types::Operator
@@ -2504,7 +2543,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
                     operStack.pop_back();
                 };
                 if (operStack.empty())
-                    return EXIT_FAILURE;  /* missing ( */
+                    return 12;  /* missing ( */
                 operStack.pop_back(); /* discard left bracket */
                 leftNumber = true;
             }
@@ -2513,7 +2552,7 @@ static int reversePolish(token expr[], const int exprLen, std::vector <token> &r
         }
 
         default:
-            return EXIT_FAILURE;  /* unkown token in input */
+            return 13;  /* comma, error, end or unknown token in input */
         }
 
         exprIndex++;  /* move index to next token */
@@ -2536,8 +2575,12 @@ If there is more than one number on the stack at the end, or at any time there
 are not enough numbers on the stack to perform an operation an error is reported.
 (this would indicate a syntax error not detected earlier) 
 If the final operation is a function call that returns multiple values,
-multiV is set to true, otherwise it is set to false*/
-static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *multiV) {
+multiV is set to true, otherwise it is set to false. 
+When expression evaluation is successful return EXPR_OK.
+If an error occurs return an error code and moreinfo may contain more diagnostics,
+e.g. for SYNTAX_ERROR moreinfo will be 21, 22, 23 or 24. */
+static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, 
+    bool *multiV, long long *const moreinfo) {
     std::stack <token> nums;   /* this stack holds both numbers and user variables */
     Znum val;
     std::vector <Znum> args;
@@ -2570,16 +2613,22 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                 opCode oper = rPolish[index].oper;
 
                 int NoOfArgs = rPolish[index].numops;
-                if (NoOfArgs > nums.size())
+                if (NoOfArgs > nums.size()) {
+                    if (moreinfo != nullptr)
+                        *moreinfo = 21;
                     return retCode::SYNTAX_ERROR;  /* not enough operands on stack*/
+                }
 
                 if (oper == opCode::assign) {
                     /* assignment operator is fully processed here */
                     temp = nums.top();  /* remove top token from stack */
                     nums.pop();
 
-                    if (nums.top().typecode != types::uservar)
-                        return retCode::SYNTAX_ERROR;
+                    if (nums.top().typecode != types::uservar) {
+                        if (moreinfo != nullptr)
+                            *moreinfo = 22;
+                        return retCode::SYNTAX_ERROR;  /* don't have user var name before assignment operator */
+                    }
                     size_t Userix = nums.top().userIx;
 
                     /* store new value in user variable */
@@ -2587,9 +2636,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                         uvars.vars[Userix].data = temp.value;
                     else if (temp.typecode == types::uservar)
                         uvars.vars[Userix].data = uvars.vars[temp.userIx].data;
-                    else
+                    else {
+                        if (moreinfo != nullptr)
+                            *moreinfo = 23;
                         return retCode::SYNTAX_ERROR;  /* wrong type of token on stack */
-
+                    }
                     nums.pop();  /* remove variable from stack */
                     nums.push(temp);  /* put value back on stack */
                 }
@@ -2612,8 +2663,12 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
                         args.push_back(rPolish[index].value);
                     }
                     retcode = ComputeSubExpr(oper, args, val);
-                    if (retcode != retCode::EXPR_OK)
-                        return retcode;
+                    if (retcode != retCode::EXPR_OK) {
+                        if (moreinfo != nullptr)
+                            *moreinfo = (long long)oper;
+                        return retcode;   /* error while processing function or operator.
+                                          Stop processing expression */
+                    }
                     temp.typecode = types::number;
                     temp.value = val;  /* put value returned by function or operator */
                     nums.push(temp);  /*  onto stack */
@@ -2637,8 +2692,11 @@ static retCode evalExpr(const std::vector<token> &rPolish, Znum & result, bool *
             *multiV = multiValue;
         return retCode::EXPR_OK;
     }
-    else
+    else {
+        if (moreinfo != nullptr)
+            *moreinfo = 24;
         return retCode::SYNTAX_ERROR;  /* too many operands on stack*/
+    }
 }
 
 /*
@@ -2665,18 +2723,21 @@ It was divided into 3 parts:
     returns multiple values e.g. modsqrt() then the parameter multiV 
     is set to 'true' and the full set of return values is returned in global 
     vector roots */
-retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV) {
+retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *multiV,
+    long long *const moreinfo) {
     retCode rv;
     std::vector <token> tokens;
     std::vector <token> rPolish;
 
+    if (moreinfo != nullptr)
+        *moreinfo = 0;
     rv = tokenise(expr, tokens, asgCt); /* 'tokenise' the expression */
     if (rv == retCode::EXPR_OK) {
         rPolish.clear();
         int ircode = reversePolish(tokens.data(), (int)tokens.size(), rPolish);
         /* convert expression to reverse polish */
         if (ircode == EXIT_SUCCESS) {
-            rv = evalExpr(rPolish, Result, multiV);
+            rv = evalExpr(rPolish, Result, multiV, moreinfo);
             if (rv != retCode::EXPR_OK && verbose > 0) {
                 std::cout << "Expression could not be evaluated \n";
                 printTokens(rPolish);
@@ -2684,13 +2745,15 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
         }
         else {
             if (verbose > 0) {
-                std::cout << "** error: could not convert to reverse polish \n";
+                std::cout << "** error: could not convert to reverse polish: error code " << ircode << "\n";
                 printTokens(rPolish);
             }
+            if (moreinfo != nullptr)
+                *moreinfo = ircode;  /* ircode contains value 1 to 13, returned by reversePolish */
             return retCode::SYNTAX_ERROR;
         }
     }
-    else {
+    else {  /* unable to tokenise expression */
         if (verbose > 0) {
             std::cout << "** error: could not tokenise expression «"
                 << expr << "»\n";
@@ -2702,15 +2765,19 @@ retCode ComputeExpr(const std::string &expr, Znum &Result, int &asgCt, bool *mul
             //}
             //std::putchar('\n');
         }
+        if (moreinfo != nullptr)
+            *moreinfo = 20;  /* unable to tokenise expression */
     }
 
-    return rv;
+    return rv; /* value in rv is either EXPR_OK, or error code from tokenise or evalExpr functions */
 }
 
 /* evaluate 1 or more expressions, separated by commas */
 retCode ComputeMultiExpr(std::string expr, Znum result) {
     std::string subExpr;
     retCode rv = retCode::EXPR_OK;
+    bool multiv;
+    long long moreinfo;
     size_t subStart = 0, subEnd;
     int bc = 0;   /* bracket count */
     int asgCt = 0;   /* number of assignment operators */
@@ -2730,9 +2797,9 @@ retCode ComputeMultiExpr(std::string expr, Znum result) {
         subExpr = expr.substr(subStart, subEnd - subStart);
         removeInitTrail(subExpr);  /* remove initial & trailing blanks */
         removeIntSpace(subExpr);   /* remove spaces between digits */
-        rv = ComputeExpr(subExpr, result, asgCt);
+        rv = ComputeExpr(subExpr, result, asgCt, &multiv, &moreinfo);
         if (rv != retCode::EXPR_OK) {
-            textError(rv);   // invalid expression; print error message
+            textError(rv, moreinfo);   // invalid expression; print error message
             return rv;
         }
         else {
@@ -2786,11 +2853,11 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
         if (exprIndex >= expr.length())
             break;
 
-        /* first look for operators. */
+        /* first look for operators. Brackets are classed as operators */
         operSearch(expr.substr(exprIndex), opIndex);
         if (opIndex != -1) {
             /* found operator e.g. + - etc. */
-            nxtToken.function = opIndex;
+            nxtToken.function = decltype(nxtToken.function)(opIndex);
             nxtToken.typecode = types::Operator;
             nxtToken.oper = operators[opIndex].operCode;
             //nxtToken.numops = opr[(int)nxtToken.oper].numOps;
@@ -2832,7 +2899,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
                         (charValue >= 'A' && charValue <= 'F') ||
                         (charValue >= 'a' && charValue <= 'f')) {
                         exprIndexAux++;
-                        digits.push_back(charValue);
+                        digits.push_back((char)charValue);
                     }
                     else {
                         break;   // jump out of inner while loop
@@ -2853,7 +2920,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
                     charValue = expr[exprIndexAux];
                     if (charValue >= '0' && charValue <= '9') {
                         exprIndexAux++;
-                        digits.push_back(charValue);
+                        digits.push_back((char)charValue);
                     }
                     else {
                         break;    // jump out of inner while loop
@@ -2875,7 +2942,7 @@ static retCode tokenise(const std::string expr, std::vector <token> &tokens, int
                     functionList[ix].fname, std::strlen(functionList[ix].fname)) == 0) {
                     /* we have a match to a function name */
                     nxtToken.typecode = types::func;
-                    nxtToken.function = int(ix);        /* save index into functionList*/
+                    nxtToken.function = decltype(nxtToken.function)(ix);        /* save index into functionList*/
                     nxtToken.numops = functionList[ix].NoOfParams;     
                     nxtToken.oper = functionList[ix].fCode;  
                     exprIndex += (int)std::strlen(functionList[ix].fname); 
@@ -2960,7 +3027,7 @@ static int new_uvar(const char *name) {
 
 //look for 'name' in the global uvars structure
 //if found, copy in data and return 0 else return 1
-static int set_uvar(const char *name, const Znum &data) {
+int set_uvar(const char *name, const Znum &data) {
     int i;
 
     for (i = 0; i < uvars.num; i++) {
@@ -3004,5 +3071,5 @@ void printvars(std::string name) {
     else
         for (int i = 0; i < uvars.num; i++)
             if (name.size() == 0 || std::strcmp(uvars.vars[i].name, name.c_str()) == 0)
-            gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, uvars.vars[i].data);
+            gmp_printf("%-16s  %Zd\n", uvars.vars[i].name, ZT(uvars.vars[i].data));
  }

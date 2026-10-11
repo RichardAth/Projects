@@ -663,7 +663,7 @@ static bool test9once(long long a, long long m, std::vector <long long> &r2,
     if (error) {
         printf_s("Modsqrt(%lld, %lld), Znum results don't match! \nGot: ", a, m);
         for (auto r : r3) {
-            gmp_printf("%Zd, ", r);
+            gmp_printf("%Zd, ", ZT(r));
         }
         if (r2.empty())
             printf_s("\nActually no solutions\n");

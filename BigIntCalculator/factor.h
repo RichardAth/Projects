@@ -152,7 +152,7 @@ public:
 		if (this->f.empty())
 			return 0;
 		for (auto i : this->f) {
-			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+			mpz_pow_ui(ZT(term), ZT(i.Factor), (unsigned int)i.exponent - 1);  // p^(e-1)
 			term = term * (i.Factor - 1);	                        // p^(e-1)*(p-1)
 			result *= term;
 		}
@@ -168,7 +168,7 @@ public:
 		if (this->f.empty())
 			return 0;
 		for (auto i : this->f) {
-			mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+			mpz_pow_ui(ZT(term), ZT(i.Factor), (unsigned int)i.exponent - 1);  // p^(e-1)
 			term = term * (i.Factor + 1);	                     // p^(e-1)*(p+1)
 			result *= term;
 		}
@@ -213,9 +213,9 @@ See also https://oeis.org/A002322 */
 		Znum result = 1, term;
 		for (auto i : this->f) {
 			if (i.Factor == 2 && i.exponent > 2)
-				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 2);  // p^(e-2)
+				mpz_pow_ui(ZT(term), ZT(i.Factor), (unsigned int)i.exponent - 2);  // p^(e-2)
 			else {
-				mpz_pow_ui(ZT(term), ZT(i.Factor), i.exponent - 1);  // p^(e-1)
+				mpz_pow_ui(ZT(term), ZT(i.Factor), (unsigned int)i.exponent - 1);  // p^(e-1)
 				term = term * (i.Factor - 1);	                     // (p^(e-1)-1)*(p-1)
 			}
 			mpz_lcm(ZT(result), ZT(result), ZT(term));
@@ -429,24 +429,24 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 		return result;
 	}
 
-/*  get sum of n-th power of divisors. If n =0 get number of divisors. If
-    n = 1 get sum of divisors. */
-	Znum DivisorSum(int n = 1) const {
+/*  get sum of n-th power of divisors. If num =0 get number of divisors. If
+    num = 1 get sum of divisors. */
+	Znum DivisorSum(int num = 1) const {
 		Znum result = 1, term;
 		if (this->f.empty())
 			return 0;
 		if (this->f[0].Factor == 1)
 			return 1;		// special case: if original number is 1
-		if (n == 0) {
+		if (num == 0) {
 			for (auto i : this->f) {
 				result *= i.exponent + 1;
 			}
 			return result;
 		}
-		else if (n > 0) {
+		else if (num > 0) {
 			for (auto i : this->f) {
-				mpz_pow_ui(ZT(term), ZT(i.Factor), (i.exponent + 1) * n);  // p^(e+1)n
-				term = (term - 1) / (power(i.Factor, n) - 1);	           // (p^(e+1)-1)/(p^n -1)
+				mpz_pow_ui(ZT(term), ZT(i.Factor), (unsigned int)(i.exponent + 1) * num);  // p^(e+1)num
+				term = (term - 1) / (power(i.Factor, (unsigned int)num) - 1);	           // (p^(e+1)-1)/(p^num -1)
 				result *= term;
 				if (numLimbs(result) > 1560)
 					return -1;  /* value would exceed 30,000 digits*/
@@ -454,13 +454,13 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 			return result;
 		}
 		else
-			return -1;  /* n is -ve */
+			return -1;  /* num is -ve */
 	}
 
 /* get number of divisors that are perfect squares, or cubes, or 4th power etc
  Divisor 1 is excluded 
  'roundness' is as defined in project Euler problem 926 */
-	long long roundness(long long mod) const {
+	long long roundness(unsigned long long mod) const {
 		long long r2 = 0;
 		std::map <unsigned int, unsigned int> dist;
 		unsigned int max;
@@ -474,7 +474,7 @@ e.g. 325 = 18²+1 = 17²+6² = 10²+15² so R2P(325) = 3
 
 		/* dist counts tne number of factors with exponent 1, 2 etc */
 		for (auto i : this->f) {
-			dist[i.exponent]++;
+			dist[(unsigned int)i.exponent]++;
 		}
 		auto it = dist.crbegin();
 		max = (*it).first;   /* get largest exponent*/

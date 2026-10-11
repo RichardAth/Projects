@@ -43,12 +43,13 @@ char* ptrOutput;
 static std::vector <Znum> roots;
 
 /* interface matcher between DA's code and expression evaluation function */
-static retCode ComputeExpression(const char* exprA, BigInteger* result, bool dummy) {
+static retCode ComputeExpression(const char* exprA, BigInteger* result, long long &moreinfo) {
     std::string exp = exprA;  /* assumes that exprA is a null-terminated string */
     Znum value;
     int asgct;
     bool multiv;
-    retCode rc = ComputeExpr(exp, value, asgct, &multiv);
+    
+    retCode rc = ComputeExpr(exp, value, asgct, &multiv, &moreinfo);
     //*result = value;  /* copy value of expression */
     auto rv = ZtoBig(*result, value);   /* convert to BigInteger */
     if (rv)
@@ -239,7 +240,7 @@ static void SolveIntegerEquation(const BigInteger& ValA, const BigInteger& ValB,
 
 /* send error message to stdout */
 static void textErrorQuadMod(retCode rc){
-    textError(rc);
+    textError(rc, 0);
 }
 
 /* solve Quadratic modular equations of the form a⁢x² + b⁢x + c ≡ 0 (mod n) where
@@ -317,29 +318,30 @@ static retCode quadmodText(const char* aText, const char* bText, const char* cTe
     char* ptrBeginSol;
     retCode rc;     /* return code*/
     ptrOutput = output;   /* buffer for output */
+    long long moreinfo = 0;
 
-    rc = ComputeExpression(aText, &ValA, false);  /* convert a from text to BigInteger */
+    rc = ComputeExpression(aText, &ValA, moreinfo);  /* convert a from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente cuadrático: " : "Quadratic coefficient: ") ;
-        textError(rc);
+        textError(rc, moreinfo);
         return rc;
     }
-    rc = ComputeExpression(bText, &ValB, false);  /* convert b from text to BigInteger */
+    rc = ComputeExpression(bText, &ValB, moreinfo);  /* convert b from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Coeficiente lineal: " : "Linear coefficient: ");
-        textError(rc);
+        textError(rc, moreinfo);
         return rc;
     }
-    rc = ComputeExpression(cText, &ValC, false);   /* convert c from text to BigInteger */
+    rc = ComputeExpression(cText, &ValC, moreinfo);   /* convert c from text to BigInteger */
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Término independiente: " : "Constant coefficient: ");
-        textError(rc);
+        textError(rc, moreinfo);
         return rc;
     }
-    rc = ComputeExpression(modText, &ValN, false);   /* convert mod from text to BigInteger */
+    rc = ComputeExpression(modText, &ValN, moreinfo);   /* convert mod from text to BigInteger */
     if ((rc == retCode::EXPR_OK) && (ValN.sign == SIGN_NEGATIVE))
     {
         rc = retCode::EXPR_MODULUS_MUST_BE_NONNEGATIVE;
@@ -347,7 +349,7 @@ static retCode quadmodText(const char* aText, const char* bText, const char* cTe
     if (rc != retCode::EXPR_OK)
     {
         std::cout << (lang ? "Módulo: " : "Modulus: ");
-        textError(rc);
+        textError(rc, moreinfo);
         return rc;
     }
     if (ptrOutput == output)

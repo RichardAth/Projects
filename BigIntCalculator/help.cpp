@@ -279,16 +279,16 @@ retry:
                 if (lineCount > 27) {
                     std::wcout << L"** More (y/n) ? ";  /* pause every 27 lines of output */
                     std::getline(std::cin, expr);
-                    expr[0] = std::toupper(expr[0]);
+                    expr[0] = (char)std::toupper(expr[0]);
                     if (expr[0] != 'Y')
                         break;
                     else
                         lineCount = 0;
                 }
                 /* convert ascii or utf-8 to wide chars, print line */
-                auto rv = MultiByteToWideChar(CP_UTF8, 0, nstr.c_str(), 
+                auto rv2 = MultiByteToWideChar(CP_UTF8, 0, nstr.c_str(), 
                     (int)nstr.size(), wstr, sizeof(wstr)/2);
-                assert(rv > 0);
+                assert(rv2 > 0);
                 wprintf_s(L"%s", wstr);
                 lineCount++;
             }

@@ -39,7 +39,7 @@ void writeIni(void);
 void generatePrimes(unsigned long long int max_val);
 unsigned long long llSqrt(const unsigned long long n);
 bool getBit(const unsigned long long int x, const bool array[]);
-void textError(retCode rc);
+void textError(retCode rc, long long moreinfo);
 /* remove initial & trailing spaces, tabs, etc from msg (\t, \r, \n, \v   and \f) */
 void removeInitTrail(std::string& msg);
 /* remove any spaces between 2 digits, also multiple consecutive spaces reduced to 1 space */
@@ -97,11 +97,14 @@ extern std::string MsieveLogPath;
 extern bool msieve;
 
 /* evalexpr.cpp */
-retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, bool* multiV = nullptr);
+retCode ComputeExpr(const std::string& expr, Znum& Result, int& asgCt, 
+	bool* multiV = nullptr, long long *const moreinfo =nullptr);
 /* evaluate 1 or more expressions, separated by commas */
 retCode ComputeMultiExpr(std::string expr, Znum result);
 void printvars(std::string name);
+void initFuncNames();
 extern std::vector <Znum> roots;   /* used by functions that return multiple values */
+extern std::vector<std::string> funcNames;
 Znum llt(const Znum& p);
 Znum R4(Znum num);
 

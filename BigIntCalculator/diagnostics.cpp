@@ -94,7 +94,7 @@ DWORD StackTrace(const EXCEPTION_POINTERS *ep)
 {
     HANDLE process = GetCurrentProcess();
     HANDLE hThread = GetCurrentThread();
-    int frame_number = 0;
+    // int frame_number = 0;
     DWORD offset_from_symbol = 0;
     IMAGEHLP_LINE64 line = { 0 };
     std::vector<module_data> modules;
@@ -185,7 +185,7 @@ DWORD StackTrace2(void)
 {
     HANDLE process = GetCurrentProcess();
     HANDLE hThread = GetCurrentThread();
-    int frame_number = 0;
+    // int frame_number = 0;
     DWORD offset_from_symbol = 0;
     IMAGEHLP_LINE64 line = { 0 };
     std::vector<module_data> modules;
@@ -1048,7 +1048,7 @@ void testerrors(void) {
             break;
         }
     case 14: /* SEH exception */ {
-            int x = 1, y = 0, z;
+            int x = 1, z;
             z = x / (2 - x - x);  /* divide by zero */
             printf_s("z=%d\n", z);
             break;

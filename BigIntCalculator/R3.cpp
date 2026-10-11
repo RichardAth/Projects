@@ -538,7 +538,7 @@ also http://oeis.org/A004018
 generatePrimes must have been called first. Highest prime calculated must be
 >= sqrt(n).
 example: R2(4) = 4; 2^2+0, 0+2^2, (-2)^2+0, 0+(-2)^2 */
-unsigned __int64 R2(const unsigned __int64 n) {
+static unsigned __int64 R2(const unsigned __int64 n) {
     if (n == 0)
         return 1;
     if (n % 4 == 3)

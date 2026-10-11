@@ -20,7 +20,7 @@ uint128_t divide_uint128_by_uint64(uint128_t dividend, uint64_t divisor,
 	uint64_t* remainder);
 
 Znum             modMult(const Znum& a, const Znum& b, const Znum& mod);
-extern unsigned __int64 R2(const unsigned __int64 n);
-extern unsigned __int64 R3(__int64 n);
+// unsigned __int64 R2(const unsigned __int64 n);
+unsigned __int64 R3(__int64 n);
 /* get prime factors of tnum, using trial division */
 unsigned int primeFactors(unsigned __int64 tnum, factorsS& f);
