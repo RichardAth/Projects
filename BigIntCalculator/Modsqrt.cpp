@@ -3,20 +3,12 @@
 /* return true if n is a quartic residue modulo mod, otherwise return false */
 static bool isQuarticResidue(Znum n, Znum mod);
 
-// calculate x^n. Returns a Big Integer so should be no overflow problem.
-static Znum powerBi(const __int64 x, unsigned __int64 n) {
-    Znum result;
-    mpz_ui_pow_ui(ZT(result), x, n);
-    return result;
-}
-
 // returns 2 ^ exp. exp can be any number >= 0
 static Znum pow2bi(unsigned __int64 exp) {
     Znum result = 1;
     mpz_mul_2exp(ZT(result), ZT(result), exp);
     return result;
 }
-
 
 
 /* find least significant 1-bit in num, equivalent to counting 0-bits, starting from 
@@ -34,11 +26,11 @@ static long long extract(const Znum& num, const Znum p) {
 }
 
 /* print roots only if verbose > 1 */
-static void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &roots) {
+static void printroots(const Znum& x, const Znum& m, const std::vector<Znum> &rootsv) {
     if (verbose > 1) {
         std::cout << "modsqrt(" << x << ", " << m << ") = ";
-        if (!roots.empty())
-            for (auto r : roots)
+        if (!rootsv.empty())
+            for (auto r : rootsv)
                 std::cout << r << ", ";
         else
             std::cout << "<empty>";
@@ -156,7 +148,7 @@ static std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int 
     /* this part was derived from Wikipedia
     see https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#Tonelli's_algorithm_will_work_on_mod_p^k
     The explanation there is not very clear but I got working code out of it. */
-    rx = primeModSqrt(c, prime);   /* rx^2 ≡ x (mod prime) */
+    rx = primeModSqrt(c, prime);   /* rx^2 ≡ c (mod prime) */
     if (rx.empty()) {
         roots.clear();
         printroots(c, mod, roots);
@@ -178,7 +170,7 @@ static std::vector <Znum> ModSqrt2x(const Znum &c, const Znum &prime, const int 
     }
     else {
         if (verbose > 1 || root > 0) {
-            std::cerr << "discarded invalid root: x = " << c << " mod = " << mod << " root = " << root << '\n';
+            std::cerr << "discarded invalid root: c = " << c << " mod = " << mod << " root = " << root << '\n';
         }
     }
     printroots(c, mod, roots);

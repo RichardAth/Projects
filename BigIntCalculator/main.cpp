@@ -1464,7 +1464,7 @@ static void doTests3(void) {
         if (diff != 0) {              // verify multiplication
             std::cout << "a = " << a << " b = " << b << '\n';
             gmp_printf("prime     = %Zx \na * b = %Zx \n", ZT(prime), ZT(prod));
-            gmp_printf("diffference = %Zx \n", ZT(diff));
+            gmp_printf("difference = %Zx \n", ZT(diff));
         }
 
         pBI = aBI;
@@ -1530,7 +1530,7 @@ static void doTests3(void) {
         BigtoZ(prime, pBI);      // prime = pBI = aBI << 4
         p2 = a << 4;
         if (prime != p2) {
-            gmp_printf("a = %#Zx prime = %#Zx expected %#Zx \n", ZT(a), ZT(prime), p2);
+            gmp_printf("a = %#Zx prime = %#Zx expected %#Zx \n", ZT(a), ZT(prime), ZT(p2));
         }
 
 
@@ -1550,7 +1550,7 @@ static void doTests3(void) {
 
         pBI = aBI + INT_MAX;
         BigtoZ(prime, pBI);              // prime = pBI = aBI + max;
-        assert(prime == a + INT_MAX);    // veryify addition of int
+        assert(prime == a + INT_MAX);    // verify addition of int
 
         pBI = aBI + INT_MIN;
         BigtoZ(prime, pBI);              // prime = pBI = aBI + (-max);
@@ -1558,11 +1558,11 @@ static void doTests3(void) {
         if (prime != b1) {
             gmp_printf("a =%Zd prime = %Zd expected %Zd  \n", ZT(a), ZT(prime), ZT(b1));
         }
-        assert(prime == b1);       // veryify addition of -ve int
+        assert(prime == b1);       // verify addition of -ve int
 
         pBI = aBI - INT_MAX;
         BigtoZ(prime, pBI);               // prime = pBI = aBI - max;
-        assert(prime == a - INT_MAX);;    // veryify subtraction of int
+        assert(prime == a - INT_MAX);;    // verify subtraction of int
 
         pBI = aBI - (long long)INT_MIN;
         BigtoZ(prime, pBI);               // prime = pBI = aBI - max;

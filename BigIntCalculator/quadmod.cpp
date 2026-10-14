@@ -40,7 +40,7 @@ BigInteger ValC;
 BigInteger ValN;
 int SolNbr = 0;
 char* ptrOutput;
-static std::vector <Znum> roots;
+static std::vector <Znum> rootsV;
 
 /* interface matcher between DA's code and expression evaluation function */
 static retCode ComputeExpression(const char* exprA, BigInteger* result, long long &moreinfo) {
@@ -153,10 +153,10 @@ static void solms(const BigInteger* value, const BigInteger* pValA,
     Znum vZ;
 
     BigtoZ(vZ, *value);
-    roots.push_back(vZ);
+    rootsV.push_back(vZ);
     if (verbose > 1) {
         SolNbr++;
-        gmp_printf("solution nbr %4d %Zd ", SolNbr, vZ);
+        gmp_printf("solution nbr %4d %Zd ", SolNbr, ZT(vZ));
         printf_s("\na = ");
         PrintBigInteger(pValA, groupSize);
         printf_s(", b= ");
@@ -466,7 +466,7 @@ int quadModEqn(const std::vector<std::string>& p) {
     x^2 ≡ aa mod m */
 std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
-    roots.clear();
+    rootsV.clear();
     Znum am = aa%m;
     if (am < 0)
         am += m;  /* normalise a so it's in range 0 to m-1 */
@@ -479,8 +479,8 @@ std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
 
     if (m == 1) {
         /* every number ≡ 0 (mod 1)*/
-        roots.push_back(0);
-        return roots;
+        rootsV.push_back(0);
+        return rootsV;
     }
 
     a = -1;
@@ -491,8 +491,8 @@ std::vector <Znum> ModSqrtQE(const Znum& aa, const Znum& m) {
     SetCallbacksForSolveEquation(solms);
     SolNbr = 0;
     ModulusIsNotZero(a, b, c, n);  /* get the roots */
-    std::sort(roots.begin(), roots.end());
-    return roots;
+    std::sort(rootsV.begin(), rootsV.end());
+    return rootsV;
 }
 
 /* test quadratic modular equation solver */
@@ -558,20 +558,20 @@ void doTestsA(const std::vector<std::string> &p) {
             ValB = b;
             ValC = c;
             SolveIntegerEquation(ValA, ValB, ValC);
-            if (roots.size() > 0) {
+            if (rootsV.size() > 0) {
                 std::cout << "roots are: ";
-                for (int j = 0; j < roots.size(); j++) {
-                    std::cout << roots[j] << ", ";
+                for (int j = 0; j < rootsV.size(); j++) {
+                    std::cout << rootsV[j] << ", ";
 
                 }
                 std::putchar('\n');
-                for (int j = 0; j < roots.size(); j++)
-                    checkSolution(roots[j], a, b, c, n);
+                for (int j = 0; j < rootsV.size(); j++)
+                    checkSolution(rootsV[j], a, b, c, n);
             }
         }
         else {
             while (true) {
-                roots.clear();
+                rootsV.clear();
                 c %= n;
                 std::cout << "solve: " << a << "x² + "
                     << b << "x + " << c << " = 0 (mod " << n << ") \n";
@@ -580,17 +580,17 @@ void doTestsA(const std::vector<std::string> &p) {
                 ValC = c;
                 ValN = n;
                 ModulusIsNotZero(ValA, ValB, ValC, ValN);
-                if (roots.size() > 0) {
+                if (rootsV.size() > 0) {
                     std::cout << "roots are: ";
-                    for (int j = 0; j < roots.size(); j++) {
-                        std::cout << roots[j] << ", ";
+                    for (int j = 0; j < rootsV.size(); j++) {
+                        std::cout << rootsV[j] << ", ";
                         
                     }
                     std::putchar('\n'); 
-                    for (int j = 0; j < roots.size(); j++)
-                        checkSolution(roots[j], a, b, c, n);
+                    for (int j = 0; j < rootsV.size(); j++)
+                        checkSolution(rootsV[j], a, b, c, n);
                 }
-                if (roots.size() > 0 || i > p1)
+                if (rootsV.size() > 0 || i > p1)
                     break;
                 i++;
                 c++;       /* try again, with only c changed */

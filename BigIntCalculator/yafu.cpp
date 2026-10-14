@@ -571,8 +571,8 @@ bool callYafuOld(const Znum &num, fList &Factors) {
             len = pos2;
         else
             len = factors.size();
-        auto rv = mpz_set_str(ZT(f), factors.substr(0, len).c_str(), 10);
-        assert(rv == 0);
+        auto rv2 = mpz_set_str(ZT(f), factors.substr(0, len).c_str(), 10);
+        assert(rv2 == 0);
         insertBigFactor(Factors, f);     // put f into factor list
         fcount++;                        // increase count of factors found
         if (pos2 == std::string::npos)
@@ -601,7 +601,7 @@ static bool sanityCheck(const Znum& ToBeFactored, const std::vector<Znum>& facto
         gmp_printf("number to be factored from json record = %Zd\n"
             "original number to be factored        = %Zd\n"
             "We appear to be processing the wrong json record \n",
-            ToBeFactored, num);
+            ZT(ToBeFactored), ZT(num));
     }
 
     for (auto f : factors) {
