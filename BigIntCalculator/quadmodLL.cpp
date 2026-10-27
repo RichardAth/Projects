@@ -416,17 +416,17 @@ static void findQuadraticSolution(BigInteger* pSolution, int exponent)
             {
                 Const--;   // addbigint(&Const, -1);
             }
-            BigIntDivideBy2(&Const);          // floor(Const/2)
+            BigIntDivide2(Const);          // floor(Const/2)
             Const++;   // addbigint(&Const, 1);             // floor(Const/2) + 1
             Aux1 = Linear;     // CopyBigInt(&Aux1, &Linear);
             if (Aux1.sign == SIGN_NEGATIVE)
             {
                 Aux1--;  // addbigint(&Aux1, -1);
             }
-            BigIntDivideBy2(&Aux1);           // floor(Linear/2)
+            BigIntDivide2(Aux1);           // floor(Linear/2)
             Const += Aux1;   // BigIntAdd(&Const, &Aux1, &Const);
             Aux1 = Quadr;     // CopyBigInt(&Aux1, &Quadr);
-            BigIntDivideBy2(&Aux1);            // Quadr/2
+            BigIntDivide2(Aux1);            // Quadr/2
             Const += Aux1;   // BigIntAdd(&Const, &Aux1, &Const);
 
             // Linear <- 2*Quadr + Linear and Quadr <- 2*Quadr.
@@ -436,7 +436,7 @@ static void findQuadraticSolution(BigInteger* pSolution, int exponent)
         }
         else
         {        // Const is even.
-            BigIntDivideBy2(&Const);           // Const/2
+            BigIntDivide2(Const);           // Const/2
             Quadr *= 2; // BigIntMultiplyBy2(&Quadr);         // Quadr*2
         }
         Const &= Aux2; // (&Const, &Aux2, &Const);    // Reduce mod 2^expon
@@ -508,7 +508,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         // compute s = ((b/2)^2 - a*c)/a^2, q = odd part of s,
         // r = maximum exponent of power of 2 that divides s.
         tmp1 = *pValB;  // CopyBigInt(&tmp1, pValB);
-        BigIntDivideBy2(&tmp1);
+        BigIntDivide2(tmp1);
         tmp1 *= tmp1;   // (void)BigIntMultiply(&tmp1, &tmp1, &tmp1);  // (b/2)^2
         tmp2 = *pValA * *pValC;     // (void)BigIntMultiply(pValA, pValC, &tmp2);  // a*c
         tmp1 -= tmp2; // BigIntSubt(&tmp1, &tmp2, &tmp1);      // (b/2)^2 - a*c
@@ -562,7 +562,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         ComputeInversePower2(ValAOdd.limbs, tmp2.limbs, tmp1.limbs);
         setNbrLimbs(&tmp2);
         tmp1 = *pValB;  // CopyBigInt(&tmp1, pValB);
-        BigIntDivideBy2(&tmp1);               // b/2
+        BigIntDivide2(tmp1);               // b/2
         tmp1 *= tmp2;       // (void)BigIntMultiply(&tmp1, &tmp2, &tmp1);  // b/2a
         BigIntNegate(tmp1);                  // -b/2a
         tmp1 &= K1; // BigIntAnd(&tmp1, &K1, &tmp1);         // -b/2a mod 2^expon
@@ -576,7 +576,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         //BigIntMultiplyBy2(&Quadr);         // 2a
         Linear = *pValB;  // CopyBigInt(&Linear, pValB);        // b
         Const = *pValC;   // CopyBigInt(&Const, pValC);
-        BigIntDivideBy2(&Const);           // c/2
+        BigIntDivide2(Const);           // c/2
         findQuadraticSolution(&quad.Solution1[factorIndex], expon - 1);
         quad.Solution1[factorIndex] *= 2; // BigIntMultiplyBy2(&quad.Solution1[factorIndex]);
 
@@ -586,7 +586,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
         Const = *pValA;    // CopyBigInt(&Const, pValA);
         Const += *pValB;   // BigIntAdd(&Const, pValB, &Const);
         Const += *pValC;    //BigIntAdd(&Const, pValC, &Const);
-        BigIntDivideBy2(&Const);           // (a+b+c)/2
+        BigIntDivide2(Const);           // (a+b+c)/2
         findQuadraticSolution(&quad.Solution2[factorIndex], expon - 1);
         quad.Solution2[factorIndex] *= 2; // BigIntMultiplyBy2(&quad.Solution2[factorIndex]);
         quad.Solution2[factorIndex]++; // addbigint(&quad.Solution2[factorIndex], 1);
@@ -602,7 +602,7 @@ static bool SolveQuadraticEqModPowerOf2(int exponent, int factorIndex,
     return true;
 }
 
-/* uses global variable prime, Aux[3] to Aux[9], TestNbr, discriminant, 
+/* uses global variable prime, Aux[3] to Aux[9], TestNbr, discriminant,
 result returned in sqrRoot */
 static void ComputeSquareRootModPowerOfP(int nbrBitsSquareRoot)  {
     int correctBits;

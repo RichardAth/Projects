@@ -198,7 +198,7 @@ public:
 	friend bool ZtoBig(BigInteger &number, Znum numberZ);
 	friend void BigtoZ(Znum &numberZ, const BigInteger &number);
 	friend long long BigToLL(const BigInteger &num, int &exp);
-	friend void LLToBig(BigInteger &num, long long LL, int exp);
+	//friend void LLToBig(BigInteger &num, long long LL, int exp);
 	//friend int BigIntToBigNbr(const BigInteger &pBigInt, int BigNbr[]);
 	//friend void BigNbrToBigInt(BigInteger &pBigInt, const int BigNbr[], int nbrLenBigInt);
 	
@@ -430,7 +430,7 @@ void BigInteger2IntArray(/*@out@*/int* ptrValues, const BigInteger* bigint);
 void BigIntPowerOf2(BigInteger* pResult, int exponent);
 void AddBigNbr     (const limb* pNbr1, const limb* pNbr2, limb* pSum, int nbrLen);
 void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLen);
-void BigIntDivideBy2(BigInteger* nbr);
+// void BigIntDivideBy2(BigInteger* nbr);
 
 void CompressLimbsBigInteger(/*@out@*/limb* ptrValues, const BigInteger* bigint);
 void UncompressLimbsBigInteger(const limb* ptrValues, /*@out@*/BigInteger* bigint);

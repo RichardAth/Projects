@@ -134,6 +134,20 @@ Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer
 Dedekind(n)     : Dedekind psi function. Product of p^(e-1)(p+1) where p=prime 
                   factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
+isprimex(n [,flag]) : returns zero if n is composite, -1 if it is a prime. Uses
+                  the PARI/GP isprime function, which is much more sophisticated 
+                  than the built-in isprime function. If flag = 0 (default value), 
+                  use a combination of:
+                  Baillie-Pomerance-Selfridge-Wagsta compositeness test (BPSW),
+                  Selfridge "p - 1" test if n-1 is smooth enough,
+                  Adleman-Pomerance-Rumely-Cohen-Lenstra (APRCL) for general 
+                   medium-sized x (less than 1500 bits),
+                  Atkin-Morain's Elliptic Curve Primality Prover (ECPP) for general 
+                   large x.
+                  If flag = 1, use Selfridge-Pocklington-Lehmer "\p-1" test; this 
+                  is likely to be very slow.
+                  If flag = 2, use APRCL only.
+                  If flag = 3, use ECPP only
 BPSW(n)         : Baillie-PSW primality test. It returns zero if n is composite, 
                   4 for probable prime, 3 for definite prime, 1 or 2 for base-2 
                   pseudoprime which is NOT prime.
@@ -828,6 +842,20 @@ Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime
                 factor of n and e=exponent of that factor. 
 [ISPRIME]
 IsPrime(n)  returns zero if n is composite, -1 if it is a probable prime.
+[ISPRIMEX]
+isprimex(n [,flag]) : returns zero if n is composite, -1 if it is a prime. Uses
+the PARI/GP isprime function, which is much more sophisticated than the built-in 
+isprime function. If flag = 0 (default value), use a combination of:
+                  Baillie-Pomerance-Selfridge-Wagsta compositeness test (BPSW),
+                  Selfridge "p - 1" test if n-1 is smooth enough,
+                  Adleman-Pomerance-Rumely-Cohen-Lenstra (APRCL) for general 
+                   medium-sized x (less than 1500 bits, about 450 digits),
+                  Atkin-Morain's Elliptic Curve Primality Prover (ECPP) for general 
+                   large x.
+If flag = 1, use Selfridge-Pocklington-Lehmer "\p-1" test; this is likely to be 
+very slow.
+If flag = 2, use APRCL only.
+If flag = 3, use ECPP only
 [BPSW]
 BPSW(n)   Baillie-PSW primality test. It returns zero if n is composite, 4 for
           probable prime, 3 for definite prime, 1 or 2 for a base-2 pseudoprime

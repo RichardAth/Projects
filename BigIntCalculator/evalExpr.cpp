@@ -139,6 +139,7 @@ enum class opCode: short{
     fn_numdigits,
     fn_revdigits,
     fn_isprime,
+    fn_isprimex,          /* use more sophisticated 'isprime' from PARI/GP*/
     fn_concatfact,
     fn_fib,
     fn_luc,
@@ -232,6 +233,7 @@ const static struct functions functionList[]{
     "ISPOLYGONAL",       2, opCode::fn_polygonal,       /* polygonal number */
     "ISPOWERFUL",        1,  opCode::fn_powerful,       /* powerful number */
     "ISSQUAREFREE",      1, opCode::fn_squarefree,      /* squarefree number */
+    "ISPRIMEX", SHORT_MAX,   opCode::fn_isprimex,       /* isprime from PARI/GP */
     "ISPRIME",           1,	 opCode::fn_isprime,
     "ISPOW",             1,  opCode::fn_ispow,
     "JA",	      	     2,  opCode::fn_jacobi,
@@ -1734,6 +1736,18 @@ static retCode ComputeSubExpr(const opCode stackOper, const std::vector <Znum> &
             result = -1;   /* prime */
         else
             result = 0;    /* composite */
+        break;
+    }
+    case opCode::fn_isprimex: {  /* ise PARI/GP isprime */
+        int flag;
+        if (p.size() < 2)
+            flag = 0;
+        else {
+            if (p[1] > 3 || p[1] < 0)
+                return retCode::INVALID_PARAM;
+            flag = (int)ZnumToLong(p[1]);
+        }
+        result = isprimex(p[0], flag);
         break;
     }
     case opCode::fn_fib: /* fibonacci */ {	

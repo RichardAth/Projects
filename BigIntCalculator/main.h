@@ -119,6 +119,7 @@ Znum tau(const Znum& n);
 Znum stirling(const Znum& n, const Znum& m, const Znum& flag);
 Znum quaddisc(const Znum& n);
 Znum eulerfrac(const Znum& n);
+int isprimex(const Znum& n, int flag);
 
 /* quadmod.cpp */
 void doTestsA(const std::vector<std::string>& params);   /* quadratic modular equation solver */

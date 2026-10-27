@@ -510,6 +510,8 @@ void SigintHandler(int sig) {
     case IDYES: {  /* YES selected */
         // Clear EXECUTION_STATE flags to allow the system to idle to sleep normally.
         SetThreadExecutionState(ES_CONTINUOUS);
+        breakSignal = true;     /* Main program can check this. Allows it to minimise */
+        /* strange behaviour before it terminates */
         exit (EXIT_FAILURE);
     }
     case IDNO: { /* NO selected */
@@ -924,6 +926,7 @@ long filter2(struct _EXCEPTION_POINTERS *ep) {
     rcode = filter(code, ep);
     return EXCEPTION_EXECUTE_HANDLER;  /* override return code from filter */
 }
+
 /* re-register the FP error signal handler */
 void ReRegister(void) {
     std::signal(SIGFPE, (sigh)SigfpeHandler);

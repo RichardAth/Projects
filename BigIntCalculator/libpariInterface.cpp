@@ -99,6 +99,7 @@ typedef     void(__cdecl* set_avmaX)(ulong av);  /* void   set_avma(ulong av);*/
 typedef      GEN(__cdecl* stirlingX)(int64_t n, int64_t m, int64_t flag); /* GEN stirling(int64_t n, int64_t m, int64_t flag)*/
 typedef      GEN(__cdecl* pari_versionX)(void);
 typedef      GEN(__cdecl* ramanujantauX)(GEN x, int64_t y);  /* for parilib versions 2.14 and higher */
+typedef      GEN(__cdecl* gisprimeX)    (GEN x, int64_t flag);  /* GEN     gisprime(GEN x, long flag)*/
 
 HINSTANCE hinstLib;
 
@@ -145,6 +146,7 @@ static v_v               pari_close_ref;
 static pari_versionX     pari_version_ref;
 static G_G               quaddisc_ref;
 static G_l               eulerfrac_ref;
+static gisprimeX         isprime_ref;
 
 /* forward reference */
 static void InttoMP(const GEN x, mpz_t value);
@@ -214,6 +216,7 @@ static void specinit() {
             pari_version_ref = (pari_versionX)GetProcAddress(hinstLib, "pari_version");
             quaddisc_ref =(G_G)GetProcAddress(hinstLib, "quaddisc");
             eulerfrac_ref =(G_l)GetProcAddress(hinstLib, "eulerfrac");
+            isprime_ref = (gisprimeX)GetProcAddress(hinstLib, "gisprime");
 
             /* check that all function pointers were set up successfully */
             if (nullptr == pari_init_ref || nullptr == paristack_setsize_ref ||
@@ -236,7 +239,8 @@ static void specinit() {
                 nullptr == set_avma_ref || nullptr == tau_ref ||
                 nullptr == stirling_ref || nullptr == factor_ref ||
                 nullptr == pari_close_ref || nullptr == pari_version_ref ||
-                nullptr == quaddisc_ref || nullptr == eulerfrac_ref) {
+                nullptr == quaddisc_ref || nullptr == eulerfrac_ref ||
+                nullptr == isprime_ref) {
                 fRunTimeLinkSuccess = false;
                 std::cerr << "PARI dynamic linking failed \n";
                 std::system("PAUSE");
@@ -644,6 +648,7 @@ Znum quaddisc(const Znum& n) {
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
 }
+
 /* Euler number E(n). See https://en.wikipedia.org/wiki/Euler_numbers
  and https://oeis.org/A122045 If n is odd the Euler number is zero */
 Znum eulerfrac(const Znum& n) {
@@ -664,6 +669,42 @@ Znum eulerfrac(const Znum& n) {
         printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
     return num;
+}
+
+/* returns zero if n is composite, -1 if it is a prime. Uses
+          the PARI/GP isprime function, which is much more sophisticated
+          than the built-in isprime function. If flag = 0 (default value),
+          use a combination of:
+           Baillie-Pomerance-Selfridge-Wagsta compositeness test (BPSW),
+           Selfridge "p - 1" test if n-1 is smooth enough,
+           Adleman-Pomerance-Rumely-Cohen-Lenstra (APRCL) for general
+            medium-sized x (less than 1500 bits),
+           Atkin-Morain's Elliptic Curve Primality Prover (ECPP) for general
+            large x.
+    If flag = 1, use Selfridge-Pocklington-Lehmer "\p-1" test; this
+    is likely to be very slow.
+    If flag = 2, use APRCL only.
+    If flag = 3, use ECPP only */
+int isprimex(const Znum& n, int flag) {
+    Znum num;
+    
+    specinit();     /* initialise as required*/
+    GEN ng = MPtoGEN(ZT(n));
+    GEN retval;
+
+    ulong* av = *avma_ref;
+    retval = isprime_ref(ng, flag); /* returns True (1) if n is a prime number, false (0) otherwise. */
+    InttoMP(retval, ZT(num));
+    assert(num == 0 || num == 1);
+    ptrdiff_t diff = av - *avma_ref;
+    if (verbose > 1)
+        printf_s("used %lld bytes on pari stack \n", (long long)diff);
+    set_avma_ref((ulong)av);      /* recover memory used */
+    if (num == 0)
+        return 0;    /* n is not prime */
+    else
+        return -1;    /* n is prime*/
+    
 }
 
 /* replace path, return true if change actually made. 

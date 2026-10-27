@@ -1545,25 +1545,25 @@ void SubtractBigNbr(const limb* pNbr1, const limb* pNbr2, limb* pDiff, int nbrLe
 }
 
 /* nbr = nbr/2 */
-void BigIntDivideBy2(BigInteger* nbr)
-{
-    int nbrLimbs = nbr->nbrLimbs;
-    limb* ptrDest = &nbr->limbs[0];
-    unsigned int curLimb = (unsigned int)*ptrDest;
-    for (int ctr = 1; ctr < nbrLimbs; ctr++)
-    {  // Process starting from least significant limb.
-        unsigned int nextLimb = (unsigned int)*(ptrDest + 1);
-        *ptrDest = (int)(((curLimb >> 1) | (nextLimb << BITS_PER_GROUP_MINUS_1)) &
-            MAX_VALUE_LIMB);
-        ptrDest++;
-        curLimb = nextLimb;
-    }
-    *ptrDest = (int)((curLimb >> 1) & MAX_VALUE_LIMB);
-    if ((nbrLimbs > 1) && (nbr->limbs[nbrLimbs - 1] == 0))
-    {
-        nbr->nbrLimbs--;
-    }
-}
+//void BigIntDivideBy2(BigInteger* nbr)
+//{
+//    int nbrLimbs = nbr->nbrLimbs;
+//    limb* ptrDest = &nbr->limbs[0];
+//    unsigned int curLimb = (unsigned int)*ptrDest;
+//    for (int ctr = 1; ctr < nbrLimbs; ctr++)
+//    {  // Process starting from least significant limb.
+//        unsigned int nextLimb = (unsigned int)*(ptrDest + 1);
+//        *ptrDest = (int)(((curLimb >> 1) | (nextLimb << BITS_PER_GROUP_MINUS_1)) &
+//            MAX_VALUE_LIMB);
+//        ptrDest++;
+//        curLimb = nextLimb;
+//    }
+//    *ptrDest = (int)((curLimb >> 1) & MAX_VALUE_LIMB);
+//    if ((nbrLimbs > 1) && (nbr->limbs[nbrLimbs - 1] == 0))
+//    {
+//        nbr->nbrLimbs--;
+//    }
+//}
 
 int BigIntJacobiSymbol(const BigInteger* upper, const BigInteger* lower)
 {
@@ -1588,7 +1588,7 @@ int BigIntJacobiSymbol(const BigInteger* upper, const BigInteger* lower)
     {
         while ((a.limbs[0] & 1) == 0)
         {     // a is even.
-            BigIntDivideBy2(&a);              // a <- a / 2
+            BigIntDivide2(a);              // a <- a / 2
             if (((m.limbs[0] & 7) == 3) || ((m.limbs[0] & 7) == 5))
             {   // m = 3 or m = 5 (mod 8)
                 t = -t;

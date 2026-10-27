@@ -10,6 +10,13 @@ static Znum pow2bi(unsigned __int64 exp) {
     return result;
 }
 
+/*  calculates (a * b) % mod  */
+static Znum modMult(const Znum& a, const Znum& b, const Znum& mod) {
+    Znum res;
+    res = a * b;
+    mpz_mod(ZT(res), ZT(res), ZT(mod));   /* res = (a*b) %mod */
+    return res;
+}
 
 /* find least significant 1-bit in num, equivalent to counting 0-bits, starting from 
 least significant bit. If num is a power of 2, then 2^return value = num.*/

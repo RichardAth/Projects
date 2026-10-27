@@ -973,6 +973,7 @@ static void doTests(void) {
         "bpsw(90256390764228001)",  PRP_WPSP, // weak pseudoprime
         "BPSW(142899381901)",       PRP_SPSP, // strong pseudoprime
         "ISPRIME(2^127-1)",              -1,  // a prime number
+        "ISPRIMEX(2^127-1)",             -1,  // a prime number
         "aprcl(2^127-1)",     APRTCLE_PRIME,  // a prime number
         "ispow(2^127-1)",                 0,  /* not a perfect power */
         "ispow(2^127)",                  -1,  /* a perfect power */
@@ -1476,6 +1477,11 @@ static void doTests3(void) {
         pBI *= INT_MAX;
         BigtoZ(prime, pBI);               // prime = pBI = aBI * INT_MAX
         assert(prime == a * INT_MAX);	  // verify multiplication by int
+
+        pBI = aBI;
+        pBI *= -123456;
+        BigtoZ(prime, pBI);               // prime = pBI = aBI * INT_MAX
+        assert(prime == -a * 123456);	  // verify multiplication by int
 
         pBI = aBI / bBI;
         BigtoZ(prime, pBI);                // prime = pBI = aBI / bBI
@@ -2065,7 +2071,7 @@ static void doTests7(const std::vector<std::string> &p) {
             mPrimes.push_back(primeList[i]);
         }
         else if (verbose > 0 || (i & 0x3f) == 0)
-            /* \r instead of usual \n means that each messsage overwrites the 
+            /* \r instead of usual \n means that each message overwrites the 
             previous one */
             std::cout << myTimeP() << " 2^" << primeList[i] << " -1 is NOT PRIME \r";
     }
@@ -3003,7 +3009,7 @@ static INT_PTR SetDialogAct(HWND DiBoxHandle,
 
 /* set up dialog box for SET command. When the user selects an action it is processed
 in the SetDialogAct function. */
-static long long setdiag(void) {
+static long long setdialog(void) {
     auto rv = DialogBoxParamW(GetModuleHandle(nullptr), MAKEINTRESOURCE(Change_settings),
         handConsole, SetDialogAct, (LPARAM)99L);
     /* control is returned here when the dialog box is closed. */
@@ -3329,7 +3335,7 @@ static int processCmd(const std::string &txt) {
         }
     case 20:  /* SET */
         {
-            setdiag();   /* change settings using a dialog box */
+            setdialog();   /* change settings using a dialog box */
             return 1;
         }
     default:
@@ -3454,7 +3460,7 @@ the _MSC_FULL_VER macro evaluates to 150020706 */
 /* get input from stdin. Any continuation lines are appended to 1st line.
 Initial & trailing spaces are removed. Letters are converted to upper case. 
 ctrl-c or ctrl-break will force the function to return, with or without input, 
-but only after a 5 sec delay.*/
+but only after a 0.5 sec delay.*/
 static void myGetline(std::string &expr) {
 
     std::getline(std::cin, expr);    // expression may include spaces
@@ -3466,7 +3472,7 @@ static void myGetline(std::string &expr) {
     }
 
     if (breakSignal) {
-        Sleep(5000);   /* wait 5 seconds */
+        Sleep(500);   /* wait 0.5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
     strToUpper(expr, expr);		// convert to UPPER CASE 
@@ -3494,7 +3500,7 @@ static void myGetline(std::string &expr) {
     }
 
     if (breakSignal) {
-        Sleep(5000);   /* wait 5 seconds */
+        Sleep(500);   /* wait 0.5 seconds */
         return;     /* Program interrupted: ctrl-c or ctrl-break */
     }
 

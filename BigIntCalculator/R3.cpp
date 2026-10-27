@@ -116,8 +116,6 @@ bool isPrime2(unsigned __int64 num) {
     return !primeFlags[num/2];
 }
 
-unsigned __int64 modPowerLLold(unsigned __int64 a, unsigned __int64 n,
-    unsigned __int64 mod);
 
 /* divide 128-bit number dividend by 64 bit divisor, get 128-bit quotient,
  and 64-bit remainder. avoids overflow problem  */
@@ -152,29 +150,6 @@ uint128_t divide_uint128_by_uint64(uint128_t dividend, uint64_t divisor,
 }
 
 /*  calculates (a * b) % mod taking into account that a * b might overflow */
-unsigned __int64 modMultOld(unsigned __int64 a, unsigned __int64 b, unsigned __int64 mod)
-{
-    unsigned __int64 x = 0, retval=0;
-    HRESULT  res =0;
-
-    static bool firsttime = true;
-    static mpz_t al, res_t, rem;
-
-    res = ULongLongMult(a, b, &retval);   // retval = a*b
-    if (res == S_OK) {
-        x = retval % mod;		// if a*b didn't overflow we do calc the short way
-    }
-    else {
-        if (firsttime) {		// is this the 1st time modMult was called?
-            mpz_inits(al, res_t, rem, NULL);		// if so, allocate storage for bigints
-            firsttime = false;
-        }
-        mpz_set_ui(al, a);					// convert a to bigint
-        mpz_mul_ui(res_t, al, b);          // res_t = a*b
-        x = mpz_fdiv_r_ui(rem, res_t, mod);  //  x = res_t % mod
-    }
-    return x;
-}
 unsigned __int64 modMult(const unsigned __int64 a, const unsigned __int64 b, 
     const unsigned __int64 mod) {
 /* this version uses intrinsics for 128-bit arithmetic instead of gmp/MPIR 
@@ -191,18 +166,7 @@ extended precision functions */
 
     /* rem = prod%m (quot value returned by divide is  not used) */
     quot = divide_uint128_by_uint64(prod, mod, &rem);
-
-#ifdef _DEBUG
-    auto q2 = modMultOld(a, b, mod);
-    assert(q2 == rem);
-#endif
     return rem;
-}
-Znum modMult(const Znum &a, const Znum &b, const Znum &mod) {
-    Znum res;
-    res = a * b;
-    mpz_mod(ZT(res), ZT(res), ZT(mod));   /* res = (a*b) %mod */
-    return res;
 }
 
 
@@ -238,70 +202,42 @@ extended precision functions */
         // p = (p^2) %mod;
         p = modMult(p, p, mod);
     }
-#ifdef _DEBUG
-    long long rx = modPowerLLold(x, np, mod);
-    assert(rx == r.lo);
-#endif
     return r.lo;
 }
 
 // calculate x^n%mod
-static __int64 mPowerInt(const unsigned int x, unsigned int n, const unsigned int mod)
-{
-    __int64 p, pnew;  // p is a power of x
-    __int64 r;  // value of x^n
-    HRESULT ret;
+//static __int64 mPowerInt(const unsigned int x, unsigned int n, const unsigned int mod)
+//{
+//    __int64 p, pnew;  // p is a power of x
+//    __int64 r;  // value of x^n
+//    HRESULT ret;
+//
+//    p = x;
+//    r = 1;
+//
+//    /* loop log2(n) times.*/
+//    while (n > 0) {
+//        if (n % 2 == 1) {
+//            //r *= p;
+//            ret = LongLongMult(r, p, &r);
+//            if (ret != S_OK) {
+//                ThrowExc("integer overflow: ")
+//            }
+//            r %= mod;
+//        }
+//        n /= 2;
+//        if (n == 0) break;
+//        //p *= p   i.e. p = p^2;
+//        ret = LongLongMult(p, p, &pnew);
+//        if (ret != S_OK) {
+//            ThrowExc("integer overflow: ")
+//        }
+//        p = pnew % mod;
+//    }
+//    return(r);
+//}
 
-    p = x;
-    r = 1;
-
-    /* loop log2(n) times.*/
-    while (n > 0) {
-        if (n % 2 == 1) {
-            //r *= p;
-            ret = LongLongMult(r, p, &r);
-            if (ret != S_OK) {
-                ThrowExc("integer overflow: ")
-            }
-            r %= mod;
-        }
-        n /= 2;
-        if (n == 0) break;
-        //p *= p   i.e. p = p^2;
-        ret = LongLongMult(p, p, &pnew);
-        if (ret != S_OK) {
-            ThrowExc("integer overflow: ")
-        }
-        p = pnew % mod;
-    }
-    return(r);
-}
-
-// calculate a^n%mod   
-unsigned __int64 modPowerLLold(unsigned __int64 a, unsigned __int64 n,
-    unsigned __int64 mod) {
-    static mpz_t al, ml, res;
-    unsigned __int64 rl;
-    static bool firsttime = true;
-
-    if (a < INT_MAX && mod < INT_MAX && n < INT_MAX)
-        return mPowerInt((unsigned int)a, (unsigned int)n, (unsigned int)mod);
-
-    if (firsttime) {		// is this the 1st time modPowerLL was called?
-        mpz_inits(al, res, ml, NULL);	// if so, allocate storage for bigints
-        firsttime = false;
-    }
-
-    mpz_set_ui(al, a);    // copy a to a bigint
-    mpz_set_ui(ml, mod);  // copy mod to a bigint
-
-    mpz_powm_ui(res, al, n, ml);  // calculate res = a^n%mod
-    rl = mpz_get_ui(res);		// since res <= mod, it will not overflow on conversion
-
-    return rl;
-}
-
-// calculate a^n%mod using 'bigints' 
+// calculate a^n%mod using Extended Precision integers
 unsigned __int64 modPowerBi(const Znum &a, const Znum &n, unsigned __int64 mod) {
     Znum res;
     Znum modz = mod;
