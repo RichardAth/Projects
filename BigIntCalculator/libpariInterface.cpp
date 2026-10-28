@@ -678,7 +678,7 @@ Znum eulerfrac(const Znum& n) {
            Baillie-Pomerance-Selfridge-Wagsta compositeness test (BPSW),
            Selfridge "p - 1" test if n-1 is smooth enough,
            Adleman-Pomerance-Rumely-Cohen-Lenstra (APRCL) for general
-            medium-sized x (less than 1500 bits),
+            medium-sized x (less than 1500 bits, 452 digits),
            Atkin-Morain's Elliptic Curve Primality Prover (ECPP) for general
             large x.
     If flag = 1, use Selfridge-Pocklington-Lehmer "\p-1" test; this
@@ -687,7 +687,17 @@ Znum eulerfrac(const Znum& n) {
     If flag = 3, use ECPP only */
 int isprimex(const Znum& n, int flag) {
     Znum num;
+    std::fenv_t envp;
+    unsigned int control_word; /* save current state of fp control word here */
     
+    /* need to prevent libpari from raising FP exceptions */
+    int err = std::fegetenv(&envp);  /* save current floating point environment*/
+    /* and set 'non-stop' FP exception handling */
+    err = _controlfp_s(&control_word, MCW_EM, MCW_EM);
+    if (err) {
+        printf_s("could not set FP control word\n");
+        std::exit(EXIT_FAILURE);
+    }
     specinit();     /* initialise as required*/
     GEN ng = MPtoGEN(ZT(n));
     GEN retval;
@@ -700,11 +710,13 @@ int isprimex(const Znum& n, int flag) {
     if (verbose > 1)
         printf_s("used %lld bytes on pari stack \n", (long long)diff);
     set_avma_ref((ulong)av);      /* recover memory used */
+    std::feclearexcept(FE_ALL_EXCEPT);  /* clear any FP exception flags*/
+    std::fesetenv(&envp);               /* restore saved FP environment */
+
     if (num == 0)
         return 0;    /* n is not prime */
     else
         return -1;    /* n is prime*/
-    
 }
 
 /* replace path, return true if change actually made. 

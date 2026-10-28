@@ -234,7 +234,7 @@ const static struct functions functionList[]{
     "ISPOWERFUL",        1,  opCode::fn_powerful,       /* powerful number */
     "ISSQUAREFREE",      1, opCode::fn_squarefree,      /* squarefree number */
     "ISPRIMEX", SHORT_MAX,   opCode::fn_isprimex,       /* isprime from PARI/GP */
-    "ISPRIME",           1,	 opCode::fn_isprime,
+    "ISPRIME",           1,	 opCode::fn_isprime,        /* mpz_probable_prime_p*/
     "ISPOW",             1,  opCode::fn_ispow,
     "JA",	      	     2,  opCode::fn_jacobi,
     "KR",		         2,  opCode::fn_kronecker,
@@ -663,38 +663,19 @@ static int PrimalityTest(const Znum &Value) {
         gmp_randinit_default(state);
         first = false;
     }
-    rv = mpz_probable_prime_p(ZT(Value), state, 16, 0);
+    /* test for primality. Possibility of a composite wrongly being declared
+      prime < 1 in 2^32 */
+    rv = mpz_probable_prime_p(ZT(Value), state, 32, 0);
     //rv = mpz_likely_prime_p(ZT(Value), state, 0);
 #else
     rv = mpz_probab_prime_p(ZT(Value), 16);
 #endif 
     /* rv is 1 if n is probably prime, or 0 if n is definitely composite.*/
     if (rv == 1)
-        return -1;  // number is probably prime (less than 1 in 2^16 chance it's not prime)
+        return -1;  // number is probably prime (less than 1 in 2^32 chance it's not prime)
     else
-        return 0;  // number is definately composite
+        return 0;  // number is definitely composite
 }
-
-/* same purpose as PrimalityTest but optimised for smaller numbers. 1st call can be very slow,
-but subsequent calls are very quick. -1 means definitely prime*/
-//static int PrimalityTestSmall(const long long Value) {
-//    assert(Value >= 0);
-//    /* deal with even values first, because getBit below only handles odd values*/
-//    if (Value == 2) return -1;		//  2 is only even prime
-//    if ((Value & 1) == 0) return 0;   // even numbers > 2 are not prime
-//
-//    if (Value <= max_prime) {
-//        if (primeFlags == NULL || (long long)primeListMax < Value) {
-//            generatePrimes(max_prime);  // takes a while, but only needed on 1st call
-//        }
-//        if (!getBit(Value, primeFlags))
-//            return -1;		// number is prime
-//        else
-//            return 0;		// number is not prime
-//    }
-//    else
-//        return PrimalityTest(Value);  // should work, but should never be needed
-//}
 
 
 /*  B(n): Previous probable prime before n */
@@ -717,25 +698,9 @@ static retCode ComputeBack(const Znum &n, Znum &p) {
     std::abort();   //should never get here!!
 }
 
-/* calculate the number of primes <= value */
-//static long long primePi(const Znum &n) {
-//	if (n < 2) return 0;
-//	if (n == 2) return 1;     // 2 is the smallest prime number
-//	long long rv = 1;		  // include 2 in the count
-//	long long i;			// largest odd number <= n
-//	long long ncopy = MulPrToLong(n);
-//
-//	i = ((ncopy & 1) == 1) ? ncopy : ncopy - 1;  // i >= 3
-//	/* this method is crude. takes about 5 seconds for n = 10^9 */
-//	for (; i >= 2; i -= 2) {
-//		if (PrimalityTestSmall(i) == -1) {  // test all odd numbers <= Value
-//			rv++;
-//		}
-//	}
-//	return rv;
-//}
 
-// get the number of primes <= n, often called the π function
+// get the number of primes <= n, often called the π function.
+// uses a binary chop search to get the number of primes <=n in primeList
 static int PrimePiC(const uint64_t n) {
     /* for small n use lookup table*/
     const static int cache[] = { 0,0,1,2,2,3,3,4,4,4,4,5,5,6,6,6,6,7,7, 8,8,8,8 };

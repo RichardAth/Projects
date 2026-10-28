@@ -134,6 +134,8 @@ Carmichael(n)   : λ(n) of a positive integer n is the smallest positive integer
 Dedekind(n)     : Dedekind psi function. Product of p^(e-1)(p+1) where p=prime 
                   factor and e=exponent
 IsPrime(n)      : returns zero if n is composite, -1 if it is a probable prime.
+                  This function used the GMP/MPIR  mpz_probable_prime_p function,
+                  which uses some trial division and a miller-rabin primality test.
 isprimex(n [,flag]) : returns zero if n is composite, -1 if it is a prime. Uses
                   the PARI/GP isprime function, which is much more sophisticated 
                   than the built-in isprime function. If flag = 0 (default value), 
@@ -842,6 +844,8 @@ Dedekind(n)     Dedekind psi function. product of p^(e-1)(p+1) where p=prime
                 factor of n and e=exponent of that factor. 
 [ISPRIME]
 IsPrime(n)  returns zero if n is composite, -1 if it is a probable prime.
+ This function used the GMP/MPIR  mpz_probable_prime_p function, which uses 
+ some trial division and a miller-rabin primality test.
 [ISPRIMEX]
 isprimex(n [,flag]) : returns zero if n is composite, -1 if it is a prime. Uses
 the PARI/GP isprime function, which is much more sophisticated than the built-in 
